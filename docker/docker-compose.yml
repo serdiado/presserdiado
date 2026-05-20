@@ -1,0 +1,55 @@
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: matbaapro_root
+      MYSQL_USER: matbaapro
+      MYSQL_PASSWORD: matbaapro_dev
+      MYSQL_DATABASE: matbaapro
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_0900_ai_ci
+    volumes:
+      - mysqldata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "matbaapro", "-pmatbaapro_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: matbaapro
+      MINIO_ROOT_PASSWORD: matbaapro_dev
+    volumes:
+      - miniodata:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysqldata:
+  redisdata:
+  miniodata:

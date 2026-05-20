@@ -1,0 +1,87 @@
+{
+  "$schema": "./wizard.config.schema.json",
+  "title": "Broşür Tasarımı",
+  "subtitle": "Tasarım stüdyonuza başlamadan önce temel ayarları belirleyin.",
+  "steps": {
+    "category": {
+      "label": "Ne Üretmek İstiyorsunuz?",
+      "options": [
+        { "id": "brochure", "title": "Broşür", "hint": "Katlamalı, çok sayfalı", "icon": "📕" },
+        { "id": "catalog", "title": "Katalog", "hint": "Çok sayfalı", "icon": "📖" },
+        { "id": "label", "title": "Etiket", "hint": "Ürün etiketi", "icon": "🏷️" },
+        { "id": "businesscard", "title": "Kartvizit", "hint": "Tek veya çift yön", "icon": "💳" },
+        { "id": "flyer", "title": "El İlanı", "hint": "Tek sayfa", "icon": "📄" },
+        { "id": "invitation", "title": "Davetiye", "hint": "Özel gün davetiyeleri", "icon": "💌" },
+        { "id": "other", "title": "Diğer Ürünler", "hint": "Menü, fiyat listesi, afiş", "icon": "▦" }
+      ],
+      "default": "brochure"
+    },
+    "mode": {
+      "label": "Nasıl Çalışmak İstiyorsunuz?",
+      "options": [
+        {
+          "id": "cell",
+          "title": "Hücre Yapılı Tasarım",
+          "hint": "Ürünlerinizi hücrelere yerleştirerek düzenli ve otomatik tasarımlar oluşturun.",
+          "icon": "▦"
+        },
+        {
+          "id": "free",
+          "title": "Serbest Tasarım",
+          "hint": "Hücre kullanmadan özgürce tasarım yapın.",
+          "icon": "◻︎",
+          "features": ["Az ürünlü çalışmalar", "Kapak / kampanya görseli", "Yaratıcı düzenler"]
+        }
+      ],
+      "default": "cell"
+    },
+    "paperSize": {
+      "label": "Kağıt Boyutunu Seçin",
+      "options": [
+        { "id": "A3", "title": "A3", "hint": "297 × 420 mm", "widthMm": 297, "heightMm": 420 },
+        { "id": "A4", "title": "A4", "hint": "210 × 297 mm", "widthMm": 210, "heightMm": 297 },
+        { "id": "A5", "title": "A5", "hint": "148 × 210 mm", "widthMm": 148, "heightMm": 210 },
+        { "id": "A6", "title": "A6", "hint": "105 × 148 mm", "widthMm": 105, "heightMm": 148 }
+      ],
+      "default": "A3"
+    },
+    "foldType": {
+      "label": "Kırım Yapısı",
+      "options": [
+        {
+          "id": "none",
+          "title": "Kırım Yok",
+          "hint": "Tek sayfa baskı",
+          "icon": "▭",
+          "pageCount": 1
+        },
+        {
+          "id": "half-fold",
+          "title": "Tek Kırım",
+          "hint": "2 sayfa (ön - arka)",
+          "icon": "▤",
+          "pageCount": 2
+        },
+        {
+          "id": "roll-fold",
+          "title": "İçe Kırım",
+          "hint": "3 veya daha fazla sayfa, içe doğru katlanan",
+          "icon": "▦",
+          "pageCount": 3
+        },
+        {
+          "id": "z-fold",
+          "title": "Z Kırım",
+          "hint": "Z şeklinde katlanan yapı",
+          "icon": "Ⅲ",
+          "pageCount": 3
+        }
+      ],
+      "default": "roll-fold"
+    }
+  },
+  "defaults": {
+    "bleedMm": 3,
+    "safeZoneMm": [5, 5, 5, 5]
+  }
+}
