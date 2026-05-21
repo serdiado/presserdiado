@@ -4,21 +4,26 @@ import { Canvas } from './canvas/Canvas';
 import { Sidebar } from './sidebar/Sidebar';
 import { TempPoolBar } from './temppool/TempPoolBar';
 import { PriceCalculator } from './pricing/PriceCalculator';
+import { useUIStore } from '@/stores/studio';
+import NewStudioWizard from '../wizard/NewStudioWizard';
 
 export default function StudioPage() {
+  const isSetupModalOpen = useUIStore((s) => s.isSetupModalOpen);
+  const setSetupModalOpen = useUIStore((s) => s.setSetupModalOpen);
+
   return (
     <main className="flex flex-col h-screen w-screen overflow-hidden bg-slate-200">
       <TopBar />
 
       <div className="flex-1 flex flex-row min-h-0">
-        <div className="pt-4 pl-4 pb-4 h-full shrink-0 flex relative z-[1000]">
+        <div className="pt-4 pl-4 pb-4 h-full shrink-0 flex relative z-1000">
           <div className="rounded-xl shadow-xl h-full flex flex-col relative overflow-hidden">
             <TempPoolBar />
           </div>
         </div>
 
         <div className="flex-1 flex flex-col min-w-0 min-h-0 relative items-center">
-          <div className="inline-flex justify-center bg-white shadow-md rounded-b-lg border-b border-x border-slate-200 overflow-hidden shrink-0 z-50 mb-2">
+          <div className="inline-flex justify-center bg-white shadow-md rounded-b-lg border-b border-x border-slate-200 overflow-visible shrink-0 z-50 mb-2">
             <ContextualBar />
           </div>
           <div className="flex-1 w-full relative min-h-0">
@@ -26,7 +31,7 @@ export default function StudioPage() {
           </div>
         </div>
 
-        <div className="pt-4 pr-4 pb-4 h-full shrink-0 flex relative z-[1000]">
+        <div className="pt-4 pr-4 pb-4 h-full shrink-0 flex relative z-1000">
           <div className="rounded-xl shadow-xl h-full flex flex-col relative overflow-hidden">
             <Sidebar />
           </div>
@@ -34,6 +39,12 @@ export default function StudioPage() {
       </div>
 
       <PriceCalculator />
+
+      {isSetupModalOpen && (
+        <div className="fixed inset-0 z-9999 overflow-auto">
+          <NewStudioWizard />
+        </div>
+      )}
     </main>
   );
 }

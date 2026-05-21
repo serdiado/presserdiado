@@ -27,15 +27,31 @@ export function buildTemplateFromWizard(
   }));
 
   const id = `wizard-${sel.category}-${sel.paperSize}-${sel.foldType}-${Date.now().toString(36)}`;
-  const name = `${paper.title} ${fold.title} ${category?.title ?? ''}`.trim();
+
+  const foldNameMap: Record<string, string> = {
+    'none': 'Katlamasız',
+    'half-fold': 'Tek Kırım',
+    'z-fold': 'Z Kırım',
+    'roll-fold': 'İçe Kırım',
+    'accordion-fold': 'Akordeon Kırım',
+    'gate-fold': 'Pencere Kırım'
+  };
+
+  const foldTitle = foldNameMap[sel.foldType] || fold.title;
+  const name = `${paper.title} ${foldTitle} ${category?.title ?? ''}`.trim();
 
   const foldType: FoldType = (KNOWN_FOLDS as readonly string[]).includes(sel.foldType)
     ? (sel.foldType as FoldType)
     : 'none';
 
+  const mode = config.steps.mode.options.find((m) => m.id === sel.mode);
+
   return {
     id,
     name,
+    designType: category?.title,
+    paperSize: paper.title,
+    mode: mode?.title,
     pageCount,
     foldCount: Math.max(0, pageCount - 1),
     foldType,

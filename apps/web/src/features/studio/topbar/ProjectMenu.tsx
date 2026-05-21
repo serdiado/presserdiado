@@ -130,7 +130,7 @@ export function ProjectMenu() {
         💾 Proje
       </button>
       {open && (
-        <div className="absolute top-full right-0 mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-xl p-1 z-[99999]">
+        <div className="absolute top-full right-0 mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-xl p-1 z-99999">
           <button
             onClick={handleSave}
             className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded text-xs"

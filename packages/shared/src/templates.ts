@@ -11,12 +11,17 @@ export interface PageTemplateConfig {
 export interface BrochureTemplate {
   id: string;
   name: string;
+  designType?: string;
+  paperSize?: string;
+  mode?: string;
   pageCount: number;
   foldCount: number;
   foldType: FoldType;
   openWidthMm: number;
   openHeightMm: number;
   bleedMm: number;
+  safeAreaMm?: number;
+  defaultGrid?: string;
   pages: PageTemplateConfig[];
 }
 

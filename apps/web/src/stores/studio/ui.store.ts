@@ -28,6 +28,7 @@ interface SidebarState {
 interface UIState {
   isZoomed: boolean;
   isTempPoolOpen: boolean;
+  isSetupModalOpen: boolean;
   userScale: number;
   pan: { x: number; y: number };
 
@@ -47,6 +48,7 @@ interface UIState {
   resetZoom: () => void;
   toggleTempPool: () => void;
   setTempPoolOpen: (open: boolean) => void;
+  setSetupModalOpen: (open: boolean) => void;
 
   setSelection: (updates: Partial<SelectionState>) => void;
   toggleElementSelection: (
@@ -81,6 +83,7 @@ const initialSidebar: SidebarState = {
 export const useUIStore = create<UIState>((set, get) => ({
   isZoomed: false,
   isTempPoolOpen: false,
+  isSetupModalOpen: false,
   userScale: 1,
   pan: { x: 0, y: 0 },
   selectedSlotIds: [],
@@ -98,6 +101,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   resetZoom: () => set({ userScale: 1, pan: { x: 0, y: 0 } }),
   toggleTempPool: () => set((s) => ({ isTempPoolOpen: !s.isTempPoolOpen })),
   setTempPoolOpen: (open) => set({ isTempPoolOpen: open }),
+  setSetupModalOpen: (open) => set({ isSetupModalOpen: open }),
 
   setSelection: (updates) =>
     set((state) => {

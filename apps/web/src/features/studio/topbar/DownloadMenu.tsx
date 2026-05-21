@@ -85,7 +85,7 @@ export function DownloadMenu() {
         {busy ? `Hazırlanıyor (${busy.toUpperCase()})…` : '⬇ İndir'}
       </button>
       {open && !busy && (
-        <div className="absolute top-full right-0 mt-1 w-64 bg-white border border-slate-200 rounded-lg shadow-xl p-1 z-[99999]">
+        <div className="absolute top-full right-0 mt-1 w-64 bg-white border border-slate-200 rounded-lg shadow-xl p-1 z-99999">
           {FORMATS.map((f) => (
             <button
               key={f.value}

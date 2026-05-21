@@ -33,8 +33,20 @@ export async function uploadRoutes(app: FastifyInstance) {
       const dir = join(process.cwd(), 'uploads', userId);
       await mkdir(dir, { recursive: true });
 
-      const id = randomBytes(8).toString('hex');
-      const filename = `${id}${ext}`;
+      const baseName = file.filename.slice(0, -ext.length) || 'urun';
+      const charMap: Record<string, string> = {
+        'ç': 'c', 'Ç': 'C', 'ğ': 'g', 'Ğ': 'G',
+        'ı': 'i', 'İ': 'I', 'ö': 'o', 'Ö': 'O',
+        'ş': 's', 'Ş': 'S', 'ü': 'u', 'Ü': 'U'
+      };
+      const sanitizedSku = baseName
+        .replace(/[çÇğĞıİöÖşŞüÜ]/g, (match) => charMap[match] || match)
+        .replace(/[^a-zA-Z0-9]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '') || 'urun';
+
+      const id = randomBytes(5).toString('hex'); // 10 characters
+      const filename = `${id}_${sanitizedSku}${ext}`;
       const filepath = join(dir, filename);
       await writeFile(filepath, buffer);
 
