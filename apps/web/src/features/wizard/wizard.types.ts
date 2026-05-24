@@ -20,6 +20,7 @@ export interface PaperSizeOption extends BaseOption {
 
 export interface FoldTypeOption extends BaseOption {
   pageCount: number;
+  pageOrder?: number[];
 }
 
 export interface WizardConfig {

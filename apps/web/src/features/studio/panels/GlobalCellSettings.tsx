@@ -58,7 +58,7 @@ export function GlobalCellSettings() {
               Görsel Serbest Konum
             </span>
             {selectedSlotIds.length > 1 && (
-              <span className="text-[8px] text-blue-600 font-bold">
+              <span className="text-[8px] text-slate-700 font-semibold">
                 {selectedSlotIds.length} ürün seçili
               </span>
             )}
@@ -73,7 +73,7 @@ export function GlobalCellSettings() {
                 updateSelectedSlotsImageSettings({ editMode: e.target.checked })
               }
             />
-            <div className="w-8 h-4 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600 shadow-inner" />
+            <div className="w-8 h-4 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-slate-900 shadow-inner" />
           </label>
         </div>
         {selectedSlotIds.length === 0 ? (
@@ -92,7 +92,7 @@ export function GlobalCellSettings() {
                 onChange={(e) =>
                   updateSelectedSlotsImageSettings({ scale: parseInt(e.target.value) })
                 }
-                className="flex-1 accent-blue-600"
+                className="flex-1 accent-slate-700"
               />
               <input
                 type="number"
@@ -127,11 +127,10 @@ export function GlobalCellSettings() {
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-bold text-slate-600">Zemin Rengi</span>
           <ColorOpacityPicker
-            color={globalSettings.colors.cellBg.c}
-            opacity={globalSettings.colors.cellBg.o}
-            onChange={(c, o) =>
+            value={globalSettings.colors.cellBg}
+            onChange={(v) =>
               setGlobalSettings({
-                colors: { ...globalSettings.colors, cellBg: { c, o } },
+                colors: { ...globalSettings.colors, cellBg: v },
               })
             }
           />
@@ -139,13 +138,21 @@ export function GlobalCellSettings() {
         <div className="flex items-center justify-between pt-1 border-t border-slate-100">
           <span className="text-[10px] font-bold text-slate-600">Kenarlık</span>
           <ColorOpacityPicker
-            color={globalSettings.colors.cellBorder.c}
-            opacity={globalSettings.colors.cellBorder.o}
-            onChange={(c, o) =>
+            solidOnly
+            value={{
+              type: 'solid',
+              color: globalSettings.colors.cellBorder.c,
+              opacity: globalSettings.colors.cellBorder.o,
+            }}
+            onChange={(v) => {
+              if (v.type !== 'solid') return;
               setGlobalSettings({
-                colors: { ...globalSettings.colors, cellBorder: { c, o } },
-              })
-            }
+                colors: {
+                  ...globalSettings.colors,
+                  cellBorder: { c: v.color, o: v.opacity },
+                },
+              });
+            }}
           />
         </div>
         <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
@@ -159,7 +166,7 @@ export function GlobalCellSettings() {
             onChange={(e) =>
               setGlobalSettings({ borderWidth: parseFloat(e.target.value) })
             }
-            className="flex-1 accent-blue-600"
+            className="flex-1 accent-slate-700"
           />
           <input
             type="number"

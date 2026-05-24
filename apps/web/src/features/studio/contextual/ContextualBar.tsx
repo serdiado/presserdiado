@@ -38,7 +38,7 @@ function Popover({
         {trigger}
       </button>
       {open && (
-        <div className="absolute top-full left-0 mt-1 z-[99999] w-72 bg-white border border-slate-200 rounded-lg shadow-xl p-3">
+        <div className="absolute top-full left-0 mt-1 z-99999 w-72 bg-white border border-slate-200 rounded-lg shadow-xl p-3">
           {children}
         </div>
       )}
@@ -54,7 +54,7 @@ export function ContextualBar() {
   return (
     <div
       id="contextual-bar"
-      className="h-12 px-3 flex items-center gap-1 text-xs text-slate-600 min-w-[700px] bg-white"
+      className="h-12 px-3 flex items-center gap-1 text-xs text-slate-600 min-w-175 bg-white"
     >
       {selection.type === 'none' && <DefaultMode />}
       {selection.type === 'slot' && <SlotMode slotIds={selectedSlotIds} />}
@@ -124,23 +124,32 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold text-slate-600">Zemin Rengi</span>
             <ColorOpacityPicker
-              color={settings.colors.cellBg.c}
-              opacity={settings.colors.cellBg.o}
-              onChange={(c, o) =>
-                update({ colors: { ...settings.colors, cellBg: { c, o } } })
+              value={settings.colors.cellBg}
+              onChange={(v) =>
+                update({ colors: { ...settings.colors, cellBg: v } })
               }
             />
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-bold text-slate-600">Kenarlık</span>
             <ColorOpacityPicker
+              solidOnly
               type="border"
-              color={settings.colors.cellBorder.c}
-              opacity={settings.colors.cellBorder.o}
+              value={{
+                type: 'solid',
+                color: settings.colors.cellBorder.c,
+                opacity: settings.colors.cellBorder.o,
+              }}
               thickness={settings.borderWidth}
-              onChange={(c, o) =>
-                update({ colors: { ...settings.colors, cellBorder: { c, o } } })
-              }
+              onChange={(v) => {
+                if (v.type !== 'solid') return;
+                update({
+                  colors: {
+                    ...settings.colors,
+                    cellBorder: { c: v.color, o: v.opacity },
+                  },
+                });
+              }}
               onThicknessChange={(t) => update({ borderWidth: t })}
             />
           </div>
@@ -196,7 +205,7 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
         onClick={() => toggleSlotCustomSettings(!isCustom)}
         className={`px-2 py-1 rounded text-xs ${
           isCustom
-            ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+            ? 'bg-slate-100 text-slate-800 hover:bg-slate-200'
             : 'hover:bg-slate-100'
         }`}
       >
@@ -204,7 +213,7 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
       </button>
       <button
         onClick={clearSlotSettings}
-        className="px-2 py-1 hover:bg-rose-50 text-rose-600 rounded text-xs"
+        className="px-2 py-1 hover:bg-red-50 text-red-600 rounded text-xs"
       >
         🗑 Temizle
       </button>
@@ -293,7 +302,7 @@ function TextMode({
             key={a}
             onClick={() => updateFont({ ...font, textAlign: a })}
             className={`px-2 py-1 text-[10px] font-bold rounded ${
-              font.textAlign === a ? 'bg-white shadow text-blue-600' : 'text-slate-500'
+              font.textAlign === a ? 'bg-white shadow text-slate-800' : 'text-slate-500'
             }`}
           >
             {a === 'left' ? '⬅' : a === 'center' ? '↔' : '➡'}
@@ -307,9 +316,12 @@ function TextMode({
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-bold text-slate-600">Yazı Rengi</span>
           <ColorOpacityPicker
-            color={font.color}
-            opacity={font.opacity}
-            onChange={(c, o) => updateFont({ ...font, color: c, opacity: o })}
+            solidOnly
+            value={{ type: 'solid', color: font.color, opacity: font.opacity }}
+            onChange={(v) => {
+              if (v.type !== 'solid') return;
+              updateFont({ ...font, color: v.color, opacity: v.opacity });
+            }}
           />
         </div>
       </Popover>

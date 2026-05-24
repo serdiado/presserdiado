@@ -23,7 +23,7 @@ export function BorderRadiusPicker({ title = 'Köşe Ovalliği', value, onChange
           onClick={toggleLink}
           className={`text-[8px] px-1.5 py-0.5 rounded font-bold ${
             value.linked
-              ? 'bg-blue-100 text-blue-600'
+              ? 'bg-slate-100 text-slate-800'
               : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
           }`}
         >
@@ -37,7 +37,7 @@ export function BorderRadiusPicker({ title = 'Köşe Ovalliği', value, onChange
             type="number"
             value={value.tl}
             onChange={(e) => setLinked(parseInt(e.target.value) || 0)}
-            className="w-[120px] mx-auto block text-[10px] font-bold text-slate-600 text-center border border-slate-200 rounded p-1.5 outline-none focus:border-blue-500"
+            className="w-30 mx-auto block text-[10px] font-bold text-slate-600 text-center border border-slate-200 rounded p-1.5 outline-none focus:border-slate-400"
           />
         </div>
       ) : (
@@ -56,7 +56,7 @@ export function BorderRadiusPicker({ title = 'Köşe Ovalliği', value, onChange
                 type="number"
                 value={value[k] as number}
                 onChange={(e) => setCorner(k, parseInt(e.target.value) || 0)}
-                className="w-full text-[10px] font-bold text-slate-600 text-center border border-slate-200 rounded p-1.5 outline-none focus:border-blue-500"
+                className="w-full text-[10px] font-bold text-slate-600 text-center border border-slate-200 rounded p-1.5 outline-none focus:border-slate-400"
               />
             </div>
           ))}

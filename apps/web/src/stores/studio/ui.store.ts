@@ -31,6 +31,10 @@ interface UIState {
   isSetupModalOpen: boolean;
   userScale: number;
   pan: { x: number; y: number };
+  foregroundOpacity: number;
+  selectedBackgroundPageIds: number[];
+  backgroundMerged: boolean;
+  mergedPageGroups: number[][];
 
   // Legacy mirrors (kept in sync from `selection`)
   selectedSlotIds: string[];
@@ -72,6 +76,10 @@ interface UIState {
     content: { slotId: string; contentType: 'product' | 'banner' | 'pizza' } | null,
   ) => void;
   clearSelectionAndSelectPage: (pageNumber: number) => void;
+  setForegroundOpacity: (v: number) => void;
+  setSelectedBackgroundPageIds: (ids: number[]) => void;
+  setBackgroundMerged: (merged: boolean) => void;
+  setMergedPageGroups: (groups: number[][]) => void;
 }
 
 const initialSidebar: SidebarState = {
@@ -86,6 +94,10 @@ export const useUIStore = create<UIState>((set, get) => ({
   isSetupModalOpen: false,
   userScale: 1,
   pan: { x: 0, y: 0 },
+  foregroundOpacity: 100,
+  selectedBackgroundPageIds: [],
+  backgroundMerged: false,
+  mergedPageGroups: [],
   selectedSlotIds: [],
   selectedPageNumber: null,
   selectedTextElement: null,
@@ -193,6 +205,10 @@ export const useUIStore = create<UIState>((set, get) => ({
   setContextualBarFormaId: (id) => set({ contextualBarFormaId: id }),
   setContextualBarSelectedPages: (pages) => set({ contextualBarSelectedPages: pages }),
   setEditingContent: (content) => set({ editingContent: content }),
+  setForegroundOpacity: (v) => set({ foregroundOpacity: Math.max(0, Math.min(100, v)) }),
+  setSelectedBackgroundPageIds: (ids) => set({ selectedBackgroundPageIds: ids }),
+  setBackgroundMerged: (merged) => set({ backgroundMerged: merged }),
+  setMergedPageGroups: (groups) => set({ mergedPageGroups: groups }),
 
   clearSelectionAndSelectPage: (pageNumber) => {
     get().clearSelection();

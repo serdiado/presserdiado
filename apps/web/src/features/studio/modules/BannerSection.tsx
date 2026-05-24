@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
-import { hexToRgba } from '../util/style';
+import { colorValueBackground, hexToRgba } from '../util/style';
 import type { BannerCellData, BannerModuleData } from './types';
 
 interface Props {
@@ -87,7 +87,7 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
             }}
             className={`flex box-border relative overflow-hidden transition-all ${
               isSel && !isEdit
-                ? 'ring-2 ring-inset ring-blue-500 z-10 cursor-pointer'
+                ? 'ring-2 ring-inset ring-slate-900 z-10 cursor-pointer'
                 : isEdit
                   ? 'cursor-text z-20'
                   : 'cursor-pointer z-0'
@@ -95,8 +95,7 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
             style={{
               gridColumn: `span ${cell.colSpan}`,
               gridRow: `span ${cell.rowSpan}`,
-              backgroundColor:
-                cell.bgColor.o < 100 ? hexToRgba(cell.bgColor.c, cell.bgColor.o) : cell.bgColor.c,
+              ...colorValueBackground(cell.bgColor),
               paddingTop: `${p.t}px`,
               paddingRight: `${p.r}px`,
               paddingBottom: `${p.b}px`,

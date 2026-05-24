@@ -34,5 +34,8 @@ docker/minio-data/
 apps/api/uploads/*
 !apps/api/uploads/.gitkeep
 
+# Product images (runtime)
+apps/web/public/images/products/
+
 # Backups
 matbaapro_yedek.zip

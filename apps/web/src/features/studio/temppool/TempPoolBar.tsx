@@ -33,7 +33,7 @@ export function TempPoolBar() {
             {tempPool.length > 0 && (
               <button
                 onClick={clearTempPool}
-                className="text-rose-500 hover:underline"
+                className="text-red-600 hover:underline"
                 title="Hepsini temizle"
               >
                 temizle
@@ -62,7 +62,7 @@ export function TempPoolBar() {
                     e.stopPropagation();
                     p.sku && removeFromTempPool(p.sku);
                   }}
-                  className="absolute top-0.5 right-0.5 text-slate-400 hover:text-rose-600 opacity-0 group-hover:opacity-100"
+                  className="absolute top-0.5 right-0.5 text-slate-400 hover:text-red-600 opacity-0 group-hover:opacity-100"
                 >
                   ✕
                 </button>

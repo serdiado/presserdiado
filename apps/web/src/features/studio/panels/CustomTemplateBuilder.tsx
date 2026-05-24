@@ -86,7 +86,7 @@ export function CustomTemplateBuilder({ onSaved }: { onSaved: () => void }) {
           value={s.name}
           onChange={(e) => set('name', e.target.value)}
           placeholder="Örn: A4 8 Sayfa Z-Fold"
-          className="w-full mt-1 text-xs border border-slate-200 rounded p-1.5 focus:border-blue-500 outline-none"
+          className="w-full mt-1 text-xs border border-slate-200 rounded p-1.5 focus:border-slate-400 outline-none"
         />
       </label>
 

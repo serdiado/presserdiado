@@ -1,3 +1,4 @@
+import type { ColorValue } from '@matbaapro/shared';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import {
   BorderRadiusPicker,
@@ -7,6 +8,23 @@ import {
   TypographyPicker,
 } from '../pickers';
 import type { PizzaModuleData } from './types';
+
+// Keys whose data type is ColorValue (supports gradient).
+const BG_KEYS = ['bg', 'tableBg', 'tableTitleBg', 'cellBg', 'cellPriceBg', 'imgBg'] as const;
+// Keys that remain solid ColorOpacity ({c,o}).
+const SOLID_KEYS = ['border', 'tableLine', 'imgBorder'] as const;
+
+const LABELS: Record<string, string> = {
+  bg: 'Genel Zemin',
+  tableBg: 'Tablo Zemini',
+  tableTitleBg: 'Tablo Başlığı',
+  cellBg: 'Hücre',
+  cellPriceBg: 'Fiyat Hücresi',
+  imgBg: 'Görsel Zemini',
+  border: 'Çerçeve',
+  tableLine: 'Tablo Çizgisi',
+  imgBorder: 'Görsel Çerçevesi',
+};
 
 export function PizzaSettingsPanel() {
   const selectedSlotIds = useUIStore((s) => s.selectedSlotIds);
@@ -40,25 +58,29 @@ export function PizzaSettingsPanel() {
     <div className="space-y-3">
       <div className="bg-white p-3 rounded border border-slate-200 shadow-sm space-y-2">
         <h4 className="text-[10px] font-black text-slate-500">RENKLER</h4>
-        {(
-          [
-            ['bg', 'Genel Zemin'],
-            ['border', 'Çerçeve'],
-            ['tableBg', 'Tablo Zemini'],
-            ['tableTitleBg', 'Tablo Başlığı'],
-            ['cellBg', 'Hücre'],
-            ['cellPriceBg', 'Fiyat Hücresi'],
-            ['tableLine', 'Tablo Çizgisi'],
-          ] as const
-        ).map(([k, label]) => (
+        {BG_KEYS.map((k) => (
           <div key={k} className="flex items-center justify-between">
-            <span className="text-[10px] text-slate-600">{label}</span>
+            <span className="text-[10px] text-slate-600">{LABELS[k]}</span>
             <ColorOpacityPicker
-              color={m.colors[k].c}
-              opacity={m.colors[k].o}
-              onChange={(c, o) =>
-                patch({ colors: { ...m.colors, [k]: { c, o } } })
+              value={m.colors[k]}
+              onChange={(v: ColorValue) =>
+                patch({ colors: { ...m.colors, [k]: v } })
               }
+            />
+          </div>
+        ))}
+        {SOLID_KEYS.map((k) => (
+          <div key={k} className="flex items-center justify-between">
+            <span className="text-[10px] text-slate-600">{LABELS[k]}</span>
+            <ColorOpacityPicker
+              solidOnly
+              value={{ type: 'solid', color: m.colors[k].c, opacity: m.colors[k].o }}
+              onChange={(v: ColorValue) => {
+                if (v.type !== 'solid') return;
+                patch({
+                  colors: { ...m.colors, [k]: { c: v.color, o: v.opacity } },
+                });
+              }}
             />
           </div>
         ))}

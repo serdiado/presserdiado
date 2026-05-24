@@ -61,7 +61,7 @@ export function ProductInfoSettings() {
               onChange={(e) =>
                 updateSlotProduct(pageNumber, slotId, { name: e.target.value })
               }
-              className="w-full text-xs border border-slate-200 rounded p-1.5 focus:border-blue-500 outline-none"
+              className="w-full text-xs border border-slate-200 rounded p-1.5 focus:border-slate-400 outline-none"
             />
           </label>
           <label className="block">
@@ -72,7 +72,7 @@ export function ProductInfoSettings() {
               onChange={(e) =>
                 updateSlotProduct(pageNumber, slotId, { price: e.target.value })
               }
-              className="w-full text-xs border border-slate-200 rounded p-1.5 focus:border-blue-500 outline-none"
+              className="w-full text-xs border border-slate-200 rounded p-1.5 focus:border-slate-400 outline-none"
             />
           </label>
           <label className="block">
@@ -83,7 +83,7 @@ export function ProductInfoSettings() {
               onChange={(e) =>
                 updateSlotProduct(pageNumber, slotId, { sku: e.target.value })
               }
-              className="w-full text-xs border border-slate-200 rounded p-1.5 focus:border-blue-500 outline-none"
+              className="w-full text-xs border border-slate-200 rounded p-1.5 focus:border-slate-400 outline-none"
             />
           </label>
           <label className="block">
@@ -96,7 +96,7 @@ export function ProductInfoSettings() {
               onChange={(e) =>
                 updateSlotProduct(pageNumber, slotId, { image: e.target.value })
               }
-              className="w-full text-xs border border-slate-200 rounded p-1.5 focus:border-blue-500 outline-none"
+              className="w-full text-xs border border-slate-200 rounded p-1.5 focus:border-slate-400 outline-none"
             />
             <ImageUploadButton
               onUploaded={(url) => updateSlotProduct(pageNumber, slotId, { image: url })}
@@ -106,13 +106,13 @@ export function ProductInfoSettings() {
           <div className="flex gap-2 pt-2">
             <button
               onClick={() => moveSlotToTempPool(pageNumber, slotId)}
-              className="flex-1 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[10px] font-bold rounded"
+              className="flex-1 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-[10px] font-medium rounded border border-slate-200"
             >
               Havuza Gönder
             </button>
             <button
               onClick={() => clearSlot(pageNumber, slotId)}
-              className="flex-1 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-[10px] font-bold rounded"
+              className="flex-1 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-[10px] font-medium rounded border border-red-200"
             >
               Temizle
             </button>

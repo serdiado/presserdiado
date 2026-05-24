@@ -93,7 +93,7 @@ export function TypographyPicker({ title, value, onChange }: Props) {
                   key={a}
                   onClick={() => set('textAlign', a)}
                   className={`flex-1 py-1 text-[9px] font-bold uppercase rounded-sm ${
-                    value.textAlign === a ? 'bg-white shadow text-blue-600' : 'text-slate-400'
+                    value.textAlign === a ? 'bg-white shadow text-slate-800' : 'text-slate-400'
                   }`}
                 >
                   {a[0]}
@@ -109,7 +109,7 @@ export function TypographyPicker({ title, value, onChange }: Props) {
                   key={a}
                   onClick={() => set('verticalAlign', a)}
                   className={`flex-1 py-1 text-[9px] font-bold uppercase rounded-sm ${
-                    value.verticalAlign === a ? 'bg-white shadow text-blue-600' : 'text-slate-400'
+                    value.verticalAlign === a ? 'bg-white shadow text-slate-800' : 'text-slate-400'
                   }`}
                 >
                   {a[0]}
@@ -125,7 +125,7 @@ export function TypographyPicker({ title, value, onChange }: Props) {
               set('textTransform', value.textTransform === 'uppercase' ? 'none' : 'uppercase')
             }
             className={`flex-1 py-1 text-[10px] font-bold rounded-sm ${
-              value.textTransform === 'uppercase' ? 'bg-white shadow text-blue-600' : 'text-slate-400'
+              value.textTransform === 'uppercase' ? 'bg-white shadow text-slate-800' : 'text-slate-400'
             }`}
           >
             AA
@@ -135,7 +135,7 @@ export function TypographyPicker({ title, value, onChange }: Props) {
               set('textTransform', value.textTransform === 'capitalize' ? 'none' : 'capitalize')
             }
             className={`flex-1 py-1 text-[10px] font-bold rounded-sm ${
-              value.textTransform === 'capitalize' ? 'bg-white shadow text-blue-600' : 'text-slate-400'
+              value.textTransform === 'capitalize' ? 'bg-white shadow text-slate-800' : 'text-slate-400'
             }`}
           >
             Aa
@@ -146,7 +146,7 @@ export function TypographyPicker({ title, value, onChange }: Props) {
             }
             className={`flex-1 py-1 text-[10px] font-bold rounded-sm underline ${
               value.textDecoration === 'underline'
-                ? 'bg-white shadow text-blue-600'
+                ? 'bg-white shadow text-slate-800'
                 : 'text-slate-400'
             }`}
           >
@@ -157,9 +157,12 @@ export function TypographyPicker({ title, value, onChange }: Props) {
         <div className="flex items-center justify-between pt-2 border-t border-slate-100">
           <span className="text-[10px] font-bold text-slate-700">Renk & Saydamlık</span>
           <ColorOpacityPicker
-            color={value.color}
-            opacity={value.opacity}
-            onChange={(c, o) => onChange({ ...value, color: c, opacity: o })}
+            solidOnly
+            value={{ type: 'solid', color: value.color, opacity: value.opacity }}
+            onChange={(v) => {
+              if (v.type !== 'solid') return;
+              onChange({ ...value, color: v.color, opacity: v.opacity });
+            }}
           />
         </div>
       </div>

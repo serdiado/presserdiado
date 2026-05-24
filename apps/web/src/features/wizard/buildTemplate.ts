@@ -7,6 +7,16 @@ import type { WizardConfig, WizardSelection } from './wizard.types';
 // değil; eşleşmiyorsa 'none' fallback'i ile devam ederiz.
 const KNOWN_FOLDS: ReadonlyArray<FoldType> = ['none', 'half-fold', 'roll-fold', 'z-fold'];
 
+const FOLD_NORMALIZE_MAP: Record<string, FoldType> = {
+  none: 'none',
+  'half-fold': 'half-fold',
+  'roll-fold': 'roll-fold',
+  'z-fold': 'z-fold',
+  'triple-fold': 'roll-fold',
+  'accordion-fold': 'roll-fold',
+  'map-fold': 'z-fold',
+};
+
 export function buildTemplateFromWizard(
   sel: WizardSelection,
   config: WizardConfig,
@@ -20,8 +30,9 @@ export function buildTemplateFromWizard(
   }
 
   const pageCount = Math.max(1, fold.pageCount);
+  const panelsPerSide = Math.max(1, Math.floor(pageCount / 2));
   const pages: PageTemplateConfig[] = Array.from({ length: pageCount }, (_, i) => ({
-    pageNumber: i + 1,
+    pageNumber: fold.pageOrder && fold.pageOrder[i] ? fold.pageOrder[i] : i + 1,
     widthMm: paper.widthMm,
     safeZone: config.defaults.safeZoneMm,
   }));
@@ -29,19 +40,21 @@ export function buildTemplateFromWizard(
   const id = `wizard-${sel.category}-${sel.paperSize}-${sel.foldType}-${Date.now().toString(36)}`;
 
   const foldNameMap: Record<string, string> = {
-    'none': 'Katlamasız',
+    none: 'Kırım Yok',
     'half-fold': 'Tek Kırım',
+    'roll-fold': 'Çift Kırım',
     'z-fold': 'Z Kırım',
-    'roll-fold': 'İçe Kırım',
-    'accordion-fold': 'Akordeon Kırım',
-    'gate-fold': 'Pencere Kırım'
+    'triple-fold': 'Üç Kırım',
+    'accordion-fold': 'Akerdiyon',
+    'map-fold': 'Harita',
   };
 
   const foldTitle = foldNameMap[sel.foldType] || fold.title;
   const name = `${paper.title} ${foldTitle} ${category?.title ?? ''}`.trim();
 
-  const foldType: FoldType = (KNOWN_FOLDS as readonly string[]).includes(sel.foldType)
-    ? (sel.foldType as FoldType)
+  const normalizedFoldType = FOLD_NORMALIZE_MAP[sel.foldType] ?? 'none';
+  const foldType: FoldType = (KNOWN_FOLDS as readonly string[]).includes(normalizedFoldType)
+    ? normalizedFoldType
     : 'none';
 
   const mode = config.steps.mode.options.find((m) => m.id === sel.mode);
@@ -53,9 +66,10 @@ export function buildTemplateFromWizard(
     paperSize: paper.title,
     mode: mode?.title,
     pageCount,
-    foldCount: Math.max(0, pageCount - 1),
+    foldCount: Math.max(0, panelsPerSide - 1),
     foldType,
-    openWidthMm: paper.widthMm * pageCount,
+    wizardSelection: sel as unknown as Record<string, string>,
+    openWidthMm: paper.widthMm * panelsPerSide,
     openHeightMm: paper.heightMm,
     bleedMm: config.defaults.bleedMm,
     pages,

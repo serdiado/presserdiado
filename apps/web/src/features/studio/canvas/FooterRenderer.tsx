@@ -95,7 +95,7 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
               }}
               className={`flex box-border relative overflow-hidden transition-all ${
                 isSelected && !isEditing
-                  ? 'ring-2 ring-inset ring-blue-500 z-10 cursor-pointer'
+                  ? 'ring-2 ring-inset ring-slate-900 z-10 cursor-pointer'
                   : isEditing
                     ? 'cursor-text z-20'
                     : 'cursor-pointer z-0'

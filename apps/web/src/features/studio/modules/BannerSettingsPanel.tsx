@@ -68,9 +68,8 @@ export function BannerSettingsPanel() {
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-bold text-slate-600">Zemin</span>
           <ColorOpacityPicker
-            color={ref.bgColor.c}
-            opacity={ref.bgColor.o}
-            onChange={(c, o) => updateSelectedCells({ bgColor: { c, o } })}
+            value={ref.bgColor}
+            onChange={(v) => updateSelectedCells({ bgColor: v })}
           />
         </div>
       </div>

@@ -6,7 +6,7 @@ import type {
   TypographyData,
 } from '@matbaapro/shared';
 import { useCatalogStore } from '@/stores/studio';
-import { hexToRgba } from '../util/style';
+import { colorValueBackground, hexToRgba } from '../util/style';
 import type { PizzaModuleData } from './types';
 
 interface Props {
@@ -58,7 +58,7 @@ function EditableText({
       <div
         contentEditable
         suppressContentEditableWarning
-        className={`outline-none bg-white/90 ring-1 ring-inset ring-blue-500 z-50 shadow-sm ${className ?? ''}`}
+        className={`outline-none bg-white/90 ring-1 ring-inset ring-slate-900 z-50 shadow-sm ${className ?? ''}`}
         style={{ ...style, ...fontStyle(font) }}
         onBlur={(e) => {
           const v = e.currentTarget.innerText;
@@ -133,7 +133,7 @@ export function PizzaSection({ instanceData, slotId, pageNumber }: Props) {
         style={{
           padding: paddingStyle(spacings.cell),
           borderBottom: tableBorder,
-          backgroundColor: hexToRgba(colors.cellBg.c, colors.cellBg.o),
+          ...colorValueBackground(colors.cellBg),
         }}
       />
       <EditableText
@@ -142,7 +142,7 @@ export function PizzaSection({ instanceData, slotId, pageNumber }: Props) {
         className="flex-1 w-full"
         style={{
           padding: paddingStyle(spacings.cell),
-          backgroundColor: hexToRgba(colors.cellPriceBg.c, colors.cellPriceBg.o),
+          ...colorValueBackground(colors.cellPriceBg),
         }}
       />
     </div>
@@ -153,7 +153,7 @@ export function PizzaSection({ instanceData, slotId, pageNumber }: Props) {
       className="w-full h-full flex flex-col border-2"
       style={{
         padding: paddingStyle(spacings.container),
-        backgroundColor: hexToRgba(colors.bg.c, colors.bg.o),
+        ...colorValueBackground(colors.bg),
         borderColor: hexToRgba(colors.border.c, colors.border.o),
         borderRadius: radiusStyle(radiuses.container),
         boxShadow: shadowStyle(shadows.container),
@@ -177,7 +177,7 @@ export function PizzaSection({ instanceData, slotId, pageNumber }: Props) {
             className="flex flex-col flex-1 overflow-hidden"
             style={{
               border: tableBorder,
-              backgroundColor: hexToRgba(colors.tableBg.c, colors.tableBg.o),
+              ...colorValueBackground(colors.tableBg),
               borderRadius: radiusStyle(radiuses.table),
               boxShadow: shadowStyle(shadows.table),
             }}
@@ -188,7 +188,7 @@ export function PizzaSection({ instanceData, slotId, pageNumber }: Props) {
               className="w-full"
               style={{
                 padding: paddingStyle(spacings.tableTitle),
-                backgroundColor: hexToRgba(colors.tableTitleBg.c, colors.tableTitleBg.o),
+                ...colorValueBackground(colors.tableTitleBg),
               }}
             />
             <div className="grid grid-cols-4 flex-1">
@@ -202,7 +202,7 @@ export function PizzaSection({ instanceData, slotId, pageNumber }: Props) {
             className="flex flex-col flex-1 overflow-hidden"
             style={{
               border: tableBorder,
-              backgroundColor: hexToRgba(colors.tableBg.c, colors.tableBg.o),
+              ...colorValueBackground(colors.tableBg),
               borderRadius: radiusStyle(radiuses.table),
               boxShadow: shadowStyle(shadows.table),
             }}
@@ -213,7 +213,7 @@ export function PizzaSection({ instanceData, slotId, pageNumber }: Props) {
               className="w-full"
               style={{
                 padding: paddingStyle(spacings.tableTitle),
-                backgroundColor: hexToRgba(colors.tableTitleBg.c, colors.tableTitleBg.o),
+                ...colorValueBackground(colors.tableTitleBg),
               }}
             />
             <div className="grid grid-cols-4 flex-1">
@@ -230,7 +230,7 @@ export function PizzaSection({ instanceData, slotId, pageNumber }: Props) {
             className="w-full h-full border-2 border-dashed flex items-center justify-center cursor-pointer overflow-hidden"
             style={{
               borderColor: hexToRgba(colors.imgBorder.c, colors.imgBorder.o),
-              backgroundColor: hexToRgba(colors.imgBg.c, colors.imgBg.o),
+              ...colorValueBackground(colors.imgBg),
               borderRadius: radiusStyle(radiuses.image),
               boxShadow: shadowStyle(shadows.image),
             }}

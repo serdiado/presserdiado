@@ -80,7 +80,7 @@ export function DownloadMenu() {
       <button
         onClick={() => setOpen((v) => !v)}
         disabled={busy !== null}
-        className="h-8 px-3.5 rounded-md text-xs font-semibold border border-emerald-300 bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
+        className="h-8 px-3.5 rounded-md text-xs font-medium border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-60"
       >
         {busy ? `Hazırlanıyor (${busy.toUpperCase()})…` : '⬇ İndir'}
       </button>

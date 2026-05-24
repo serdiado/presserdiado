@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { StudioSlot } from '@matbaapro/shared';
 import { useCatalogStore, useLayerStore, useUIStore } from '@/stores/studio';
+import { colorValueBackground } from '../util/style';
 import { Slot } from './Slot';
 import { FooterRenderer } from './FooterRenderer';
 
@@ -28,6 +29,7 @@ export function Page({ pageNumber }: { pageNumber: number }) {
   const selectPages = useLayerStore((s) => s.selectPages);
   const selectedPageIds = useLayerStore((s) => s.selectedPageIds);
   const setEditingContent = useUIStore((s) => s.setEditingContent);
+  const foregroundOpacity = useUIStore((s) => s.foregroundOpacity);
 
   const activeForma = formas.find((f) => f.id === activeFormaId);
   const pages = activeForma?.pages ?? [];
@@ -59,6 +61,7 @@ export function Page({ pageNumber }: { pageNumber: number }) {
   if (!currentPage || !pageConfig) return null;
 
   const isSelected = selectedPageIds.includes(currentPage.id);
+  const bg = currentPage.background;
   const [mt, mr, , ml] = pageConfig.safeZone;
 
   const isFooterHidden = currentPage.footerMode === 'hidden';
@@ -77,14 +80,14 @@ export function Page({ pageNumber }: { pageNumber: number }) {
         createPortal(
           <div
             id="context-menu-container"
-            className="fixed z-[99999] bg-white border border-slate-300 shadow-2xl rounded-md py-1 min-w-[150px]"
+            className="fixed z-99999 bg-white border border-slate-300 shadow-2xl rounded-md py-1 min-w-37.5"
             style={{ top: contextMenu.y, left: contextMenu.x }}
             onClick={(e) => e.stopPropagation()}
             onContextMenu={(e) => e.preventDefault()}
           >
             {contextMenu.canMerge && (
               <button
-                className="w-full text-left px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-blue-50"
+                className="w-full text-left px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
                 onClick={() => {
                   mergeSelected(pageNumber, contextMenu.slot.id);
                   setContextMenu(null);
@@ -107,7 +110,7 @@ export function Page({ pageNumber }: { pageNumber: number }) {
             {contextMenu.hasProduct && (
               <>
                 <button
-                  className="w-full text-left px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50"
+                  className="w-full text-left px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
                   onClick={() => {
                     moveSlotToTempPool(pageNumber, contextMenu.slot.id);
                     setContextMenu(null);
@@ -129,7 +132,7 @@ export function Page({ pageNumber }: { pageNumber: number }) {
             <div className="my-1 border-t border-slate-200" />
             {(contextMenu.slot.role ?? 'product') === 'product' ? (
               <button
-                className="w-full text-left px-4 py-2 text-sm font-semibold text-purple-700 hover:bg-purple-50"
+                className="w-full text-left px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
                 onClick={() => {
                   // toggleSlotRole selectedSlotIds'i kullaniyor — once secelim
                   useUIStore.getState().toggleSlotSelection(contextMenu.slot.id, false);
@@ -158,7 +161,7 @@ export function Page({ pageNumber }: { pageNumber: number }) {
       <div
         id={`page-${currentPage.id}`}
         className={`physical-page relative shrink-0 border-r border-dashed border-slate-300 last:border-r-0 overflow-hidden ${
-          isSelected ? 'ring-2 ring-blue-500' : ''
+          isSelected ? 'ring-2 ring-slate-900' : ''
         }`}
         style={{
           width: `${pageConfig.widthMm}mm`,
@@ -169,7 +172,6 @@ export function Page({ pageNumber }: { pageNumber: number }) {
         data-hide-border-on-export="true"
         onClick={(e) => {
           setEditingContent(null);
-          if (e.target !== e.currentTarget) return;
           if (e.ctrlKey || e.metaKey) {
             if (selectedPageIds.includes(currentPage.id))
               selectPages(selectedPageIds.filter((id) => id !== currentPage.id));
@@ -179,46 +181,76 @@ export function Page({ pageNumber }: { pageNumber: number }) {
           }
         }}
       >
+        {bg && (
+          <div
+            className="absolute inset-0 z-0"
+            style={
+              bg.type === 'color' && bg.value
+                ? colorValueBackground(bg.value)
+                : bg.type === 'image' && bg.imageUrl
+                  ? {
+                      backgroundImage: `url(${bg.imageUrl})`,
+                      backgroundSize:
+                        bg.imageSize === 'fit' ? 'contain'
+                        : bg.imageSize === 'stretch' ? '100% 100%'
+                        : bg.imageSize === 'tile' ? 'auto'
+                        : 'cover',
+                      backgroundRepeat: bg.imageSize === 'tile' ? 'repeat' : 'no-repeat',
+                      backgroundPosition: bg.imagePosition
+                        ? bg.imagePosition.replace('middle', 'center').replace(/-/g, ' ')
+                        : 'center',
+                      opacity: (bg.imageOpacity ?? 100) / 100,
+                    }
+                  : {}
+            }
+          />
+        )}
+
         <div
-          className="safe-zone absolute z-10 flex flex-col pointer-events-none"
-          style={{
-            top: `${mt}mm`,
-            right: `${mr}mm`,
-            bottom: `${5 + footerOffset}mm`,
-            left: `${ml}mm`,
-          }}
+          className="absolute inset-0"
+          style={{ opacity: foregroundOpacity / 100, transition: 'opacity 0.15s' }}
         >
           <div
-            className="grid flex-1 min-h-0 min-w-0 w-full h-full relative z-0"
+            className="safe-zone absolute z-10 flex flex-col pointer-events-none"
             style={{
-              gridTemplateColumns: `repeat(${totalColumns}, minmax(0, 1fr))`,
-              gridTemplateRows: `repeat(${totalRows}, minmax(0, 1fr))`,
-              gap: `${gridGap}mm`,
+              top: `${mt}mm`,
+              right: `${mr}mm`,
+              bottom: `${5 + footerOffset}mm`,
+              left: `${ml}mm`,
             }}
           >
-            {currentPage.slots.map((slot, idx) => {
-              if (slot.hidden) return null;
-              return (
-                <Slot
-                  key={slot.id}
-                  slot={slot}
-                  pageNumber={pageNumber}
-                  slotIndex={idx}
-                  globalNumber={slot.globalNumber ?? 0}
-                  onContextMenu={handleContextMenu}
-                  gridPosition={slot.gridPosition ?? { colStart: 1, rowStart: 1 }}
-                  totalRows={totalRows}
-                  totalColumns={totalColumns}
-                />
-              );
-            })}
+            <div
+              className="grid flex-1 min-h-0 min-w-0 w-full h-full relative z-0"
+              style={{
+                gridTemplateColumns: `repeat(${totalColumns}, minmax(0, 1fr))`,
+                gridTemplateRows: `repeat(${totalRows}, minmax(0, 1fr))`,
+                gap: `${gridGap}mm`,
+              }}
+            >
+              {currentPage.slots.map((slot, idx) => {
+                if (slot.hidden) return null;
+                return (
+                  <Slot
+                    key={slot.id}
+                    slot={slot}
+                    pageNumber={pageNumber}
+                    slotIndex={idx}
+                    globalNumber={slot.globalNumber ?? 0}
+                    onContextMenu={handleContextMenu}
+                    gridPosition={slot.gridPosition ?? { colStart: 1, rowStart: 1 }}
+                    totalRows={totalRows}
+                    totalColumns={totalColumns}
+                  />
+                );
+              })}
+            </div>
           </div>
-        </div>
 
-        <FooterRenderer
-          pageNumber={pageNumber}
-          safeZone={pageConfig.safeZone}
-        />
+          <FooterRenderer
+            pageNumber={pageNumber}
+            safeZone={pageConfig.safeZone}
+          />
+        </div>
       </div>
     </>
   );

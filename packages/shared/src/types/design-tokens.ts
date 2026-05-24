@@ -5,6 +5,31 @@ export interface ColorOpacity {
   o: number; // 0-100
 }
 
+// === Value union model for fill colors that may be solid or gradient ===
+
+export interface GradientStop {
+  color: string; // hex
+  opacity: number; // 0-100
+  position: number; // 0-100
+}
+
+export type GradientType = 'linear' | 'radial' | 'diamond';
+
+export interface SolidValue {
+  type: 'solid';
+  color: string;
+  opacity: number; // 0-100
+}
+
+export interface GradientValue {
+  type: 'gradient';
+  stops: GradientStop[];
+  angle?: number; // deg, linear only
+  gradientType: GradientType;
+}
+
+export type ColorValue = SolidValue | GradientValue;
+
 export interface TypographyData {
   fontFamily: string;
   fontWeight: string;

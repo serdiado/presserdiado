@@ -164,6 +164,19 @@ interface CatalogActions {
   dumpPageToTempPool: (pageNumber: number) => void;
   returnProductFromTempPool: (sku: string) => void;
 
+  updatePagesBackground: (
+    pageNumbers: number[],
+    background: NonNullable<CatalogPage['background']>,
+  ) => void;
+
+  applyBackgroundToAllFormas: (
+    sourcePageNumbers: number[],
+  ) => { formaId: number; success: boolean; reason?: string }[];
+
+  applyBackgroundGlobally: (
+    background: NonNullable<CatalogPage['background']>,
+  ) => { formaId: number; success: boolean; reason?: string }[];
+
   // History bridge
   undo: () => void;
   redo: () => void;
@@ -855,8 +868,8 @@ export const useCatalogStore = create<Store>()(
                 const cs = clone(globalSettings) as CatalogSettings;
                 cs.spacings.cell = { t: 0, r: 0, b: 0, l: 0, linked: true };
                 cs.borderWidth = 0;
-                cs.colors.cellBg.o = 0;
-                cs.colors.cellBorder.o = 0;
+                cs.colors.cellBg = { type: 'solid', color: '#ffffff', opacity: 0 };
+                cs.colors.cellBorder = { c: cs.colors.cellBorder.c, o: 0 };
                 cs.shadows.cell.active = false;
                 cs.radiuses.cell = { tl: 0, tr: 0, bl: 0, br: 0, linked: true };
                 s.customSettings = cs;
@@ -1144,6 +1157,64 @@ export const useCatalogStore = create<Store>()(
         setActivePages(pages);
       },
 
+      updatePagesBackground: (pageNumbers, background) => {
+        const { getActivePages, setActivePages } = get();
+        setActivePages(
+          getActivePages().map((p) =>
+            pageNumbers.includes(p.pageNumber) ? { ...p, background } : p,
+          ),
+        );
+      },
+
+      applyBackgroundToAllFormas: (sourcePageNumbers) => {
+        const { formas, activeFormaId } = get();
+        const activeForma = formas.find((f) => f.id === activeFormaId);
+        if (!activeForma) return [];
+
+        const indexToBackground = new Map<number, NonNullable<CatalogPage['background']>>();
+        for (const pageNum of sourcePageNumbers) {
+          const idx = activeForma.pages.findIndex((p) => p.pageNumber === pageNum);
+          if (idx === -1) continue;
+          const bg = activeForma.pages[idx].background;
+          if (bg) indexToBackground.set(idx, bg);
+        }
+        if (indexToBackground.size === 0) return [];
+
+        const report: { formaId: number; success: boolean; reason?: string }[] = [];
+        const nextFormas = formas.map((f) => {
+          if (f.id === activeFormaId) return f;
+          if (f.pages.length !== activeForma.pages.length) {
+            report.push({ formaId: f.id, success: false, reason: 'Sayfa sayısı eşleşmiyor' });
+            return f;
+          }
+          const pages = f.pages.map((p, idx) => {
+            const bg = indexToBackground.get(idx);
+            return bg ? { ...p, background: bg } : p;
+          });
+          report.push({ formaId: f.id, success: true });
+          return { ...f, pages };
+        });
+        set({ formas: nextFormas });
+        return report;
+      },
+
+      applyBackgroundGlobally: (background) => {
+        const { formas, activeFormaId } = get();
+        const activeForma = formas.find((f) => f.id === activeFormaId);
+        const activePageCount = activeForma?.pages.length ?? 0;
+        const report: { formaId: number; success: boolean; reason?: string }[] = [];
+        const nextFormas = formas.map((f) => {
+          if (f.pages.length !== activePageCount) {
+            report.push({ formaId: f.id, success: false, reason: 'Sayfa sayısı uyumsuz' });
+            return f;
+          }
+          report.push({ formaId: f.id, success: true });
+          return { ...f, pages: f.pages.map((p) => ({ ...p, background })) };
+        });
+        set({ formas: nextFormas });
+        return report;
+      },
+
       // === History bridge ===
       undo: () => useHistoryStore.getState().undo(),
       redo: () => useHistoryStore.getState().redo(),
@@ -1161,13 +1232,13 @@ export const useCatalogStore = create<Store>()(
         if (!mergedGlobal.defaultGrid) mergedGlobal.defaultGrid = { rows: 4, cols: 4 };
         if (!mergedGlobal.footer) mergedGlobal.footer = initialGlobalSettings.footer;
 
-        const normalizedGlobal: CatalogSettings = {
+        const normalizedGlobal: CatalogSettings = migrateSettingsColors({
           ...mergedGlobal,
           imageScale: 100,
           imagePosX: 0,
           imagePosY: 0,
           imageEditMode: false,
-        };
+        }) as CatalogSettings;
 
         const formas =
           incoming.formas ??
@@ -1196,6 +1267,108 @@ export const useCatalogStore = create<Store>()(
 
 // === Persistence normalizers ===
 
+/**
+ * Upgrade legacy `{ c, o }` ColorOpacity stored under a field that is now
+ * typed as ColorValue. Returns the input unchanged when it already looks
+ * like a ColorValue, or when it is null/undefined.
+ */
+function migrateColorValue(v: unknown): unknown {
+  if (!v || typeof v !== 'object') return v;
+  const obj = v as Record<string, unknown>;
+  if (obj.type === 'solid' || obj.type === 'gradient') return obj;
+  if (typeof obj.c === 'string' && typeof obj.o === 'number') {
+    return { type: 'solid', color: obj.c, opacity: obj.o };
+  }
+  return v;
+}
+
+function migrateModuleData(md: unknown): unknown {
+  if (!md || typeof md !== 'object') return md;
+  const data = md as Record<string, unknown>;
+  if (data.type === 'banner' && Array.isArray(data.cells)) {
+    return {
+      ...data,
+      cells: data.cells.map((cell) => {
+        const c = cell as Record<string, unknown>;
+        return { ...c, bgColor: migrateColorValue(c.bgColor) };
+      }),
+    };
+  }
+  if (data.type === 'pizza' && data.colors && typeof data.colors === 'object') {
+    const colors = data.colors as Record<string, unknown>;
+    const bgKeys = ['bg', 'tableBg', 'tableTitleBg', 'cellBg', 'cellPriceBg', 'imgBg'];
+    const nextColors: Record<string, unknown> = { ...colors };
+    for (const k of bgKeys) {
+      if (k in colors) nextColors[k] = migrateColorValue(colors[k]);
+    }
+    return { ...data, colors: nextColors };
+  }
+  return md;
+}
+
+/**
+ * Migrate a legacy CatalogPage.background payload to the unified ColorValue
+ * shape. The old model used:
+ *   { type: 'color' | 'gradient' | 'image',
+ *     color?: { c, o },
+ *     gradient?: { type: 'linear'|'radial'|'radial-star', angle?, stops: [{color, opacity?, position}] },
+ *     imageUrl? }
+ * The new model collapses 'color' and 'gradient' into 'color' with a
+ * ColorValue value:
+ *   { type: 'color' | 'image', value?: ColorValue, imageUrl? }
+ * radial-star is mapped to diamond.
+ */
+function migratePageBackground(bg: unknown): unknown {
+  if (!bg || typeof bg !== 'object') return bg;
+  const old = bg as Record<string, unknown>;
+  if (old.type === 'color' || old.type === 'image') {
+    // Already partially upgraded? If `value` exists, keep as-is, otherwise
+    // try to upgrade `color: {c,o}` → value: SolidValue.
+    if (old.type === 'color' && !old.value && old.color) {
+      const c = old.color as Record<string, unknown>;
+      return {
+        type: 'color',
+        value: { type: 'solid', color: c.c ?? '#ffffff', opacity: c.o ?? 100 },
+        ...(old.imageUrl ? { imageUrl: old.imageUrl } : {}),
+        ...(old.overlay ? { overlay: old.overlay } : {}),
+      };
+    }
+    return old;
+  }
+  if (old.type === 'gradient' && old.gradient && typeof old.gradient === 'object') {
+    const g = old.gradient as Record<string, unknown>;
+    const oldType = g.type as string | undefined;
+    const gradientType =
+      oldType === 'radial-star' ? 'diamond' : oldType === 'radial' ? 'radial' : 'linear';
+    const stops = (Array.isArray(g.stops) ? g.stops : []).map((s) => {
+      const stop = s as Record<string, unknown>;
+      return {
+        color: typeof stop.color === 'string' ? stop.color : '#ffffff',
+        opacity: typeof stop.opacity === 'number' ? stop.opacity : 100,
+        position: typeof stop.position === 'number' ? stop.position : 0,
+      };
+    });
+    return {
+      type: 'color',
+      value: {
+        type: 'gradient',
+        gradientType,
+        ...(typeof g.angle === 'number' ? { angle: g.angle } : {}),
+        stops,
+      },
+    };
+  }
+  return bg;
+}
+
+function migrateSettingsColors<T extends { colors?: Record<string, unknown> }>(s: T): T {
+  if (!s.colors) return s;
+  const next = { ...s.colors };
+  if ('cellBg' in next) next.cellBg = migrateColorValue(next.cellBg);
+  if ('priceBg' in next) next.priceBg = migrateColorValue(next.priceBg);
+  return { ...s, colors: next };
+}
+
 function normalizeForma(forma: StudioForma): StudioForma {
   return {
     ...forma,
@@ -1218,8 +1391,26 @@ function normalizeCatalogPage(page: CatalogPage): CatalogPage {
     page.footerText = '';
     page.footerLogo = null;
   }
+  const migratedBg = page.background
+    ? (migratePageBackground(page.background) as typeof page.background)
+    : page.background;
+  const slots = page.slots?.map((s) => {
+    let next = s;
+    if (s.moduleData) {
+      next = { ...next, moduleData: migrateModuleData(s.moduleData) };
+    }
+    if (s.customSettings && typeof s.customSettings === 'object') {
+      next = {
+        ...next,
+        customSettings: migrateSettingsColors(s.customSettings as { colors?: Record<string, unknown> }) as typeof s.customSettings,
+      };
+    }
+    return next;
+  });
   return {
     ...page,
+    slots: slots ?? page.slots,
+    background: migratedBg,
     footerMode: footerMode ?? 'global',
     customFooter: customFooter ?? null,
   };

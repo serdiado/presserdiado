@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useState } from 'react';
-import type { CatalogSettings, StudioSlot } from '@matbaapro/shared';
+import type { BadgeConfig, CatalogSettings, StudioSlot } from '@matbaapro/shared';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import {
   BannerSection,
@@ -9,6 +9,7 @@ import {
 } from '../modules';
 import {
   colorOpacityToCss,
+  colorValueBackground,
   deepMerge,
   fontStyle,
   paddingStyle,
@@ -16,6 +17,186 @@ import {
   shadowStyle,
   splitPrice,
 } from '../util/style';
+
+function BadgeRenderer({ badge, scale }: { badge: BadgeConfig; scale: number }) {
+  if (!badge.active) return null;
+
+  const sizeRatio = badge.size / 100;
+  const baseSize = 36 * scale * sizeRatio;
+  const fontSize = 9 * scale * sizeRatio;
+  const offset = 4 * scale;
+
+  const positionStyle: React.CSSProperties = badge.isFreePosition
+    ? { top: `${badge.posY}%`, left: `${badge.posX}%` }
+    : (() => {
+        switch (badge.position) {
+          case 'top-right': return { top: offset, right: offset };
+          case 'bottom-left': return { bottom: offset, left: offset };
+          case 'bottom-right': return { bottom: offset, right: offset };
+          default: return { top: offset, left: offset };
+        }
+      })();
+
+  const baseStyle: React.CSSProperties = {
+    position: 'absolute',
+    zIndex: 40,
+    pointerEvents: 'none',
+    backgroundColor: badge.bgColor,
+    color: badge.textColor,
+    borderColor: badge.borderColor,
+    borderWidth: badge.borderWidth * scale,
+    borderStyle: 'solid',
+    fontSize,
+    fontWeight: badge.font?.fontWeight ?? 'bold',
+    fontFamily: badge.font?.fontFamily ?? 'inherit',
+    boxShadow: shadowStyle(badge.shadow),
+    ...positionStyle,
+  };
+
+  if (badge.shape === 'circle') {
+    return (
+      <div
+        style={{
+          ...baseStyle,
+          width: baseSize,
+          height: baseSize,
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          lineHeight: 1,
+          overflow: 'hidden',
+        }}
+      >
+        {badge.text}
+      </div>
+    );
+  }
+
+  if (badge.shape === 'pill') {
+    return (
+      <div
+        style={{
+          ...baseStyle,
+          borderRadius: 9999,
+          padding: `${2 * scale}px ${6 * scale * sizeRatio}px`,
+          whiteSpace: 'nowrap',
+          lineHeight: 1.2,
+        }}
+      >
+        {badge.text}
+      </div>
+    );
+  }
+
+  if (badge.shape === 'burst') {
+    const r = baseSize / 2;
+    const points = Array.from({ length: 16 }, (_, i) => {
+      const angle = (i * Math.PI) / 8 - Math.PI / 2;
+      const radius = i % 2 === 0 ? r : r * 0.72;
+      return `${r + radius * Math.cos(angle)},${r + radius * Math.sin(angle)}`;
+    }).join(' ');
+    return (
+      <div style={{ ...positionStyle, position: 'absolute', zIndex: 40, pointerEvents: 'none', width: baseSize, height: baseSize }}>
+        <svg viewBox={`0 0 ${baseSize} ${baseSize}`} width={baseSize} height={baseSize}>
+          <polygon points={points} fill={badge.bgColor} stroke={badge.borderColor} strokeWidth={badge.borderWidth * scale} />
+          <text
+            x={r}
+            y={r}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fill={badge.textColor}
+            fontSize={fontSize}
+            fontWeight={String(badge.font?.fontWeight ?? 'bold')}
+            fontFamily={badge.font?.fontFamily ?? 'inherit'}
+          >
+            {badge.text}
+          </text>
+        </svg>
+      </div>
+    );
+  }
+
+  if (badge.shape === 'flama') {
+    return (
+      <div
+        style={{
+          ...baseStyle,
+          padding: `${3 * scale * sizeRatio}px ${8 * scale * sizeRatio}px ${8 * scale * sizeRatio}px`,
+          clipPath: 'polygon(0 0, 100% 0, 100% 70%, 50% 100%, 0 70%)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          lineHeight: 1.2,
+          whiteSpace: 'nowrap',
+          borderRadius: 2,
+        }}
+      >
+        {badge.text}
+      </div>
+    );
+  }
+
+  if (badge.shape === 'banner') {
+    const ribbonW = baseSize * 1.4;
+    const isRight = badge.position === 'top-right' || badge.position === 'bottom-right';
+    const isBottom = badge.position === 'bottom-left' || badge.position === 'bottom-right';
+    const rotate = isRight === isBottom ? -45 : 45;
+    return (
+      <div
+        style={{
+          ...positionStyle,
+          position: 'absolute',
+          zIndex: 40,
+          pointerEvents: 'none',
+          width: ribbonW,
+          height: ribbonW,
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            width: ribbonW * 1.5,
+            backgroundColor: badge.bgColor,
+            color: badge.textColor,
+            borderColor: badge.borderColor,
+            borderWidth: badge.borderWidth * scale,
+            borderStyle: 'solid',
+            fontSize,
+            fontWeight: badge.font?.fontWeight ?? 'bold',
+            fontFamily: badge.font?.fontFamily ?? 'inherit',
+            textAlign: 'center',
+            padding: `${2 * scale}px 0`,
+            transform: `rotate(${rotate}deg)`,
+            top: ribbonW * 0.35,
+            ...(isRight ? { right: -ribbonW * 0.25 } : { left: -ribbonW * 0.25 }),
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+          }}
+        >
+          {badge.text}
+        </div>
+      </div>
+    );
+  }
+
+  // rectangle (default)
+  return (
+    <div
+      style={{
+        ...baseStyle,
+        borderRadius: 2,
+        padding: `${2 * scale}px ${5 * scale * sizeRatio}px`,
+        whiteSpace: 'nowrap',
+        lineHeight: 1.2,
+      }}
+    >
+      {badge.text}
+    </div>
+  );
+}
 
 interface SlotProps {
   slot: StudioSlot;
@@ -222,7 +403,9 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
         e.stopPropagation();
         if (editingContent?.slotId === slot.id) return;
         if (editingContent) setEditingContent(null);
-        disableAllImageEditModes();
+        if (!isSelected || selectedSlotIds.length > 1) {
+          disableAllImageEditModes();
+        }
         toggleSlotSelection(slot.id, e.ctrlKey || e.metaKey);
       }}
       onDoubleClick={(e) => {
@@ -247,12 +430,12 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
       }}
       onDragLeave={() => setIsOver(false)}
       onDrop={handleDrop}
-      className={`product-slot pointer-events-auto relative overflow-hidden border border-solid transition-all h-full w-full min-w-[50px] min-h-[50px] cursor-pointer ${
+      className={`product-slot pointer-events-auto relative overflow-hidden border border-solid transition-all h-full w-full min-w-12.5 min-h-12.5 cursor-pointer ${
         isSelected
-          ? 'z-50 outline-4 outline-blue-500 outline-offset-2 shadow-2xl'
+          ? 'z-50 border-2 border-slate-900 bg-slate-50 shadow-2xl'
           : isOver
-            ? 'border-blue-500 scale-[0.98] z-20'
-            : 'hover:border-blue-300 z-10'
+            ? 'border-slate-400 scale-[0.98] z-20'
+            : 'hover:border-slate-400 z-10'
       }`}
       style={{
         gridColumn: gridPosition
@@ -262,7 +445,7 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
           ? `${gridPosition.rowStart} / span ${slot.rowSpan}`
           : `span ${slot.rowSpan}`,
         borderRadius: radiusStyle(finalSettings.radiuses.cell),
-        backgroundColor: colorOpacityToCss(finalSettings.colors.cellBg),
+        ...colorValueBackground(finalSettings.colors.cellBg),
         borderColor: colorOpacityToCss(finalSettings.colors.cellBorder),
         borderWidth: `${finalSettings.borderWidth}px`,
         boxShadow: isSelected ? undefined : boxShadow,
@@ -320,6 +503,10 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
         </div>
       )}
 
+      {slot.role !== 'free' && (
+        <BadgeRenderer badge={finalSettings.badge} scale={clampedScale} />
+      )}
+
       {slot.role !== 'free' && slot.product && (
         <div
           className={`w-full h-full flex flex-col min-w-0 min-h-0 ${
@@ -330,8 +517,8 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
           <div
             className={`absolute top-0 z-30 flex shadow-sm transition-all px-1.5 py-1 pointer-events-auto outline-none ${
               selectedTextElement?.slotId === slot.id && selectedTextElement?.elementType === 'price'
-                ? 'ring-2 ring-blue-500 ring-offset-1 cursor-text'
-                : 'cursor-pointer hover:ring-1 hover:ring-blue-300'
+                ? 'ring-2 ring-slate-900 ring-offset-1 cursor-text'
+                : 'cursor-pointer hover:ring-1 hover:ring-slate-400'
             } ${
               finalSettings.pricePosition === 'left'
                 ? 'left-0'
@@ -342,7 +529,7 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
             style={{
               width: `${finalSettings.priceWidth}%`,
               height: `${finalSettings.priceHeight * clampedScale}mm`,
-              backgroundColor: colorOpacityToCss(finalSettings.colors.priceBg),
+              ...colorValueBackground(finalSettings.colors.priceBg),
               borderRadius: radiusStyle(finalSettings.radiuses.price),
               borderStyle: 'solid',
               borderWidth: `${(finalSettings.priceBorderWidth || 0) * clampedScale}px`,
@@ -443,13 +630,13 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
             <div
               className={`w-full h-full outline-none transition-all ${
                 editingText === 'name'
-                  ? 'bg-white/90 text-black z-50 ring-2 ring-blue-500 overflow-hidden whitespace-pre-wrap rounded cursor-text'
-                  : 'line-clamp-3 whitespace-pre-wrap hover:ring-1 hover:ring-blue-300'
+                  ? 'bg-white/90 text-black z-50 ring-2 ring-slate-900 overflow-hidden whitespace-pre-wrap rounded cursor-text'
+                  : 'line-clamp-3 whitespace-pre-wrap hover:ring-1 hover:ring-slate-400'
               } ${
                 selectedTextElement?.slotId === slot.id &&
                 selectedTextElement?.elementType === 'name' &&
                 editingText !== 'name'
-                  ? 'ring-2 ring-blue-500'
+                  ? 'ring-2 ring-slate-900'
                   : ''
               }`}
               contentEditable={editingText === 'name'}

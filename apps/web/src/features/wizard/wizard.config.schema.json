@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "./wizard.config.schema.json",
+  "title": "Wizard Config",
+  "description": "NewStudioWizard için JSON tabanlı yapılandırma şeması.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["title", "subtitle", "steps", "defaults"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Bu config dosyasını doğrulamak için kullanılan JSON Schema yolu."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "subtitle": {
+      "type": "string",
+      "minLength": 1
+    },
+    "steps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["category", "mode", "paperSize", "foldType"],
+      "properties": {
+        "category": {
+          "$ref": "#/$defs/categoryStep"
+        },
+        "mode": {
+          "$ref": "#/$defs/modeStep"
+        },
+        "paperSize": {
+          "$ref": "#/$defs/paperSizeStep"
+        },
+        "foldType": {
+          "$ref": "#/$defs/foldTypeStep"
+        }
+      }
+    },
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bleedMm", "safeZoneMm"],
+      "properties": {
+        "bleedMm": {
+          "type": "number",
+          "minimum": 0
+        },
+        "safeZoneMm": {
+          "type": "array",
+          "description": "Sırasıyla üst, sağ, alt, sol güvenli alan değerleri.",
+          "prefixItems": [
+            { "type": "number", "minimum": 0 },
+            { "type": "number", "minimum": 0 },
+            { "type": "number", "minimum": 0 },
+            { "type": "number", "minimum": 0 }
+          ],
+          "minItems": 4,
+          "maxItems": 4
+        }
+      }
+    }
+  },
+  "$defs": {
+    "baseOption": {
+      "type": "object",
+      "required": ["id", "title"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hint": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        }
+      }
+    },
+    "categoryOption": {
+      "$ref": "#/$defs/baseOption"
+    },
+    "modeOption": {
+      "allOf": [
+        { "$ref": "#/$defs/baseOption" },
+        {
+          "type": "object",
+          "properties": {
+            "features": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "paperSizeOption": {
+      "allOf": [
+        { "$ref": "#/$defs/baseOption" },
+        {
+          "type": "object",
+          "required": ["widthMm", "heightMm"],
+          "properties": {
+            "widthMm": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "heightMm": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "foldTypeOption": {
+      "allOf": [
+        { "$ref": "#/$defs/baseOption" },
+        {
+          "type": "object",
+          "required": ["pageCount"],
+          "properties": {
+            "pageCount": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "pageOrder": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "stepBase": {
+      "type": "object",
+      "required": ["label", "options", "default"],
+      "properties": {
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "default": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "categoryStep": {
+      "allOf": [
+        { "$ref": "#/$defs/stepBase" },
+        {
+          "type": "object",
+          "properties": {
+            "options": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/categoryOption"
+              }
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "modeStep": {
+      "allOf": [
+        { "$ref": "#/$defs/stepBase" },
+        {
+          "type": "object",
+          "properties": {
+            "options": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/modeOption"
+              }
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "paperSizeStep": {
+      "allOf": [
+        { "$ref": "#/$defs/stepBase" },
+        {
+          "type": "object",
+          "properties": {
+            "options": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/paperSizeOption"
+              }
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "foldTypeStep": {
+      "allOf": [
+        { "$ref": "#/$defs/stepBase" },
+        {
+          "type": "object",
+          "properties": {
+            "options": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/foldTypeOption"
+              }
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    }
+  }
+}

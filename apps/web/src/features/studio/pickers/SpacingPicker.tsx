@@ -25,7 +25,7 @@ export function SpacingPicker({ title = 'İç Boşluk', value, onChange }: Props
           onClick={toggleLink}
           className={`text-[8px] px-1.5 py-0.5 rounded font-bold ${
             value.linked
-              ? 'bg-blue-100 text-blue-600'
+              ? 'bg-slate-100 text-slate-800'
               : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
           }`}
         >

@@ -12,7 +12,7 @@ export default function StudioPage() {
   const setSetupModalOpen = useUIStore((s) => s.setSetupModalOpen);
 
   return (
-    <main className="flex flex-col h-screen w-screen overflow-hidden bg-slate-200">
+    <main className="flex flex-col h-screen w-screen overflow-hidden bg-stone-100">
       <TopBar />
 
       <div className="flex-1 flex flex-row min-h-0">

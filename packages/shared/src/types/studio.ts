@@ -5,6 +5,7 @@ import type {
   BorderData,
   BorderRadiusData,
   ColorOpacity,
+  ColorValue,
   ShadowData,
   SpacingData,
   TypographyData,
@@ -82,9 +83,9 @@ export interface CatalogSettings {
   imageEditMode: boolean;
   badge: BadgeConfig;
   colors: {
-    cellBg: ColorOpacity;
+    cellBg: ColorValue;
     cellBorder: ColorOpacity;
-    priceBg: ColorOpacity;
+    priceBg: ColorValue;
     priceBorder: ColorOpacity;
   };
   radiuses: {
@@ -179,10 +180,16 @@ export interface CatalogPage {
   customFooter: FooterSettings | null;
   gridSettings?: { rows: number; cols: number };
   background?: {
-    type: 'color' | 'gradient' | 'image';
-    color?: ColorOpacity;
-    gradient?: import('./layer.js').LayerGradientConfig;
+    type: 'color' | 'image';
+    /** Solid or gradient fill (covers former 'color' + 'gradient' page bg types). */
+    value?: ColorValue;
     imageUrl?: string;
+    imageSize?: 'fit' | 'fill' | 'stretch' | 'tile';
+    imagePosition?:
+      | 'top-left' | 'top-center' | 'top-right'
+      | 'middle-left' | 'center' | 'middle-right'
+      | 'bottom-left' | 'bottom-center' | 'bottom-right';
+    imageOpacity?: number; // 0-100
     overlay?: {
       imageUrl?: string;
       blendMode?: string;

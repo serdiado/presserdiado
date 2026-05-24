@@ -3,7 +3,10 @@
 import type {
   BorderRadiusData,
   ColorOpacity,
+  ColorValue,
+  GradientValue,
   ShadowData,
+  SolidValue,
   SpacingData,
   TypographyData,
 } from '@matbaapro/shared';
@@ -20,6 +23,97 @@ export function hexToRgba(hex: string, opacity: number): string {
 
 export function colorOpacityToCss(c: ColorOpacity): string {
   return c.o < 100 ? hexToRgba(c.c, c.o) : c.c;
+}
+
+// === ColorValue helpers ===========================================
+
+export function makeSolid(color: string, opacity = 100): SolidValue {
+  return { type: 'solid', color, opacity };
+}
+
+/**
+ * Normalize anything that looks like a color value into a ColorValue.
+ * Accepts ColorValue, legacy ColorOpacity ({c,o}), or undefined.
+ */
+export function asColorValue(input: unknown, fallback?: ColorValue): ColorValue {
+  if (input && typeof input === 'object') {
+    const v = input as Record<string, unknown>;
+    if (v.type === 'solid' || v.type === 'gradient') return input as ColorValue;
+    if (typeof v.c === 'string' && typeof v.o === 'number') {
+      return { type: 'solid', color: v.c as string, opacity: v.o as number };
+    }
+  }
+  return fallback ?? { type: 'solid', color: '#ffffff', opacity: 100 };
+}
+
+/** Return the dominant solid color for legacy code paths that need a flat hex/opacity. */
+export function colorValueToSolid(v: ColorValue): ColorOpacity {
+  if (v.type === 'solid') return { c: v.color, o: v.opacity };
+  const first = v.stops[0];
+  return first ? { c: first.color, o: first.opacity } : { c: '#ffffff', o: 100 };
+}
+
+function stopsCss(g: GradientValue): string {
+  const sorted = g.stops.slice().sort((a, b) => a.position - b.position);
+  if (sorted.length === 0) return 'transparent, transparent';
+  return sorted.map((s) => `${hexToRgba(s.color, s.opacity)} ${s.position}%`).join(', ');
+}
+
+/**
+ * Convert a GradientValue into a CSS background-image expression.
+ * - linear  → linear-gradient(angle, stops)
+ * - radial  → radial-gradient(circle, stops)
+ * - diamond → two perpendicular linear gradients at 45° / -45°. Combined
+ *   with backgroundBlendMode: 'multiply' (set by colorValueBackground),
+ *   the intersection of the two gradients produces a true diamond/rhombus
+ *   contour. Without the blend mode the second gradient sits underneath
+ *   and is partially occluded; consumers that only want the string should
+ *   prefer colorValueBackground for diamond mode.
+ */
+export function gradientToCss(g: GradientValue): string {
+  const s = stopsCss(g);
+  if (g.gradientType === 'radial') return `radial-gradient(circle at center, ${s})`;
+  if (g.gradientType === 'diamond') {
+    return `linear-gradient(45deg, ${s}), linear-gradient(-45deg, ${s})`;
+  }
+  return `linear-gradient(${g.angle ?? 135}deg, ${s})`;
+}
+
+/**
+ * Convert a ColorValue into a CSS background value. For solid colors this
+ * returns a colour string (suitable for backgroundColor); for gradients it
+ * returns a `*-gradient(...)` expression (use it on backgroundImage or the
+ * shorthand `background`). For diamond gradients, the returned string is
+ * two comma-separated linear gradients — pair with backgroundBlendMode:
+ * 'multiply' for the proper diamond effect, otherwise use
+ * colorValueBackground which sets the blend mode for you.
+ */
+export function colorValueToCss(v: ColorValue): string {
+  if (v.type === 'solid') {
+    return v.opacity < 100 ? hexToRgba(v.color, v.opacity) : v.color;
+  }
+  return gradientToCss(v);
+}
+
+/**
+ * Style object that paints a ColorValue as a background.
+ * Solids set backgroundColor; gradients set backgroundImage so existing
+ * backgroundColor isn't fighting with a gradient. Diamond mode also sets
+ * backgroundBlendMode: 'multiply' so the two perpendicular linear
+ * gradients combine into a rhombus contour.
+ */
+export function colorValueBackground(v: ColorValue): React.CSSProperties {
+  if (v.type === 'solid') {
+    return { backgroundColor: colorValueToCss(v) };
+  }
+  const style: React.CSSProperties = {
+    backgroundImage: gradientToCss(v),
+    backgroundColor: 'transparent',
+  };
+  if (v.gradientType === 'diamond') {
+    style.backgroundBlendMode = 'multiply';
+  }
+  return style;
 }
 
 export function radiusStyle(r?: BorderRadiusData): string {

@@ -50,7 +50,7 @@ export function PriceCalculator() {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-4 right-4 z-[1100] bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-4 py-2.5 rounded-full shadow-2xl flex items-center gap-2"
+        className="fixed bottom-4 right-4 z-1100 bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2"
       >
         💰 Fiyat Hesabı{' '}
         <span className="text-xs font-normal opacity-80">
@@ -61,7 +61,7 @@ export function PriceCalculator() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-[1100] w-80 bg-white rounded-xl shadow-2xl border border-slate-200 max-h-[calc(100vh-100px)] flex flex-col">
+    <div className="fixed bottom-4 right-4 z-1100 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 max-h-[calc(100vh-100px)] flex flex-col">
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50 rounded-t-xl">
         <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
           💰 Fiyat Hesabı
@@ -89,7 +89,7 @@ export function PriceCalculator() {
             max={100000}
             value={quantity}
             onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-            className="w-full mt-1 text-sm border border-slate-300 rounded px-2 py-1.5 focus:border-indigo-500 outline-none"
+            className="w-full mt-1 text-sm border border-slate-300 rounded px-2 py-1.5 focus:border-slate-400 outline-none"
           />
         </label>
 
@@ -101,7 +101,7 @@ export function PriceCalculator() {
               <select
                 value={values[f.key] ?? f.default}
                 onChange={(e) => set(f.key, e.target.value)}
-                className="w-full mt-1 text-xs border border-slate-300 rounded px-2 py-1.5 bg-white focus:border-indigo-500 outline-none"
+                className="w-full mt-1 text-xs border border-slate-300 rounded px-2 py-1.5 bg-white focus:border-slate-400 outline-none"
               >
                 {f.options.map((o) => (
                   <option key={o.id} value={o.id}>
@@ -132,7 +132,7 @@ export function PriceCalculator() {
         )}
         <div className="border-t border-slate-300 pt-1.5 flex items-center justify-between">
           <span className="text-xs font-bold text-slate-700">Toplam</span>
-          <span className="text-lg font-black text-indigo-700">
+          <span className="text-lg font-semibold text-slate-900">
             {formatCurrency(breakdown.total)}
           </span>
         </div>

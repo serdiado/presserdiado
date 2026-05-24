@@ -77,9 +77,9 @@ export const initialGlobalSettings: CatalogSettings = {
     posY: 0,
   },
   colors: {
-    cellBg: { c: '#ffffff', o: 100 },
+    cellBg: { type: 'solid', color: '#ffffff', opacity: 100 },
     cellBorder: { c: '#e2e8f0', o: 100 },
-    priceBg: { c: '#e60000', o: 100 },
+    priceBg: { type: 'solid', color: '#e60000', opacity: 100 },
     priceBorder: { c: '#ffffff', o: 100 },
   },
   radiuses: {

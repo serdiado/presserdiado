@@ -34,11 +34,12 @@ export interface LayerMask {
 
 export interface LayerGradientStop {
   color: string;
+  opacity?: number; // 0-100, default 100
   position: number; // 0-100
 }
 
 export interface LayerGradientConfig {
-  type: 'linear' | 'radial';
+  type: 'linear' | 'radial' | 'radial-star';
   angle?: number; // deg, linear only
   stops: LayerGradientStop[];
 }

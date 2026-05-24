@@ -17,6 +17,7 @@ export interface BrochureTemplate {
   pageCount: number;
   foldCount: number;
   foldType: FoldType;
+  wizardSelection?: Record<string, string>;
   openWidthMm: number;
   openHeightMm: number;
   bleedMm: number;

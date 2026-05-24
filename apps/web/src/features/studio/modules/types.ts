@@ -4,6 +4,7 @@ import type {
   BorderData,
   BorderRadiusData,
   ColorOpacity,
+  ColorValue,
   ShadowData,
   SpacingData,
   TypographyData,
@@ -18,7 +19,7 @@ export interface BannerCellData {
   mergedInto: string | null;
   font: TypographyData;
   padding: SpacingData;
-  bgColor: ColorOpacity;
+  bgColor: ColorValue;
   border: BorderData;
   image: string | null;
 }
@@ -34,14 +35,14 @@ export interface PizzaModuleData {
   prices: string[];
   imageUrl?: string;
   colors: {
-    bg: ColorOpacity;
+    bg: ColorValue;
     border: ColorOpacity;
-    tableBg: ColorOpacity;
-    tableTitleBg: ColorOpacity;
-    cellBg: ColorOpacity;
-    cellPriceBg: ColorOpacity;
+    tableBg: ColorValue;
+    tableTitleBg: ColorValue;
+    cellBg: ColorValue;
+    cellPriceBg: ColorValue;
     tableLine: ColorOpacity;
-    imgBg: ColorOpacity;
+    imgBg: ColorValue;
     imgBorder: ColorOpacity;
   };
   fonts: {

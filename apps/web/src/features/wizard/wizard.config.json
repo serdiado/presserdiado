@@ -1,7 +1,7 @@
 {
   "$schema": "./wizard.config.schema.json",
-  "title": "Broşür Tasarımı",
-  "subtitle": "Tasarım stüdyonuza başlamadan önce temel ayarları belirleyin.",
+  "title": "Tasarım ayarlarını seçin",
+  "subtitle": "Ürün türü, kağıt boyutu ve katlama şeklini belirleyin.",
   "steps": {
     "category": {
       "label": "Ne Üretmek İstiyorsunuz?",
@@ -22,15 +22,16 @@
         {
           "id": "cell",
           "title": "Hücre Yapılı Tasarım",
-          "hint": "Ürünlerinizi hücrelere yerleştirerek düzenli ve otomatik tasarımlar oluşturun.",
-          "icon": "▦"
+          "hint": "Excel verisi ve ürün hücreleriyle düzenli, otomatik tasarımlar oluşturun.",
+          "icon": "▦",
+          "features": ["Katalog", "Toplu ürün", "Excel"]
         },
         {
           "id": "free",
           "title": "Serbest Tasarım",
-          "hint": "Hücre kullanmadan özgürce tasarım yapın.",
+          "hint": "Hücre kısıtı olmadan özgür düzen. Kapak, kampanya görseli, afiş.",
           "icon": "◻︎",
-          "features": ["Az ürünlü çalışmalar", "Kapak / kampanya görseli", "Yaratıcı düzenler"]
+          "features": ["Az ürün", "Kapak", "Yaratıcı"]
         }
       ],
       "default": "cell"
@@ -46,38 +47,66 @@
       "default": "A3"
     },
     "foldType": {
-      "label": "Kırım Yapısı",
+      "label": "Katlama Şekli",
       "options": [
         {
           "id": "none",
           "title": "Kırım Yok",
           "hint": "Tek sayfa baskı",
-          "icon": "▭",
-          "pageCount": 1
+          "icon": "00-kirimsiz.svg",
+          "pageCount": 2,
+          "pageOrder": [1, 2]
         },
         {
           "id": "half-fold",
           "title": "Tek Kırım",
-          "hint": "2 sayfa (ön - arka)",
-          "icon": "▤",
-          "pageCount": 2
+          "hint": "Ortadan Katlama",
+          "icon": "01-tek-kirim.svg",
+          "pageCount": 4,
+          "pageOrder": [4, 1, 2, 3]
         },
         {
           "id": "roll-fold",
-          "title": "İçe Kırım",
-          "hint": "3 veya daha fazla sayfa, içe doğru katlanan",
-          "icon": "▦",
-          "pageCount": 3
+          "title": "Çift Kırım",
+          "hint": "İçe Katlama",
+          "icon": "02-cift-kirim.svg",
+          "pageCount": 6,
+          "pageOrder": [5, 6, 1, 2, 3, 4]
         },
         {
           "id": "z-fold",
           "title": "Z Kırım",
-          "hint": "Z şeklinde katlanan yapı",
-          "icon": "Ⅲ",
-          "pageCount": 3
+          "hint": "Z Katlama",
+          "icon": "03-z-kirim.svg",
+          "pageCount": 6,
+          "pageOrder": [6, 1, 2, 3, 4, 5]
+        },
+        {
+          "id": "triple-fold",
+          "title": "Üç Kırım",
+          "hint": "Sarmal Katlama",
+          "icon": "04-uc-kirim.svg",
+          "pageCount": 8,
+          "pageOrder": [7, 8, 1, 2, 3, 4, 5, 6]
+        },
+        {
+          "id": "accordion-fold",
+          "title": "Akerdiyon",
+          "hint": "Akerdiyon Katlama",
+          "icon": "05-uc-kirim-akerdiyon.svg",
+          "pageCount": 8,
+          "pageOrder": [8, 1, 2, 3, 4, 5, 6, 7]
+        },
+        {
+          "id": "map-fold",
+          "title": "Harita",
+          "hint": "Harita Katlama",
+          "icon": "09-harita-katlama.svg",
+          "pageCount": 6,
+          "pageOrder": [6, 1, 2, 3, 4, 5]
         }
       ],
-      "default": "roll-fold"
+      "default": "none"
     }
   },
   "defaults": {

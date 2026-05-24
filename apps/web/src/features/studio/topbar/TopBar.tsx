@@ -72,7 +72,7 @@ export function TopBar() {
           title="Fit / Sıfırla (zoom %)"
           className={`h-8 px-3.5 rounded-md text-xs font-semibold border transition-all min-w-20 ${
             userScale !== 1
-              ? 'bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100'
+              ? 'bg-slate-50 border-slate-300 text-slate-800 hover:bg-slate-100'
               : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
           }`}
         >

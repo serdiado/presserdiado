@@ -20,7 +20,7 @@ export function GlobalPriceSettings() {
               onClick={() => setGlobalSettings({ pricePosition: pos })}
               className={`flex-1 py-1.5 text-[10px] font-bold rounded ${
                 globalSettings.pricePosition === pos
-                  ? 'bg-white shadow border border-slate-200 text-blue-600'
+                  ? 'bg-white shadow border border-slate-200 text-slate-800'
                   : 'text-slate-500'
               }`}
             >
@@ -82,11 +82,10 @@ export function GlobalPriceSettings() {
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-bold text-slate-600">Zemin Rengi</span>
           <ColorOpacityPicker
-            color={globalSettings.colors.priceBg.c}
-            opacity={globalSettings.colors.priceBg.o}
-            onChange={(c, o) =>
+            value={globalSettings.colors.priceBg}
+            onChange={(v) =>
               setGlobalSettings({
-                colors: { ...globalSettings.colors, priceBg: { c, o } },
+                colors: { ...globalSettings.colors, priceBg: v },
               })
             }
           />
@@ -97,15 +96,23 @@ export function GlobalPriceSettings() {
         <div className="flex items-center justify-between">
           <span className="text-[10px] font-bold text-slate-600">Kenarlık</span>
           <ColorOpacityPicker
+            solidOnly
             type="border"
-            color={globalSettings.colors.priceBorder.c}
-            opacity={globalSettings.colors.priceBorder.o}
+            value={{
+              type: 'solid',
+              color: globalSettings.colors.priceBorder.c,
+              opacity: globalSettings.colors.priceBorder.o,
+            }}
             thickness={globalSettings.priceBorderWidth}
-            onChange={(c, o) =>
+            onChange={(v) => {
+              if (v.type !== 'solid') return;
               setGlobalSettings({
-                colors: { ...globalSettings.colors, priceBorder: { c, o } },
-              })
-            }
+                colors: {
+                  ...globalSettings.colors,
+                  priceBorder: { c: v.color, o: v.opacity },
+                },
+              });
+            }}
             onThicknessChange={(t) => setGlobalSettings({ priceBorderWidth: t })}
           />
         </div>

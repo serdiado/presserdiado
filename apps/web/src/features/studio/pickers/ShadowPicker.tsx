@@ -19,7 +19,7 @@ export function ShadowPicker({ title = 'Gölge', value, onChange }: Props) {
           onClick={() => onChange({ ...value, active: !value.active })}
           className={`text-[8px] px-1.5 py-0.5 rounded font-bold ${
             value.active
-              ? 'bg-blue-100 text-blue-600'
+              ? 'bg-slate-100 text-slate-800'
               : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
           }`}
         >
@@ -62,9 +62,12 @@ export function ShadowPicker({ title = 'Gölge', value, onChange }: Props) {
           <div className="flex items-center justify-between bg-white p-2 rounded border border-slate-100">
             <span className="text-[10px] font-bold text-slate-700">Renk & Saydamlık</span>
             <ColorOpacityPicker
-              color={value.color}
-              opacity={value.opacity}
-              onChange={(c, o) => onChange({ ...value, color: c, opacity: o })}
+              solidOnly
+              value={{ type: 'solid', color: value.color, opacity: value.opacity }}
+              onChange={(v) => {
+                if (v.type !== 'solid') return;
+                onChange({ ...value, color: v.color, opacity: v.opacity });
+              }}
             />
           </div>
         </div>
