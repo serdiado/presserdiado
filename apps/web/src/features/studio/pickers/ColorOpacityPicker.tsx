@@ -255,7 +255,7 @@ function SolidEditor({ color, opacity, onChange, compact }: SolidEditorProps) {
             max={100}
             value={opacity}
             onChange={(e) => onChange(color, parseInt(e.target.value, 10))}
-            className="w-full h-2 accent-slate-900"
+            className="w-full studio-slider"
           />
         </div>
       )}
@@ -432,7 +432,7 @@ function GradientEditor({ value, onChange }: GradientEditorProps) {
             step={1}
             value={value.angle ?? 135}
             onChange={(e) => onChange({ ...value, angle: parseInt(e.target.value, 10) })}
-            className="w-full h-2 rounded-full cursor-pointer accent-slate-900 bg-slate-200"
+            className="w-full studio-slider"
           />
         </div>
       )}
@@ -529,7 +529,7 @@ function GradientEditor({ value, onChange }: GradientEditorProps) {
             onChange={(e) =>
               updateStop(activeIdx, { position: parseInt(e.target.value, 10) })
             }
-            className="w-full h-2 rounded-full cursor-pointer accent-slate-900 bg-slate-200"
+            className="w-full studio-slider"
           />
 
           {miniOpen && (
@@ -561,7 +561,7 @@ function GradientEditor({ value, onChange }: GradientEditorProps) {
             const next = stops.map((s) => ({ ...s, opacity: target }));
             onChange({ ...value, stops: next });
           }}
-          className="w-full h-2 accent-slate-900"
+          className="w-full studio-slider"
         />
       </div>
     </div>
@@ -779,7 +779,7 @@ export function ColorOpacityPicker({
                   max={10}
                   value={thickness}
                   onChange={(e) => onThicknessChange(parseInt(e.target.value, 10))}
-                  className="w-full h-2 accent-slate-900"
+                  className="w-full studio-slider"
                 />
               </div>
             )}

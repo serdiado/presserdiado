@@ -11,7 +11,7 @@ import {
 } from '../pickers';
 import { deepMerge } from '../util/style';
 
-const Divider = () => <div className="w-px h-5 bg-slate-200 mx-2" />;
+const Divider = () => <div className="w-px h-5 bg-border-default mx-2" />;
 
 function Popover({
   trigger,
@@ -33,12 +33,12 @@ function Popover({
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold text-slate-600 hover:bg-slate-100"
+        className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold text-text-secondary hover:bg-border-default"
       >
         {trigger}
       </button>
       {open && (
-        <div className="absolute top-full left-0 mt-1 z-99999 w-72 bg-white border border-slate-200 rounded-lg shadow-xl p-3">
+        <div className="absolute top-full left-0 mt-1 z-99999 w-72 bg-surface-panel border border-border-default rounded-radius-lg shadow-xl p-3">
           {children}
         </div>
       )}
@@ -54,7 +54,7 @@ export function ContextualBar() {
   return (
     <div
       id="contextual-bar"
-      className="h-12 px-3 flex items-center gap-1 text-xs text-slate-600 min-w-175 bg-white"
+      className="h-12 px-3 flex items-center gap-1 text-xs text-text-secondary min-w-175 bg-surface-panel"
     >
       {selection.type === 'none' && <DefaultMode />}
       {selection.type === 'slot' && <SlotMode slotIds={selectedSlotIds} />}
@@ -75,7 +75,7 @@ function DefaultMode() {
   const activeForma = formas.find((f) => f.id === activeFormaId);
 
   return (
-    <span className="text-slate-400 italic px-2">
+    <span className="text-text-muted italic px-2">
       {activeForma?.name ?? 'Forma seçili değil'} — bir hücre seçerek düzenleyin
     </span>
   );
@@ -114,7 +114,7 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
 
   return (
     <>
-      <span className="font-semibold text-slate-700 px-2">
+      <span className="font-semibold text-text-secondary px-2">
         {slotIds.length} hücre
       </span>
       <Divider />
@@ -122,7 +122,7 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
       <Popover trigger={<>🎨 Zemin</>}>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-slate-600">Zemin Rengi</span>
+            <span className="text-[10px] font-bold text-text-secondary">Zemin Rengi</span>
             <ColorOpacityPicker
               value={settings.colors.cellBg}
               onChange={(v) =>
@@ -131,7 +131,7 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
             />
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-[10px] font-bold text-slate-600">Kenarlık</span>
+            <span className="text-[10px] font-bold text-text-secondary">Kenarlık</span>
             <ColorOpacityPicker
               solidOnly
               type="border"
@@ -178,7 +178,7 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
 
       <button
         onClick={() => toggleSlotRole(slot.role === 'free' ? 'product' : 'free')}
-        className="px-2 py-1 hover:bg-slate-100 rounded text-xs"
+        className="px-2 py-1 hover:bg-border-default rounded text-xs"
       >
         {slot.role === 'free' ? '→ Ürün' : '→ Serbest'}
       </button>
@@ -188,7 +188,7 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
       <button
         onClick={copySlotSettings}
         disabled={slotIds.length !== 1}
-        className="px-2 py-1 hover:bg-slate-100 rounded text-xs disabled:opacity-30"
+        className="px-2 py-1 hover:bg-border-default rounded text-xs disabled:opacity-30"
         title="Stili Kopyala"
       >
         📋 Kopyala
@@ -196,7 +196,7 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
       <button
         onClick={pasteSlotSettings}
         disabled={!copiedSlotSettings}
-        className="px-2 py-1 hover:bg-slate-100 rounded text-xs disabled:opacity-30"
+        className="px-2 py-1 hover:bg-border-default rounded text-xs disabled:opacity-30"
         title="Stili Yapıştır"
       >
         📥 Yapıştır
@@ -205,15 +205,15 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
         onClick={() => toggleSlotCustomSettings(!isCustom)}
         className={`px-2 py-1 rounded text-xs ${
           isCustom
-            ? 'bg-slate-100 text-slate-800 hover:bg-slate-200'
-            : 'hover:bg-slate-100'
+            ? 'bg-surface-subtle text-text-primary hover:bg-border-default'
+            : 'hover:bg-border-default'
         }`}
       >
         {isCustom ? '★ Özel' : '☆ Globalden'}
       </button>
       <button
         onClick={clearSlotSettings}
-        className="px-2 py-1 hover:bg-red-50 text-red-600 rounded text-xs"
+        className="px-2 py-1 hover:bg-red-50 text-danger rounded text-xs"
       >
         🗑 Temizle
       </button>
@@ -259,13 +259,13 @@ function TextMode({
 
   return (
     <>
-      <span className="font-semibold text-slate-700 px-2 capitalize">{element}</span>
+      <span className="font-semibold text-text-secondary px-2 capitalize">{element}</span>
       <Divider />
 
       <select
         value={font.fontFamily}
         onChange={(e) => updateFont({ ...font, fontFamily: e.target.value })}
-        className="text-xs border border-slate-200 rounded px-1.5 py-1 bg-white"
+        className="text-xs border border-border-default rounded px-1.5 py-1 bg-surface-panel"
       >
         {['Inter', 'Roboto', 'Arial', 'Oswald', 'Helvetica', 'Georgia'].map((f) => (
           <option key={f} value={f}>
@@ -276,7 +276,7 @@ function TextMode({
       <select
         value={font.fontWeight}
         onChange={(e) => updateFont({ ...font, fontWeight: e.target.value })}
-        className="text-xs border border-slate-200 rounded px-1.5 py-1 bg-white"
+        className="text-xs border border-border-default rounded px-1.5 py-1 bg-surface-panel"
       >
         <option value="400">Normal</option>
         <option value="500">Medium</option>
@@ -291,18 +291,18 @@ function TextMode({
         onChange={(e) =>
           updateFont({ ...font, fontSize: parseInt(e.target.value) || 12 })
         }
-        className="w-12 text-xs border border-slate-200 rounded px-1.5 py-1 text-center"
+        className="w-12 text-xs border border-border-default rounded px-1.5 py-1 text-center"
       />
 
       <Divider />
 
-      <div className="flex bg-slate-100 rounded p-0.5">
+      <div className="flex bg-surface-subtle rounded p-0.5">
         {(['left', 'center', 'right'] as const).map((a) => (
           <button
             key={a}
             onClick={() => updateFont({ ...font, textAlign: a })}
             className={`px-2 py-1 text-[10px] font-bold rounded ${
-              font.textAlign === a ? 'bg-white shadow text-slate-800' : 'text-slate-500'
+              font.textAlign === a ? 'bg-surface-panel shadow text-text-primary' : 'text-text-muted'
             }`}
           >
             {a === 'left' ? '⬅' : a === 'center' ? '↔' : '➡'}
@@ -314,7 +314,7 @@ function TextMode({
 
       <Popover trigger={<>🎨 Renk</>}>
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold text-slate-600">Yazı Rengi</span>
+          <span className="text-[10px] font-bold text-text-secondary">Yazı Rengi</span>
           <ColorOpacityPicker
             solidOnly
             value={{ type: 'solid', color: font.color, opacity: font.opacity }}
@@ -346,21 +346,21 @@ function FooterMode() {
 
   return (
     <>
-      <span className="font-semibold text-slate-700 px-2">Footer</span>
-      <span className="text-[10px] text-slate-500">{selection.ids.length} hücre</span>
+      <span className="font-semibold text-text-secondary px-2">Footer</span>
+      <span className="text-[10px] text-text-muted">{selection.ids.length} hücre</span>
 
       <Divider />
 
       <button
         onClick={() => mergeFooterCellsStore(scope, selection.ids)}
         disabled={selection.ids.length < 2}
-        className="px-2 py-1 hover:bg-slate-100 rounded text-xs disabled:opacity-30"
+        className="px-2 py-1 hover:bg-border-default rounded text-xs disabled:opacity-30"
       >
         Birleştir
       </button>
       <button
         onClick={() => selection.ids[0] && unmergeFooterCellStore(scope, selection.ids[0])}
-        className="px-2 py-1 hover:bg-slate-100 rounded text-xs"
+        className="px-2 py-1 hover:bg-border-default rounded text-xs"
       >
         Ayır
       </button>
@@ -369,7 +369,7 @@ function FooterMode() {
 
       <Popover trigger={<>🎨 Zemin</>}>
         <div className="space-y-2">
-          <span className="text-[10px] font-bold text-slate-600 block">Hücre Zemin Rengi</span>
+          <span className="text-[10px] font-bold text-text-secondary block">Hücre Zemin Rengi</span>
           <input
             type="color"
             onChange={(e) =>

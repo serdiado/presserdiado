@@ -70,7 +70,7 @@ export interface BadgeConfig {
 // === Catalog (page-level) settings ===
 
 export interface CatalogSettings {
-  defaultGrid: { rows: number; cols: number };
+  defaultGrid: { rows: number; cols: number; gap?: number };
   gridGap: number; // mm
   borderWidth: number;
   priceBorderWidth: number;
@@ -178,7 +178,7 @@ export interface CatalogPage {
   headerData?: PageHeaderData;
   footerMode: PageFooterMode;
   customFooter: FooterSettings | null;
-  gridSettings?: { rows: number; cols: number };
+  gridSettings?: { rows: number; cols: number; gap?: number };
   background?: {
     type: 'color' | 'image';
     /** Solid or gradient fill (covers former 'color' + 'gradient' page bg types). */

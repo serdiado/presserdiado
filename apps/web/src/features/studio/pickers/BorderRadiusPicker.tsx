@@ -16,28 +16,28 @@ export function BorderRadiusPicker({ title = 'Köşe Ovalliği', value, onChange
   };
 
   return (
-    <div className="pt-2 border-t border-slate-100">
+    <div className="pt-2 border-t border-border-default">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] font-bold text-slate-600">{title}</span>
+        <span className="text-[10px] font-bold text-text-secondary">{title}</span>
         <button
           onClick={toggleLink}
           className={`text-[8px] px-1.5 py-0.5 rounded font-bold ${
             value.linked
-              ? 'bg-slate-100 text-slate-800'
-              : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
+              ? 'bg-surface-subtle text-text-primary'
+              : 'bg-surface-subtle text-text-muted hover:bg-border-default'
           }`}
         >
           {value.linked ? 'BAĞLI' : 'AYRI'}
         </button>
       </div>
       {value.linked ? (
-        <div className="bg-slate-50 p-3 rounded border border-slate-200 text-center space-y-2">
-          <span className="text-[10px] font-medium text-slate-500 block">Tüm Köşeler</span>
+        <div className="bg-surface-subtle p-3 rounded border border-border-default text-center space-y-2">
+          <span className="text-[10px] font-medium text-text-muted block">Tüm Köşeler</span>
           <input
             type="number"
             value={value.tl}
             onChange={(e) => setLinked(parseInt(e.target.value) || 0)}
-            className="w-30 mx-auto block text-[10px] font-bold text-slate-600 text-center border border-slate-200 rounded p-1.5 outline-none focus:border-slate-400"
+            className="w-30 mx-auto block text-[10px] font-bold text-text-secondary text-center border border-border-default rounded p-1.5 outline-none focus:border-border-strong"
           />
         </div>
       ) : (
@@ -50,13 +50,13 @@ export function BorderRadiusPicker({ title = 'Köşe Ovalliği', value, onChange
               ['br', 'BR'],
             ] as const
           ).map(([k, label]) => (
-            <div key={k} className="bg-slate-50 p-2 rounded border border-slate-200 space-y-1.5">
-              <span className="text-[8px] font-bold text-slate-500">{label}</span>
+            <div key={k} className="bg-surface-subtle p-2 rounded border border-border-default space-y-1.5">
+              <span className="text-[8px] font-bold text-text-muted">{label}</span>
               <input
                 type="number"
                 value={value[k] as number}
                 onChange={(e) => setCorner(k, parseInt(e.target.value) || 0)}
-                className="w-full text-[10px] font-bold text-slate-600 text-center border border-slate-200 rounded p-1.5 outline-none focus:border-slate-400"
+                className="w-full text-[10px] font-bold text-text-secondary text-center border border-border-default rounded p-1.5 outline-none focus:border-border-strong"
               />
             </div>
           ))}

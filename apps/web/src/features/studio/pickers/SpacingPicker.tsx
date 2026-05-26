@@ -41,7 +41,7 @@ export function SpacingPicker({ title = 'İç Boşluk', value, onChange }: Props
             max={100}
             value={value.t}
             onChange={(e) => setLinked(Number(e.target.value))}
-            className="flex-1 accent-blue-600"
+            className="flex-1 studio-slider"
           />
           <input
             type="number"
@@ -68,7 +68,7 @@ export function SpacingPicker({ title = 'İç Boşluk', value, onChange }: Props
                 max={100}
                 value={value[k]}
                 onChange={(e) => setSide(k, Number(e.target.value))}
-                className="flex-1 accent-blue-600"
+                className="flex-1 studio-slider"
               />
               <input
                 type="number"

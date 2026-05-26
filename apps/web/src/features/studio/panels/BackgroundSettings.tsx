@@ -222,7 +222,7 @@ export function BackgroundSettings() {
             step={1}
             value={foregroundOpacity}
             onChange={(e) => setForegroundOpacity(parseInt(e.target.value))}
-            className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-blue-600"
+            className="w-full studio-slider"
             style={{
               background: `linear-gradient(to right, #2563eb ${foregroundOpacity}%, #e2e8f0 ${foregroundOpacity}%)`,
             }}
@@ -692,7 +692,7 @@ export function BackgroundSettings() {
                             setImageOpacity(v);
                             applyImageSettings({ imageOpacity: v });
                           }}
-                          className="w-full h-2 rounded-full cursor-pointer accent-slate-900 bg-slate-200"
+                          className="w-full studio-slider"
                         />
                       </div>
                     </>

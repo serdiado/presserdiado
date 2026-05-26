@@ -6,6 +6,7 @@ import DashboardPage from '@/features/dashboard/DashboardPage';
 import StudioPage from '@/features/studio/StudioPage';
 import NewStudioWizard from '@/features/wizard/NewStudioWizard';
 import PrintView from '@/features/print-view/PrintView';
+import AdminThemePage from '@/features/admin/theme/AdminThemePage';
 import Layout from '@/features/auth/Layout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -40,6 +41,7 @@ export default function App() {
         }
       />
       <Route path="/print-view" element={<PrintView />} />
+      <Route path="/admin/theme" element={<AdminThemePage />} />
       <Route
         path="/new"
         element={

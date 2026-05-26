@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useCatalogStore, useHistoryStore, useUIStore } from '@/stores/studio';
+import { ThemeToggle } from '../../../components/ThemeToggle';
 import { DownloadMenu } from './DownloadMenu';
 import { ProjectMenu } from './ProjectMenu';
 
@@ -29,15 +30,15 @@ export function TopBar() {
   }, [undo, redo]);
 
   return (
-    <div className="h-12 bg-white border-b border-slate-200 flex items-center justify-between px-4 shrink-0 shadow-sm relative z-1001">
+    <div className="h-12 bg-surface-panel border-b border-border-default flex items-center justify-between px-4 shrink-0 shadow-drop-sm relative z-1001">
       <div className="flex items-center gap-3">
-        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+        <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
           Görünüm:
         </span>
         <select
           value={activeFormaId}
           onChange={(e) => setActiveFormaId(Number(e.target.value))}
-          className="bg-slate-50 text-slate-700 text-xs font-semibold px-3 py-1.5 rounded-md border border-slate-300 cursor-pointer hover:bg-slate-100 transition-all min-w-45 h-8 outline-none"
+          className="bg-surface-subtle text-text-secondary text-xs font-semibold px-3 py-1.5 rounded-radius-md border border-border-strong cursor-pointer hover:bg-border-default transition-all min-w-45 h-8 outline-none"
         >
           {formas.map((f) => (
             <option key={f.id} value={f.id}>
@@ -48,12 +49,12 @@ export function TopBar() {
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1 mr-2 border-r pr-3 border-slate-200">
+        <div className="flex items-center gap-1 mr-2 border-r pr-3 border-border-default">
           <button
             onClick={undo}
             disabled={past.length === 0}
             title="Geri Al (Ctrl+Z)"
-            className="h-8 px-3 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md text-xs font-medium disabled:opacity-30 disabled:hover:bg-transparent"
+            className="h-8 px-3 text-text-secondary hover:text-text-primary hover:bg-border-default rounded-radius-md text-xs font-medium disabled:opacity-30 disabled:hover:bg-transparent"
           >
             ← Geri
           </button>
@@ -61,7 +62,7 @@ export function TopBar() {
             onClick={redo}
             disabled={future.length === 0}
             title="İleri Al (Ctrl+Shift+Z)"
-            className="h-8 px-3 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-md text-xs font-medium disabled:opacity-30 disabled:hover:bg-transparent"
+            className="h-8 px-3 text-text-secondary hover:text-text-primary hover:bg-border-default rounded-radius-md text-xs font-medium disabled:opacity-30 disabled:hover:bg-transparent"
           >
             İleri →
           </button>
@@ -70,10 +71,10 @@ export function TopBar() {
         <button
           onClick={resetZoom}
           title="Fit / Sıfırla (zoom %)"
-          className={`h-8 px-3.5 rounded-md text-xs font-semibold border transition-all min-w-20 ${
+          className={`h-8 px-3.5 rounded-radius-md text-xs font-semibold border transition-all min-w-20 ${
             userScale !== 1
-              ? 'bg-slate-50 border-slate-300 text-slate-800 hover:bg-slate-100'
-              : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
+              ? 'bg-surface-subtle border-border-strong text-text-primary hover:bg-border-default'
+              : 'bg-surface-panel border-border-strong text-text-secondary hover:bg-surface-subtle'
           }`}
         >
           🔍 {Math.round(userScale * 100)}%
@@ -81,6 +82,7 @@ export function TopBar() {
 
         <ProjectMenu />
         <DownloadMenu />
+        <ThemeToggle compact />
       </div>
     </div>
   );

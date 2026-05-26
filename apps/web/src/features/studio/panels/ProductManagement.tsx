@@ -6,6 +6,7 @@ import * as XLSX from 'xlsx';
 import type { ProductInfo } from '@matbaapro/shared';
 import { useCatalogStore } from '@/stores/studio';
 import { uploadImage } from '@/lib/upload';
+import { ProductInfoSettings } from './ProductInfoSettings';
 
 type ExcelRow = Record<string, string | number | undefined>;
 
@@ -98,22 +99,20 @@ export function ProductManagement() {
 
   const filteredMaster = useMemo(() => {
     let result = masterProductPool;
-    
-    // Uygulanan filtre sekmesi
+
     if (filterType === 'used') {
       result = result.filter(p => activeSkus.has(p.sku ?? ''));
     } else if (filterType === 'unused') {
       result = result.filter(p => !activeSkus.has(p.sku ?? ''));
     }
 
-    // Arama terimi
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
       result = result.filter(
         (p) => p.name?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q),
       );
     }
-    
+
     return result;
   }, [masterProductPool, searchTerm, filterType, activeSkus]);
 
@@ -131,16 +130,16 @@ export function ProductManagement() {
   const unusedCount = masterProductPool.length - usedCount;
 
   return (
-    <div className="space-y-4 font-sans text-slate-800">
-      
+    <div className="space-y-4 font-sans text-text-primary">
+
       {/* HEADER BÖLÜMÜ */}
       <div className="flex items-start justify-between">
-        <p className="text-[11px] text-slate-500 leading-snug w-[65%]">
+        <p className="text-[11px] text-text-secondary leading-snug w-[65%]">
           Excel dosyanızı yükleyerek ürünleri otomatik yerleştirin veya havuzdan sürükleyin.
         </p>
         <button
           onClick={downloadDemoExcel}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-slate-700 border border-slate-300 rounded text-[11px] font-medium hover:bg-slate-50 transition-colors shrink-0"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-panel text-text-secondary border border-border-strong rounded-radius-sm text-[11px] font-medium hover:bg-surface-subtle transition-colors shrink-0"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -149,19 +148,29 @@ export function ProductManagement() {
         </button>
       </div>
 
-      <details className="bg-white rounded-md border border-slate-200">
-        <summary className="text-[12px] font-medium text-slate-700 cursor-pointer p-2.5 flex items-center justify-between">
+      <details open className="bg-surface-panel rounded-radius-lg border border-border-default shadow-drop-sm overflow-hidden">
+        <summary className="text-[12px] font-bold text-text-primary cursor-pointer p-3 flex items-center justify-between bg-surface-subtle/60">
+          <span>Ürün Bilgileri</span>
+          <span className="text-[10px] font-medium text-text-muted">Seçili ürün verisini düzenle</span>
+        </summary>
+        <div className="p-3 border-t border-border-default">
+          <ProductInfoSettings />
+        </div>
+      </details>
+
+      <details className="bg-surface-panel rounded-radius-md border border-border-default">
+        <summary className="text-[12px] font-medium text-text-primary cursor-pointer p-2.5 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span>Excel Kolonları</span>
-            <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-4 h-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </summary>
-        <div className="text-[10px] text-slate-500 p-2.5 pt-0 border-t border-slate-100 mt-1 space-y-1">
+        <div className="text-[10px] text-text-secondary p-2.5 pt-0 border-t border-border-default mt-1 space-y-1">
           <div><strong>POS</strong> / SIRA / INDEX → otomatik yerleştirme sırası</div>
           <div><strong>ARTNR</strong> / KOD / SKU → ürün kodu</div>
           <div><strong>BEZEICHNUNG</strong> / URUN_ADI / AD → ürün adı</div>
@@ -172,10 +181,10 @@ export function ProductManagement() {
       </details>
 
       {/* 1. OTOMATİK DİZİLİM */}
-      <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm">
+      <div className="bg-surface-panel rounded-radius-lg border border-border-default p-4 shadow-drop-sm">
         <div className="mb-3">
-          <h4 className="text-[13px] font-bold text-slate-800">Excel ile Otomatik Yerleştir</h4>
-          <p className="text-[10px] text-slate-400 mt-0.5">POS / SIRA kolonu olan Excel, ürünleri numaralı hücrelere otomatik yerleştirir.</p>
+          <h4 className="text-[13px] font-bold text-text-primary">Excel ile Otomatik Yerleştir</h4>
+          <p className="text-[10px] text-text-muted mt-0.5">POS / SIRA kolonu olan Excel, ürünleri numaralı hücrelere otomatik yerleştirir.</p>
         </div>
 
         <div className="mt-3">
@@ -185,9 +194,9 @@ export function ProductManagement() {
             onFile={(f) => processFile(f, 'layout')}
             onClick={() => layoutRef.current?.click()}
             title="Sıralı broşür Excel'i yükle"
-            iconColor="text-slate-500"
-            borderColor={layoutDrag ? 'border-slate-400' : 'border-slate-200'}
-            bgColor={layoutDrag ? 'bg-slate-50' : 'bg-slate-50/30'}
+            iconColor="text-text-secondary"
+            borderColor={layoutDrag ? 'border-border-strong' : 'border-border-default'}
+            bgColor={layoutDrag ? 'bg-surface-subtle' : 'bg-surface-subtle/30'}
           />
           <input
             ref={layoutRef}
@@ -213,7 +222,7 @@ export function ProductManagement() {
              <button
                onClick={handleClearAll}
                title="Ürünleri Temizle"
-               className="w-7 h-7 flex items-center justify-center bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 rounded-md transition-colors"
+               className="w-7 h-7 flex items-center justify-center bg-surface-subtle text-text-muted hover:bg-border-default hover:text-text-secondary rounded-radius-md transition-colors"
              >
                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -224,7 +233,7 @@ export function ProductManagement() {
                  if (confirm('Tüm katalog sıfırlansın mı?')) resetCatalog();
                }}
                title="Tümünü Sıfırla"
-               className="w-7 h-7 flex items-center justify-center bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-500 rounded-md transition-colors"
+               className="w-7 h-7 flex items-center justify-center bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-500 rounded-radius-md transition-colors"
              >
                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -237,7 +246,7 @@ export function ProductManagement() {
           <button
             onClick={() => autoFillSlots()}
             disabled={productPool.length === 0}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 transition-colors"
+            className="w-full bg-primary hover:bg-primary-hover text-white font-semibold py-2.5 rounded-radius-lg shadow-drop-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -248,15 +257,15 @@ export function ProductManagement() {
       </div>
 
       {/* 2. ÜRÜN HAVUZU */}
-      <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm">
+      <div className="bg-surface-panel rounded-radius-lg border border-border-default p-4 shadow-drop-sm">
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h4 className="text-[13px] font-bold text-slate-800">Ürün Havuzu</h4>
-            <p className="text-[10px] text-slate-400 mt-0.5">Genel ürün listenizi yükleyin, arayın ve boş hücrelere sürükleyin.</p>
+            <h4 className="text-[13px] font-bold text-text-primary">Ürün Havuzu</h4>
+            <p className="text-[10px] text-text-muted mt-0.5">Genel ürün listenizi yükleyin, arayın ve boş hücrelere sürükleyin.</p>
           </div>
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white text-slate-700 border border-slate-300 rounded-lg text-[11px] font-medium hover:bg-slate-50 transition-colors shrink-0"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-panel text-text-secondary border border-border-strong rounded-radius-lg text-[11px] font-medium hover:bg-surface-subtle transition-colors shrink-0"
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
@@ -272,9 +281,9 @@ export function ProductManagement() {
             onFile={(f) => processFile(f, 'master')}
             onClick={() => masterRef.current?.click()}
             title="Ürün havuzu Excel'i yükle"
-            iconColor="text-slate-500"
-            borderColor={masterDrag ? 'border-slate-400' : 'border-slate-200'}
-            bgColor={masterDrag ? 'bg-slate-50' : 'bg-slate-50/30'}
+            iconColor="text-text-secondary"
+            borderColor={masterDrag ? 'border-border-strong' : 'border-border-default'}
+            bgColor={masterDrag ? 'bg-surface-subtle' : 'bg-surface-subtle/30'}
           />
           <input
             ref={masterRef}
@@ -299,18 +308,18 @@ export function ProductManagement() {
         <div className="flex gap-2 mt-4">
            <button
              onClick={() => masterRef.current?.click()}
-             className="flex-1 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs py-1.5 px-3 rounded-md flex items-center justify-center gap-1.5 transition-colors"
+             className="flex-1 border border-border-default bg-surface-panel hover:bg-surface-subtle text-text-secondary text-xs py-1.5 px-3 rounded-radius-md flex items-center justify-center gap-1.5 transition-colors"
            >
-             <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+             <svg className="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
              </svg>
              Dosya Değiştir
            </button>
            <button
              onClick={() => setMasterProductPool([])}
-             className="flex-1 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs py-1.5 px-3 rounded-md flex items-center justify-center gap-1.5 transition-colors"
+             className="flex-1 border border-border-default bg-surface-panel hover:bg-surface-subtle text-text-secondary text-xs py-1.5 px-3 rounded-radius-md flex items-center justify-center gap-1.5 transition-colors"
            >
-             <svg className="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+             <svg className="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
              </svg>
              Havuzu Temizle
@@ -319,14 +328,14 @@ export function ProductManagement() {
       </div>
 
       {/* 3. ÜRÜN ARA VE SÜRÜKLE */}
-      <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm pb-2">
+      <div className="bg-surface-panel rounded-radius-lg border border-border-default p-4 shadow-drop-sm pb-2">
         <div className="mb-4">
-          <h4 className="text-[13px] font-bold text-slate-800">Ürün Ara ve Sürükle</h4>
+          <h4 className="text-[13px] font-bold text-text-primary">Ürün Ara ve Sürükle</h4>
         </div>
 
         <div className="flex flex-col gap-3 mb-4">
           <div className="relative w-full">
-            <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
@@ -334,27 +343,27 @@ export function ProductManagement() {
               placeholder="Ürün adı veya kod ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full text-[13px] border rounded-full border-slate-200 pl-10 pr-3 py-2 outline-none focus:border-slate-400 placeholder:text-slate-400"
+              className="w-full text-[13px] border rounded-radius-full border-border-default pl-10 pr-3 py-2 outline-none focus:border-border-strong placeholder:text-text-muted"
             />
           </div>
 
           {/* Sekmeler: Segmented Pill Control */}
-          <div className="bg-slate-100 p-1 rounded-lg grid grid-cols-3 text-xs text-slate-500">
-            <button 
+          <div className="bg-surface-subtle p-1 rounded-radius-lg grid grid-cols-3 text-xs text-text-secondary">
+            <button
               onClick={() => setFilterType('all')}
-              className={`py-1.5 text-center transition-all ${filterType === 'all' ? 'bg-white text-slate-900 shadow-sm rounded-md font-medium' : 'hover:text-slate-700'}`}
+              className={`py-1.5 text-center transition-all ${filterType === 'all' ? 'bg-surface-panel text-text-primary shadow-drop-sm rounded-radius-md font-medium' : 'hover:text-text-primary'}`}
             >
               Tümü ({masterProductPool.length})
             </button>
-            <button 
+            <button
               onClick={() => setFilterType('used')}
-              className={`py-1.5 text-center transition-all ${filterType === 'used' ? 'bg-white text-slate-900 shadow-sm rounded-md font-medium' : 'hover:text-slate-700'}`}
+              className={`py-1.5 text-center transition-all ${filterType === 'used' ? 'bg-surface-panel text-text-primary shadow-drop-sm rounded-radius-md font-medium' : 'hover:text-text-primary'}`}
             >
               Kullanılan ({usedCount})
             </button>
-            <button 
+            <button
               onClick={() => setFilterType('unused')}
-              className={`py-1.5 text-center transition-all ${filterType === 'unused' ? 'bg-white text-slate-900 shadow-sm rounded-md font-medium' : 'hover:text-slate-700'}`}
+              className={`py-1.5 text-center transition-all ${filterType === 'unused' ? 'bg-surface-panel text-text-primary shadow-drop-sm rounded-radius-md font-medium' : 'hover:text-text-primary'}`}
             >
               Kalan ({unusedCount})
             </button>
@@ -363,14 +372,14 @@ export function ProductManagement() {
 
         <div className="max-h-[60vh] overflow-y-auto pr-1 space-y-3 pb-3">
           {masterProductPool.length === 0 ? (
-            <div className="py-8 text-center text-slate-400 flex flex-col items-center">
+            <div className="py-8 text-center text-text-muted flex flex-col items-center">
               <svg className="w-8 h-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
               </svg>
               <p className="text-[12px]">Havuz boş. Yukarıdaki alandan Excel yükleyin.</p>
             </div>
           ) : filteredMaster.length === 0 ? (
-            <div className="py-6 text-center text-slate-400">
+            <div className="py-6 text-center text-text-muted">
                <p className="text-[12px]">Sonuç bulunamadı.</p>
             </div>
           ) : (
@@ -385,11 +394,11 @@ export function ProductManagement() {
                       if (!placed)
                         e.dataTransfer.setData('newProductFromSidebar', JSON.stringify(p));
                     }}
-                    className={`flex items-center gap-3 bg-white border border-slate-100 rounded-xl p-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-slate-300 hover:shadow-md transition-all duration-200 group ${
+                    className={`flex items-center gap-3 bg-surface-panel border border-border-default rounded-xl p-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-border-strong hover:shadow-drop-sm transition-all duration-200 group ${
                       placed ? 'cursor-not-allowed opacity-60' : 'cursor-grab active:cursor-grabbing'
                     }`}
                   >
-                    <div className="w-10 h-10 bg-white rounded-md border border-slate-200 flex justify-center items-center overflow-hidden shrink-0">
+                    <div className="w-10 h-10 bg-surface-panel rounded-radius-md border border-border-default flex justify-center items-center overflow-hidden shrink-0">
                       {p.image ? (
                         <img
                           src={p.image}
@@ -397,31 +406,31 @@ export function ProductManagement() {
                           className={`max-w-full max-h-full object-contain ${placed ? 'opacity-50 grayscale' : ''}`}
                         />
                       ) : (
-                        <span className="text-[9px] text-slate-300 font-bold">Yok</span>
+                        <span className="text-[9px] text-text-muted font-bold">Yok</span>
                       )}
                     </div>
-                    
+
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
-                      <div className={`text-[12px] font-semibold truncate ${placed ? 'text-slate-400' : 'text-slate-700'}`}>
+                      <div className={`text-[12px] font-semibold truncate ${placed ? 'text-text-muted' : 'text-text-primary'}`}>
                         {p.name}
                       </div>
-                      <div className="text-[10px] text-slate-400 mt-0.5">{p.sku}</div>
+                      <div className="text-[10px] text-text-muted mt-0.5">{p.sku}</div>
                     </div>
-                    
+
                     <div className="flex items-center gap-4 shrink-0">
-                      <div className={`text-[12px] font-bold ${placed ? 'text-slate-400' : 'text-slate-700'}`}>
+                      <div className={`text-[12px] font-bold ${placed ? 'text-text-muted' : 'text-text-primary'}`}>
                         {p.price} €
                       </div>
-                      
+
                       {placed ? (
                          <div className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[10px] font-medium border border-emerald-100">
                            Tasarımda var
                          </div>
                       ) : (
-                         <div className="w-21"></div> // yer tutucu
+                         <div className="w-21"></div>
                       )}
-                      
-                      <div className={`text-slate-300 ${placed ? 'opacity-30' : 'group-hover:text-slate-400'}`}>
+
+                      <div className={`text-text-muted ${placed ? 'opacity-30' : 'group-hover:text-text-secondary'}`}>
                         <svg width="12" height="20" viewBox="0 0 12 20" fill="currentColor">
                            <circle cx="4" cy="4" r="1.5"/>
                            <circle cx="4" cy="10" r="1.5"/>
@@ -438,10 +447,10 @@ export function ProductManagement() {
             </div>
           )}
         </div>
-        
+
         {masterProductPool.length > 0 && (
-          <div className="pt-3 border-t border-slate-100 text-center">
-            <button className="text-[12px] font-medium text-slate-700 hover:text-slate-900 flex items-center justify-center w-full gap-1">
+          <div className="pt-3 border-t border-border-default text-center">
+            <button className="text-[12px] font-medium text-text-secondary hover:text-text-primary flex items-center justify-center w-full gap-1">
               Tümünü Gör ({filteredMaster.length} ürün)
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -451,10 +460,10 @@ export function ProductManagement() {
         )}
       </div>
 
-      <AddProductModal 
-        isOpen={isAddModalOpen} 
-        onClose={() => setIsAddModalOpen(false)} 
-        onAdd={(product) => setMasterProductPool([product, ...masterProductPool])} 
+      <AddProductModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onAdd={(product) => setMasterProductPool([product, ...masterProductPool])}
       />
     </div>
   );
@@ -531,7 +540,7 @@ function AddProductModal({
           ALIS_FIYAT: purchasePrice
         },
       };
-      
+
       onAdd(newProduct);
       cleanupAndClose();
     } catch (error) {
@@ -543,22 +552,22 @@ function AddProductModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <h3 className="text-[15px] font-bold text-slate-800">Yeni Ürün Ekle</h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-md hover:bg-slate-100">
+      <div className="bg-surface-panel rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        <div className="px-6 py-4 border-b border-border-default flex items-center justify-between bg-surface-subtle/50">
+          <h3 className="text-heading-xl text-text-primary">Yeni Ürün Ekle</h3>
+          <button onClick={onClose} className="text-text-muted hover:text-text-secondary transition-colors p-1 rounded-radius-md hover:bg-surface-subtle">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div className="flex gap-4">
             {/* Sol Taraf: Görsel Alanı (Kare) */}
             <div className="w-28 shrink-0">
-              <label className="block text-[11px] font-semibold text-slate-600 mb-1.5">Ürün Resmi</label>
-              <div 
+              <label className="block text-[11px] font-semibold text-text-secondary mb-1.5">Ürün Resmi</label>
+              <div
                 onDragOver={(e) => {
                   e.preventDefault();
                   setIsDragging(true);
@@ -572,12 +581,12 @@ function AddProductModal({
                     handleFile(file);
                   }
                 }}
-                className={`relative w-full aspect-square border-2 border-dashed rounded-xl overflow-hidden shadow-sm group transition-all flex flex-col items-center justify-center text-center cursor-pointer ${
-                  isDragging 
-                    ? 'border-slate-400 bg-slate-50/50'
-                    : previewUrl 
-                      ? 'border-transparent bg-slate-50' 
-                      : 'border-slate-200 hover:border-slate-400 hover:bg-slate-50'
+                className={`relative w-full aspect-square border-2 border-dashed rounded-xl overflow-hidden shadow-drop-sm group transition-all flex flex-col items-center justify-center text-center cursor-pointer ${
+                  isDragging
+                    ? 'border-border-strong bg-surface-subtle/50'
+                    : previewUrl
+                      ? 'border-transparent bg-surface-subtle'
+                      : 'border-border-default hover:border-border-strong hover:bg-surface-subtle'
                 }`}
               >
                 <input
@@ -586,7 +595,7 @@ function AddProductModal({
                   onChange={handleImageChange}
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 />
-                
+
                 {previewUrl ? (
                   <>
                     <img src={previewUrl} alt="Önizleme" className="w-full h-full object-contain p-1" />
@@ -600,8 +609,8 @@ function AddProductModal({
                     </div>
                   </>
                 ) : (
-                  <div className="flex flex-col items-center gap-1.5 text-slate-400 p-2 pointer-events-none">
-                    <svg className="w-6 h-6 text-slate-300 group-hover:text-slate-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="flex flex-col items-center gap-1.5 text-text-muted p-2 pointer-events-none">
+                    <svg className="w-6 h-6 text-text-muted group-hover:text-text-secondary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                     <span className="text-[10px] leading-tight">Sürükle veya<br/>Seç</span>
@@ -613,24 +622,24 @@ function AddProductModal({
             {/* Sağ Taraf: İsim ve SKU */}
             <div className="flex-1 space-y-4 flex flex-col justify-center">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-600 mb-1.5">Ürün Adı</label>
+                <label className="block text-[11px] font-semibold text-text-secondary mb-1.5">Ürün Adı</label>
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Örn: Domates 1 Kg"
-                  className="w-full text-[13px] border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-400 transition-all placeholder:text-slate-300 shadow-sm"
+                  className="w-full text-[13px] border border-border-default rounded-radius-lg px-3 py-2 outline-none focus:border-border-strong focus:ring-1 focus:ring-border-strong transition-all placeholder:text-text-muted shadow-drop-sm"
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-slate-600 mb-1.5">SKU / Ürün Kodu</label>
+                <label className="block text-[11px] font-semibold text-text-secondary mb-1.5">SKU / Ürün Kodu</label>
                 <input
                   type="text"
                   value={sku}
                   onChange={(e) => setSku(e.target.value)}
                   placeholder="Örn: SKU-1001"
-                  className="w-full text-[13px] border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-400 transition-all placeholder:text-slate-300 shadow-sm"
+                  className="w-full text-[13px] border border-border-default rounded-radius-lg px-3 py-2 outline-none focus:border-border-strong focus:ring-1 focus:ring-border-strong transition-all placeholder:text-text-muted shadow-drop-sm"
                 />
               </div>
             </div>
@@ -638,41 +647,41 @@ function AddProductModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-600 mb-1.5">Alış Fiyatı</label>
+              <label className="block text-[11px] font-semibold text-text-secondary mb-1.5">Alış Fiyatı</label>
               <input
                 type="text"
                 value={purchasePrice}
                 onChange={(e) => setPurchasePrice(e.target.value)}
                 placeholder="Örn: 10,00"
-                className="w-full text-[13px] border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-400 transition-all placeholder:text-slate-300 shadow-sm"
+                className="w-full text-[13px] border border-border-default rounded-radius-lg px-3 py-2 outline-none focus:border-border-strong focus:ring-1 focus:ring-border-strong transition-all placeholder:text-text-muted shadow-drop-sm"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-700 mb-1.5">Satış Fiyatı (Fiyat)</label>
+              <label className="block text-[11px] font-semibold text-text-primary mb-1.5">Satış Fiyatı (Fiyat)</label>
               <input
                 type="text"
                 required
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="Örn: 15,00"
-                className="w-full text-[13px] border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-slate-400 focus:ring-1 focus:ring-slate-400 transition-all placeholder:text-slate-300 bg-white shadow-sm font-medium"
+                className="w-full text-[13px] border border-border-default rounded-radius-lg px-3 py-2 outline-none focus:border-border-strong focus:ring-1 focus:ring-border-strong transition-all placeholder:text-text-muted bg-surface-panel shadow-drop-sm font-medium"
               />
             </div>
           </div>
-          
+
           <div className="pt-4 mt-2 flex gap-3">
             <button
               type="button"
               onClick={cleanupAndClose}
               disabled={isLoading}
-              className="px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-semibold rounded-xl transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2.5 bg-surface-panel border border-border-default hover:bg-surface-subtle text-text-secondary font-semibold rounded-xl transition-all shadow-drop-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Vazgeç
             </button>
             <button
               type="submit"
               disabled={isLoading}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="flex-1 bg-primary hover:bg-primary-hover text-white font-semibold py-2.5 rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>
@@ -717,10 +726,9 @@ function DropZone({
   borderColor: string;
   bgColor: string;
 }) {
-  // Always use the required aesthetic dropzone style unless specifically overridden
-  const activeBorder = dragging ? 'border-slate-400' : 'border-slate-200';
-  const activeBg = dragging ? 'bg-slate-50/60' : 'bg-slate-50/60';
-  
+  const activeBorder = dragging ? 'border-border-strong' : 'border-border-default';
+  const activeBg = dragging ? 'bg-surface-subtle/60' : 'bg-surface-subtle/60';
+
   return (
     <div
       onDragOver={(e) => {
@@ -735,18 +743,18 @@ function DropZone({
         if (f) onFile(f);
       }}
       onClick={onClick}
-      className={`border border-dashed rounded-xl p-3 cursor-pointer transition-all flex items-center justify-center gap-3 ${activeBorder} ${activeBg} hover:border-slate-300 hover:bg-slate-50/30`}
+      className={`border border-dashed rounded-xl p-3 cursor-pointer transition-all flex items-center justify-center gap-3 ${activeBorder} ${activeBg} hover:border-border-strong hover:bg-surface-subtle/30`}
     >
-      <div className={`w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center shrink-0 ${iconColor}`}>
+      <div className={`w-8 h-8 rounded-radius-lg bg-surface-panel shadow-drop-sm flex items-center justify-center shrink-0 ${iconColor}`}>
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
         </svg>
       </div>
       <div className="flex flex-col text-left">
-        <div className="text-[12px] font-semibold text-slate-700">
+        <div className="text-[12px] font-semibold text-text-primary">
           {title}
         </div>
-        <div className="text-[10px] text-slate-400">Excel sürükleyin veya tıklayıp seçin</div>
+        <div className="text-[10px] text-text-muted">Excel sürükleyin veya tıklayıp seçin</div>
       </div>
     </div>
   );

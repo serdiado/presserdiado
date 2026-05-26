@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useUIStore, useCatalogStore } from '@/stores/studio';
-import { ChevronDown, Square, Layers, Image, Type, Tag, PackageOpen } from 'lucide-react';
+import { ChevronDown, Square, Layers, Image, Type, Tag } from 'lucide-react';
 import { ColorOpacityPicker, BorderRadiusPicker, SpacingPicker, ShadowPicker, TypographyPicker } from '../pickers';
 import type {
   BadgeConfig,
@@ -16,8 +16,7 @@ import type {
 
 type CellSection =
   | 'general-appearance' | 'general-visual' | 'general-product-info' | 'general-price'
-  | 'custom-appearance' | 'custom-visual' | 'custom-product-info' | 'custom-price' | 'custom-badge'
-  | 'product-content';
+  | 'custom-appearance' | 'custom-visual' | 'custom-product-info' | 'custom-price' | 'custom-badge';
 
 function AccordionItem({
   id, title, icon, open, onToggle, children, disabled, badge,
@@ -97,7 +96,7 @@ function AppearanceContent({ values, handlers }: { values: AppearanceValues; han
           <input
             type="range" min={0} max={10} step={0.5} value={values.borderWidth}
             onChange={(e) => handlers.onBorderWidthChange(parseFloat(e.target.value))}
-            className="flex-1 accent-slate-700"
+            className="flex-1 studio-slider"
           />
           <input
             type="number" value={values.borderWidth}
@@ -165,7 +164,7 @@ function VisualContent({
           <input
             type="range" min={10} max={300} value={scale}
             onChange={(e) => onUpdate({ scale: parseInt(e.target.value) })}
-            className="flex-1 accent-slate-700"
+            className="flex-1 studio-slider"
           />
           <input
             type="number" value={scale}
@@ -254,7 +253,7 @@ function PriceContent({ values: v, handlers: h }: { values: PriceValues; handler
           <span className="text-[9px] font-medium text-slate-500 w-16">Genişlik</span>
           <input type="range" min={10} max={100} value={v.priceWidth}
             onChange={(e) => h.onWidthChange(parseInt(e.target.value))}
-            className="flex-1 accent-blue-600" />
+            className="flex-1 studio-slider" />
           <input type="number" value={v.priceWidth}
             onChange={(e) => h.onWidthChange(parseInt(e.target.value) || 0)}
             className="w-12 text-[10px] font-bold text-slate-600 text-right border border-slate-200 rounded p-0.5" />
@@ -264,7 +263,7 @@ function PriceContent({ values: v, handlers: h }: { values: PriceValues; handler
           <span className="text-[9px] font-medium text-slate-500 w-16">Yükseklik</span>
           <input type="range" min={5} max={30} value={v.priceHeight}
             onChange={(e) => h.onHeightChange(parseInt(e.target.value))}
-            className="flex-1 accent-blue-600" />
+            className="flex-1 studio-slider" />
           <input type="number" value={v.priceHeight}
             onChange={(e) => h.onHeightChange(parseInt(e.target.value) || 0)}
             className="w-12 text-[10px] font-bold text-slate-600 text-right border border-slate-200 rounded p-0.5" />
@@ -418,7 +417,7 @@ function BadgeContent({
           <input
             type="range" min={50} max={200} value={badge.size}
             onChange={(e) => onUpdate({ size: parseInt(e.target.value) })}
-            className="flex-1 accent-slate-700"
+            className="flex-1 studio-slider"
           />
           <input
             type="number" value={badge.size}
@@ -684,21 +683,9 @@ export function CellPanel() {
         </div>
       )}
 
-      {/* ── ÜRÜN İÇERİĞİ ── */}
-      {hasSelection && (
-        <div className="flex flex-col gap-1.5">
-          <AccordionItem
-            id="product-content" title="Ürün İçeriği" icon={<PackageOpen size={16} />}
-            open={openSection === 'product-content'} onToggle={() => toggle('product-content')}
-          >
-            <div className="text-[11px] text-slate-400 italic text-center py-4">Yakında eklenecek</div>
-          </AccordionItem>
-        </div>
-      )}
-
       {!hasSelection && (
         <div className="mt-4 p-3 bg-slate-50 rounded-md border border-slate-100 text-center">
-          <p className="text-[10px] text-slate-400">Bir hücre seçildiğinde özel hücre ayarları ve ürün içeriği buraya gelir.</p>
+          <p className="text-[10px] text-slate-400">Bir hücre seçildiğinde özel hücre ayarları buraya gelir.</p>
         </div>
       )}
     </div>

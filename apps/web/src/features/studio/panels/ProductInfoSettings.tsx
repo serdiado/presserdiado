@@ -5,6 +5,38 @@ import toast from 'react-hot-toast';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import { uploadImage } from '@/lib/upload';
 
+const RAW_FIELD_LABELS: Record<string, string> = {
+  POS: 'Pozisyon',
+  SIRA: 'Sıra',
+  INDEX: 'Index',
+  ARTNR: 'SKU / Ürün Kodu',
+  KOD: 'SKU / Ürün Kodu',
+  SKU: 'SKU / Ürün Kodu',
+  BEZEICHNUNG: 'Ürün Adı',
+  URUN_ADI: 'Ürün Adı',
+  AD: 'Ürün Adı',
+  NAME: 'Ürün Adı',
+  VK_NETTO: 'Satış Fiyatı',
+  FIYAT: 'Satış Fiyatı',
+  PRICE: 'Satış Fiyatı',
+  KATEGORI: 'Kategori',
+  ARTGRP: 'Kategori',
+  CATEGORY: 'Kategori',
+  RESIM: 'Görsel URL',
+  IMAGE: 'Görsel URL',
+};
+
+function rawToRecord(raw: unknown): Record<string, unknown> {
+  return raw && typeof raw === 'object' && !Array.isArray(raw)
+    ? (raw as Record<string, unknown>)
+    : {};
+}
+
+function rawPatchForKnownField(raw: Record<string, unknown>, candidates: string[], value: string) {
+  const key = candidates.find((candidate) => Object.prototype.hasOwnProperty.call(raw, candidate));
+  return key ? { [key]: value } : {};
+}
+
 export function ProductInfoSettings() {
   const selectedSlotIds = useUIStore((s) => s.selectedSlotIds);
   const getActivePages = useCatalogStore((s) => s.getActivePages);
@@ -14,14 +46,14 @@ export function ProductInfoSettings() {
 
   if (selectedSlotIds.length === 0) {
     return (
-      <p className="text-xs text-slate-400 italic p-3 text-center">
+      <p className="text-xs text-text-muted italic p-3 text-center">
         Önce bir hücre seçin.
       </p>
     );
   }
   if (selectedSlotIds.length > 1) {
     return (
-      <p className="text-xs text-slate-500 italic p-3 text-center">
+      <p className="text-xs text-text-muted italic p-3 text-center">
         Birden fazla hücre seçili. Tek hücre seçerek detaylarını düzenleyebilirsiniz.
       </p>
     );
@@ -42,71 +74,148 @@ export function ProductInfoSettings() {
 
   const product = slot.product;
 
+  const rawRecord = rawToRecord(product?.raw);
+  const updateProductField = (updates: Record<string, unknown>, rawUpdates: Record<string, unknown> = {}) => {
+    updateSlotProduct(pageNumber, slotId, {
+      ...updates,
+      raw: { ...rawRecord, ...rawUpdates },
+    });
+  };
+
+  const updateRawField = (key: string, value: string) => {
+    const upperKey = key.trim().toUpperCase();
+    const syncedUpdates: Record<string, unknown> = {};
+
+    if (['ARTNR', 'KOD', 'SKU'].includes(upperKey)) syncedUpdates.sku = value;
+    if (['BEZEICHNUNG', 'URUN_ADI', 'AD', 'NAME'].includes(upperKey)) syncedUpdates.name = value;
+    if (['VK_NETTO', 'FIYAT', 'PRICE'].includes(upperKey)) syncedUpdates.price = value;
+    if (['KATEGORI', 'ARTGRP', 'CATEGORY'].includes(upperKey)) syncedUpdates.category = value;
+    if (['RESIM', 'IMAGE'].includes(upperKey)) syncedUpdates.image = value;
+
+    updateProductField(syncedUpdates, { [key]: value });
+  };
+
   return (
     <div className="space-y-3">
-      <div className="bg-white p-3 rounded border border-slate-200 shadow-sm space-y-2">
-        <h4 className="text-[10px] font-black text-slate-500">SEÇİLİ HÜCRE</h4>
-        <p className="text-[9px] text-slate-500">
+      <div className="bg-surface-panel p-3 rounded border border-border-default shadow-drop-sm space-y-2">
+        <h4 className="text-[10px] font-black text-text-muted">SEÇİLİ HÜCRE</h4>
+        <p className="text-[9px] text-text-muted">
           Sayfa {pageNumber} • {slot.colSpan}×{slot.rowSpan} • {slot.role ?? 'product'}
         </p>
       </div>
 
       {product ? (
-        <div className="bg-white p-3 rounded border border-slate-200 shadow-sm space-y-2">
+        <div className="bg-surface-panel p-3 rounded border border-border-default shadow-drop-sm space-y-2">
           <label className="block">
-            <span className="text-[9px] font-bold text-slate-500 block mb-1">İsim</span>
+            <span className="text-[9px] font-bold text-text-muted block mb-1">Ürün Adı</span>
             <input
               type="text"
               value={product.name ?? ''}
               onChange={(e) =>
-                updateSlotProduct(pageNumber, slotId, { name: e.target.value })
+                updateProductField(
+                  { name: e.target.value },
+                  rawPatchForKnownField(rawRecord, ['BEZEICHNUNG', 'URUN_ADI', 'AD', 'NAME'], e.target.value),
+                )
               }
-              className="w-full text-xs border border-slate-200 rounded p-1.5 focus:border-slate-400 outline-none"
+              className="w-full text-xs border border-border-default rounded p-1.5 focus:border-border-strong outline-none"
             />
           </label>
           <label className="block">
-            <span className="text-[9px] font-bold text-slate-500 block mb-1">Fiyat</span>
+            <span className="text-[9px] font-bold text-text-muted block mb-1">Fiyat</span>
             <input
               type="text"
               value={String(product.price ?? '')}
               onChange={(e) =>
-                updateSlotProduct(pageNumber, slotId, { price: e.target.value })
+                updateProductField(
+                  { price: e.target.value },
+                  rawPatchForKnownField(rawRecord, ['VK_NETTO', 'FIYAT', 'PRICE'], e.target.value),
+                )
               }
-              className="w-full text-xs border border-slate-200 rounded p-1.5 focus:border-slate-400 outline-none"
+              className="w-full text-xs border border-border-default rounded p-1.5 focus:border-border-strong outline-none"
             />
           </label>
           <label className="block">
-            <span className="text-[9px] font-bold text-slate-500 block mb-1">SKU</span>
+            <span className="text-[9px] font-bold text-text-muted block mb-1">SKU</span>
             <input
               type="text"
               value={product.sku ?? ''}
               onChange={(e) =>
-                updateSlotProduct(pageNumber, slotId, { sku: e.target.value })
+                updateProductField(
+                  { sku: e.target.value },
+                  rawPatchForKnownField(rawRecord, ['ARTNR', 'KOD', 'SKU'], e.target.value),
+                )
               }
-              className="w-full text-xs border border-slate-200 rounded p-1.5 focus:border-slate-400 outline-none"
+              className="w-full text-xs border border-border-default rounded p-1.5 focus:border-border-strong outline-none"
             />
           </label>
           <label className="block">
-            <span className="text-[9px] font-bold text-slate-500 block mb-1">
+            <span className="text-[9px] font-bold text-text-muted block mb-1">Kategori</span>
+            <input
+              type="text"
+              value={product.category ?? ''}
+              onChange={(e) =>
+                updateProductField(
+                  { category: e.target.value },
+                  rawPatchForKnownField(rawRecord, ['KATEGORI', 'ARTGRP', 'CATEGORY'], e.target.value),
+                )
+              }
+              className="w-full text-xs border border-border-default rounded p-1.5 focus:border-border-strong outline-none"
+            />
+          </label>
+          <label className="block">
+            <span className="text-[9px] font-bold text-text-muted block mb-1">
               Görsel URL
             </span>
             <input
               type="text"
               value={product.image ?? ''}
               onChange={(e) =>
-                updateSlotProduct(pageNumber, slotId, { image: e.target.value })
+                updateProductField(
+                  { image: e.target.value },
+                  rawPatchForKnownField(rawRecord, ['RESIM', 'IMAGE'], e.target.value),
+                )
               }
-              className="w-full text-xs border border-slate-200 rounded p-1.5 focus:border-slate-400 outline-none"
+              className="w-full text-xs border border-border-default rounded p-1.5 focus:border-border-strong outline-none"
             />
             <ImageUploadButton
-              onUploaded={(url) => updateSlotProduct(pageNumber, slotId, { image: url })}
+              onUploaded={(url) =>
+                updateProductField(
+                  { image: url },
+                  rawPatchForKnownField(rawRecord, ['RESIM', 'IMAGE'], url),
+                )
+              }
             />
           </label>
+
+          {Object.keys(rawRecord).length > 0 && (
+            <div className="pt-3 mt-3 border-t border-border-default space-y-2">
+              <div>
+                <h5 className="text-[9px] font-black text-text-muted uppercase tracking-wider">Excel Alanları</h5>
+                <p className="text-[9px] text-text-muted mt-0.5">Excel’den gelen tüm kolonlar burada düzenlenebilir.</p>
+              </div>
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                {Object.entries(rawRecord).map(([key, value]) => (
+                  <label key={key} className="block">
+                    <span className="text-[9px] font-bold text-text-muted block mb-1">
+                      {RAW_FIELD_LABELS[key.toUpperCase()] ?? key}
+                      <span className="ml-1 font-mono font-normal text-[8px] text-text-muted/70">({key})</span>
+                    </span>
+                    <input
+                      type="text"
+                      value={String(value ?? '')}
+                      onChange={(e) => updateRawField(key, e.target.value)}
+                      className="w-full text-xs border border-border-default rounded p-1.5 focus:border-border-strong outline-none"
+                    />
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex gap-2 pt-2">
             <button
               onClick={() => moveSlotToTempPool(pageNumber, slotId)}
-              className="flex-1 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-[10px] font-medium rounded border border-slate-200"
+              className="flex-1 py-1.5 bg-surface-subtle hover:bg-border-default text-text-secondary text-[10px] font-medium rounded border border-border-default"
             >
               Havuza Gönder
             </button>

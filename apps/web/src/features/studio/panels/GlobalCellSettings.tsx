@@ -38,7 +38,7 @@ export function GlobalCellSettings() {
           step={0.5}
           value={globalSettings.gridGap}
           onChange={(e) => setGlobalSettings({ gridGap: parseFloat(e.target.value) })}
-          className="flex-1 accent-blue-600"
+          className="flex-1 studio-slider"
         />
         <input
           type="number"
@@ -92,7 +92,7 @@ export function GlobalCellSettings() {
                 onChange={(e) =>
                   updateSelectedSlotsImageSettings({ scale: parseInt(e.target.value) })
                 }
-                className="flex-1 accent-slate-700"
+                className="flex-1 studio-slider"
               />
               <input
                 type="number"
@@ -166,7 +166,7 @@ export function GlobalCellSettings() {
             onChange={(e) =>
               setGlobalSettings({ borderWidth: parseFloat(e.target.value) })
             }
-            className="flex-1 accent-slate-700"
+            className="flex-1 studio-slider"
           />
           <input
             type="number"

@@ -53,7 +53,7 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
 
   return (
     <div
-      className="w-full h-full grid relative overflow-hidden box-border bg-white"
+      className="w-full h-full grid relative overflow-hidden box-border bg-surface-panel"
       style={{
         gridTemplateColumns: 'repeat(8, minmax(0, 1fr))',
         gridTemplateRows: 'repeat(4, minmax(0, 1fr))',
@@ -87,7 +87,7 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
             }}
             className={`flex box-border relative overflow-hidden transition-all ${
               isSel && !isEdit
-                ? 'ring-2 ring-inset ring-slate-900 z-10 cursor-pointer'
+                ? 'ring-2 ring-inset ring-border-selected z-10 cursor-pointer'
                 : isEdit
                   ? 'cursor-text z-20'
                   : 'cursor-pointer z-0'

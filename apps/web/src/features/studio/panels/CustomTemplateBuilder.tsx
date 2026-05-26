@@ -76,38 +76,38 @@ export function CustomTemplateBuilder({ onSaved }: { onSaved: () => void }) {
   const customCount = listCustomTemplates().length;
 
   return (
-    <div className="space-y-3 bg-white p-3 rounded border border-slate-200 shadow-sm">
-      <h4 className="text-[10px] font-black text-slate-500">YENİ ŞABLON</h4>
+    <div className="space-y-3 bg-surface-panel p-3 rounded border border-border-default shadow-drop-sm">
+      <h4 className="text-[10px] font-black text-text-muted">YENİ ŞABLON</h4>
 
       <label className="block">
-        <span className="text-[9px] font-bold text-slate-500">Şablon Adı</span>
+        <span className="text-[9px] font-bold text-text-muted">Şablon Adı</span>
         <input
           type="text"
           value={s.name}
           onChange={(e) => set('name', e.target.value)}
           placeholder="Örn: A4 8 Sayfa Z-Fold"
-          className="w-full mt-1 text-xs border border-slate-200 rounded p-1.5 focus:border-slate-400 outline-none"
+          className="w-full mt-1 text-xs border border-border-default rounded p-1.5 focus:border-border-strong outline-none"
         />
       </label>
 
       <div className="grid grid-cols-2 gap-2">
         <label>
-          <span className="text-[9px] font-bold text-slate-500">Sayfa Sayısı</span>
+          <span className="text-[9px] font-bold text-text-muted">Sayfa Sayısı</span>
           <input
             type="number"
             min={1}
             max={16}
             value={s.pageCount}
             onChange={(e) => set('pageCount', parseInt(e.target.value) || 1)}
-            className="w-full mt-1 text-xs border border-slate-200 rounded p-1.5"
+            className="w-full mt-1 text-xs border border-border-default rounded p-1.5"
           />
         </label>
         <label>
-          <span className="text-[9px] font-bold text-slate-500">Kırım Tipi</span>
+          <span className="text-[9px] font-bold text-text-muted">Kırım Tipi</span>
           <select
             value={s.foldType}
             onChange={(e) => set('foldType', e.target.value as FoldType)}
-            className="w-full mt-1 text-xs border border-slate-200 rounded p-1.5"
+            className="w-full mt-1 text-xs border border-border-default rounded p-1.5"
           >
             {FOLD_TYPES.map((f) => (
               <option key={f.value} value={f.value}>
@@ -120,29 +120,29 @@ export function CustomTemplateBuilder({ onSaved }: { onSaved: () => void }) {
 
       <div className="grid grid-cols-3 gap-2">
         <label>
-          <span className="text-[9px] font-bold text-slate-500">Sayfa Genişlik mm</span>
+          <span className="text-[9px] font-bold text-text-muted">Sayfa Genişlik mm</span>
           <input
             type="number"
             min={50}
             max={500}
             value={s.pageWidthMm}
             onChange={(e) => set('pageWidthMm', parseFloat(e.target.value) || 210)}
-            className="w-full mt-1 text-xs border border-slate-200 rounded p-1.5"
+            className="w-full mt-1 text-xs border border-border-default rounded p-1.5"
           />
         </label>
         <label>
-          <span className="text-[9px] font-bold text-slate-500">Yükseklik mm</span>
+          <span className="text-[9px] font-bold text-text-muted">Yükseklik mm</span>
           <input
             type="number"
             min={50}
             max={500}
             value={s.openHeightMm}
             onChange={(e) => set('openHeightMm', parseFloat(e.target.value) || 297)}
-            className="w-full mt-1 text-xs border border-slate-200 rounded p-1.5"
+            className="w-full mt-1 text-xs border border-border-default rounded p-1.5"
           />
         </label>
         <label>
-          <span className="text-[9px] font-bold text-slate-500">Bleed mm</span>
+          <span className="text-[9px] font-bold text-text-muted">Bleed mm</span>
           <input
             type="number"
             min={0}
@@ -150,12 +150,12 @@ export function CustomTemplateBuilder({ onSaved }: { onSaved: () => void }) {
             step={0.5}
             value={s.bleedMm}
             onChange={(e) => set('bleedMm', parseFloat(e.target.value) || 3)}
-            className="w-full mt-1 text-xs border border-slate-200 rounded p-1.5"
+            className="w-full mt-1 text-xs border border-border-default rounded p-1.5"
           />
         </label>
       </div>
 
-      <div className="text-[10px] text-slate-500 bg-slate-50 p-2 rounded">
+      <div className="text-[10px] text-text-muted bg-surface-subtle p-2 rounded">
         Açık ölçü: <strong>{s.pageWidthMm * s.pageCount}×{s.openHeightMm}mm</strong>
         {' · '}
         Bleed dahil: <strong>{s.pageWidthMm * s.pageCount + s.bleedMm * 2}×
@@ -164,13 +164,13 @@ export function CustomTemplateBuilder({ onSaved }: { onSaved: () => void }) {
 
       <button
         onClick={save}
-        className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded shadow-sm"
+        className="w-full py-2 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded shadow-drop-sm"
       >
         Şablonu Kaydet ve Uygula
       </button>
 
       {customCount > 0 && (
-        <p className="text-[9px] text-slate-400 text-center">
+        <p className="text-[9px] text-text-muted text-center">
           {customCount} özel şablon kayıtlı
         </p>
       )}

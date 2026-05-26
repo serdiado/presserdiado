@@ -42,7 +42,7 @@ export function GlobalPriceSettings() {
             onChange={(e) =>
               setGlobalSettings({ priceWidth: parseInt(e.target.value) })
             }
-            className="flex-1 accent-blue-600"
+            className="flex-1 studio-slider"
           />
           <input
             type="number"
@@ -64,7 +64,7 @@ export function GlobalPriceSettings() {
             onChange={(e) =>
               setGlobalSettings({ priceHeight: parseInt(e.target.value) })
             }
-            className="flex-1 accent-blue-600"
+            className="flex-1 studio-slider"
           />
           <input
             type="number"

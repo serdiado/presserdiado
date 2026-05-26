@@ -69,7 +69,7 @@ export function TypographyPicker({ title, value, onChange }: Props) {
                 step={step}
                 value={value[k] as number}
                 onChange={(e) => set(k, Number(e.target.value))}
-                className="flex-1 accent-blue-600"
+                className="flex-1 studio-slider"
               />
               <input
                 type="number"

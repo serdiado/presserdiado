@@ -10,6 +10,7 @@ import { catalogRoutes } from './modules/catalog/catalog.routes.js';
 import { projectRoutes } from './modules/project/project.routes.js';
 import { exportRoutes } from './modules/export/export.routes.js';
 import { uploadRoutes } from './modules/upload/upload.routes.js';
+import { themeRoutes } from './modules/theme/theme.routes.js';
 import { AppError } from './lib/errors.js';
 import { ZodError } from 'zod';
 
@@ -69,6 +70,7 @@ await app.register(
     await api.register(projectRoutes);
     await api.register(exportRoutes);
     await api.register(uploadRoutes);
+    await api.register(themeRoutes);
   },
   { prefix: '/api/v1' },
 );

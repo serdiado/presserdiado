@@ -58,7 +58,7 @@ function EditableText({
       <div
         contentEditable
         suppressContentEditableWarning
-        className={`outline-none bg-white/90 ring-1 ring-inset ring-slate-900 z-50 shadow-sm ${className ?? ''}`}
+        className={`outline-none bg-white/90 ring-1 ring-inset ring-border-selected z-50 shadow-sm ${className ?? ''}`}
         style={{ ...style, ...fontStyle(font) }}
         onBlur={(e) => {
           const v = e.currentTarget.innerText;
@@ -242,7 +242,7 @@ export function PizzaSection({ instanceData, slotId, pageNumber }: Props) {
             {imageUrl ? (
               <img src={imageUrl} alt="Pizza" className="w-full h-full object-contain p-2" />
             ) : (
-              <div className="text-slate-400 font-bold text-sm flex flex-col items-center">
+              <div className="text-text-muted font-bold text-sm flex flex-col items-center">
                 <span className="text-3xl mb-1">+</span>
                 <span>RESİM EKLE</span>
               </div>

@@ -58,7 +58,7 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
       }}
     >
       <div
-        className="w-full h-full grid relative overflow-hidden box-border bg-white"
+        className="w-full h-full grid relative overflow-hidden box-border bg-surface-panel"
         style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gridTemplateRows: '1fr' }}
       >
         {visible.map((cell) => {
@@ -95,7 +95,7 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
               }}
               className={`flex box-border relative overflow-hidden transition-all ${
                 isSelected && !isEditing
-                  ? 'ring-2 ring-inset ring-slate-900 z-10 cursor-pointer'
+                  ? 'ring-2 ring-inset ring-border-selected z-10 cursor-pointer'
                   : isEditing
                     ? 'cursor-text z-20'
                     : 'cursor-pointer z-0'
@@ -172,7 +172,7 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
 
       <div
         data-hide-on-export="true"
-        className="absolute text-[10px] font-black text-slate-400 uppercase tracking-tighter pointer-events-none"
+        className="absolute text-[10px] font-black text-text-muted uppercase tracking-tighter pointer-events-none"
         style={{
           right: '0mm',
           bottom: '-5mm',

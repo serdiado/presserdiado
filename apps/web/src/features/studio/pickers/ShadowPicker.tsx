@@ -47,7 +47,7 @@ export function ShadowPicker({ title = 'Gölge', value, onChange }: Props) {
                     max={max}
                     value={value[k]}
                     onChange={(e) => set(k, Number(e.target.value))}
-                    className="flex-1 accent-blue-600"
+                    className="flex-1 studio-slider"
                   />
                   <input
                     type="number"

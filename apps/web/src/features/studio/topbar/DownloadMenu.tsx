@@ -80,20 +80,20 @@ export function DownloadMenu() {
       <button
         onClick={() => setOpen((v) => !v)}
         disabled={busy !== null}
-        className="h-8 px-3.5 rounded-md text-xs font-medium border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+        className="h-8 px-3.5 rounded-radius-md text-xs font-medium border border-border-strong bg-surface-panel text-text-secondary hover:bg-surface-subtle disabled:opacity-60"
       >
         {busy ? `Hazırlanıyor (${busy.toUpperCase()})…` : '⬇ İndir'}
       </button>
       {open && !busy && (
-        <div className="absolute top-full right-0 mt-1 w-64 bg-white border border-slate-200 rounded-lg shadow-xl p-1 z-99999">
+        <div className="absolute top-full right-0 mt-1 w-64 bg-surface-panel border border-border-default rounded-radius-lg shadow-xl p-1 z-99999">
           {FORMATS.map((f) => (
             <button
               key={f.value}
               onClick={() => download(f.value)}
-              className="w-full text-left p-2 hover:bg-slate-50 rounded"
+              className="w-full text-left p-2 hover:bg-surface-subtle rounded"
             >
-              <div className="text-xs font-bold text-slate-700">{f.label}</div>
-              <div className="text-[10px] text-slate-500">{f.hint}</div>
+              <div className="text-xs font-bold text-text-secondary">{f.label}</div>
+              <div className="text-[10px] text-text-muted">{f.hint}</div>
             </button>
           ))}
         </div>

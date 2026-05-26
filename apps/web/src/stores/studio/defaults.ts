@@ -42,7 +42,7 @@ export function defaultFooterCells(): StudioFooterCell[] {
 }
 
 export const initialGlobalSettings: CatalogSettings = {
-  defaultGrid: { rows: 4, cols: 4 },
+  defaultGrid: { rows: 4, cols: 4, gap: 5 },
   gridGap: 2,
   borderWidth: 1,
   priceBorderWidth: 0,

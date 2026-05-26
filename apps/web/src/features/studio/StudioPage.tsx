@@ -23,7 +23,7 @@ export default function StudioPage() {
         </div>
 
         <div className="flex-1 flex flex-col min-w-0 min-h-0 relative items-center">
-          <div className="inline-flex justify-center bg-white shadow-md rounded-b-lg border-b border-x border-slate-200 overflow-visible shrink-0 z-50 mb-2">
+          <div className="inline-flex justify-center bg-surface-panel shadow-drop-md rounded-b-lg border-b border-x border-border-default overflow-visible shrink-0 z-50 mb-2">
             <ContextualBar />
           </div>
           <div className="flex-1 w-full relative min-h-0">

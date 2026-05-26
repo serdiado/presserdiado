@@ -125,33 +125,33 @@ export function ProjectMenu() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="h-8 px-3 rounded-md text-xs font-semibold border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+        className="h-8 px-3 rounded-radius-md text-xs font-semibold border border-border-strong bg-surface-panel text-text-secondary hover:bg-surface-subtle"
       >
         💾 Proje
       </button>
       {open && (
-        <div className="absolute top-full right-0 mt-1 w-56 bg-white border border-slate-200 rounded-lg shadow-xl p-1 z-99999">
+        <div className="absolute top-full right-0 mt-1 w-56 bg-surface-panel border border-border-default rounded-radius-lg shadow-xl p-1 z-99999">
           <button
             onClick={handleSave}
-            className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded text-xs"
+            className="w-full text-left px-3 py-2 hover:bg-surface-subtle rounded text-xs"
           >
-            <div className="font-bold text-slate-700">JSON Kaydet</div>
-            <div className="text-[10px] text-slate-500">Tüm tasarımı .json olarak indir</div>
+            <div className="font-bold text-text-secondary">JSON Kaydet</div>
+            <div className="text-[10px] text-text-muted">Tüm tasarımı .json olarak indir</div>
           </button>
           <button
             onClick={() => fileRef.current?.click()}
-            className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded text-xs"
+            className="w-full text-left px-3 py-2 hover:bg-surface-subtle rounded text-xs"
           >
-            <div className="font-bold text-slate-700">JSON Yükle</div>
-            <div className="text-[10px] text-slate-500">Daha önce kaydedilmiş projeyi aç</div>
+            <div className="font-bold text-text-secondary">JSON Yükle</div>
+            <div className="text-[10px] text-text-muted">Daha önce kaydedilmiş projeyi aç</div>
           </button>
-          <div className="my-1 border-t border-slate-100" />
+          <div className="my-1 border-t border-border-default" />
           <button
             onClick={handleDuplicate}
-            className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded text-xs"
+            className="w-full text-left px-3 py-2 hover:bg-surface-subtle rounded text-xs"
           >
-            <div className="font-bold text-slate-700">Çoğalt</div>
-            <div className="text-[10px] text-slate-500">
+            <div className="font-bold text-text-secondary">Çoğalt</div>
+            <div className="text-[10px] text-text-muted">
               Mevcut tasarımı yeni projeye klonla (havuzu sıfırlar)
             </div>
           </button>

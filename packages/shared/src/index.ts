@@ -4,6 +4,7 @@ export * from './types/project.js';
 export * from './types/order.js';
 export * from './types/print.js';
 export * from './types/design-tokens.js';
+export * from './types/ui-tokens.js';
 export * from './types/layer.js';
 export * from './types/studio.js';
 export * from './templates.js';

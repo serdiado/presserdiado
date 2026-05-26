@@ -61,35 +61,35 @@ export function PriceCalculator() {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-1100 w-80 bg-white rounded-xl shadow-2xl border border-slate-200 max-h-[calc(100vh-100px)] flex flex-col">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50 rounded-t-xl">
-        <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+    <div className="fixed bottom-4 right-4 z-1100 w-80 bg-surface-panel rounded-xl shadow-2xl border border-border-default max-h-[calc(100vh-100px)] flex flex-col">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border-default bg-surface-subtle rounded-t-xl">
+        <h3 className="text-sm font-bold text-text-primary flex items-center gap-2">
           💰 Fiyat Hesabı
         </h3>
         <button
           onClick={() => setOpen(false)}
-          className="text-slate-400 hover:text-slate-700 text-lg leading-none"
+          className="text-text-muted hover:text-text-secondary text-lg leading-none"
         >
           ×
         </button>
       </div>
 
       <div className="px-4 py-3 space-y-3 overflow-auto flex-1">
-        <div className="bg-slate-50 rounded p-2 text-[10px] text-slate-600 leading-snug">
-          <strong className="text-slate-800">{template.name}</strong>
+        <div className="bg-surface-subtle rounded p-2 text-[10px] text-text-secondary leading-snug">
+          <strong className="text-text-primary">{template.name}</strong>
           <br />
           {template.pageCount} sayfa × {(pageAreaMm2 / 100).toFixed(0)} cm²/sayfa
         </div>
 
         <label className="block">
-          <span className="text-xs font-bold text-slate-700">Adet</span>
+          <span className="text-xs font-bold text-text-secondary">Adet</span>
           <input
             type="number"
             min={1}
             max={100000}
             value={quantity}
             onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-            className="w-full mt-1 text-sm border border-slate-300 rounded px-2 py-1.5 focus:border-slate-400 outline-none"
+            className="w-full mt-1 text-sm border border-border-strong rounded px-2 py-1.5 focus:border-border-strong outline-none"
           />
         </label>
 
@@ -97,11 +97,11 @@ export function PriceCalculator() {
           .filter((f): f is PriceFieldSelect => f.type === 'select')
           .map((f) => (
             <label key={f.key} className="block">
-              <span className="text-xs font-bold text-slate-700">{f.label}</span>
+              <span className="text-xs font-bold text-text-secondary">{f.label}</span>
               <select
                 value={values[f.key] ?? f.default}
                 onChange={(e) => set(f.key, e.target.value)}
-                className="w-full mt-1 text-xs border border-slate-300 rounded px-2 py-1.5 bg-white focus:border-slate-400 outline-none"
+                className="w-full mt-1 text-xs border border-border-strong rounded px-2 py-1.5 bg-surface-panel focus:border-border-strong outline-none"
               >
                 {f.options.map((o) => (
                   <option key={o.id} value={o.id}>
@@ -113,7 +113,7 @@ export function PriceCalculator() {
           ))}
       </div>
 
-      <div className="px-4 py-3 border-t border-slate-200 bg-slate-50 rounded-b-xl space-y-1.5">
+      <div className="px-4 py-3 border-t border-border-default bg-surface-subtle rounded-b-xl space-y-1.5">
         <Row label="Ara Toplam" value={formatCurrency(breakdown.subtotal)} />
         {breakdown.appliedTier.discount > 0 && (
           <Row
@@ -130,13 +130,13 @@ export function PriceCalculator() {
         {breakdown.shipping > 0 && (
           <Row label="Kargo" value={formatCurrency(breakdown.shipping)} muted />
         )}
-        <div className="border-t border-slate-300 pt-1.5 flex items-center justify-between">
-          <span className="text-xs font-bold text-slate-700">Toplam</span>
-          <span className="text-lg font-semibold text-slate-900">
+        <div className="border-t border-border-strong pt-1.5 flex items-center justify-between">
+          <span className="text-xs font-bold text-text-secondary">Toplam</span>
+          <span className="text-lg font-semibold text-text-primary">
             {formatCurrency(breakdown.total)}
           </span>
         </div>
-        <div className="flex items-center justify-between text-[10px] text-slate-500">
+        <div className="flex items-center justify-between text-[10px] text-text-muted">
           <span>Birim Fiyat</span>
           <span className="font-semibold">{formatCurrency(breakdown.unitPrice)}</span>
         </div>
@@ -155,7 +155,7 @@ function Row({
   muted?: boolean;
 }) {
   return (
-    <div className={`flex items-center justify-between text-xs ${muted ? 'text-slate-500' : 'text-slate-700'}`}>
+    <div className={`flex items-center justify-between text-xs ${muted ? 'text-text-muted' : 'text-text-secondary'}`}>
       <span>{label}</span>
       <span className="font-semibold">{value}</span>
     </div>

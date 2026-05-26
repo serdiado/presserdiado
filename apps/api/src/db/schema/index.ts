@@ -6,3 +6,4 @@ export { orders } from './orders.js';
 export { printers } from './printers.js';
 export { systemTemplates } from './system-templates.js';
 export { userModules } from './user-modules.js';
+export { themeConfigs } from './theme.js';

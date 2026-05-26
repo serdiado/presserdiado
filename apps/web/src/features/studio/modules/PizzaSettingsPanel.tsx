@@ -95,7 +95,7 @@ export function PizzaSettingsPanel() {
             max={6}
             value={m.tableLineWidth}
             onChange={(e) => patch({ tableLineWidth: parseInt(e.target.value) })}
-            className="flex-1 accent-blue-600"
+            className="flex-1 studio-slider"
           />
           <input
             type="number"

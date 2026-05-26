@@ -26,7 +26,7 @@ export function BannerSettingsPanel() {
 
   if (!module) {
     return (
-      <p className="p-3 text-xs text-slate-500 italic text-center">
+      <p className="p-3 text-xs text-text-muted italic text-center">
         Banner modülü olan bir hücre seçin.
       </p>
     );
@@ -46,10 +46,10 @@ export function BannerSettingsPanel() {
   if (targetCells.length === 0) {
     return (
       <div className="p-3 space-y-2">
-        <p className="text-xs text-slate-500 italic text-center">
+        <p className="text-xs text-text-muted italic text-center">
           Banner içinde bir hücre seçin (32 hücre arasından).
         </p>
-        <p className="text-[10px] text-slate-400">
+        <p className="text-[10px] text-text-muted">
           Çift tıklayarak metin düzenleyebilirsiniz. Ctrl+tıklama ile çoklu seçim.
         </p>
       </div>
@@ -60,13 +60,13 @@ export function BannerSettingsPanel() {
 
   return (
     <div className="space-y-3">
-      <p className="text-[10px] text-slate-500 font-bold">
+      <p className="text-[10px] text-text-muted font-bold">
         {targetCells.length} banner hücresi
       </p>
 
-      <div className="bg-white p-3 rounded border border-slate-200 shadow-sm">
+      <div className="bg-surface-panel p-3 rounded border border-border-default shadow-drop-sm">
         <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold text-slate-600">Zemin</span>
+          <span className="text-[10px] font-bold text-text-secondary">Zemin</span>
           <ColorOpacityPicker
             value={ref.bgColor}
             onChange={(v) => updateSelectedCells({ bgColor: v })}
@@ -74,7 +74,7 @@ export function BannerSettingsPanel() {
         </div>
       </div>
 
-      <div className="bg-white p-2 rounded border border-slate-200 shadow-sm">
+      <div className="bg-surface-panel p-2 rounded border border-border-default shadow-drop-sm">
         <SpacingPicker
           title="İç Boşluk"
           value={ref.padding}
@@ -82,7 +82,7 @@ export function BannerSettingsPanel() {
         />
       </div>
 
-      <div className="bg-white p-2 rounded border border-slate-200 shadow-sm">
+      <div className="bg-surface-panel p-2 rounded border border-border-default shadow-drop-sm">
         <TypographyPicker
           title="Yazı"
           value={ref.font}

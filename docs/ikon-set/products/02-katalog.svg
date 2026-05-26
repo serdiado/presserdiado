@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <polygon points="11.50,78.22 48.00,67.77 48.00,69.57 11.50,80.02" fill="#ffffff" stroke="#1e293b" stroke-width="1.1" stroke-linejoin="round"></polygon>
+  <polygon points="11.50,78.22 48.00,67.77 48.00,71.37 11.50,81.82" fill="#ffffff" stroke="#1e293b" stroke-width="1.1" stroke-linejoin="round"></polygon>
+  <polygon points="11.50,78.22 48.00,67.77 48.00,73.17 11.50,83.63" fill="#ffffff" stroke="#1e293b" stroke-width="1.1" stroke-linejoin="round"></polygon>
+  <polygon points="48.00,67.77 84.50,78.22 84.50,80.02 48.00,69.57" fill="#ffffff" stroke="#1e293b" stroke-width="1.1" stroke-linejoin="round"></polygon>
+  <polygon points="48.00,67.77 84.50,78.22 84.50,81.82 48.00,71.37" fill="#ffffff" stroke="#1e293b" stroke-width="1.1" stroke-linejoin="round"></polygon>
+  <polygon points="48.00,67.77 84.50,78.22 84.50,83.63 48.00,73.17" fill="#ffffff" stroke="#1e293b" stroke-width="1.1" stroke-linejoin="round"></polygon>
+  <polygon points="10.00,28.22 48.00,17.77 48.00,67.77 10.00,78.22" fill="#ffffff" stroke="#1e293b" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"></polygon>
+  <polygon points="48.00,17.77 86.00,28.22 86.00,78.22 48.00,67.77" fill="#ffffff" stroke="#1e293b" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"></polygon>
+  <polygon points="15.70,31.66 43.44,24.03 43.44,38.03 15.70,45.66" fill="#d6d3d1" stroke="#1e293b" stroke-width="1" stroke-linejoin="round"></polygon>
+  <line x1="15.70" y1="52.66" x2="43.44" y2="45.03" stroke="#1e293b" stroke-width="1.2" stroke-linecap="round" opacity="1"></line>
+  <line x1="15.70" y1="58.66" x2="38.50" y2="52.39" stroke="#1e293b" stroke-width="1.2" stroke-linecap="round" opacity="1"></line>
+  <line x1="15.70" y1="64.66" x2="43.44" y2="57.03" stroke="#1e293b" stroke-width="1.2" stroke-linecap="round" opacity="1"></line>
+  <line x1="15.70" y1="70.66" x2="34.70" y2="65.43" stroke="#1e293b" stroke-width="1.2" stroke-linecap="round" opacity="1"></line>
+  <polygon points="52.56,24.03 80.30,31.66 80.30,45.66 52.56,38.03" fill="#d6d3d1" stroke="#1e293b" stroke-width="1" stroke-linejoin="round"></polygon>
+  <line x1="52.56" y1="45.03" x2="80.30" y2="52.66" stroke="#1e293b" stroke-width="1.2" stroke-linecap="round" opacity="1"></line>
+  <line x1="52.56" y1="51.03" x2="75.36" y2="57.30" stroke="#1e293b" stroke-width="1.2" stroke-linecap="round" opacity="1"></line>
+  <line x1="52.56" y1="57.03" x2="80.30" y2="64.66" stroke="#1e293b" stroke-width="1.2" stroke-linecap="round" opacity="1"></line>
+  <line x1="52.56" y1="63.03" x2="71.56" y2="68.25" stroke="#1e293b" stroke-width="1.2" stroke-linecap="round" opacity="1"></line>
+</svg>

@@ -7,7 +7,6 @@ import { BackgroundSettings } from '../panels/BackgroundSettings';
 import { GlobalCellSettings } from '../panels/GlobalCellSettings';
 import { GlobalPriceSettings } from '../panels/GlobalPriceSettings';
 import { TemplateSettingsPanel } from '../panels/TemplateSettingsPanel';
-import { ProductInfoSettings } from '../panels/ProductInfoSettings';
 import { ProductManagement } from '../panels/ProductManagement';
 import { BannerSettingsPanel, PizzaSettingsPanel } from '../modules';
 import {
@@ -22,12 +21,12 @@ import toast from 'react-hot-toast';
 import type { AnyModuleData } from '../modules';
 import { LayoutTemplate, Grid3X3, Layers, ChevronDown } from 'lucide-react';
 
-type NewPanel = 'products' | 'design' | 'grid' | 'modules' | 'cell' | 'price' | 'product-info' | 'template';
+type NewPanel = 'products' | 'design' | 'grid' | 'modules' | 'cell' | 'price' | 'template';
 
 const NEW_TABS: { key: NewPanel; label: string; icon: React.ReactNode }[] = [
-  { 
-    key: 'products', 
-    label: 'ÜRÜNLER', 
+  {
+    key: 'products',
+    label: 'ÜRÜNLER',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
@@ -36,9 +35,9 @@ const NEW_TABS: { key: NewPanel; label: string; icon: React.ReactNode }[] = [
       </svg>
     )
   },
-  { 
-    key: 'design', 
-    label: 'TASARIM', 
+  {
+    key: 'design',
+    label: 'TASARIM',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle>
@@ -49,9 +48,9 @@ const NEW_TABS: { key: NewPanel; label: string; icon: React.ReactNode }[] = [
       </svg>
     )
   },
-  { 
-    key: 'grid', 
-    label: 'HÜCRE', 
+  {
+    key: 'grid',
+    label: 'HÜCRE',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -62,9 +61,9 @@ const NEW_TABS: { key: NewPanel; label: string; icon: React.ReactNode }[] = [
       </svg>
     )
   },
-  { 
-    key: 'modules', 
-    label: 'MODÜLLER', 
+  {
+    key: 'modules',
+    label: 'MODÜLLER',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="8" height="8" rx="1"></rect>
@@ -80,18 +79,18 @@ export function Sidebar() {
   const [activeTab, setActiveTab] = useState<NewPanel>('products');
 
   return (
-    <div className="w-96 bg-white border-l border-slate-200 flex flex-col h-full shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)]">
-      
+    <div className="w-96 bg-surface-panel border-l border-border-default flex flex-col h-full shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)]">
+
       {/* 4'LÜ MENÜ İSKELETİ */}
-      <div className="grid grid-cols-4 shrink-0 bg-slate-50 border-b border-slate-200">
+      <div className="grid grid-cols-4 shrink-0 bg-surface-subtle border-b border-border-default">
         {NEW_TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key)}
             className={`flex flex-col items-center justify-center py-3.5 gap-1.5 transition-all duration-200 ${
               activeTab === t.key
-                ? 'text-slate-900 bg-white border-b-2 border-b-blue-600 shadow-[0_-1px_0_0_#e2e8f0]'
-                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-100 border-b-2 border-b-transparent'
+                ? 'text-text-primary bg-surface-panel border-b-2 border-b-primary shadow-[0_-1px_0_0_#e2e8f0]'
+                : 'text-text-secondary hover:text-text-primary hover:bg-surface-subtle border-b-2 border-b-transparent'
             }`}
           >
             {t.icon}
@@ -101,14 +100,14 @@ export function Sidebar() {
       </div>
 
       {/* İÇERİK ALANI */}
-      <div className="flex-1 overflow-auto p-5 bg-white">
+      <div className="flex-1 overflow-auto p-5 bg-surface-panel">
         {activeTab === 'products' && <ProductManagement />}
         {activeTab === 'design' && <DesignPanel />}
         {activeTab === 'grid' && <CellPanel />}
         {activeTab === 'modules' && (
-          <div className="flex flex-col items-center justify-center h-full text-slate-400 space-y-3">
-            <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100">🧩</div>
-            <p className="text-xs font-medium">Modüller ve Bileşenler (Yapım Aşamasında)</p>
+          <div className="flex flex-col items-center justify-center h-full text-text-muted space-y-3">
+            <div className="w-12 h-12 rounded-radius-full bg-surface-subtle flex items-center justify-center border border-border-default">🧩</div>
+            <p className="text-label-md">Modüller ve Bileşenler (Yapım Aşamasında)</p>
           </div>
         )}
 
@@ -118,7 +117,6 @@ export function Sidebar() {
           {activeTab === 'grid' && <GlobalGridSettings />}
           {activeTab === 'cell' && <GlobalCellSettings />}
           {activeTab === 'price' && <GlobalPriceSettings />}
-          {activeTab === 'product-info' && <ProductInfoSettings />}
           {activeTab === 'template' && <TemplateSettingsPanel />}
         </div>
       </div>
@@ -137,18 +135,18 @@ function DesignPanel() {
   return (
     <div className="flex flex-col w-full h-full space-y-2">
       {/* ŞABLON */}
-      <div className="flex flex-col border border-slate-200 rounded-md overflow-hidden bg-white">
+      <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel">
         <button
           onClick={() => toggleSection('template')}
-          className="flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 transition-colors"
+          className="flex items-center justify-between p-3 bg-surface-subtle hover:bg-border-default transition-colors"
         >
-          <div className={`flex items-center gap-2 transition-colors ${openSection === 'template' ? 'text-slate-800' : 'text-slate-500'}`}>
+          <div className={`flex items-center gap-2 transition-colors ${openSection === 'template' ? 'text-text-primary' : 'text-text-secondary'}`}>
             <LayoutTemplate size={18} />
-            <span className="text-xs font-bold tracking-wider text-slate-500 uppercase">ŞABLON</span>
+            <span className="text-xs font-bold tracking-wider text-text-secondary uppercase">ŞABLON</span>
           </div>
           <ChevronDown
             size={18}
-            className={`transition-all duration-300 ${openSection === 'template' ? 'rotate-180 text-slate-800' : 'text-slate-500'}`}
+            className={`transition-all duration-300 ${openSection === 'template' ? 'rotate-180 text-text-primary' : 'text-text-secondary'}`}
           />
         </button>
         <div
@@ -156,11 +154,11 @@ function DesignPanel() {
             openSection === 'template' ? 'max-h-125 opacity-100' : 'max-h-0 opacity-0'
           }`}
         >
-          <div className="p-4 flex flex-col gap-4 border-t border-slate-200 bg-white">
+          <div className="p-4 flex flex-col gap-4 border-t border-border-default bg-surface-panel">
             {/* A) Şablon Seç Butonu */}
             <button
               onClick={() => useUIStore.getState().setSetupModalOpen(true)}
-              className="w-full flex items-center justify-center gap-2 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium py-2.5 rounded-lg transition-all"
+              className="w-full flex items-center justify-center gap-2 border border-border-strong bg-surface-panel hover:bg-surface-subtle text-text-secondary text-body-md py-2.5 rounded-radius-lg transition-all"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
               Şablon Seç
@@ -168,37 +166,37 @@ function DesignPanel() {
 
             {/* B) Şablon Bilgileri */}
             <div className="flex flex-col gap-2">
-              <div className="flex justify-between items-center py-1 text-sm border-b border-slate-100 last:border-0">
-                <span className="text-slate-500">Tasarım Tipi</span> 
-                <span className="font-medium text-slate-800">{activeTemplate?.designType ? getTerm('print', activeTemplate.designType) : 'Seçilmedi'}</span>
+              <div className="flex justify-between items-center py-1 text-sm border-b border-border-default last:border-0">
+                <span className="text-text-secondary">Tasarım Tipi</span>
+                <span className="text-body-md text-text-primary">{activeTemplate?.designType ? getTerm('print', activeTemplate.designType) : 'Seçilmedi'}</span>
               </div>
-              <div className="flex justify-between items-center py-1 text-sm border-b border-slate-100 last:border-0">
-                <span className="text-slate-500">Mod</span> 
-                <span className="font-medium text-slate-800">{activeTemplate?.mode ? getTerm('print', activeTemplate.mode) : '-'}</span>
+              <div className="flex justify-between items-center py-1 text-sm border-b border-border-default last:border-0">
+                <span className="text-text-secondary">Mod</span>
+                <span className="text-body-md text-text-primary">{activeTemplate?.mode ? getTerm('print', activeTemplate.mode) : '-'}</span>
               </div>
-              <div className="flex justify-between items-center py-1 text-sm border-b border-slate-100 last:border-0">
-                <span className="text-slate-500">Kağıt</span> 
-                <span className="font-medium text-slate-800">{activeTemplate?.paperSize ? getTerm('print', activeTemplate.paperSize) : '-'}</span>
+              <div className="flex justify-between items-center py-1 text-sm border-b border-border-default last:border-0">
+                <span className="text-text-secondary">Kağıt</span>
+                <span className="text-body-md text-text-primary">{activeTemplate?.paperSize ? getTerm('print', activeTemplate.paperSize) : '-'}</span>
               </div>
-              <div className="flex justify-between items-center py-1 text-sm border-b border-slate-100 last:border-0">
-                <span className="text-slate-500">Katlama</span> 
-                <span className="font-medium text-slate-800">
+              <div className="flex justify-between items-center py-1 text-sm border-b border-border-default last:border-0">
+                <span className="text-text-secondary">Katlama</span>
+                <span className="text-body-md text-text-primary">
                   {activeTemplate?.foldType ? getTerm('print', activeTemplate.foldType) : '-'}
                 </span>
               </div>
-              <div className="flex justify-between items-center py-1 text-sm border-b border-slate-100 last:border-0">
-                <span className="text-slate-500">Sayfa</span> 
-                <span className="font-medium text-slate-800">{activeTemplate?.pageCount || '-'}</span>
+              <div className="flex justify-between items-center py-1 text-sm border-b border-border-default last:border-0">
+                <span className="text-text-secondary">Sayfa</span>
+                <span className="text-body-md text-text-primary">{activeTemplate?.pageCount || '-'}</span>
               </div>
-              <div className="flex justify-between items-center py-1 text-sm border-b border-slate-100 last:border-0">
-                <span className="text-slate-500">Açık Ölçü</span> 
-                <span className="font-medium text-slate-800">
+              <div className="flex justify-between items-center py-1 text-sm border-b border-border-default last:border-0">
+                <span className="text-text-secondary">Açık Ölçü</span>
+                <span className="text-body-md text-text-primary">
                   {activeTemplate ? `${activeTemplate.openWidthMm}×${activeTemplate.openHeightMm} mm` : '-'}
                 </span>
               </div>
-              <div className="flex justify-between items-center py-1 text-sm border-b border-slate-100 last:border-0">
-                <span className="text-slate-500">Kapalı Ölçü</span> 
-                <span className="font-medium text-slate-800">
+              <div className="flex justify-between items-center py-1 text-sm border-b border-border-default last:border-0">
+                <span className="text-text-secondary">Kapalı Ölçü</span>
+                <span className="text-body-md text-text-primary">
                   {activeTemplate ? `${activeTemplate.openWidthMm / activeTemplate.pageCount}×${activeTemplate.openHeightMm} mm` : '-'}
                 </span>
               </div>
@@ -208,18 +206,18 @@ function DesignPanel() {
       </div>
 
       {/* IZGARA */}
-      <div className="flex flex-col border border-slate-200 rounded-md overflow-hidden bg-white">
+      <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel">
         <button
           onClick={() => toggleSection('grid')}
-          className="flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 transition-colors"
+          className="flex items-center justify-between p-3 bg-surface-subtle hover:bg-border-default transition-colors"
         >
-          <div className={`flex items-center gap-2 transition-colors ${openSection === 'grid' ? 'text-slate-800' : 'text-slate-500'}`}>
+          <div className={`flex items-center gap-2 transition-colors ${openSection === 'grid' ? 'text-text-primary' : 'text-text-secondary'}`}>
             <Grid3X3 size={18} />
-            <span className="text-xs font-bold tracking-wider text-slate-500 uppercase">IZGARA</span>
+            <span className="text-xs font-bold tracking-wider text-text-secondary uppercase">IZGARA</span>
           </div>
           <ChevronDown
             size={18}
-            className={`transition-all duration-300 ${openSection === 'grid' ? 'rotate-180 text-slate-800' : 'text-slate-500'}`}
+            className={`transition-all duration-300 ${openSection === 'grid' ? 'rotate-180 text-text-primary' : 'text-text-secondary'}`}
           />
         </button>
         <div
@@ -227,25 +225,25 @@ function DesignPanel() {
             openSection === 'grid' ? 'max-h-275 opacity-100' : 'max-h-0 opacity-0'
           }`}
         >
-          <div className="p-4 border-t border-slate-200 bg-white">
+          <div className="p-4 border-t border-border-default bg-surface-panel">
             <GlobalGridSettings />
           </div>
         </div>
       </div>
 
       {/* ARKAPLAN */}
-      <div className="flex flex-col border border-slate-200 rounded-md overflow-hidden bg-white">
+      <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel">
         <button
           onClick={() => toggleSection('background')}
-          className="flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 transition-colors"
+          className="flex items-center justify-between p-3 bg-surface-subtle hover:bg-border-default transition-colors"
         >
-          <div className={`flex items-center gap-2 transition-colors ${openSection === 'background' ? 'text-slate-800' : 'text-slate-500'}`}>
+          <div className={`flex items-center gap-2 transition-colors ${openSection === 'background' ? 'text-text-primary' : 'text-text-secondary'}`}>
             <Layers size={18} />
-            <span className="text-xs font-bold tracking-wider text-slate-500 uppercase">ARKAPLAN</span>
+            <span className="text-xs font-bold tracking-wider text-text-secondary uppercase">ARKAPLAN</span>
           </div>
           <ChevronDown
             size={18}
-            className={`transition-all duration-300 ${openSection === 'background' ? 'rotate-180 text-slate-800' : 'text-slate-500'}`}
+            className={`transition-all duration-300 ${openSection === 'background' ? 'rotate-180 text-text-primary' : 'text-text-secondary'}`}
           />
         </button>
         <div
@@ -255,7 +253,7 @@ function DesignPanel() {
               : 'max-h-0 opacity-0 overflow-hidden'
           }`}
         >
-          <div className="p-4 border-t border-slate-200 bg-white">
+          <div className="p-4 border-t border-border-default bg-surface-panel">
             <BackgroundSettings />
           </div>
         </div>
@@ -282,7 +280,7 @@ function ModulesPanel() {
 
   return (
     <div className="space-y-3">
-      <p className="text-[10px] text-slate-500 font-bold">
+      <p className="text-[10px] text-text-secondary font-bold">
         Modülü serbest alana sürükleyin (boş hücreyi otomatik serbest alana çevirir).
       </p>
 
@@ -290,34 +288,34 @@ function ModulesPanel() {
         <div
           draggable
           onDragStart={(e) => onDragStart(e, 'banner')}
-          className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded p-3 cursor-grab active:cursor-grabbing flex flex-col items-center"
+          className="bg-surface-subtle hover:bg-border-default border border-border-default rounded-radius-sm p-3 cursor-grab active:cursor-grabbing flex flex-col items-center"
         >
           <span className="text-2xl mb-1">📢</span>
-          <span className="text-[10px] font-bold text-slate-700">Banner</span>
-          <span className="text-[8px] text-slate-500">8×4 grid</span>
+          <span className="text-[10px] font-bold text-text-primary">Banner</span>
+          <span className="text-[8px] text-text-muted">8×4 grid</span>
         </div>
         <div
           draggable
           onDragStart={(e) => onDragStart(e, 'pizza')}
-          className="bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded p-3 cursor-grab active:cursor-grabbing flex flex-col items-center"
+          className="bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-radius-sm p-3 cursor-grab active:cursor-grabbing flex flex-col items-center"
         >
           <span className="text-2xl mb-1">🍕</span>
           <span className="text-[10px] font-bold text-orange-700">Pizza</span>
-          <span className="text-[8px] text-slate-500">menü tablosu</span>
+          <span className="text-[8px] text-text-muted">menü tablosu</span>
         </div>
       </div>
 
       {moduleType === 'banner' && (
-        <div className="pt-3 border-t border-slate-200">
-          <h4 className="text-[10px] font-black text-slate-500 mb-2">
+        <div className="pt-3 border-t border-border-default">
+          <h4 className="text-[10px] font-black text-text-secondary mb-2">
             BANNER AYARLARI (Seçili)
           </h4>
           <BannerSettingsPanel />
         </div>
       )}
       {moduleType === 'pizza' && (
-        <div className="pt-3 border-t border-slate-200">
-          <h4 className="text-[10px] font-black text-slate-500 mb-2">
+        <div className="pt-3 border-t border-border-default">
+          <h4 className="text-[10px] font-black text-text-secondary mb-2">
             PIZZA AYARLARI (Seçili)
           </h4>
           <PizzaSettingsPanel />
@@ -341,10 +339,10 @@ function SaveCurrentModule({ slotData }: { slotData: AnyModuleData }) {
     toast.success(`"${saved.name}" kaydedildi`);
   };
   return (
-    <div className="pt-3 border-t border-slate-200">
+    <div className="pt-3 border-t border-border-default">
       <button
         onClick={handleSave}
-        className="w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[11px] font-bold rounded border border-emerald-200"
+        className="w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[11px] font-bold rounded-radius-sm border border-emerald-200"
       >
         💾 Bu Modülü Kaydet (Şablon Yap)
       </button>
@@ -363,11 +361,11 @@ function UserModulesList() {
 
   if (modules.length === 0) {
     return (
-      <div className="pt-3 border-t border-slate-200">
-        <h4 className="text-[10px] font-black text-slate-500 mb-2">
+      <div className="pt-3 border-t border-border-default">
+        <h4 className="text-[10px] font-black text-text-secondary mb-2">
           KULLANICI MODÜLLERİ
         </h4>
-        <p className="text-[10px] text-slate-400 italic">
+        <p className="text-[10px] text-text-muted italic">
           Henüz kayıtlı modül yok. Bir banner/pizza yerleştirip "Bu Modülü Kaydet" ile şablon yapabilirsin.
         </p>
       </div>
@@ -375,8 +373,8 @@ function UserModulesList() {
   }
 
   return (
-    <div className="pt-3 border-t border-slate-200">
-      <h4 className="text-[10px] font-black text-slate-500 mb-2">
+    <div className="pt-3 border-t border-border-default">
+      <h4 className="text-[10px] font-black text-text-secondary mb-2">
         KULLANICI MODÜLLERİ ({modules.length})
       </h4>
       <div className="space-y-1.5">
@@ -387,10 +385,10 @@ function UserModulesList() {
             onDragStart={(e) => {
               e.dataTransfer.setData('newUserModuleData', JSON.stringify(m.data));
             }}
-            className="group flex items-center gap-2 px-2 py-1.5 bg-white hover:bg-slate-50 rounded border border-slate-200 cursor-grab active:cursor-grabbing"
+            className="group flex items-center gap-2 px-2 py-1.5 bg-surface-panel hover:bg-surface-subtle rounded-radius-sm border border-border-default cursor-grab active:cursor-grabbing"
           >
             <span className="text-base">{m.type === 'banner' ? '📢' : '🍕'}</span>
-            <span className="flex-1 text-[10px] font-semibold text-slate-700 truncate">
+            <span className="flex-1 text-[10px] font-semibold text-text-primary truncate">
               {m.name}
             </span>
             <button
@@ -398,7 +396,7 @@ function UserModulesList() {
                 e.stopPropagation();
                 if (window.confirm(`"${m.name}" silinecek.`)) deleteUserModule(m.id);
               }}
-              className="text-[10px] text-red-600 opacity-0 group-hover:opacity-100"
+              className="text-[10px] text-danger opacity-0 group-hover:opacity-100"
               title="Sil"
             >
               ✕
@@ -409,4 +407,3 @@ function UserModulesList() {
     </div>
   );
 }
-

@@ -19,7 +19,7 @@ export function Page({ pageNumber }: { pageNumber: number }) {
   const formas = useCatalogStore((s) => s.formas);
   const activeFormaId = useCatalogStore((s) => s.activeFormaId);
   const template = useCatalogStore((s) => s.activeTemplate);
-  const gridGap = useCatalogStore((s) => s.globalSettings?.gridGap ?? 0);
+  const globalGridGap = useCatalogStore((s) => s.globalSettings?.gridGap ?? 0);
   const defaultGrid = useCatalogStore((s) => s.globalSettings?.defaultGrid);
   const globalSettings = useCatalogStore((s) => s.globalSettings);
   const mergeSelected = useCatalogStore((s) => s.mergeSelected);
@@ -74,20 +74,25 @@ export function Page({ pageNumber }: { pageNumber: number }) {
   const configuredRows = currentPage.gridSettings?.rows ?? defaultGrid?.rows ?? 4;
   const totalRows = Math.max(configuredRows, Math.ceil(currentPage.slots.length / totalColumns));
 
+  const effectiveGap =
+    currentPage.gridSettings?.gap !== undefined
+      ? currentPage.gridSettings.gap
+      : (defaultGrid?.gap !== undefined ? defaultGrid.gap : globalGridGap);
+
   return (
     <>
       {contextMenu &&
         createPortal(
           <div
             id="context-menu-container"
-            className="fixed z-99999 bg-white border border-slate-300 shadow-2xl rounded-md py-1 min-w-37.5"
+            className="fixed z-99999 bg-surface-panel border border-border-strong shadow-2xl rounded-md py-1 min-w-37.5"
             style={{ top: contextMenu.y, left: contextMenu.x }}
             onClick={(e) => e.stopPropagation()}
             onContextMenu={(e) => e.preventDefault()}
           >
             {contextMenu.canMerge && (
               <button
-                className="w-full text-left px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="w-full text-left px-4 py-2 text-sm font-semibold text-text-secondary hover:bg-surface-subtle"
                 onClick={() => {
                   mergeSelected(pageNumber, contextMenu.slot.id);
                   setContextMenu(null);
@@ -98,7 +103,7 @@ export function Page({ pageNumber }: { pageNumber: number }) {
             )}
             {contextMenu.canUnmerge && (
               <button
-                className="w-full text-left px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="w-full text-left px-4 py-2 text-sm font-semibold text-text-secondary hover:bg-surface-subtle"
                 onClick={() => {
                   unmergeSlot(pageNumber, contextMenu.slot.id);
                   setContextMenu(null);
@@ -110,7 +115,7 @@ export function Page({ pageNumber }: { pageNumber: number }) {
             {contextMenu.hasProduct && (
               <>
                 <button
-                  className="w-full text-left px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                  className="w-full text-left px-4 py-2 text-sm font-semibold text-text-primary hover:bg-surface-subtle"
                   onClick={() => {
                     moveSlotToTempPool(pageNumber, contextMenu.slot.id);
                     setContextMenu(null);
@@ -129,10 +134,10 @@ export function Page({ pageNumber }: { pageNumber: number }) {
                 </button>
               </>
             )}
-            <div className="my-1 border-t border-slate-200" />
+            <div className="my-1 border-t border-border-default" />
             {(contextMenu.slot.role ?? 'product') === 'product' ? (
               <button
-                className="w-full text-left px-4 py-2 text-sm font-semibold text-slate-800 hover:bg-slate-50"
+                className="w-full text-left px-4 py-2 text-sm font-semibold text-text-primary hover:bg-surface-subtle"
                 onClick={() => {
                   // toggleSlotRole selectedSlotIds'i kullaniyor — once secelim
                   useUIStore.getState().toggleSlotSelection(contextMenu.slot.id, false);
@@ -160,8 +165,8 @@ export function Page({ pageNumber }: { pageNumber: number }) {
 
       <div
         id={`page-${currentPage.id}`}
-        className={`physical-page relative shrink-0 border-r border-dashed border-slate-300 last:border-r-0 overflow-hidden ${
-          isSelected ? 'ring-2 ring-slate-900' : ''
+        className={`physical-page relative shrink-0 border-r border-dashed border-border-strong last:border-r-0 overflow-hidden ${
+          isSelected ? 'ring-2 ring-border-selected' : ''
         }`}
         style={{
           width: `${pageConfig.widthMm}mm`,
@@ -224,7 +229,7 @@ export function Page({ pageNumber }: { pageNumber: number }) {
               style={{
                 gridTemplateColumns: `repeat(${totalColumns}, minmax(0, 1fr))`,
                 gridTemplateRows: `repeat(${totalRows}, minmax(0, 1fr))`,
-                gap: `${gridGap}mm`,
+                gap: `${effectiveGap}mm`,
               }}
             >
               {currentPage.slots.map((slot, idx) => {

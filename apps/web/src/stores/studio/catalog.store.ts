@@ -147,7 +147,7 @@ interface CatalogActions {
   ) => void;
 
   // Grid management
-  updateGridSettings: (scope: GridScope, settings: { rows: number; cols: number }) => void;
+  updateGridSettings: (scope: GridScope, settings: { rows: number; cols: number; gap?: number }) => void;
   applyGridChanges: () => void;
   applyPageGridChange: (pageNumber: number) => void;
   revertToGlobalGrid: (pageNumber: number) => void;
@@ -928,7 +928,12 @@ export const useCatalogStore = create<Store>()(
       updateGridSettings: (scope, settings) => {
         const rows = Math.max(1, Math.min(10, settings.rows));
         const cols = Math.max(1, Math.min(10, settings.cols));
-        const next = { rows, cols };
+        const gap = settings.gap !== undefined ? Math.max(0, Math.min(20, settings.gap)) : undefined;
+        const next = {
+          rows,
+          cols,
+          ...(gap !== undefined && { gap }),
+        };
         const target = rows * cols;
 
         const occupiedArea = (page: CatalogPage) =>

@@ -432,10 +432,10 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
       onDrop={handleDrop}
       className={`product-slot pointer-events-auto relative overflow-hidden border border-solid transition-all h-full w-full min-w-12.5 min-h-12.5 cursor-pointer ${
         isSelected
-          ? 'z-50 border-2 border-slate-900 bg-slate-50 shadow-2xl'
+          ? 'z-50 border-2 border-border-selected bg-surface-subtle shadow-2xl'
           : isOver
-            ? 'border-slate-400 scale-[0.98] z-20'
-            : 'hover:border-slate-400 z-10'
+            ? 'border-border-strong scale-[0.98] z-20'
+            : 'hover:border-border-strong z-10'
       }`}
       style={{
         gridColumn: gridPosition
@@ -463,11 +463,11 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
       {slot.role === 'free' && (
         <div className="w-full h-full flex flex-col relative z-20 overflow-hidden pointer-events-auto rounded-[inherit]">
           {!slot.moduleData ? (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-slate-50 border-2 border-dashed border-slate-300 pointer-events-none">
-              <span className="text-slate-400 font-bold text-[14px] uppercase tracking-widest">
+            <div className="w-full h-full flex flex-col items-center justify-center bg-surface-subtle border-2 border-dashed border-border-strong pointer-events-none">
+              <span className="text-text-muted font-bold text-[14px] uppercase tracking-widest">
                 SERBEST ALAN
               </span>
-              <span className="text-[9px] text-slate-400 mt-1">Modül Sürükleyin</span>
+              <span className="text-[9px] text-text-muted mt-1">Modül Sürükleyin</span>
             </div>
           ) : (
             <div
@@ -517,8 +517,8 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
           <div
             className={`absolute top-0 z-30 flex shadow-sm transition-all px-1.5 py-1 pointer-events-auto outline-none ${
               selectedTextElement?.slotId === slot.id && selectedTextElement?.elementType === 'price'
-                ? 'ring-2 ring-slate-900 ring-offset-1 cursor-text'
-                : 'cursor-pointer hover:ring-1 hover:ring-slate-400'
+                ? 'ring-2 ring-border-selected ring-offset-1 cursor-text'
+                : 'cursor-pointer hover:ring-1 hover:ring-border-strong'
             } ${
               finalSettings.pricePosition === 'left'
                 ? 'left-0'
@@ -630,13 +630,13 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
             <div
               className={`w-full h-full outline-none transition-all ${
                 editingText === 'name'
-                  ? 'bg-white/90 text-black z-50 ring-2 ring-slate-900 overflow-hidden whitespace-pre-wrap rounded cursor-text'
-                  : 'line-clamp-3 whitespace-pre-wrap hover:ring-1 hover:ring-slate-400'
+                  ? 'bg-white/90 text-black z-50 ring-2 ring-border-selected overflow-hidden whitespace-pre-wrap rounded cursor-text'
+                  : 'line-clamp-3 whitespace-pre-wrap hover:ring-1 hover:ring-border-strong'
               } ${
                 selectedTextElement?.slotId === slot.id &&
                 selectedTextElement?.elementType === 'name' &&
                 editingText !== 'name'
-                  ? 'ring-2 ring-slate-900'
+                  ? 'ring-2 ring-border-selected'
                   : ''
               }`}
               contentEditable={editingText === 'name'}

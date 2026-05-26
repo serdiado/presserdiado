@@ -1,4 +1,6 @@
 export { useCatalogStore } from './catalog.store';
+export { useThemeStore } from '../theme.store';
+export type { ThemeMode } from '../theme.store';
 export { useHistoryStore } from './history.store';
 export { useUIStore } from './ui.store';
 export { useLayerStore } from './layer.store';
