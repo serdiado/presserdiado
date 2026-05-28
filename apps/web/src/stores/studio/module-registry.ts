@@ -11,7 +11,13 @@ export interface ModuleConfig {
 
 const bannerInit = () => ({
   type: 'banner',
-  cells: Array.from({ length: 32 }, (_, i) => ({
+  rows: 4,
+  cols: 4,
+  bgColor: { type: 'solid', color: '#ffffff', opacity: 100 },
+  containerBorder: { color: { c: '#e2e8f0', o: 100 }, width: 0 },
+  radius: { tl: 0, tr: 0, bl: 0, br: 0, linked: true },
+  shadow: { x: 0, y: 0, blur: 0, spread: 0, color: '#000000', opacity: 0, active: false },
+  cells: Array.from({ length: 16 }, (_, i) => ({
     id: `banner-inst-${i}`,
     text: '',
     colSpan: 1,
@@ -80,6 +86,6 @@ const pizzaInit = () => ({
 });
 
 export const ModuleRegistry: Record<NonNullable<ModuleType>, ModuleConfig> = {
-  banner: { id: 'banner', label: 'Banner (Izgara)', initialData: bannerInit },
+  banner: { id: 'banner', label: 'Tablo Alanı', initialData: bannerInit },
   pizza: { id: 'pizza', label: 'Pizza Menusu', initialData: pizzaInit },
 };

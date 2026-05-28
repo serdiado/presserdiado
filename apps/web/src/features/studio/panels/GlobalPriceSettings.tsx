@@ -33,7 +33,7 @@ export function GlobalPriceSettings() {
       <div className="bg-white p-3 rounded border border-slate-200 shadow-sm space-y-2">
         <h4 className="text-[10px] font-black text-slate-500">BOYUT</h4>
         <div className="flex items-center gap-2">
-          <span className="text-[9px] font-medium text-slate-500 w-16">Genişlik</span>
+          <span className="text-[11px] font-medium text-slate-500 w-16">Genişlik</span>
           <input
             type="range"
             min={10}
@@ -52,10 +52,10 @@ export function GlobalPriceSettings() {
             }
             className="w-12 text-[10px] font-bold text-slate-600 text-right border border-slate-200 rounded p-0.5"
           />
-          <span className="text-[9px] text-slate-400">%</span>
+          <span className="text-[11px] text-slate-400">%</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[9px] font-medium text-slate-500 w-16">Yükseklik</span>
+          <span className="text-[11px] font-medium text-slate-500 w-16">Yükseklik</span>
           <input
             type="range"
             min={5}
@@ -74,7 +74,7 @@ export function GlobalPriceSettings() {
             }
             className="w-12 text-[10px] font-bold text-slate-600 text-right border border-slate-200 rounded p-0.5"
           />
-          <span className="text-[9px] text-slate-400">mm</span>
+          <span className="text-[11px] text-slate-400">mm</span>
         </div>
       </div>
 

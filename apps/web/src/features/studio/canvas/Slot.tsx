@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useState } from 'react';
+import { Pencil } from 'lucide-react';
 import type { BadgeConfig, CatalogSettings, StudioSlot } from '@matbaapro/shared';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import {
@@ -222,6 +223,7 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
 
   const selectedSlotIds = useUIStore((s) => s.selectedSlotIds);
   const toggleSlotSelection = useUIStore((s) => s.toggleSlotSelection);
+  const toggleElementSelection = useUIStore((s) => s.toggleElementSelection);
   const selectedTextElement = useUIStore((s) => s.selectedTextElement);
   const setSelectedTextElement = useUIStore((s) => s.setSelectedTextElement);
   const editingContent = useUIStore((s) => s.editingContent);
@@ -273,6 +275,7 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
   }, [imgDrag, pageNumber, slot.id, updateSlotImageSettings]);
 
   const isSelected = selectedSlotIds.includes(slot.id);
+  const isModuleSlot = slot.role === 'free' && !!slot.moduleData;
 
   // === scale clamp for spans ===
   const baseCols = 4;
@@ -412,8 +415,8 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
         e.stopPropagation();
         if (slot.role === 'free' && slot.moduleData) {
           const md = slot.moduleData as { type?: string };
-          if (md.type === 'banner' || md.type === 'pizza')
-            setEditingContent({ slotId: slot.id, contentType: md.type });
+          if (md.type === 'pizza')
+            setEditingContent({ slotId: slot.id, contentType: 'pizza' });
         } else if (slot.role === 'product') {
           setEditingContent({ slotId: slot.id, contentType: 'product' });
         }
@@ -430,12 +433,14 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
       }}
       onDragLeave={() => setIsOver(false)}
       onDrop={handleDrop}
-      className={`product-slot pointer-events-auto relative overflow-hidden border border-solid transition-all h-full w-full min-w-12.5 min-h-12.5 cursor-pointer ${
+      className={`product-slot group pointer-events-auto relative overflow-hidden border border-solid transition-all h-full w-full min-w-12.5 min-h-12.5 cursor-pointer ${
         isSelected
-          ? 'z-50 border-2 border-border-selected bg-surface-subtle shadow-2xl'
+          ? `z-50 border-2 border-border-selected shadow-2xl${isModuleSlot ? '' : ' bg-surface-subtle'}`
           : isOver
             ? 'border-border-strong scale-[0.98] z-20'
-            : 'hover:border-border-strong z-10'
+            : isModuleSlot
+              ? 'border-transparent z-10'
+              : 'hover:border-border-strong z-10'
       }`}
       style={{
         gridColumn: gridPosition
@@ -444,12 +449,18 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
         gridRow: gridPosition
           ? `${gridPosition.rowStart} / span ${slot.rowSpan}`
           : `span ${slot.rowSpan}`,
-        borderRadius: radiusStyle(finalSettings.radiuses.cell),
-        ...colorValueBackground(finalSettings.colors.cellBg),
-        borderColor: colorOpacityToCss(finalSettings.colors.cellBorder),
-        borderWidth: `${finalSettings.borderWidth}px`,
-        boxShadow: isSelected ? undefined : boxShadow,
-        padding: paddingStyle(finalSettings.spacings.cell),
+        borderRadius: isModuleSlot ? 0 : radiusStyle(finalSettings.radiuses.cell),
+        ...(isModuleSlot
+          ? { background: 'transparent' }
+          : colorValueBackground(finalSettings.colors.cellBg)),
+        ...(isModuleSlot
+          ? {}
+          : {
+              borderColor: colorOpacityToCss(finalSettings.colors.cellBorder),
+              borderWidth: `${finalSettings.borderWidth}px`,
+              boxShadow: isSelected ? undefined : boxShadow,
+            }),
+        padding: slot.role === 'free' ? undefined : paddingStyle(finalSettings.spacings.cell),
         ...freeStyles,
       }}
     >
@@ -464,33 +475,61 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
         <div className="w-full h-full flex flex-col relative z-20 overflow-hidden pointer-events-auto rounded-[inherit]">
           {!slot.moduleData ? (
             <div className="w-full h-full flex flex-col items-center justify-center bg-surface-subtle border-2 border-dashed border-border-strong pointer-events-none">
-              <span className="text-text-muted font-bold text-[14px] uppercase tracking-widest">
+              <span className="text-text-muted font-bold text-sm uppercase tracking-widest">
                 SERBEST ALAN
               </span>
-              <span className="text-[9px] text-text-muted mt-1">Modül Sürükleyin</span>
+              <span className="text-[11px] text-text-muted mt-1">Modül Sürükleyin</span>
             </div>
           ) : (
-            <div
-              className={`absolute inset-0 ${editingContent?.slotId === slot.id ? 'pointer-events-auto' : 'pointer-events-none'}`}
-            >
-              {(slot.moduleData as { type?: string })?.type === 'banner' ? (
-                <BannerSection
-                  instanceData={slot.moduleData as BannerModuleData}
-                  slotId={slot.id}
-                  pageNumber={pageNumber}
-                />
-              ) : (slot.moduleData as { type?: string })?.type === 'pizza' ? (
-                <PizzaSection
-                  instanceData={slot.moduleData as PizzaModuleData}
-                  slotId={slot.id}
-                  pageNumber={pageNumber}
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-red-50 text-red-500 font-bold border border-red-200 text-xs">
-                  Bilinmeyen Modül
+            <>
+              <div
+                className={`absolute inset-0 ${editingContent?.slotId === slot.id ? 'pointer-events-auto' : 'pointer-events-none'}`}
+              >
+                {(slot.moduleData as { type?: string })?.type === 'banner' ? (
+                  <BannerSection
+                    instanceData={slot.moduleData as BannerModuleData}
+                    slotId={slot.id}
+                    pageNumber={pageNumber}
+                  />
+                ) : (slot.moduleData as { type?: string })?.type === 'pizza' ? (
+                  <PizzaSection
+                    instanceData={slot.moduleData as PizzaModuleData}
+                    slotId={slot.id}
+                    pageNumber={pageNumber}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-red-50 text-red-500 font-bold border border-red-200 text-xs">
+                    Bilinmeyen Modül
+                  </div>
+                )}
+              </div>
+
+              {(slot.moduleData as { type?: string })?.type === 'banner' &&
+                editingContent?.slotId !== slot.id && (
+                <div
+                  data-hide-on-export="true"
+                  className={`absolute inset-0 z-50 flex items-center justify-center pointer-events-none transition-opacity
+                    ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}
+                  `}
+                  style={{ background: 'rgba(0,0,0,0.40)' }}
+                >
+                  <button
+                    className="flex items-center gap-2 px-4 py-2.5 bg-surface-panel text-text-primary text-xs font-bold rounded-lg shadow-lg pointer-events-auto"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const firstCellId = (slot.moduleData as BannerModuleData)?.cells?.[0]?.id;
+                      setEditingContent({ slotId: slot.id, contentType: 'banner' });
+                      if (firstCellId) {
+                        toggleElementSelection('bannerCell', firstCellId, false, slot.id);
+                      }
+                    }}
+                  >
+                    <Pencil size={14} />
+                    Modülü düzenle
+                  </button>
                 </div>
               )}
-            </div>
+            </>
           )}
         </div>
       )}
@@ -612,7 +651,7 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
                 }}
               />
             ) : (
-              <div className="text-[8px] text-slate-300 italic uppercase">Resim Yok</div>
+              <div className="text-[10px] text-slate-300 italic uppercase">Resim Yok</div>
             )}
           </div>
 

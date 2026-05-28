@@ -233,6 +233,18 @@ export default function NewStudioWizard() {
     if (activeTemplate?.wizardSelection) {
       return activeTemplate.wizardSelection as unknown as WizardSelection;
     }
+    if (activeTemplate) {
+      // Robust fallback mapping of physical attributes to wizard step options
+      const matchedPaper = config.steps.paperSize.options.find(
+        (p) => p.heightMm === activeTemplate.openHeightMm
+      );
+      return {
+        category: (activeTemplate.designType || config.steps.category.default) as any,
+        mode: (activeTemplate.mode || config.steps.mode.default) as any,
+        paperSize: (matchedPaper?.id || activeTemplate.paperSize || config.steps.paperSize.default) as any,
+        foldType: (activeTemplate.foldType || config.steps.foldType.default) as any,
+      };
+    }
     return {
       category: config.steps.category.default,
       mode: config.steps.mode.default,

@@ -34,7 +34,7 @@ export function defaultFooterCells(): StudioFooterCell[] {
 
   return [
     base('fc-1', 1, false, null),
-    { ...base('fc-2', 4, false, null, 'Sayfa altı notu...'), font: { ...defaultTypography, textAlign: 'right' } },
+    { ...base('fc-2', 4, false, null), font: { ...defaultTypography, textAlign: 'right' } },
     base('fc-3', 1, true, 'fc-2'),
     base('fc-4', 1, true, 'fc-2'),
     base('fc-5', 1, true, 'fc-2'),

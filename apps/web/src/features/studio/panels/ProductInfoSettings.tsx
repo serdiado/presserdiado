@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import toast from 'react-hot-toast';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import { uploadImage } from '@/lib/upload';
+import { Button } from '@/components/ui';
 
 const RAW_FIELD_LABELS: Record<string, string> = {
   POS: 'Pozisyon',
@@ -98,8 +99,8 @@ export function ProductInfoSettings() {
   return (
     <div className="space-y-3">
       <div className="bg-surface-panel p-3 rounded border border-border-default shadow-drop-sm space-y-2">
-        <h4 className="text-[10px] font-black text-text-muted">SEÇİLİ HÜCRE</h4>
-        <p className="text-[9px] text-text-muted">
+        <h4 className="text-[10px] font-medium text-text-secondary">SEÇİLİ HÜCRE</h4>
+        <p className="text-[11px] text-text-muted">
           Sayfa {pageNumber} • {slot.colSpan}×{slot.rowSpan} • {slot.role ?? 'product'}
         </p>
       </div>
@@ -107,7 +108,7 @@ export function ProductInfoSettings() {
       {product ? (
         <div className="bg-surface-panel p-3 rounded border border-border-default shadow-drop-sm space-y-2">
           <label className="block">
-            <span className="text-[9px] font-bold text-text-muted block mb-1">Ürün Adı</span>
+            <span className="text-[11px] font-medium text-text-secondary block mb-1">Ürün Adı</span>
             <input
               type="text"
               value={product.name ?? ''}
@@ -121,7 +122,7 @@ export function ProductInfoSettings() {
             />
           </label>
           <label className="block">
-            <span className="text-[9px] font-bold text-text-muted block mb-1">Fiyat</span>
+            <span className="text-[11px] font-medium text-text-secondary block mb-1">Fiyat</span>
             <input
               type="text"
               value={String(product.price ?? '')}
@@ -135,7 +136,7 @@ export function ProductInfoSettings() {
             />
           </label>
           <label className="block">
-            <span className="text-[9px] font-bold text-text-muted block mb-1">SKU</span>
+            <span className="text-[11px] font-medium text-text-secondary block mb-1">SKU</span>
             <input
               type="text"
               value={product.sku ?? ''}
@@ -149,7 +150,7 @@ export function ProductInfoSettings() {
             />
           </label>
           <label className="block">
-            <span className="text-[9px] font-bold text-text-muted block mb-1">Kategori</span>
+            <span className="text-[11px] font-medium text-text-secondary block mb-1">Kategori</span>
             <input
               type="text"
               value={product.category ?? ''}
@@ -163,7 +164,7 @@ export function ProductInfoSettings() {
             />
           </label>
           <label className="block">
-            <span className="text-[9px] font-bold text-text-muted block mb-1">
+            <span className="text-[11px] font-medium text-text-secondary block mb-1">
               Görsel URL
             </span>
             <input
@@ -190,15 +191,15 @@ export function ProductInfoSettings() {
           {Object.keys(rawRecord).length > 0 && (
             <div className="pt-3 mt-3 border-t border-border-default space-y-2">
               <div>
-                <h5 className="text-[9px] font-black text-text-muted uppercase tracking-wider">Excel Alanları</h5>
-                <p className="text-[9px] text-text-muted mt-0.5">Excel’den gelen tüm kolonlar burada düzenlenebilir.</p>
+                <h5 className="text-[11px] font-medium text-text-secondary tracking-normal">Excel Alanları</h5>
+                <p className="text-[11px] text-text-muted mt-0.5">Excel’den gelen tüm kolonlar burada düzenlenebilir.</p>
               </div>
               <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                 {Object.entries(rawRecord).map(([key, value]) => (
                   <label key={key} className="block">
-                    <span className="text-[9px] font-bold text-text-muted block mb-1">
+                    <span className="text-[11px] font-medium text-text-secondary block mb-1">
                       {RAW_FIELD_LABELS[key.toUpperCase()] ?? key}
-                      <span className="ml-1 font-mono font-normal text-[8px] text-text-muted/70">({key})</span>
+                      <span className="ml-1 font-mono font-normal text-[10px] text-text-muted/70">({key})</span>
                     </span>
                     <input
                       type="text"
@@ -213,23 +214,27 @@ export function ProductInfoSettings() {
           )}
 
           <div className="flex gap-2 pt-2">
-            <button
+            <Button
+              variant="primary"
+              className="flex-1"
               onClick={() => moveSlotToTempPool(pageNumber, slotId)}
-              className="flex-1 py-1.5 bg-surface-subtle hover:bg-border-default text-text-secondary text-[10px] font-medium rounded border border-border-default"
             >
               Havuza Gönder
-            </button>
-            <button
-              onClick={() => clearSlot(pageNumber, slotId)}
-              className="flex-1 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-[10px] font-medium rounded border border-red-200"
+            </Button>
+            <Button
+              variant="danger"
+              className="flex-1"
+              onClick={() => {
+                if (confirm('Hücre temizlensin mi?')) clearSlot(pageNumber, slotId);
+              }}
             >
               Temizle
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
         <div className="bg-amber-50 border border-amber-200 p-3 rounded">
-          <p className="text-[10px] text-amber-700 font-bold">
+          <p className="text-[10px] text-amber-700 font-medium">
             Bu hücrede ürün yok. Yan panelden bir ürün sürükleyin.
           </p>
         </div>
@@ -258,13 +263,15 @@ function ImageUploadButton({ onUploaded }: { onUploaded: (url: string) => void }
 
   return (
     <>
-      <button
+      <Button
         type="button"
+        variant="secondary"
+        fullWidth
+        className="mt-1"
         onClick={() => ref.current?.click()}
-        className="mt-1 w-full py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[9px] font-bold rounded border border-emerald-200"
       >
         📤 Bilgisayardan görsel yükle
-      </button>
+      </Button>
       <input
         ref={ref}
         type="file"

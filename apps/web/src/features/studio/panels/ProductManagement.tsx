@@ -7,6 +7,7 @@ import type { ProductInfo } from '@matbaapro/shared';
 import { useCatalogStore } from '@/stores/studio';
 import { uploadImage } from '@/lib/upload';
 import { ProductInfoSettings } from './ProductInfoSettings';
+import { Button } from '@/components/ui';
 
 type ExcelRow = Record<string, string | number | undefined>;
 
@@ -137,20 +138,20 @@ export function ProductManagement() {
         <p className="text-[11px] text-text-secondary leading-snug w-[65%]">
           Excel dosyanızı yükleyerek ürünleri otomatik yerleştirin veya havuzdan sürükleyin.
         </p>
-        <button
+        <Button
+          variant="secondary"
+          size="sm"
           onClick={downloadDemoExcel}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-panel text-text-secondary border border-border-strong rounded-radius-sm text-[11px] font-medium hover:bg-surface-subtle transition-colors shrink-0"
+          leftIcon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>}
+          className="shrink-0"
         >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-          </svg>
-          Örnek Excel İndir
-        </button>
+          Örnek Excel indir
+        </Button>
       </div>
 
       <details open className="bg-surface-panel rounded-radius-lg border border-border-default shadow-drop-sm overflow-hidden">
-        <summary className="text-[12px] font-bold text-text-primary cursor-pointer p-3 flex items-center justify-between bg-surface-subtle/60">
-          <span>Ürün Bilgileri</span>
+        <summary className="text-xs font-medium text-text-primary cursor-pointer p-3 flex items-center justify-between bg-surface-subtle/60">
+          <span>Ürün bilgisi</span>
           <span className="text-[10px] font-medium text-text-muted">Seçili ürün verisini düzenle</span>
         </summary>
         <div className="p-3 border-t border-border-default">
@@ -159,9 +160,9 @@ export function ProductManagement() {
       </details>
 
       <details className="bg-surface-panel rounded-radius-md border border-border-default">
-        <summary className="text-[12px] font-medium text-text-primary cursor-pointer p-2.5 flex items-center justify-between">
+        <summary className="text-xs font-medium text-text-primary cursor-pointer p-2.5 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span>Excel Kolonları</span>
+            <span>Excel sütunları</span>
             <svg className="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -183,7 +184,7 @@ export function ProductManagement() {
       {/* 1. OTOMATİK DİZİLİM */}
       <div className="bg-surface-panel rounded-radius-lg border border-border-default p-4 shadow-drop-sm">
         <div className="mb-3">
-          <h4 className="text-[13px] font-bold text-text-primary">Excel ile Otomatik Yerleştir</h4>
+          <h4 className="text-[11px] font-medium text-text-secondary tracking-normal">Excel ile otomatik yerleştir</h4>
           <p className="text-[10px] text-text-muted mt-0.5">POS / SIRA kolonu olan Excel, ürünleri numaralı hücrelere otomatik yerleştirir.</p>
         </div>
 
@@ -219,40 +220,41 @@ export function ProductManagement() {
              <span>{productPool.length} ürün yüklendi</span>
            </div>
            <div className="flex items-center gap-2">
-             <button
+             <Button
+               variant="ghost"
+               className="p-2"
                onClick={handleClearAll}
                title="Ürünleri Temizle"
-               className="w-7 h-7 flex items-center justify-center bg-surface-subtle text-text-muted hover:bg-border-default hover:text-text-secondary rounded-radius-md transition-colors"
              >
                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                </svg>
-             </button>
-             <button
+             </Button>
+             <Button
+               variant="ghost"
+               className="p-2"
+               title="Tümünü sıfırla"
                onClick={() => {
                  if (confirm('Tüm katalog sıfırlansın mı?')) resetCatalog();
                }}
-               title="Tümünü Sıfırla"
-               className="w-7 h-7 flex items-center justify-center bg-red-50 text-red-400 hover:bg-red-100 hover:text-red-500 rounded-radius-md transition-colors"
              >
                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                </svg>
-             </button>
+             </Button>
            </div>
         </div>
 
         <div className="mt-4">
-          <button
-            onClick={() => autoFillSlots()}
+          <Button
+            variant="primary"
+            fullWidth
             disabled={productPool.length === 0}
-            className="w-full bg-primary hover:bg-primary-hover text-white font-semibold py-2.5 rounded-radius-lg shadow-drop-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5 transition-colors"
+            onClick={() => autoFillSlots()}
+            leftIcon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>}
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
             Yerleştir
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -260,18 +262,18 @@ export function ProductManagement() {
       <div className="bg-surface-panel rounded-radius-lg border border-border-default p-4 shadow-drop-sm">
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h4 className="text-[13px] font-bold text-text-primary">Ürün Havuzu</h4>
+            <h4 className="text-[11px] font-medium text-text-secondary tracking-normal">Ürün havuzu</h4>
             <p className="text-[10px] text-text-muted mt-0.5">Genel ürün listenizi yükleyin, arayın ve boş hücrelere sürükleyin.</p>
           </div>
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-panel text-text-secondary border border-border-strong rounded-radius-lg text-[11px] font-medium hover:bg-surface-subtle transition-colors shrink-0"
+            leftIcon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>}
+            className="shrink-0"
           >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
-            </svg>
-            Ürün Ekle
-          </button>
+            Ürün ekle
+          </Button>
         </div>
 
         <div className="mt-3">
@@ -306,31 +308,31 @@ export function ProductManagement() {
         </div>
 
         <div className="flex gap-2 mt-4">
-           <button
+           <Button
+             variant="secondary"
+             size="sm"
              onClick={() => masterRef.current?.click()}
-             className="flex-1 border border-border-default bg-surface-panel hover:bg-surface-subtle text-text-secondary text-xs py-1.5 px-3 rounded-radius-md flex items-center justify-center gap-1.5 transition-colors"
+             leftIcon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>}
+             className="flex-1"
            >
-             <svg className="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-             </svg>
-             Dosya Değiştir
-           </button>
-           <button
-             onClick={() => setMasterProductPool([])}
-             className="flex-1 border border-border-default bg-surface-panel hover:bg-surface-subtle text-text-secondary text-xs py-1.5 px-3 rounded-radius-md flex items-center justify-center gap-1.5 transition-colors"
+             Dosya değiştir
+           </Button>
+           <Button
+             variant="danger"
+             size="sm"
+             onClick={() => { if (confirm('Ürün havuzu temizlensin mi?')) setMasterProductPool([]); }}
+             leftIcon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>}
+             className="flex-1"
            >
-             <svg className="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-             </svg>
-             Havuzu Temizle
-           </button>
+             Havuzu temizle
+           </Button>
         </div>
       </div>
 
       {/* 3. ÜRÜN ARA VE SÜRÜKLE */}
       <div className="bg-surface-panel rounded-radius-lg border border-border-default p-4 shadow-drop-sm pb-2">
         <div className="mb-4">
-          <h4 className="text-[13px] font-bold text-text-primary">Ürün Ara ve Sürükle</h4>
+          <h4 className="text-[11px] font-medium text-text-secondary tracking-normal">Ürün ara ve sürükle</h4>
         </div>
 
         <div className="flex flex-col gap-3 mb-4">
@@ -347,23 +349,23 @@ export function ProductManagement() {
             />
           </div>
 
-          {/* Sekmeler: Segmented Pill Control */}
-          <div className="bg-surface-subtle p-1 rounded-radius-lg grid grid-cols-3 text-xs text-text-secondary">
+          {/* Sekmeler: Segmented Control */}
+          <div className="border border-border-default rounded-md p-0.5 bg-surface-panel grid grid-cols-3">
             <button
               onClick={() => setFilterType('all')}
-              className={`py-1.5 text-center transition-all ${filterType === 'all' ? 'bg-surface-panel text-text-primary shadow-drop-sm rounded-radius-md font-medium' : 'hover:text-text-primary'}`}
+              className={`py-1.5 text-[13px] text-center transition-all rounded-[4px] ${filterType === 'all' ? 'bg-[#1e293b] text-white font-medium' : 'bg-transparent text-text-secondary font-normal hover:bg-surface-subtle hover:text-text-primary'}`}
             >
               Tümü ({masterProductPool.length})
             </button>
             <button
               onClick={() => setFilterType('used')}
-              className={`py-1.5 text-center transition-all ${filterType === 'used' ? 'bg-surface-panel text-text-primary shadow-drop-sm rounded-radius-md font-medium' : 'hover:text-text-primary'}`}
+              className={`py-1.5 text-[13px] text-center transition-all rounded-[4px] ${filterType === 'used' ? 'bg-[#1e293b] text-white font-medium' : 'bg-transparent text-text-secondary font-normal hover:bg-surface-subtle hover:text-text-primary'}`}
             >
               Kullanılan ({usedCount})
             </button>
             <button
               onClick={() => setFilterType('unused')}
-              className={`py-1.5 text-center transition-all ${filterType === 'unused' ? 'bg-surface-panel text-text-primary shadow-drop-sm rounded-radius-md font-medium' : 'hover:text-text-primary'}`}
+              className={`py-1.5 text-[13px] text-center transition-all rounded-[4px] ${filterType === 'unused' ? 'bg-[#1e293b] text-white font-medium' : 'bg-transparent text-text-secondary font-normal hover:bg-surface-subtle hover:text-text-primary'}`}
             >
               Kalan ({unusedCount})
             </button>
@@ -376,11 +378,11 @@ export function ProductManagement() {
               <svg className="w-8 h-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
               </svg>
-              <p className="text-[12px]">Havuz boş. Yukarıdaki alandan Excel yükleyin.</p>
+              <p className="text-xs">Havuz boş. Yukarıdaki alandan Excel yükleyin.</p>
             </div>
           ) : filteredMaster.length === 0 ? (
             <div className="py-6 text-center text-text-muted">
-               <p className="text-[12px]">Sonuç bulunamadı.</p>
+               <p className="text-xs">Sonuç bulunamadı.</p>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
@@ -394,7 +396,7 @@ export function ProductManagement() {
                       if (!placed)
                         e.dataTransfer.setData('newProductFromSidebar', JSON.stringify(p));
                     }}
-                    className={`flex items-center gap-3 bg-surface-panel border border-border-default rounded-xl p-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-border-strong hover:shadow-drop-sm transition-all duration-200 group ${
+                    className={`flex items-center gap-3 bg-surface-panel border border-border-default rounded-radius-lg p-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-border-strong hover:shadow-drop-sm transition-all duration-200 group ${
                       placed ? 'cursor-not-allowed opacity-60' : 'cursor-grab active:cursor-grabbing'
                     }`}
                   >
@@ -406,19 +408,19 @@ export function ProductManagement() {
                           className={`max-w-full max-h-full object-contain ${placed ? 'opacity-50 grayscale' : ''}`}
                         />
                       ) : (
-                        <span className="text-[9px] text-text-muted font-bold">Yok</span>
+                        <span className="text-[11px] text-text-muted font-medium">Yok</span>
                       )}
                     </div>
 
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
-                      <div className={`text-[12px] font-semibold truncate ${placed ? 'text-text-muted' : 'text-text-primary'}`}>
+                      <div className={`text-xs font-medium truncate ${placed ? 'text-text-muted' : 'text-text-primary'}`}>
                         {p.name}
                       </div>
                       <div className="text-[10px] text-text-muted mt-0.5">{p.sku}</div>
                     </div>
 
                     <div className="flex items-center gap-4 shrink-0">
-                      <div className={`text-[12px] font-bold ${placed ? 'text-text-muted' : 'text-text-primary'}`}>
+                      <div className={`text-xs font-medium ${placed ? 'text-text-muted' : 'text-text-primary'}`}>
                         {p.price} €
                       </div>
 
@@ -450,12 +452,12 @@ export function ProductManagement() {
 
         {masterProductPool.length > 0 && (
           <div className="pt-3 border-t border-border-default text-center">
-            <button className="text-[12px] font-medium text-text-secondary hover:text-text-primary flex items-center justify-center w-full gap-1">
-              Tümünü Gör ({filteredMaster.length} ürün)
+            <Button variant="ghost" fullWidth>
+              Tümünü gör ({filteredMaster.length} ürün)
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -551,10 +553,10 @@ function AddProductModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
-      <div className="bg-surface-panel rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0f172a]/40 backdrop-blur-sm">
+      <div className="bg-surface-panel rounded-radius-xl shadow-drop-lg w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         <div className="px-6 py-4 border-b border-border-default flex items-center justify-between bg-surface-subtle/50">
-          <h3 className="text-heading-xl text-text-primary">Yeni Ürün Ekle</h3>
+          <h3 className="text-heading-xl text-text-primary">Yeni ürün ekle</h3>
           <button onClick={onClose} className="text-text-muted hover:text-text-secondary transition-colors p-1 rounded-radius-md hover:bg-surface-subtle">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -566,7 +568,7 @@ function AddProductModal({
           <div className="flex gap-4">
             {/* Sol Taraf: Görsel Alanı (Kare) */}
             <div className="w-28 shrink-0">
-              <label className="block text-[11px] font-semibold text-text-secondary mb-1.5">Ürün Resmi</label>
+              <label className="block text-[11px] font-medium text-text-secondary mb-1.5">Ürün görseli</label>
               <div
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -581,7 +583,7 @@ function AddProductModal({
                     handleFile(file);
                   }
                 }}
-                className={`relative w-full aspect-square border-2 border-dashed rounded-xl overflow-hidden shadow-drop-sm group transition-all flex flex-col items-center justify-center text-center cursor-pointer ${
+                className={`relative w-full aspect-square border-2 border-dashed rounded-radius-lg overflow-hidden shadow-drop-sm group transition-all flex flex-col items-center justify-center text-center cursor-pointer ${
                   isDragging
                     ? 'border-border-strong bg-surface-subtle/50'
                     : previewUrl
@@ -622,7 +624,7 @@ function AddProductModal({
             {/* Sağ Taraf: İsim ve SKU */}
             <div className="flex-1 space-y-4 flex flex-col justify-center">
               <div>
-                <label className="block text-[11px] font-semibold text-text-secondary mb-1.5">Ürün Adı</label>
+                <label className="block text-[11px] font-medium text-text-secondary mb-1.5">Ürün Adı</label>
                 <input
                   type="text"
                   required
@@ -633,7 +635,7 @@ function AddProductModal({
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-text-secondary mb-1.5">SKU / Ürün Kodu</label>
+                <label className="block text-[11px] font-medium text-text-secondary mb-1.5">Ürün kodu</label>
                 <input
                   type="text"
                   value={sku}
@@ -647,7 +649,7 @@ function AddProductModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[11px] font-semibold text-text-secondary mb-1.5">Alış Fiyatı</label>
+              <label className="block text-[11px] font-medium text-text-secondary mb-1.5">Alış Fiyatı</label>
               <input
                 type="text"
                 value={purchasePrice}
@@ -657,7 +659,7 @@ function AddProductModal({
               />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-text-primary mb-1.5">Satış Fiyatı (Fiyat)</label>
+              <label className="block text-[11px] font-medium text-text-secondary mb-1.5">Satış fiyatı</label>
               <input
                 type="text"
                 required
@@ -670,18 +672,18 @@ function AddProductModal({
           </div>
 
           <div className="pt-4 mt-2 flex gap-3">
-            <button
-              type="button"
+            <Button
+              variant="secondary"
               onClick={cleanupAndClose}
               disabled={isLoading}
-              className="px-4 py-2.5 bg-surface-panel border border-border-default hover:bg-surface-subtle text-text-secondary font-semibold rounded-xl transition-all shadow-drop-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Vazgeç
-            </button>
-            <button
+            </Button>
+            <Button
               type="submit"
+              variant="primary"
               disabled={isLoading}
-              className="flex-1 bg-primary hover:bg-primary-hover text-white font-semibold py-2.5 rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="flex-1"
             >
               {isLoading ? (
                 <>
@@ -696,10 +698,10 @@ function AddProductModal({
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
-                  Ürünü Havuza Ekle
+                  Ürünü havuza ekle
                 </>
               )}
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -743,7 +745,7 @@ function DropZone({
         if (f) onFile(f);
       }}
       onClick={onClick}
-      className={`border border-dashed rounded-xl p-3 cursor-pointer transition-all flex items-center justify-center gap-3 ${activeBorder} ${activeBg} hover:border-border-strong hover:bg-surface-subtle/30`}
+      className={`border border-dashed rounded-radius-lg p-3 cursor-pointer transition-all flex items-center justify-center gap-3 ${activeBorder} ${activeBg} hover:border-border-strong hover:bg-surface-subtle/30`}
     >
       <div className={`w-8 h-8 rounded-radius-lg bg-surface-panel shadow-drop-sm flex items-center justify-center shrink-0 ${iconColor}`}>
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -751,7 +753,7 @@ function DropZone({
         </svg>
       </div>
       <div className="flex flex-col text-left">
-        <div className="text-[12px] font-semibold text-text-primary">
+        <div className="text-xs font-medium text-text-primary">
           {title}
         </div>
         <div className="text-[10px] text-text-muted">Excel sürükleyin veya tıklayıp seçin</div>

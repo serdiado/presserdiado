@@ -22,11 +22,21 @@ export interface BannerCellData {
   bgColor: ColorValue;
   border: BorderData;
   image: string | null;
+  imageMode: 'contain' | 'cover' | 'free';
+  imagePosX: number;
+  imagePosY: number;
+  imageScale: number;
 }
 
 export interface BannerModuleData {
   type: 'banner';
+  rows: number;
+  cols: number;
   cells: BannerCellData[];
+  bgColor: ColorValue;
+  containerBorder: { color: { c: string; o: number }; width: number };
+  radius: BorderRadiusData;
+  shadow: ShadowData;
 }
 
 export interface PizzaModuleData {

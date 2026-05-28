@@ -18,12 +18,12 @@ export function TypographyPicker({ title, value, onChange }: Props) {
     <details className="bg-white border border-slate-200 rounded shadow-sm mb-2 group/font">
       <summary className="text-[10px] font-bold text-slate-700 uppercase tracking-wider p-2.5 cursor-pointer bg-slate-50 hover:bg-slate-100 list-none flex justify-between items-center">
         {title}
-        <span className="group-open/font:rotate-180 transition-transform text-[9px] text-slate-400">▼</span>
+        <span className="group-open/font:rotate-180 transition-transform text-[11px] text-slate-400">▼</span>
       </summary>
       <div className="p-3 space-y-3 border-t border-slate-200">
         <div className="grid grid-cols-2 gap-3">
           <label className="flex flex-col gap-1.5">
-            <span className="text-[9px] font-bold text-slate-500 uppercase">Font</span>
+            <span className="text-[11px] font-bold text-slate-500 uppercase">Font</span>
             <select
               value={value.fontFamily}
               onChange={(e) => set('fontFamily', e.target.value)}
@@ -37,7 +37,7 @@ export function TypographyPicker({ title, value, onChange }: Props) {
             </select>
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="text-[9px] font-bold text-slate-500 uppercase">Kalınlık</span>
+            <span className="text-[11px] font-bold text-slate-500 uppercase">Kalınlık</span>
             <select
               value={value.fontWeight}
               onChange={(e) => set('fontWeight', e.target.value)}
@@ -61,7 +61,7 @@ export function TypographyPicker({ title, value, onChange }: Props) {
             ] as const
           ).map(([k, label, min, max, step]) => (
             <div key={k} className="flex items-center gap-2">
-              <span className="text-[9px] font-medium text-slate-500 w-20">{label}</span>
+              <span className="text-[11px] font-medium text-slate-500 w-20">{label}</span>
               <input
                 type="range"
                 min={min}
@@ -78,7 +78,7 @@ export function TypographyPicker({ title, value, onChange }: Props) {
                 step={step}
                 value={value[k] as number}
                 onChange={(e) => set(k, Number(e.target.value))}
-                className="w-12 text-[9px] font-bold text-slate-600 text-center border border-slate-200 rounded p-0.5"
+                className="w-12 text-[11px] font-bold text-slate-600 text-center border border-slate-200 rounded p-0.5"
               />
             </div>
           ))}
@@ -86,13 +86,13 @@ export function TypographyPicker({ title, value, onChange }: Props) {
 
         <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">
           <div>
-            <span className="text-[9px] font-bold text-slate-500 uppercase block mb-1">Yatay</span>
+            <span className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Yatay</span>
             <div className="flex bg-slate-100 rounded border border-slate-200 p-0.5">
               {ALIGNS.map((a) => (
                 <button
                   key={a}
                   onClick={() => set('textAlign', a)}
-                  className={`flex-1 py-1 text-[9px] font-bold uppercase rounded-sm ${
+                  className={`flex-1 py-1 text-[11px] font-bold uppercase rounded-sm ${
                     value.textAlign === a ? 'bg-white shadow text-slate-800' : 'text-slate-400'
                   }`}
                 >
@@ -102,13 +102,13 @@ export function TypographyPicker({ title, value, onChange }: Props) {
             </div>
           </div>
           <div>
-            <span className="text-[9px] font-bold text-slate-500 uppercase block mb-1">Dikey</span>
+            <span className="text-[11px] font-bold text-slate-500 uppercase block mb-1">Dikey</span>
             <div className="flex bg-slate-100 rounded border border-slate-200 p-0.5">
               {VALIGNS.map((a) => (
                 <button
                   key={a}
                   onClick={() => set('verticalAlign', a)}
-                  className={`flex-1 py-1 text-[9px] font-bold uppercase rounded-sm ${
+                  className={`flex-1 py-1 text-[11px] font-bold uppercase rounded-sm ${
                     value.verticalAlign === a ? 'bg-white shadow text-slate-800' : 'text-slate-400'
                   }`}
                 >

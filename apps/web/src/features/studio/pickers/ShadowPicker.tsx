@@ -17,7 +17,7 @@ export function ShadowPicker({ title = 'Gölge', value, onChange }: Props) {
         <span className="text-[10px] font-bold text-slate-600">{title}</span>
         <button
           onClick={() => onChange({ ...value, active: !value.active })}
-          className={`text-[8px] px-1.5 py-0.5 rounded font-bold ${
+          className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
             value.active
               ? 'bg-slate-100 text-slate-800'
               : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
@@ -39,7 +39,7 @@ export function ShadowPicker({ title = 'Gölge', value, onChange }: Props) {
               ] as const
             ).map(([k, label, min, max]) => (
               <div key={k} className="flex flex-col gap-1.5 bg-white p-1.5 rounded border border-slate-100">
-                <span className="text-[9px] font-medium text-slate-400">{label}</span>
+                <span className="text-[11px] font-medium text-slate-400">{label}</span>
                 <div className="flex items-center gap-2">
                   <input
                     type="range"

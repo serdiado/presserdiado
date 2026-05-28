@@ -48,7 +48,7 @@ export function GlobalCellSettings() {
           }
           className="w-12 text-[10px] font-bold text-slate-600 text-right border border-slate-200 rounded p-0.5"
         />
-        <span className="text-[9px] text-slate-400">mm</span>
+        <span className="text-[11px] text-slate-400">mm</span>
       </div>
 
       <div className="bg-white p-3 rounded border border-slate-200 shadow-sm space-y-3">
@@ -58,7 +58,7 @@ export function GlobalCellSettings() {
               Görsel Serbest Konum
             </span>
             {selectedSlotIds.length > 1 && (
-              <span className="text-[8px] text-slate-700 font-semibold">
+              <span className="text-[10px] text-slate-700 font-semibold">
                 {selectedSlotIds.length} ürün seçili
               </span>
             )}
@@ -77,13 +77,13 @@ export function GlobalCellSettings() {
           </label>
         </div>
         {selectedSlotIds.length === 0 ? (
-          <div className="p-2 bg-amber-50 rounded border border-amber-100 text-[9px] text-amber-700 font-bold">
+          <div className="p-2 bg-amber-50 rounded border border-amber-100 text-[11px] text-amber-700 font-bold">
             ⓘ Önce bir ürün seçin.
           </div>
         ) : (
           <div className={`space-y-2 ${isImgEditMode ? '' : 'opacity-40 pointer-events-none'}`}>
             <div className="flex items-center gap-2">
-              <span className="text-[9px] font-medium text-slate-500 w-16">Büyütme</span>
+              <span className="text-[11px] font-medium text-slate-500 w-16">Büyütme</span>
               <input
                 type="range"
                 min={10}
@@ -104,7 +104,7 @@ export function GlobalCellSettings() {
                 }
                 className="w-12 text-[10px] font-bold text-slate-600 text-right border border-slate-200 rounded p-0.5"
               />
-              <span className="text-[9px] text-slate-400">%</span>
+              <span className="text-[11px] text-slate-400">%</span>
             </div>
             <button
               onClick={() =>
@@ -115,7 +115,7 @@ export function GlobalCellSettings() {
                   editMode: false,
                 })
               }
-              className="w-full py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[9px] font-bold rounded border border-slate-200"
+              className="w-full py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold rounded border border-slate-200"
             >
               Konumu Sıfırla
             </button>
@@ -156,7 +156,7 @@ export function GlobalCellSettings() {
           />
         </div>
         <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
-          <span className="text-[9px] font-medium text-slate-500 w-16">Kalınlık</span>
+          <span className="text-[11px] font-medium text-slate-500 w-16">Kalınlık</span>
           <input
             type="range"
             min={0}

@@ -23,7 +23,7 @@ export function SpacingPicker({ title = 'İç Boşluk', value, onChange }: Props
         <span className="text-[10px] font-bold text-slate-600">{title}</span>
         <button
           onClick={toggleLink}
-          className={`text-[8px] px-1.5 py-0.5 rounded font-bold ${
+          className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
             value.linked
               ? 'bg-slate-100 text-slate-800'
               : 'bg-slate-100 text-slate-400 hover:bg-slate-200'
@@ -34,7 +34,7 @@ export function SpacingPicker({ title = 'İç Boşluk', value, onChange }: Props
       </div>
       {value.linked ? (
         <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded border border-slate-200">
-          <span className="text-[9px] font-medium text-slate-400 w-8">Tümü</span>
+          <span className="text-[11px] font-medium text-slate-400 w-8">Tümü</span>
           <input
             type="range"
             min={0}
@@ -61,7 +61,7 @@ export function SpacingPicker({ title = 'İç Boşluk', value, onChange }: Props
             ] as const
           ).map(([k, label]) => (
             <div key={k} className="flex items-center justify-between gap-1 bg-slate-50 p-1.5 rounded border border-slate-200">
-              <span className="text-[8px] font-medium text-slate-400 w-6">{label}</span>
+              <span className="text-[10px] font-medium text-slate-400 w-6">{label}</span>
               <input
                 type="range"
                 min={0}

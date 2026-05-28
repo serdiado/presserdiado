@@ -65,12 +65,12 @@ export interface UIThemeTokens {
 
 export const defaultLightTheme: UIThemeTokens = {
   colors: {
-    primary:        '#2563eb', // blue-600
-    primaryHover:   '#1d4ed8', // blue-700
+    primary:        '#1a56db', // blue-600
+    primaryHover:   '#1447c0', // blue-700
     danger:         '#dc2626', // red-600
     success:        '#059669', // emerald-600
     warning:        '#d97706', // amber-600
-    surfaceApp:     '#f5f5f4', // stone-100
+    surfaceApp:     '#f1f5f9', // stone-100
     surfacePanel:   '#ffffff', // white
     surfaceSubtle:  '#f8fafc', // slate-50
     borderDefault:  '#e2e8f0', // slate-200
@@ -115,7 +115,7 @@ export const defaultLightTheme: UIThemeTokens = {
 
 export const defaultDarkTheme: UIThemeTokens = {
   colors: {
-    primary:        '#3b82f6', // blue-500 (koyu arka planda daha iyi kontrast)
+    primary:        '#4b7cf3', // blue-500 (koyu arka planda daha iyi kontrast)
     primaryHover:   '#2563eb', // blue-600
     danger:         '#f87171', // red-400
     success:        '#34d399', // emerald-400

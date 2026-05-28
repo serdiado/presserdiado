@@ -719,6 +719,7 @@ export function ColorOpacityPicker({
         createPortal(
           <div
             ref={popoverRef}
+            data-color-picker-popup
             className="fixed z-99999 bg-white border border-slate-200 rounded-xl shadow-2xl p-4 flex flex-col gap-3 overflow-y-auto"
             style={{
               top: coords.top,
@@ -791,7 +792,7 @@ export function ColorOpacityPicker({
                   <span className="text-xs font-bold text-slate-500 uppercase">Kayıtlı</span>
                   <button
                     onClick={saveColor}
-                    className="text-[9px] bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded font-bold border border-slate-200"
+                    className="text-[11px] bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded font-bold border border-slate-200"
                   >
                     + EKLE
                   </button>
@@ -823,7 +824,7 @@ export function ColorOpacityPicker({
                     </div>
                   ))}
                   {savedColors.length === 0 && (
-                    <span className="text-[9px] text-slate-500 italic">Henüz renk yok.</span>
+                    <span className="text-[11px] text-slate-500 italic">Henüz renk yok.</span>
                   )}
                 </div>
               </div>

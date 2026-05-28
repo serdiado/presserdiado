@@ -62,14 +62,14 @@ export function TemplateSettingsPanel() {
             >
               {tpl.name}
               {isCustom && (
-                <span className="ml-1.5 text-[8px] font-bold text-text-secondary bg-surface-subtle px-1.5 py-0.5 rounded">
+                <span className="ml-1.5 text-[10px] font-bold text-text-secondary bg-surface-subtle px-1.5 py-0.5 rounded">
                   ÖZEL
                 </span>
               )}
             </span>
             {isActive && <span className="w-3 h-3 bg-border-selected rounded-full" />}
           </div>
-          <span className="text-[9px] font-bold text-text-muted">
+          <span className="text-[11px] font-bold text-text-muted">
             {tpl.pageCount} Sayfa •{' '}
             {tpl.foldCount > 0 ? `${tpl.foldCount} Kırımlı` : 'Kırımsız'} •{' '}
             {tpl.openWidthMm}×{tpl.openHeightMm}mm
@@ -114,7 +114,7 @@ export function TemplateSettingsPanel() {
       )}
 
       <div className="bg-amber-50 border border-amber-200 p-2 rounded">
-        <p className="text-[9px] font-bold text-amber-700 leading-tight">
+        <p className="text-[11px] font-bold text-amber-700 leading-tight">
           ⚠ Şablon değiştirildiğinde mevcut tasarım sıfırlanır.
         </p>
       </div>

@@ -4,29 +4,15 @@ import { getTerm } from '@matbaapro/shared';
 import { GlobalGridSettings } from '../panels/GlobalGridSettings';
 import { CellPanel } from '../panels/CellPanel';
 import { BackgroundSettings } from '../panels/BackgroundSettings';
-import { GlobalCellSettings } from '../panels/GlobalCellSettings';
-import { GlobalPriceSettings } from '../panels/GlobalPriceSettings';
-import { TemplateSettingsPanel } from '../panels/TemplateSettingsPanel';
 import { ProductManagement } from '../panels/ProductManagement';
-import { BannerSettingsPanel, PizzaSettingsPanel } from '../modules';
-import {
-  USER_MODULES_EVENT,
-  deleteUserModule,
-  listUserModules,
-  saveUserModule,
-  type UserModule,
-} from '../modules/userModules';
-import { useEffect } from 'react';
-import toast from 'react-hot-toast';
-import type { AnyModuleData } from '../modules';
-import { LayoutTemplate, Grid3X3, Layers, ChevronDown } from 'lucide-react';
+import { LayoutTemplate, Grid3X3, Layers, ChevronDown, Bookmark, Table2, Frame, PanelBottom } from 'lucide-react';
 
 type NewPanel = 'products' | 'design' | 'grid' | 'modules' | 'cell' | 'price' | 'template';
 
 const NEW_TABS: { key: NewPanel; label: string; icon: React.ReactNode }[] = [
   {
     key: 'products',
-    label: 'ÜRÜNLER',
+    label: 'Ürünler',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
@@ -37,7 +23,7 @@ const NEW_TABS: { key: NewPanel; label: string; icon: React.ReactNode }[] = [
   },
   {
     key: 'design',
-    label: 'TASARIM',
+    label: 'Tasarım',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle>
@@ -50,7 +36,7 @@ const NEW_TABS: { key: NewPanel; label: string; icon: React.ReactNode }[] = [
   },
   {
     key: 'grid',
-    label: 'HÜCRE',
+    label: 'Hücre',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -63,7 +49,7 @@ const NEW_TABS: { key: NewPanel; label: string; icon: React.ReactNode }[] = [
   },
   {
     key: 'modules',
-    label: 'MODÜLLER',
+    label: 'Modüller',
     icon: (
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="8" height="8" rx="1"></rect>
@@ -89,12 +75,12 @@ export function Sidebar() {
             onClick={() => setActiveTab(t.key)}
             className={`flex flex-col items-center justify-center py-3.5 gap-1.5 transition-all duration-200 ${
               activeTab === t.key
-                ? 'text-text-primary bg-surface-panel border-b-2 border-b-primary shadow-[0_-1px_0_0_#e2e8f0]'
+                ? 'text-text-primary bg-surface-panel border-b-2 border-b-primary shadow-[0_-1px_0_0_var(--color-border-default)]'
                 : 'text-text-secondary hover:text-text-primary hover:bg-surface-subtle border-b-2 border-b-transparent'
             }`}
           >
             {t.icon}
-            <span className="text-[9px] font-extrabold tracking-widest">{t.label}</span>
+            <span className="text-[10px] font-medium tracking-normal">{t.label}</span>
           </button>
         ))}
       </div>
@@ -104,21 +90,7 @@ export function Sidebar() {
         {activeTab === 'products' && <ProductManagement />}
         {activeTab === 'design' && <DesignPanel />}
         {activeTab === 'grid' && <CellPanel />}
-        {activeTab === 'modules' && (
-          <div className="flex flex-col items-center justify-center h-full text-text-muted space-y-3">
-            <div className="w-12 h-12 rounded-radius-full bg-surface-subtle flex items-center justify-center border border-border-default">🧩</div>
-            <p className="text-label-md">Modüller ve Bileşenler (Yapım Aşamasında)</p>
-          </div>
-        )}
-
-        {/* --- ESKİ İŞLEVSEL KODLAR (Geçici Olarak Gizlendi) --- */}
-        <div className="hidden">
-          {activeTab === 'modules' && <ModulesPanel />}
-          {activeTab === 'grid' && <GlobalGridSettings />}
-          {activeTab === 'cell' && <GlobalCellSettings />}
-          {activeTab === 'price' && <GlobalPriceSettings />}
-          {activeTab === 'template' && <TemplateSettingsPanel />}
-        </div>
+        {activeTab === 'modules' && <ModulesPanel />}
       </div>
     </div>
   );
@@ -142,7 +114,7 @@ function DesignPanel() {
         >
           <div className={`flex items-center gap-2 transition-colors ${openSection === 'template' ? 'text-text-primary' : 'text-text-secondary'}`}>
             <LayoutTemplate size={18} />
-            <span className="text-xs font-bold tracking-wider text-text-secondary uppercase">ŞABLON</span>
+            <span className="text-xs font-medium text-text-primary">Şablon</span>
           </div>
           <ChevronDown
             size={18}
@@ -167,36 +139,36 @@ function DesignPanel() {
             {/* B) Şablon Bilgileri */}
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-center py-1 text-sm border-b border-border-default last:border-0">
-                <span className="text-text-secondary">Tasarım Tipi</span>
-                <span className="text-body-md text-text-primary">{activeTemplate?.designType ? getTerm('print', activeTemplate.designType) : 'Seçilmedi'}</span>
+                <span className="text-xs font-medium text-text-secondary">Tasarım Tipi</span>
+                <span className="text-xs font-normal text-text-primary">{activeTemplate?.designType ? getTerm('print', activeTemplate.designType) : 'Seçilmedi'}</span>
               </div>
               <div className="flex justify-between items-center py-1 text-sm border-b border-border-default last:border-0">
-                <span className="text-text-secondary">Mod</span>
-                <span className="text-body-md text-text-primary">{activeTemplate?.mode ? getTerm('print', activeTemplate.mode) : '-'}</span>
+                <span className="text-xs font-medium text-text-secondary">Mod</span>
+                <span className="text-xs font-normal text-text-primary">{activeTemplate?.mode ? getTerm('print', activeTemplate.mode) : '-'}</span>
               </div>
               <div className="flex justify-between items-center py-1 text-sm border-b border-border-default last:border-0">
-                <span className="text-text-secondary">Kağıt</span>
-                <span className="text-body-md text-text-primary">{activeTemplate?.paperSize ? getTerm('print', activeTemplate.paperSize) : '-'}</span>
+                <span className="text-xs font-medium text-text-secondary">Kağıt</span>
+                <span className="text-xs font-normal text-text-primary">{activeTemplate?.paperSize ? getTerm('print', activeTemplate.paperSize) : '-'}</span>
               </div>
               <div className="flex justify-between items-center py-1 text-sm border-b border-border-default last:border-0">
-                <span className="text-text-secondary">Katlama</span>
-                <span className="text-body-md text-text-primary">
+                <span className="text-xs font-medium text-text-secondary">Katlama</span>
+                <span className="text-xs font-normal text-text-primary">
                   {activeTemplate?.foldType ? getTerm('print', activeTemplate.foldType) : '-'}
                 </span>
               </div>
               <div className="flex justify-between items-center py-1 text-sm border-b border-border-default last:border-0">
-                <span className="text-text-secondary">Sayfa</span>
-                <span className="text-body-md text-text-primary">{activeTemplate?.pageCount || '-'}</span>
+                <span className="text-xs font-medium text-text-secondary">Sayfa</span>
+                <span className="text-xs font-normal text-text-primary">{activeTemplate?.pageCount || '-'}</span>
               </div>
               <div className="flex justify-between items-center py-1 text-sm border-b border-border-default last:border-0">
-                <span className="text-text-secondary">Açık Ölçü</span>
-                <span className="text-body-md text-text-primary">
+                <span className="text-xs font-medium text-text-secondary">Açık Ölçü</span>
+                <span className="text-xs font-normal text-text-primary">
                   {activeTemplate ? `${activeTemplate.openWidthMm}×${activeTemplate.openHeightMm} mm` : '-'}
                 </span>
               </div>
               <div className="flex justify-between items-center py-1 text-sm border-b border-border-default last:border-0">
-                <span className="text-text-secondary">Kapalı Ölçü</span>
-                <span className="text-body-md text-text-primary">
+                <span className="text-xs font-medium text-text-secondary">Kapalı Ölçü</span>
+                <span className="text-xs font-normal text-text-primary">
                   {activeTemplate ? `${activeTemplate.openWidthMm / activeTemplate.pageCount}×${activeTemplate.openHeightMm} mm` : '-'}
                 </span>
               </div>
@@ -213,7 +185,7 @@ function DesignPanel() {
         >
           <div className={`flex items-center gap-2 transition-colors ${openSection === 'grid' ? 'text-text-primary' : 'text-text-secondary'}`}>
             <Grid3X3 size={18} />
-            <span className="text-xs font-bold tracking-wider text-text-secondary uppercase">IZGARA</span>
+            <span className="text-xs font-medium text-text-primary">Izgara</span>
           </div>
           <ChevronDown
             size={18}
@@ -239,7 +211,7 @@ function DesignPanel() {
         >
           <div className={`flex items-center gap-2 transition-colors ${openSection === 'background' ? 'text-text-primary' : 'text-text-secondary'}`}>
             <Layers size={18} />
-            <span className="text-xs font-bold tracking-wider text-text-secondary uppercase">ARKAPLAN</span>
+            <span className="text-xs font-medium text-text-primary">Arka plan</span>
           </div>
           <ChevronDown
             size={18}
@@ -262,147 +234,114 @@ function DesignPanel() {
   );
 }
 
+function ModuleCard({
+  icon,
+  title,
+  description,
+  moduleType,
+  draggable: isDraggable,
+  className = '',
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  moduleType: string;
+  draggable: boolean;
+  className?: string;
+}) {
+  return (
+    <div
+      draggable={isDraggable}
+      onDragStart={isDraggable ? (e) => e.dataTransfer.setData('newModuleType', moduleType) : undefined}
+      className={`flex flex-col gap-2 p-3 border border-border-default rounded-radius-md bg-surface-subtle hover:bg-border-default transition-colors select-none ${isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${className}`}
+    >
+      <div className="flex items-center gap-2 text-text-primary">
+        {icon}
+        <span className="text-xs font-medium">{title}</span>
+      </div>
+      <p className="text-[10px] text-text-muted leading-relaxed">{description}</p>
+    </div>
+  );
+}
+
 function ModulesPanel() {
-  const selectedSlotIds = useUIStore((s) => s.selectedSlotIds);
-  const getActivePages = useCatalogStore((s) => s.getActivePages);
-
-  const slot =
-    selectedSlotIds.length > 0
-      ? getActivePages()
-          .flatMap((p) => p.slots)
-          .find((s) => s.id === selectedSlotIds[0])
-      : null;
-  const moduleType = (slot?.moduleData as { type?: string } | null)?.type;
-
-  const onDragStart = (e: React.DragEvent, type: 'banner' | 'pizza') => {
-    e.dataTransfer.setData('newModuleType', type);
-  };
+  const [readyOpen, setReadyOpen] = useState(true);
+  const [mineOpen, setMineOpen] = useState(false);
 
   return (
-    <div className="space-y-3">
-      <p className="text-[10px] text-text-secondary font-bold">
-        Modülü serbest alana sürükleyin (boş hücreyi otomatik serbest alana çevirir).
-      </p>
-
-      <div className="grid grid-cols-2 gap-2">
-        <div
-          draggable
-          onDragStart={(e) => onDragStart(e, 'banner')}
-          className="bg-surface-subtle hover:bg-border-default border border-border-default rounded-radius-sm p-3 cursor-grab active:cursor-grabbing flex flex-col items-center"
+    <div className="flex flex-col w-full gap-2">
+      {/* Hazır modüller */}
+      <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel">
+        <button
+          onClick={() => setReadyOpen((v) => !v)}
+          className="flex items-center justify-between p-3 bg-surface-subtle hover:bg-border-default transition-colors"
         >
-          <span className="text-2xl mb-1">📢</span>
-          <span className="text-[10px] font-bold text-text-primary">Banner</span>
-          <span className="text-[8px] text-text-muted">8×4 grid</span>
-        </div>
-        <div
-          draggable
-          onDragStart={(e) => onDragStart(e, 'pizza')}
-          className="bg-orange-50 hover:bg-orange-100 border border-orange-200 rounded-radius-sm p-3 cursor-grab active:cursor-grabbing flex flex-col items-center"
-        >
-          <span className="text-2xl mb-1">🍕</span>
-          <span className="text-[10px] font-bold text-orange-700">Pizza</span>
-          <span className="text-[8px] text-text-muted">menü tablosu</span>
-        </div>
-      </div>
-
-      {moduleType === 'banner' && (
-        <div className="pt-3 border-t border-border-default">
-          <h4 className="text-[10px] font-black text-text-secondary mb-2">
-            BANNER AYARLARI (Seçili)
-          </h4>
-          <BannerSettingsPanel />
-        </div>
-      )}
-      {moduleType === 'pizza' && (
-        <div className="pt-3 border-t border-border-default">
-          <h4 className="text-[10px] font-black text-text-secondary mb-2">
-            PIZZA AYARLARI (Seçili)
-          </h4>
-          <PizzaSettingsPanel />
-        </div>
-      )}
-
-      {!!slot?.moduleData && (moduleType === 'banner' || moduleType === 'pizza') && (
-        <SaveCurrentModule slotData={slot.moduleData as AnyModuleData} />
-      )}
-
-      <UserModulesList />
-    </div>
-  );
-}
-
-function SaveCurrentModule({ slotData }: { slotData: AnyModuleData }) {
-  const handleSave = () => {
-    const name = window.prompt('Modülü adlandır:', `${slotData.type} ${new Date().toLocaleDateString('tr-TR')}`);
-    if (!name?.trim()) return;
-    const saved = saveUserModule(name, slotData);
-    toast.success(`"${saved.name}" kaydedildi`);
-  };
-  return (
-    <div className="pt-3 border-t border-border-default">
-      <button
-        onClick={handleSave}
-        className="w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-[11px] font-bold rounded-radius-sm border border-emerald-200"
-      >
-        💾 Bu Modülü Kaydet (Şablon Yap)
-      </button>
-    </div>
-  );
-}
-
-function UserModulesList() {
-  const [modules, setModules] = useState<UserModule[]>(listUserModules());
-
-  useEffect(() => {
-    const refresh = () => setModules(listUserModules());
-    window.addEventListener(USER_MODULES_EVENT, refresh);
-    return () => window.removeEventListener(USER_MODULES_EVENT, refresh);
-  }, []);
-
-  if (modules.length === 0) {
-    return (
-      <div className="pt-3 border-t border-border-default">
-        <h4 className="text-[10px] font-black text-text-secondary mb-2">
-          KULLANICI MODÜLLERİ
-        </h4>
-        <p className="text-[10px] text-text-muted italic">
-          Henüz kayıtlı modül yok. Bir banner/pizza yerleştirip "Bu Modülü Kaydet" ile şablon yapabilirsin.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="pt-3 border-t border-border-default">
-      <h4 className="text-[10px] font-black text-text-secondary mb-2">
-        KULLANICI MODÜLLERİ ({modules.length})
-      </h4>
-      <div className="space-y-1.5">
-        {modules.map((m) => (
-          <div
-            key={m.id}
-            draggable
-            onDragStart={(e) => {
-              e.dataTransfer.setData('newUserModuleData', JSON.stringify(m.data));
-            }}
-            className="group flex items-center gap-2 px-2 py-1.5 bg-surface-panel hover:bg-surface-subtle rounded-radius-sm border border-border-default cursor-grab active:cursor-grabbing"
-          >
-            <span className="text-base">{m.type === 'banner' ? '📢' : '🍕'}</span>
-            <span className="flex-1 text-[10px] font-semibold text-text-primary truncate">
-              {m.name}
-            </span>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (window.confirm(`"${m.name}" silinecek.`)) deleteUserModule(m.id);
-              }}
-              className="text-[10px] text-danger opacity-0 group-hover:opacity-100"
-              title="Sil"
-            >
-              ✕
-            </button>
+          <div className={`flex items-center gap-2 transition-colors ${readyOpen ? 'text-text-primary' : 'text-text-secondary'}`}>
+            <Layers size={18} />
+            <span className="text-xs font-medium text-text-primary">Hazır Modüller</span>
           </div>
-        ))}
+          <ChevronDown
+            size={16}
+            className={`transition-all duration-300 ${readyOpen ? 'rotate-180 text-text-primary' : 'text-text-secondary'}`}
+          />
+        </button>
+        <div
+          className={`transition-all duration-300 ease-in-out overflow-hidden ${
+            readyOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+          }`}
+        >
+          <div className="p-4 border-t border-border-default bg-surface-panel flex flex-col gap-2">
+            <ModuleCard
+              icon={<Table2 size={16} />}
+              title="Tablo Alanı"
+              description="Izgara düzeninde ürün görselleri ve bilgiler içeren tablo modülü."
+              moduleType="banner"
+              draggable
+            />
+            <ModuleCard
+              icon={<Frame size={16} />}
+              title="Serbest Tasarım Alanı"
+              description="Metin, görsel ve şekilleri özgürce konumlandırabileceğin kanvas alanı."
+              moduleType="free-design"
+              draggable
+              className="opacity-40 pointer-events-none"
+            />
+            <ModuleCard
+              icon={<PanelBottom size={16} />}
+              title="Alt Bilgi Alanı"
+              description="Hücreden bağımsız, sayfanın altında sabit kalan bilgi alanı."
+              moduleType="footer-area"
+              draggable={false}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Modüllerim */}
+      <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel">
+        <button
+          onClick={() => setMineOpen((v) => !v)}
+          className="flex items-center justify-between p-3 bg-surface-subtle hover:bg-border-default transition-colors"
+        >
+          <div className={`flex items-center gap-2 transition-colors ${mineOpen ? 'text-text-primary' : 'text-text-secondary'}`}>
+            <Bookmark size={18} />
+            <span className="text-xs font-medium text-text-primary">Modüllerim</span>
+          </div>
+          <ChevronDown
+            size={16}
+            className={`transition-all duration-300 ${mineOpen ? 'rotate-180 text-text-primary' : 'text-text-secondary'}`}
+          />
+        </button>
+        <div
+          className={`transition-all duration-300 ease-in-out overflow-hidden ${
+            mineOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+          }`}
+        >
+          <div className="p-4 border-t border-border-default bg-surface-panel flex flex-col gap-1">
+            <p className="text-[10px] text-text-muted">Henüz kayıtlı modülün yok.</p>
+            <p className="text-[10px] text-text-muted">Bir modül tasarlayıp kaydet butonuyla buraya ekleyebilirsin.</p>
+          </div>
+        </div>
       </div>
     </div>
   );

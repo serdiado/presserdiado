@@ -21,7 +21,7 @@ export function BorderRadiusPicker({ title = 'Köşe Ovalliği', value, onChange
         <span className="text-[10px] font-bold text-text-secondary">{title}</span>
         <button
           onClick={toggleLink}
-          className={`text-[8px] px-1.5 py-0.5 rounded font-bold ${
+          className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
             value.linked
               ? 'bg-surface-subtle text-text-primary'
               : 'bg-surface-subtle text-text-muted hover:bg-border-default'
@@ -51,7 +51,7 @@ export function BorderRadiusPicker({ title = 'Köşe Ovalliği', value, onChange
             ] as const
           ).map(([k, label]) => (
             <div key={k} className="bg-surface-subtle p-2 rounded border border-border-default space-y-1.5">
-              <span className="text-[8px] font-bold text-text-muted">{label}</span>
+              <span className="text-[10px] font-bold text-text-muted">{label}</span>
               <input
                 type="number"
                 value={value[k] as number}

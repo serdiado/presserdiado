@@ -80,7 +80,7 @@ export function CustomTemplateBuilder({ onSaved }: { onSaved: () => void }) {
       <h4 className="text-[10px] font-black text-text-muted">YENİ ŞABLON</h4>
 
       <label className="block">
-        <span className="text-[9px] font-bold text-text-muted">Şablon Adı</span>
+        <span className="text-[11px] font-bold text-text-muted">Şablon Adı</span>
         <input
           type="text"
           value={s.name}
@@ -92,7 +92,7 @@ export function CustomTemplateBuilder({ onSaved }: { onSaved: () => void }) {
 
       <div className="grid grid-cols-2 gap-2">
         <label>
-          <span className="text-[9px] font-bold text-text-muted">Sayfa Sayısı</span>
+          <span className="text-[11px] font-bold text-text-muted">Sayfa Sayısı</span>
           <input
             type="number"
             min={1}
@@ -103,7 +103,7 @@ export function CustomTemplateBuilder({ onSaved }: { onSaved: () => void }) {
           />
         </label>
         <label>
-          <span className="text-[9px] font-bold text-text-muted">Kırım Tipi</span>
+          <span className="text-[11px] font-bold text-text-muted">Kırım Tipi</span>
           <select
             value={s.foldType}
             onChange={(e) => set('foldType', e.target.value as FoldType)}
@@ -120,7 +120,7 @@ export function CustomTemplateBuilder({ onSaved }: { onSaved: () => void }) {
 
       <div className="grid grid-cols-3 gap-2">
         <label>
-          <span className="text-[9px] font-bold text-text-muted">Sayfa Genişlik mm</span>
+          <span className="text-[11px] font-bold text-text-muted">Sayfa Genişlik mm</span>
           <input
             type="number"
             min={50}
@@ -131,7 +131,7 @@ export function CustomTemplateBuilder({ onSaved }: { onSaved: () => void }) {
           />
         </label>
         <label>
-          <span className="text-[9px] font-bold text-text-muted">Yükseklik mm</span>
+          <span className="text-[11px] font-bold text-text-muted">Yükseklik mm</span>
           <input
             type="number"
             min={50}
@@ -142,7 +142,7 @@ export function CustomTemplateBuilder({ onSaved }: { onSaved: () => void }) {
           />
         </label>
         <label>
-          <span className="text-[9px] font-bold text-text-muted">Bleed mm</span>
+          <span className="text-[11px] font-bold text-text-muted">Bleed mm</span>
           <input
             type="number"
             min={0}
@@ -170,7 +170,7 @@ export function CustomTemplateBuilder({ onSaved }: { onSaved: () => void }) {
       </button>
 
       {customCount > 0 && (
-        <p className="text-[9px] text-text-muted text-center">
+        <p className="text-[11px] text-text-muted text-center">
           {customCount} özel şablon kayıtlı
         </p>
       )}
