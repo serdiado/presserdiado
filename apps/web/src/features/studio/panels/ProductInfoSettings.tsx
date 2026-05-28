@@ -47,14 +47,14 @@ export function ProductInfoSettings() {
 
   if (selectedSlotIds.length === 0) {
     return (
-      <p className="text-xs text-text-muted italic p-3 text-center">
+      <p className="text-body-sm text-text-muted italic p-3 text-center">
         Önce bir hücre seçin.
       </p>
     );
   }
   if (selectedSlotIds.length > 1) {
     return (
-      <p className="text-xs text-text-muted italic p-3 text-center">
+      <p className="text-body-sm text-text-muted italic p-3 text-center">
         Birden fazla hücre seçili. Tek hücre seçerek detaylarını düzenleyebilirsiniz.
       </p>
     );
@@ -88,7 +88,7 @@ export function ProductInfoSettings() {
     const syncedUpdates: Record<string, unknown> = {};
 
     if (['ARTNR', 'KOD', 'SKU'].includes(upperKey)) syncedUpdates.sku = value;
-    if (['BEZEICHNUNG', 'URUN_ADI', 'AD', 'NAME'].includes(upperKey)) syncedUpdates.name = value;
+    if (['BEZEIGNUNG', 'URUN_ADI', 'AD', 'NAME'].includes(upperKey)) syncedUpdates.name = value;
     if (['VK_NETTO', 'FIYAT', 'PRICE'].includes(upperKey)) syncedUpdates.price = value;
     if (['KATEGORI', 'ARTGRP', 'CATEGORY'].includes(upperKey)) syncedUpdates.category = value;
     if (['RESIM', 'IMAGE'].includes(upperKey)) syncedUpdates.image = value;
@@ -99,7 +99,7 @@ export function ProductInfoSettings() {
   return (
     <div className="space-y-3">
       <div className="bg-surface-panel p-3 rounded border border-border-default shadow-drop-sm space-y-2">
-        <h4 className="text-[10px] font-medium text-text-secondary">SEÇİLİ HÜCRE</h4>
+        <h4 className="text-[11px] font-medium text-text-secondary">SEÇİLİ HÜCRE</h4>
         <p className="text-[11px] text-text-muted">
           Sayfa {pageNumber} • {slot.colSpan}×{slot.rowSpan} • {slot.role ?? 'product'}
         </p>
@@ -108,7 +108,7 @@ export function ProductInfoSettings() {
       {product ? (
         <div className="bg-surface-panel p-3 rounded border border-border-default shadow-drop-sm space-y-2">
           <label className="block">
-            <span className="text-[11px] font-medium text-text-secondary block mb-1">Ürün Adı</span>
+            <span className="text-label-md text-text-secondary block mb-1">Ürün Adı</span>
             <input
               type="text"
               value={product.name ?? ''}
@@ -122,7 +122,7 @@ export function ProductInfoSettings() {
             />
           </label>
           <label className="block">
-            <span className="text-[11px] font-medium text-text-secondary block mb-1">Fiyat</span>
+            <span className="text-label-md text-text-secondary block mb-1">Fiyat</span>
             <input
               type="text"
               value={String(product.price ?? '')}
@@ -136,7 +136,7 @@ export function ProductInfoSettings() {
             />
           </label>
           <label className="block">
-            <span className="text-[11px] font-medium text-text-secondary block mb-1">SKU</span>
+            <span className="text-label-md text-text-secondary block mb-1">SKU</span>
             <input
               type="text"
               value={product.sku ?? ''}
@@ -150,7 +150,7 @@ export function ProductInfoSettings() {
             />
           </label>
           <label className="block">
-            <span className="text-[11px] font-medium text-text-secondary block mb-1">Kategori</span>
+            <span className="text-label-md text-text-secondary block mb-1">Kategori</span>
             <input
               type="text"
               value={product.category ?? ''}
@@ -164,7 +164,7 @@ export function ProductInfoSettings() {
             />
           </label>
           <label className="block">
-            <span className="text-[11px] font-medium text-text-secondary block mb-1">
+            <span className="text-label-md text-text-secondary block mb-1">
               Görsel URL
             </span>
             <input
@@ -191,13 +191,13 @@ export function ProductInfoSettings() {
           {Object.keys(rawRecord).length > 0 && (
             <div className="pt-3 mt-3 border-t border-border-default space-y-2">
               <div>
-                <h5 className="text-[11px] font-medium text-text-secondary tracking-normal">Excel Alanları</h5>
+                <h5 className="text-label-md text-text-secondary">Excel Alanları</h5>
                 <p className="text-[11px] text-text-muted mt-0.5">Excel’den gelen tüm kolonlar burada düzenlenebilir.</p>
               </div>
               <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                 {Object.entries(rawRecord).map(([key, value]) => (
                   <label key={key} className="block">
-                    <span className="text-[11px] font-medium text-text-secondary block mb-1">
+                    <span className="text-label-md text-text-secondary block mb-1">
                       {RAW_FIELD_LABELS[key.toUpperCase()] ?? key}
                       <span className="ml-1 font-mono font-normal text-[10px] text-text-muted/70">({key})</span>
                     </span>
@@ -234,7 +234,7 @@ export function ProductInfoSettings() {
         </div>
       ) : (
         <div className="bg-amber-50 border border-amber-200 p-3 rounded">
-          <p className="text-[10px] text-amber-700 font-medium">
+          <p className="text-[11px] text-text-warning font-medium">
             Bu hücrede ürün yok. Yan panelden bir ürün sürükleyin.
           </p>
         </div>

@@ -16,15 +16,15 @@ interface ButtonProps {
 }
 
 const variantClasses: Record<ButtonVariant, string> = {
-  primary:   'bg-primary hover:bg-primary-hover text-white border border-transparent h-10',
-  secondary: 'bg-surface-panel hover:bg-surface-subtle text-text-primary border border-border-default h-10',
-  ghost:     'bg-transparent hover:bg-surface-subtle text-text-secondary border border-transparent h-8',
-  danger:    'bg-[#FEF2F2] hover:bg-[#fee2e2] text-danger border border-[#fecaca] h-10',
+  primary:   'bg-primary hover:bg-primary-hover text-white border border-transparent',
+  secondary: 'bg-surface-panel hover:bg-surface-subtle text-text-primary border border-border-default',
+  ghost:     'bg-transparent hover:bg-surface-subtle text-text-secondary border border-transparent',
+  danger:    'bg-[#FEF2F2] hover:bg-[#fee2e2] text-danger border border-[#fecaca]',
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
-  md: 'text-sm',
-  sm: 'h-8 text-xs',
+  md: 'h-9 px-4 text-[13px]',
+  sm: 'h-8 px-3 text-xs',
 };
 
 export function Button({
@@ -44,7 +44,7 @@ export function Button({
       onClick={onClick}
       disabled={disabled}
       className={[
-        'inline-flex items-center justify-center gap-2 px-4 rounded-md',
+        'inline-flex items-center justify-center gap-1.5 rounded-radius-md',
         'font-medium tracking-normal transition-colors active:scale-[0.98]',
         variantClasses[variant],
         sizeClasses[size],

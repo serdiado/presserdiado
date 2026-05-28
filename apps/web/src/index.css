@@ -53,11 +53,11 @@
   --heading-xl-lh: 1.3;
   --heading-xl-ls: 0em;
 
-  /* heading-lg — panel / bölüm başlığı */
-  --heading-lg-size: 1.125rem;
-  --heading-lg-weight: 600;
-  --heading-lg-lh: 1.35;
-  --heading-lg-ls: 0em;
+  /* nav-label — Panel Bölüm Başlığı */
+  --nav-label-size: 0.8125rem;
+  --nav-label-weight: 500;
+  --nav-label-lh: 1.4;
+  --nav-label-ls: 0em;
 
   /* heading-md — kart / akordiyon başlığı */
   --heading-md-size: 1rem;
@@ -125,11 +125,11 @@
   font-family: var(--font-sans);
 }
 
-@utility text-heading-lg {
-  font-size: var(--heading-lg-size);
-  font-weight: var(--heading-lg-weight);
-  line-height: var(--heading-lg-lh);
-  letter-spacing: var(--heading-lg-ls);
+@utility text-nav-label {
+  font-size: var(--nav-label-size);
+  font-weight: var(--nav-label-weight);
+  line-height: var(--nav-label-lh);
+  letter-spacing: var(--nav-label-ls);
   font-family: var(--font-sans);
 }
 
@@ -195,6 +195,18 @@
   line-height: var(--icon-label-lh);
   letter-spacing: var(--icon-label-ls);
   font-family: var(--font-sans);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SHADOW TOKEN KÖPRÜSÜ
+   Tailwind v4, --tw-shadow'u build-time'da statik değerle doldurur ve
+   --shadow-drop-* CSS değişkenini okumaz. Bu override ile sınıflar
+   applyTokensToDOM'un runtime güncellemelerine duyarlı hale gelir.
+   ═══════════════════════════════════════════════════════════════════════════ */
+@layer utilities {
+  .shadow-drop-sm { --tw-shadow: var(--shadow-drop-sm); }
+  .shadow-drop-md { --tw-shadow: var(--shadow-drop-md); }
+  .shadow-drop-lg { --tw-shadow: var(--shadow-drop-lg); }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

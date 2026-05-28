@@ -38,7 +38,7 @@ export function normalizeThemeTokens(
       ...base.typography,
       ...(partial.typography ?? {}),
       headingXl: { ...base.typography.headingXl, ...(partial.typography?.headingXl ?? {}) },
-      headingLg: { ...base.typography.headingLg, ...(partial.typography?.headingLg ?? {}) },
+      navLabel: { ...base.typography.navLabel, ...(partial.typography?.navLabel ?? {}) },
       headingMd: { ...base.typography.headingMd, ...(partial.typography?.headingMd ?? {}) },
       headingSm: { ...base.typography.headingSm, ...(partial.typography?.headingSm ?? {}) },
       bodyMd: { ...base.typography.bodyMd, ...(partial.typography?.bodyMd ?? {}) },

@@ -73,14 +73,14 @@ export function Sidebar() {
           <button
             key={t.key}
             onClick={() => setActiveTab(t.key)}
-            className={`flex flex-col items-center justify-center py-3.5 gap-1.5 transition-all duration-200 ${
+            className={`flex flex-col items-center justify-center py-2.5 gap-1 transition-all duration-200 ${
               activeTab === t.key
                 ? 'text-text-primary bg-surface-panel border-b-2 border-b-primary shadow-[0_-1px_0_0_var(--color-border-default)]'
                 : 'text-text-secondary hover:text-text-primary hover:bg-surface-subtle border-b-2 border-b-transparent'
             }`}
           >
             {t.icon}
-            <span className="text-[10px] font-medium tracking-normal">{t.label}</span>
+            <span className="text-nav-label">{t.label}</span>
           </button>
         ))}
       </div>
@@ -107,14 +107,14 @@ function DesignPanel() {
   return (
     <div className="flex flex-col w-full h-full space-y-2">
       {/* ŞABLON */}
-      <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel">
+      <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel shadow-drop-sm">
         <button
           onClick={() => toggleSection('template')}
-          className="flex items-center justify-between p-3 bg-surface-subtle hover:bg-border-default transition-colors"
+          className="flex items-center justify-between px-3 py-2.5 bg-surface-subtle hover:bg-surface-app transition-colors"
         >
           <div className={`flex items-center gap-2 transition-colors ${openSection === 'template' ? 'text-text-primary' : 'text-text-secondary'}`}>
             <LayoutTemplate size={18} />
-            <span className="text-xs font-medium text-text-primary">Şablon</span>
+            <span className="text-heading-md text-text-primary">Şablon</span>
           </div>
           <ChevronDown
             size={18}
@@ -126,7 +126,7 @@ function DesignPanel() {
             openSection === 'template' ? 'max-h-125 opacity-100' : 'max-h-0 opacity-0'
           }`}
         >
-          <div className="p-4 flex flex-col gap-4 border-t border-border-default bg-surface-panel">
+          <div className="px-3 py-3.5 flex flex-col gap-4 border-t border-border-default bg-surface-panel">
             {/* A) Şablon Seç Butonu */}
             <button
               onClick={() => useUIStore.getState().setSetupModalOpen(true)}
@@ -139,36 +139,36 @@ function DesignPanel() {
             {/* B) Şablon Bilgileri */}
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-center py-1 text-sm border-b border-border-default last:border-0">
-                <span className="text-xs font-medium text-text-secondary">Tasarım Tipi</span>
-                <span className="text-xs font-normal text-text-primary">{activeTemplate?.designType ? getTerm('print', activeTemplate.designType) : 'Seçilmedi'}</span>
+                <span className="text-label-md text-text-secondary">Tasarım Tipi</span>
+                <span className="text-body-sm text-text-primary">{activeTemplate?.designType ? getTerm('print', activeTemplate.designType) : 'Seçilmedi'}</span>
               </div>
               <div className="flex justify-between items-center py-1 text-sm border-b border-border-default last:border-0">
-                <span className="text-xs font-medium text-text-secondary">Mod</span>
-                <span className="text-xs font-normal text-text-primary">{activeTemplate?.mode ? getTerm('print', activeTemplate.mode) : '-'}</span>
+                <span className="text-label-md text-text-secondary">Mod</span>
+                <span className="text-body-sm text-text-primary">{activeTemplate?.mode ? getTerm('print', activeTemplate.mode) : '-'}</span>
               </div>
               <div className="flex justify-between items-center py-1 text-sm border-b border-border-default last:border-0">
-                <span className="text-xs font-medium text-text-secondary">Kağıt</span>
-                <span className="text-xs font-normal text-text-primary">{activeTemplate?.paperSize ? getTerm('print', activeTemplate.paperSize) : '-'}</span>
+                <span className="text-label-md text-text-secondary">Kağıt</span>
+                <span className="text-body-sm text-text-primary">{activeTemplate?.paperSize ? getTerm('print', activeTemplate.paperSize) : '-'}</span>
               </div>
               <div className="flex justify-between items-center py-1 text-sm border-b border-border-default last:border-0">
-                <span className="text-xs font-medium text-text-secondary">Katlama</span>
-                <span className="text-xs font-normal text-text-primary">
+                <span className="text-label-md text-text-secondary">Katlama</span>
+                <span className="text-body-sm text-text-primary">
                   {activeTemplate?.foldType ? getTerm('print', activeTemplate.foldType) : '-'}
                 </span>
               </div>
               <div className="flex justify-between items-center py-1 text-sm border-b border-border-default last:border-0">
-                <span className="text-xs font-medium text-text-secondary">Sayfa</span>
-                <span className="text-xs font-normal text-text-primary">{activeTemplate?.pageCount || '-'}</span>
+                <span className="text-label-md text-text-secondary">Sayfa</span>
+                <span className="text-body-sm text-text-primary">{activeTemplate?.pageCount || '-'}</span>
               </div>
               <div className="flex justify-between items-center py-1 text-sm border-b border-border-default last:border-0">
-                <span className="text-xs font-medium text-text-secondary">Açık Ölçü</span>
-                <span className="text-xs font-normal text-text-primary">
+                <span className="text-label-md text-text-secondary">Açık Ölçü</span>
+                <span className="text-body-sm text-text-primary">
                   {activeTemplate ? `${activeTemplate.openWidthMm}×${activeTemplate.openHeightMm} mm` : '-'}
                 </span>
               </div>
               <div className="flex justify-between items-center py-1 text-sm border-b border-border-default last:border-0">
-                <span className="text-xs font-medium text-text-secondary">Kapalı Ölçü</span>
-                <span className="text-xs font-normal text-text-primary">
+                <span className="text-label-md text-text-secondary">Kapalı Ölçü</span>
+                <span className="text-body-sm text-text-primary">
                   {activeTemplate ? `${activeTemplate.openWidthMm / activeTemplate.pageCount}×${activeTemplate.openHeightMm} mm` : '-'}
                 </span>
               </div>
@@ -178,14 +178,14 @@ function DesignPanel() {
       </div>
 
       {/* IZGARA */}
-      <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel">
+      <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel shadow-drop-sm">
         <button
           onClick={() => toggleSection('grid')}
-          className="flex items-center justify-between p-3 bg-surface-subtle hover:bg-border-default transition-colors"
+          className="flex items-center justify-between px-3 py-2.5 bg-surface-subtle hover:bg-surface-app transition-colors"
         >
           <div className={`flex items-center gap-2 transition-colors ${openSection === 'grid' ? 'text-text-primary' : 'text-text-secondary'}`}>
             <Grid3X3 size={18} />
-            <span className="text-xs font-medium text-text-primary">Izgara</span>
+            <span className="text-heading-md text-text-primary">Izgara</span>
           </div>
           <ChevronDown
             size={18}
@@ -197,21 +197,21 @@ function DesignPanel() {
             openSection === 'grid' ? 'max-h-275 opacity-100' : 'max-h-0 opacity-0'
           }`}
         >
-          <div className="p-4 border-t border-border-default bg-surface-panel">
+          <div className="px-3 py-3.5 border-t border-border-default bg-surface-panel">
             <GlobalGridSettings />
           </div>
         </div>
       </div>
 
       {/* ARKAPLAN */}
-      <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel">
+      <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel shadow-drop-sm">
         <button
           onClick={() => toggleSection('background')}
-          className="flex items-center justify-between p-3 bg-surface-subtle hover:bg-border-default transition-colors"
+          className="flex items-center justify-between px-3 py-2.5 bg-surface-subtle hover:bg-surface-app transition-colors"
         >
           <div className={`flex items-center gap-2 transition-colors ${openSection === 'background' ? 'text-text-primary' : 'text-text-secondary'}`}>
             <Layers size={18} />
-            <span className="text-xs font-medium text-text-primary">Arka plan</span>
+            <span className="text-heading-md text-text-primary">Arka plan</span>
           </div>
           <ChevronDown
             size={18}
@@ -225,7 +225,7 @@ function DesignPanel() {
               : 'max-h-0 opacity-0 overflow-hidden'
           }`}
         >
-          <div className="p-4 border-t border-border-default bg-surface-panel">
+          <div className="px-3 py-3.5 border-t border-border-default bg-surface-panel">
             <BackgroundSettings />
           </div>
         </div>
@@ -253,11 +253,11 @@ function ModuleCard({
     <div
       draggable={isDraggable}
       onDragStart={isDraggable ? (e) => e.dataTransfer.setData('newModuleType', moduleType) : undefined}
-      className={`flex flex-col gap-2 p-3 border border-border-default rounded-radius-md bg-surface-subtle hover:bg-border-default transition-colors select-none ${isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${className}`}
+      className={`flex flex-col gap-2 p-3 border border-border-default rounded-radius-md bg-surface-subtle hover:bg-surface-app hover:border-border-strong transition-colors select-none ${isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'} ${className}`}
     >
       <div className="flex items-center gap-2 text-text-primary">
         {icon}
-        <span className="text-xs font-medium">{title}</span>
+        <span className="text-label-md">{title}</span>
       </div>
       <p className="text-[10px] text-text-muted leading-relaxed">{description}</p>
     </div>
@@ -271,14 +271,14 @@ function ModulesPanel() {
   return (
     <div className="flex flex-col w-full gap-2">
       {/* Hazır modüller */}
-      <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel">
+      <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel shadow-drop-sm">
         <button
           onClick={() => setReadyOpen((v) => !v)}
-          className="flex items-center justify-between p-3 bg-surface-subtle hover:bg-border-default transition-colors"
+          className="flex items-center justify-between px-3 py-2.5 bg-surface-subtle hover:bg-surface-app transition-colors"
         >
           <div className={`flex items-center gap-2 transition-colors ${readyOpen ? 'text-text-primary' : 'text-text-secondary'}`}>
             <Layers size={18} />
-            <span className="text-xs font-medium text-text-primary">Hazır Modüller</span>
+            <span className="text-heading-md text-text-primary">Hazır Modüller</span>
           </div>
           <ChevronDown
             size={16}
@@ -290,7 +290,7 @@ function ModulesPanel() {
             readyOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
           }`}
         >
-          <div className="p-4 border-t border-border-default bg-surface-panel flex flex-col gap-2">
+          <div className="px-3 py-3.5 border-t border-border-default bg-surface-panel flex flex-col gap-2">
             <ModuleCard
               icon={<Table2 size={16} />}
               title="Tablo Alanı"
@@ -318,14 +318,14 @@ function ModulesPanel() {
       </div>
 
       {/* Modüllerim */}
-      <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel">
+      <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel shadow-drop-sm">
         <button
           onClick={() => setMineOpen((v) => !v)}
-          className="flex items-center justify-between p-3 bg-surface-subtle hover:bg-border-default transition-colors"
+          className="flex items-center justify-between px-3 py-2.5 bg-surface-subtle hover:bg-surface-app transition-colors"
         >
           <div className={`flex items-center gap-2 transition-colors ${mineOpen ? 'text-text-primary' : 'text-text-secondary'}`}>
             <Bookmark size={18} />
-            <span className="text-xs font-medium text-text-primary">Modüllerim</span>
+            <span className="text-heading-md text-text-primary">Modüllerim</span>
           </div>
           <ChevronDown
             size={16}
@@ -337,7 +337,7 @@ function ModulesPanel() {
             mineOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
           }`}
         >
-          <div className="p-4 border-t border-border-default bg-surface-panel flex flex-col gap-1">
+          <div className="px-3 py-3.5 border-t border-border-default bg-surface-panel flex flex-col gap-1">
             <p className="text-[10px] text-text-muted">Henüz kayıtlı modülün yok.</p>
             <p className="text-[10px] text-text-muted">Bir modül tasarlayıp kaydet butonuyla buraya ekleyebilirsin.</p>
           </div>

@@ -135,7 +135,7 @@ export function ProductManagement() {
 
       {/* HEADER BÖLÜMÜ */}
       <div className="flex items-start justify-between">
-        <p className="text-[11px] text-text-secondary leading-snug w-[65%]">
+        <p className="text-body-xs text-text-secondary leading-snug w-[65%]">
           Excel dosyanızı yükleyerek ürünleri otomatik yerleştirin veya havuzdan sürükleyin.
         </p>
         <Button
@@ -150,9 +150,9 @@ export function ProductManagement() {
       </div>
 
       <details open className="bg-surface-panel rounded-radius-lg border border-border-default shadow-drop-sm overflow-hidden">
-        <summary className="text-xs font-medium text-text-primary cursor-pointer p-3 flex items-center justify-between bg-surface-subtle/60">
-          <span>Ürün bilgisi</span>
-          <span className="text-[10px] font-medium text-text-muted">Seçili ürün verisini düzenle</span>
+        <summary className="text-heading-md text-text-primary cursor-pointer p-3 flex items-center justify-between bg-surface-subtle/60">
+          <span className="text-heading-md text-text-primary">Ürün bilgisi</span>
+          <span className="text-body-xs text-text-muted">Seçili ürün verisini düzenle</span>
         </summary>
         <div className="p-3 border-t border-border-default">
           <ProductInfoSettings />
@@ -160,9 +160,9 @@ export function ProductManagement() {
       </details>
 
       <details className="bg-surface-panel rounded-radius-md border border-border-default">
-        <summary className="text-xs font-medium text-text-primary cursor-pointer p-2.5 flex items-center justify-between">
+        <summary className="text-heading-md text-text-primary cursor-pointer p-2.5 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span>Excel sütunları</span>
+            <span className="text-heading-md text-text-primary">Excel sütunları</span>
             <svg className="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -171,7 +171,7 @@ export function ProductManagement() {
              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </summary>
-        <div className="text-[10px] text-text-secondary p-2.5 pt-0 border-t border-border-default mt-1 space-y-1">
+        <div className="text-body-xs text-text-secondary p-2.5 pt-0 border-t border-border-default mt-1 space-y-1">
           <div><strong>POS</strong> / SIRA / INDEX → otomatik yerleştirme sırası</div>
           <div><strong>ARTNR</strong> / KOD / SKU → ürün kodu</div>
           <div><strong>BEZEICHNUNG</strong> / URUN_ADI / AD → ürün adı</div>
@@ -184,8 +184,8 @@ export function ProductManagement() {
       {/* 1. OTOMATİK DİZİLİM */}
       <div className="bg-surface-panel rounded-radius-lg border border-border-default p-4 shadow-drop-sm">
         <div className="mb-3">
-          <h4 className="text-[11px] font-medium text-text-secondary tracking-normal">Excel ile otomatik yerleştir</h4>
-          <p className="text-[10px] text-text-muted mt-0.5">POS / SIRA kolonu olan Excel, ürünleri numaralı hücrelere otomatik yerleştirir.</p>
+          <h4 className="text-label-sm text-text-secondary">Excel ile otomatik yerleştir</h4>
+          <p className="text-body-xs text-text-muted mt-0.5">POS / SIRA kolonu olan Excel, ürünleri numaralı hücrelere otomatik yerleştirir.</p>
         </div>
 
         <div className="mt-3">
@@ -213,7 +213,7 @@ export function ProductManagement() {
         </div>
 
         <div className="flex items-center justify-between mt-3 text-[11px]">
-           <div className="flex items-center gap-1.5 text-emerald-600">
+           <div className="flex items-center gap-1.5 text-body-xs text-success">
              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
              </svg>
@@ -224,7 +224,6 @@ export function ProductManagement() {
                variant="ghost"
                className="p-2"
                onClick={handleClearAll}
-               title="Ürünleri Temizle"
              >
                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -233,7 +232,6 @@ export function ProductManagement() {
              <Button
                variant="ghost"
                className="p-2"
-               title="Tümünü sıfırla"
                onClick={() => {
                  if (confirm('Tüm katalog sıfırlansın mı?')) resetCatalog();
                }}
@@ -262,8 +260,8 @@ export function ProductManagement() {
       <div className="bg-surface-panel rounded-radius-lg border border-border-default p-4 shadow-drop-sm">
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h4 className="text-[11px] font-medium text-text-secondary tracking-normal">Ürün havuzu</h4>
-            <p className="text-[10px] text-text-muted mt-0.5">Genel ürün listenizi yükleyin, arayın ve boş hücrelere sürükleyin.</p>
+            <h4 className="text-label-sm text-text-secondary">Ürün havuzu</h4>
+            <p className="text-body-xs text-text-muted mt-0.5">Genel ürün listenizi yükleyin, arayın ve boş hücrelere sürükleyin.</p>
           </div>
           <Button
             variant="secondary"
@@ -300,7 +298,7 @@ export function ProductManagement() {
           />
         </div>
 
-        <div className="flex items-center gap-1.5 mt-3 text-[11px] text-emerald-600">
+        <div className="flex items-center gap-1.5 mt-3 text-body-xs text-success">
            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
            </svg>
@@ -332,7 +330,7 @@ export function ProductManagement() {
       {/* 3. ÜRÜN ARA VE SÜRÜKLE */}
       <div className="bg-surface-panel rounded-radius-lg border border-border-default p-4 shadow-drop-sm pb-2">
         <div className="mb-4">
-          <h4 className="text-[11px] font-medium text-text-secondary tracking-normal">Ürün ara ve sürükle</h4>
+          <h4 className="text-label-sm text-text-secondary">Ürün ara ve sürükle</h4>
         </div>
 
         <div className="flex flex-col gap-3 mb-4">
@@ -378,11 +376,11 @@ export function ProductManagement() {
               <svg className="w-8 h-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
               </svg>
-              <p className="text-xs">Havuz boş. Yukarıdaki alandan Excel yükleyin.</p>
+              <p className="text-body-sm">Havuz boş. Yukarıdaki alandan Excel yükleyin.</p>
             </div>
           ) : filteredMaster.length === 0 ? (
             <div className="py-6 text-center text-text-muted">
-               <p className="text-xs">Sonuç bulunamadı.</p>
+               <p className="text-body-sm">Sonuç bulunamadı.</p>
             </div>
           ) : (
             <div className="flex flex-col gap-2">
@@ -408,24 +406,24 @@ export function ProductManagement() {
                           className={`max-w-full max-h-full object-contain ${placed ? 'opacity-50 grayscale' : ''}`}
                         />
                       ) : (
-                        <span className="text-[11px] text-text-muted font-medium">Yok</span>
+                        <span className="text-label-sm text-text-muted">Yok</span>
                       )}
                     </div>
 
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
-                      <div className={`text-xs font-medium truncate ${placed ? 'text-text-muted' : 'text-text-primary'}`}>
+                      <div className={`text-label-md truncate ${placed ? 'text-text-muted' : 'text-text-primary'}`}>
                         {p.name}
                       </div>
-                      <div className="text-[10px] text-text-muted mt-0.5">{p.sku}</div>
+                      <div className="text-body-xs text-text-muted mt-0.5">{p.sku}</div>
                     </div>
 
                     <div className="flex items-center gap-4 shrink-0">
-                      <div className={`text-xs font-medium ${placed ? 'text-text-muted' : 'text-text-primary'}`}>
+                      <div className={`text-label-md ${placed ? 'text-text-muted' : 'text-text-primary'}`}>
                         {p.price} €
                       </div>
 
                       {placed ? (
-                         <div className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded text-[10px] font-medium border border-emerald-100">
+                         <div className="px-2 py-0.5 bg-success/10 text-success rounded text-label-sm border border-success/20">
                            Tasarımda var
                          </div>
                       ) : (
@@ -568,7 +566,7 @@ function AddProductModal({
           <div className="flex gap-4">
             {/* Sol Taraf: Görsel Alanı (Kare) */}
             <div className="w-28 shrink-0">
-              <label className="block text-[11px] font-medium text-text-secondary mb-1.5">Ürün görseli</label>
+              <label className="block text-label-md text-text-secondary mb-1.5">Ürün görseli</label>
               <div
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -602,7 +600,7 @@ function AddProductModal({
                   <>
                     <img src={previewUrl} alt="Önizleme" className="w-full h-full object-contain p-1" />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                      <span className="text-white text-[10px] font-medium flex flex-col items-center gap-1">
+                      <span className="text-white text-label-sm flex flex-col items-center gap-1">
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                         </svg>
@@ -615,7 +613,7 @@ function AddProductModal({
                     <svg className="w-6 h-6 text-text-muted group-hover:text-text-secondary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <span className="text-[10px] leading-tight">Sürükle veya<br/>Seç</span>
+                    <span className="text-body-xs">Sürükle veya<br/>Seç</span>
                   </div>
                 )}
               </div>
@@ -624,7 +622,7 @@ function AddProductModal({
             {/* Sağ Taraf: İsim ve SKU */}
             <div className="flex-1 space-y-4 flex flex-col justify-center">
               <div>
-                <label className="block text-[11px] font-medium text-text-secondary mb-1.5">Ürün Adı</label>
+                <label className="block text-label-md text-text-secondary mb-1.5">Ürün Adı</label>
                 <input
                   type="text"
                   required
@@ -635,7 +633,7 @@ function AddProductModal({
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-medium text-text-secondary mb-1.5">Ürün kodu</label>
+                <label className="block text-label-md text-text-secondary mb-1.5">Ürün kodu</label>
                 <input
                   type="text"
                   value={sku}
@@ -649,7 +647,7 @@ function AddProductModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-[11px] font-medium text-text-secondary mb-1.5">Alış Fiyatı</label>
+              <label className="block text-label-md text-text-secondary mb-1.5">Alış Fiyatı</label>
               <input
                 type="text"
                 value={purchasePrice}
@@ -659,7 +657,7 @@ function AddProductModal({
               />
             </div>
             <div>
-              <label className="block text-[11px] font-medium text-text-secondary mb-1.5">Satış fiyatı</label>
+              <label className="block text-label-md text-text-secondary mb-1.5">Satış fiyatı</label>
               <input
                 type="text"
                 required
@@ -753,10 +751,10 @@ function DropZone({
         </svg>
       </div>
       <div className="flex flex-col text-left">
-        <div className="text-xs font-medium text-text-primary">
+        <div className="text-label-sm text-text-primary">
           {title}
         </div>
-        <div className="text-[10px] text-text-muted">Excel sürükleyin veya tıklayıp seçin</div>
+        <div className="text-body-xs text-text-muted">Excel sürükleyin veya tıklayıp seçin</div>
       </div>
     </div>
   );

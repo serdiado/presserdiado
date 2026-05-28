@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { type UITypographyToken, type UIThemeTokens } from '@matbaapro/shared';
-import { applyTokensToDOM } from '@/components/ThemeInjector';
+import { ThemeInjector, applyTokensToDOM } from '@/components/ThemeInjector';
 import { cloneTheme, defaultThemeForMode, normalizeThemeTokens } from '@/lib/themeTokens';
 import { type ThemeMode, useThemeStore } from '@/stores/theme.store';
 
@@ -31,19 +31,32 @@ const COLOR_LABELS: Record<ColorKey, string> = {
 };
 
 const TYPOGRAPHY_LABELS: Record<TypographyKey, string> = {
-  headingXl: 'Heading XL',
-  headingLg: 'Heading LG',
-  headingMd: 'Heading MD',
-  headingSm: 'Heading SM',
-  bodyMd: 'Body MD',
-  bodySm: 'Body SM',
-  bodyXs: 'Body XS',
-  labelMd: 'Label MD',
-  labelSm: 'Label SM',
-  iconLabel: 'Icon Label',
+  headingXl: 'Modal Başlığı',
+  navLabel: 'Panel Bölüm Başlığı',
+  headingMd: 'Akordiyon Başlığı',
+  headingSm: 'Form Grup Başlığı',
+  bodyMd: 'İçerik Metni',
+  bodySm: 'Açıklama Metni',
+  bodyXs: 'Alt Etiket',
+  labelMd: 'Form Etiketi',
+  labelSm: 'Sekme Etiketi',
+  iconLabel: 'İkon Etiketi',
 };
 
 const FONT_WEIGHTS = ['300', '400', '500', '600', '700', '800'];
+const FONT_SIZES_MAP = {
+  '11px': '0.6875rem',
+  '12px': '0.75rem',
+  '13px': '0.8125rem',
+  '14px': '0.875rem',
+  '15px': '0.9375rem',
+  '16px': '1rem',
+  '18px': '1.125rem',
+  '20px': '1.25rem',
+};
+const LINE_HEIGHTS = ['1.0', '1.1', '1.2', '1.3', '1.4', '1.5', '1.6', '1.75', '2.0'];
+const LETTER_SPACINGS = ['-0.05em', '-0.02em', '0em', '0.01em', '0.02em', '0.05em', '0.08em', '0.12em'];
+
 const COLOR_KEYS = Object.keys(COLOR_LABELS) as ColorKey[];
 const TYPOGRAPHY_KEYS = Object.keys(TYPOGRAPHY_LABELS) as TypographyKey[];
 const RADIUS_KEYS: RadiusKey[] = ['sm', 'md', 'lg', 'xl', 'full'];
@@ -112,6 +125,9 @@ export default function AdminThemePage() {
         const [light, dark] = await Promise.all([fetchTheme('light'), fetchTheme('dark')]);
         if (!alive) return;
         setDrafts({ light: cloneTheme(light), dark: cloneTheme(dark) });
+        const initialActive = activeMode === 'light' ? light : dark;
+        setTokens(initialActive);
+        applyTokensToDOM(initialActive);
       } catch (error) {
         console.error(error);
         toast.error('Tema tokenları yüklenemedi, varsayılanlar kullanılıyor');
@@ -123,7 +139,7 @@ export default function AdminThemePage() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [activeMode]);
 
   useEffect(() => {
     applyTokensToDOM(activeTokens);
@@ -133,12 +149,15 @@ export default function AdminThemePage() {
     setActiveMode(mode);
     setModeLocal(mode);
     setTokens(drafts[mode]);
+    applyTokensToDOM(drafts[mode]);
   }
 
   function updateDraft(mutator: (tokens: UIThemeTokens) => void) {
     setDrafts((prev) => {
       const next = cloneTheme(prev[activeMode]);
       mutator(next);
+      applyTokensToDOM(next);
+      setTokens(next);
       return { ...prev, [activeMode]: next };
     });
   }
@@ -171,7 +190,8 @@ export default function AdminThemePage() {
   const modeLabel = activeMode === 'light' ? 'Light' : 'Dark';
 
   return (
-    <main className="min-h-screen bg-surface-app text-text-primary">
+    <main className="min-h-screen bg-surface-app text-text-primary" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+      <ThemeInjector tokens={activeTokens} />
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-6">
         <header className="flex flex-col gap-4 rounded-radius-xl border border-border-default bg-surface-panel p-5 shadow-drop-sm md:flex-row md:items-center md:justify-between">
           <div>
@@ -236,7 +256,7 @@ export default function AdminThemePage() {
 
             <TokenSection
               title="Tipografi"
-              description="Boyut, satır yüksekliği ve harf aralığı slider ile; ağırlık menü ile ayarlanır."
+              description="Tipografi token ayarlarını dropdown menüler aracılığıyla kolayca seçebilirsiniz."
             >
               <label className="block rounded-radius-lg border border-border-default bg-surface-subtle p-3">
                 <span className="text-label-sm text-text-secondary">Font ailesi</span>
@@ -259,69 +279,93 @@ export default function AdminThemePage() {
               </div>
             </TokenSection>
 
-            <div className="grid gap-6 xl:grid-cols-2">
-              <TokenSection
-                title="Radius"
-                description="Köşe yuvarlama tokenları. Full değeri pill/dairesel formlar için metin alanı olarak bırakıldı."
-              >
-                <div className="space-y-3">
-                  {RADIUS_KEYS.map((key) => (
-                    key === 'full' ? (
-                      <TextTokenField
-                        key={key}
-                        label={RADIUS_LABELS[key].label}
-                        description={RADIUS_LABELS[key].description}
-                        value={activeTokens.radii[key]}
-                        onChange={(value) => updateDraft((tokens) => { tokens.radii[key] = value; })}
+            <TokenSection
+              title="Radius"
+              description="Arayüz elemanlarının köşe yuvarlama değerleri."
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
+                {RADIUS_KEYS.map((key) => (
+                  key === 'full' ? (
+                    <div key={key} className="block rounded-radius-md border border-border-default bg-surface-panel/60 p-3 sm:col-span-2">
+                      <span className="flex items-center justify-between gap-2 text-label-sm text-text-muted">
+                        <span>{RADIUS_LABELS[key].label}</span>
+                        <span className="font-mono text-text-secondary">9999px</span>
+                      </span>
+                      <span className="mt-0.5 block text-body-xs text-text-muted">
+                        {RADIUS_LABELS[key].description}
+                      </span>
+                      <input
+                        type="text"
+                        value="9999px"
+                        readOnly
+                        className="mt-2 w-full rounded-radius-md border border-border-default bg-surface-subtle px-3 py-2 text-body-sm text-text-muted outline-none cursor-not-allowed"
                       />
-                    ) : (
-                      <SliderTokenField
-                        key={key}
-                        label={RADIUS_LABELS[key].label}
-                        description={RADIUS_LABELS[key].description}
-                        value={activeTokens.radii[key]}
-                        min={0}
-                        max={32}
-                        step={1}
-                        unit="px"
-                        fallback={parseNumericToken(defaultThemeForMode(activeMode).radii[key], 8)}
-                        onChange={(value) => updateDraft((tokens) => { tokens.radii[key] = value; })}
-                      />
-                    )
-                  ))}
-                </div>
-              </TokenSection>
-
-              <TokenSection
-                title="Shadow ve Button"
-                description="Gölge tokenları metin olarak; buton radius/yükseklik değerleri slider ile ayarlanır."
-              >
-                <div className="space-y-3">
-                  {SHADOW_KEYS.map((key) => (
-                    <TextTokenField
-                      key={key}
-                      label={key}
-                      value={activeTokens.shadows[key]}
-                      onChange={(value) => updateDraft((tokens) => { tokens.shadows[key] = value; })}
-                    />
-                  ))}
-                  {BUTTON_KEYS.map((key) => (
+                    </div>
+                  ) : (
                     <SliderTokenField
                       key={key}
-                      label={key === 'radius' ? 'Buton köşesi' : 'Buton yüksekliği'}
-                      description={key === 'radius' ? 'Birincil/ikincil butonların köşe değeri.' : 'Standart buton yüksekliği.'}
-                      value={activeTokens.buttons[key]}
-                      min={key === 'radius' ? 0 : 28}
-                      max={key === 'radius' ? 32 : 56}
+                      label={RADIUS_LABELS[key].label}
+                      description={RADIUS_LABELS[key].description}
+                      value={activeTokens.radii[key]}
+                      min={0}
+                      max={32}
                       step={1}
                       unit="px"
-                      fallback={parseNumericToken(defaultThemeForMode(activeMode).buttons[key], key === 'radius' ? 8 : 36)}
-                      onChange={(value) => updateDraft((tokens) => { tokens.buttons[key] = value; })}
+                      fallback={parseNumericToken(defaultThemeForMode(activeMode).radii[key], 8)}
+                      onChange={(value) => updateDraft((tokens) => { tokens.radii[key] = value; })}
                     />
-                  ))}
+                  )
+                ))}
+              </div>
+            </TokenSection>
+
+            <TokenSection
+              title="Shadow ve Button"
+              description="Gölge derinlikleri ve butonların görsel özellikleri."
+            >
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-heading-sm mb-3">Gölge Ayarları</h3>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    {SHADOW_KEYS.map((key) => {
+                      const shadowLabels: Record<ShadowKey, string> = {
+                        dropSm: 'Küçük gölge',
+                        dropMd: 'Orta gölge',
+                        dropLg: 'Büyük gölge',
+                      };
+                      return (
+                        <ShadowField
+                          key={key}
+                          label={shadowLabels[key]}
+                          value={activeTokens.shadows[key]}
+                          onChange={(value) => updateDraft((tokens) => { tokens.shadows[key] = value; })}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
-              </TokenSection>
-            </div>
+
+                <div className="border-t border-border-default pt-6">
+                  <h3 className="text-heading-sm mb-3">Buton Ayarları</h3>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {BUTTON_KEYS.map((key) => (
+                      <SliderTokenField
+                        key={key}
+                        label={key === 'radius' ? 'Buton köşesi' : 'Buton yüksekliği'}
+                        description={key === 'radius' ? 'Birincil/ikincil butonların köşe değeri.' : 'Standart buton yüksekliği.'}
+                        value={activeTokens.buttons[key]}
+                        min={key === 'radius' ? 0 : 28}
+                        max={key === 'radius' ? 20 : 56}
+                        step={1}
+                        unit="px"
+                        fallback={parseNumericToken(defaultThemeForMode(activeMode).buttons[key], key === 'radius' ? 8 : 36)}
+                        onChange={(value) => updateDraft((tokens) => { tokens.buttons[key] = value; })}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </TokenSection>
           </section>
 
           <ThemePreview tokens={activeTokens} mode={activeMode} />
@@ -343,7 +387,7 @@ function TokenSection({
   return (
     <section className="rounded-radius-xl border border-border-default bg-surface-panel p-5 shadow-drop-sm">
       <div className="mb-4">
-        <h2 className="text-heading-lg">{title}</h2>
+        <h2 className="text-nav-label">{title}</h2>
         <p className="text-body-sm text-text-secondary">{description}</p>
       </div>
       {children}
@@ -382,53 +426,57 @@ function TypographyFieldset({
   token: UITypographyToken;
   onChange: (field: TypographyField, value: string) => void;
 }) {
+  const currentSizePx = Object.entries(FONT_SIZES_MAP).find(
+    ([_, val]) => val === token.fontSize
+  )?.[0] || '14px';
+
   return (
     <fieldset className="rounded-radius-lg border border-border-default bg-surface-subtle p-3">
       <legend className="px-1 text-label-sm text-text-secondary">{label}</legend>
-      <div className="grid grid-cols-2 gap-2">
-        <SliderTokenField
-          label="Boyut"
-          description="Metin büyüklüğü"
-          value={token.fontSize}
-          min={0.625}
-          max={2}
-          step={0.0625}
-          unit="rem"
-          fallback={0.875}
-          onChange={(value) => onChange('fontSize', value)}
-        />
+      <div className="grid grid-cols-4 gap-2">
         <label className="block">
-          <span className="text-label-sm text-text-muted">Ağırlık</span>
+          <span className="text-label-sm text-text-muted block truncate">Boyut</span>
+          <select
+            value={currentSizePx}
+            onChange={(event) => onChange('fontSize', FONT_SIZES_MAP[event.target.value as keyof typeof FONT_SIZES_MAP])}
+            className="mt-1 w-full rounded-radius-md border border-border-default bg-surface-panel px-1.5 py-1.5 text-body-sm text-text-primary outline-none focus:border-primary"
+          >
+            {Object.keys(FONT_SIZES_MAP).map((px) => <option key={px} value={px}>{px}</option>)}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="text-label-sm text-text-muted block truncate">Ağırlık</span>
           <select
             value={token.fontWeight}
             onChange={(event) => onChange('fontWeight', event.target.value)}
-            className="mt-1 w-full rounded-radius-md border border-border-default bg-surface-panel px-2 py-2 text-body-sm text-text-primary outline-none focus:border-primary"
+            className="mt-1 w-full rounded-radius-md border border-border-default bg-surface-panel px-1.5 py-1.5 text-body-sm text-text-primary outline-none focus:border-primary"
           >
             {FONT_WEIGHTS.map((weight) => <option key={weight}>{weight}</option>)}
           </select>
         </label>
-        <SliderTokenField
-          label="Satır yüksekliği"
-          description="Satırlar arası boşluk"
-          value={token.lineHeight}
-          min={1}
-          max={2}
-          step={0.05}
-          unit=""
-          fallback={1.4}
-          onChange={(value) => onChange('lineHeight', value)}
-        />
-        <SliderTokenField
-          label="Harf aralığı"
-          description="Letter spacing"
-          value={token.letterSpacing}
-          min={-0.08}
-          max={0.12}
-          step={0.005}
-          unit="em"
-          fallback={0}
-          onChange={(value) => onChange('letterSpacing', value)}
-        />
+
+        <label className="block">
+          <span className="text-label-sm text-text-muted block truncate">S. Yükseklik</span>
+          <select
+            value={token.lineHeight}
+            onChange={(event) => onChange('lineHeight', event.target.value)}
+            className="mt-1 w-full rounded-radius-md border border-border-default bg-surface-panel px-1.5 py-1.5 text-body-sm text-text-primary outline-none focus:border-primary"
+          >
+            {LINE_HEIGHTS.map((lh) => <option key={lh} value={lh}>{lh}</option>)}
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="text-label-sm text-text-muted block truncate">H. Aralığı</span>
+          <select
+            value={token.letterSpacing}
+            onChange={(event) => onChange('letterSpacing', event.target.value)}
+            className="mt-1 w-full rounded-radius-md border border-border-default bg-surface-panel px-1.5 py-1.5 text-body-sm text-text-primary outline-none focus:border-primary"
+          >
+            {LETTER_SPACINGS.map((ls) => <option key={ls} value={ls}>{ls}</option>)}
+          </select>
+        </label>
       </div>
     </fieldset>
   );
@@ -446,6 +494,156 @@ function TextTokenField({
   onChange: (value: string) => void;
 }) {
   return <MiniInput label={label} description={description} value={value} onChange={onChange} mono />;
+}
+
+interface ParsedShadow {
+  offset: number;
+  blur: number;
+  spread: number;
+  opacity: number;
+}
+
+function parseShadow(shadowStr: string): ParsedShadow {
+  const fallback: ParsedShadow = { offset: 0, blur: 4, spread: 0, opacity: 10 };
+  if (!shadowStr) return fallback;
+
+  // Find rgba(...) or rgb(...) in the entire string first to avoid split problems
+  let colorPart = '';
+  const rgbMatch = shadowStr.match(/(rgba?|hsla?)\([^)]+\)/);
+  if (rgbMatch) {
+    colorPart = rgbMatch[0];
+  } else {
+    const hexMatch = shadowStr.match(/#[0-9a-fA-F]+/);
+    if (hexMatch) {
+      colorPart = hexMatch[0];
+    }
+  }
+
+  let rest = shadowStr;
+  if (colorPart) {
+    rest = shadowStr.replace(colorPart, '').trim();
+  }
+
+  const numbers = rest.match(/(-?\d+(\.\d+)?)(px|em|rem)?/g);
+  if (!numbers || numbers.length < 2) return fallback;
+
+  // CSS box-shadow: offset-x offset-y blur spread — her zaman pozisyonel oku
+  const offset = parseFloat(numbers[1]);          // Y (X ile eşit yazıyoruz)
+  const blur   = numbers[2] ? parseFloat(numbers[2]) : 0;
+  const spread = numbers[3] ? parseFloat(numbers[3]) : 0;
+
+  let opacity = 10;
+  if (colorPart) {
+    const slashMatch = colorPart.match(/\/[-.\d]+/);
+    const commaMatch = colorPart.match(/,\s*([-.\d]+)\s*\)/);
+    if (slashMatch) {
+      const val = parseFloat(slashMatch[0].replace('/', '').trim());
+      if (!isNaN(val)) opacity = Math.round(val * 100);
+    } else if (commaMatch) {
+      const val = parseFloat(commaMatch[1]);
+      if (!isNaN(val)) opacity = Math.round(val * 100);
+    }
+  }
+
+  return {
+    offset: isNaN(offset) ? 0 : offset,
+    blur: isNaN(blur) ? 0 : blur,
+    spread: isNaN(spread) ? 0 : spread,
+    opacity: isNaN(opacity) ? 10 : opacity,
+  };
+}
+
+function stringifyShadow(parsed: ParsedShadow): string {
+  const { offset, blur, spread, opacity } = parsed;
+  return `${offset}px ${offset}px ${blur}px ${spread}px rgba(0,0,0,${opacity / 100})`;
+}
+
+function ShadowField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const parsed = useMemo(() => parseShadow(value), [value]);
+
+  function handleChange(field: keyof ParsedShadow, numValue: number) {
+    const next = { ...parsed, [field]: numValue };
+    onChange(stringifyShadow(next));
+  }
+
+  return (
+    <fieldset className="rounded-radius-lg border border-border-default bg-surface-subtle p-3">
+      <legend className="px-1 text-label-sm text-text-secondary font-medium">{label}</legend>
+      <div className="mt-2 space-y-3">
+        <div>
+          <div className="flex justify-between text-body-xs text-text-muted">
+            <span>X/Y offset</span>
+            <span className="font-mono">{parsed.offset}px</span>
+          </div>
+          <input
+            type="range"
+            min={-20}
+            max={20}
+            step={1}
+            value={parsed.offset}
+            onChange={(e) => handleChange('offset', parseInt(e.target.value, 10))}
+            className="mt-1 w-full accent-primary"
+          />
+        </div>
+
+        <div>
+          <div className="flex justify-between text-body-xs text-text-muted">
+            <span>Blur</span>
+            <span className="font-mono">{parsed.blur}px</span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={40}
+            step={1}
+            value={parsed.blur}
+            onChange={(e) => handleChange('blur', parseInt(e.target.value, 10))}
+            className="mt-1 w-full accent-primary"
+          />
+        </div>
+
+        <div>
+          <div className="flex justify-between text-body-xs text-text-muted">
+            <span>Spread</span>
+            <span className="font-mono">{parsed.spread}px</span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={20}
+            step={1}
+            value={parsed.spread}
+            onChange={(e) => handleChange('spread', parseInt(e.target.value, 10))}
+            className="mt-1 w-full accent-primary"
+          />
+        </div>
+
+        <div>
+          <div className="flex justify-between text-body-xs text-text-muted">
+            <span>Opaklık</span>
+            <span className="font-mono">{parsed.opacity}%</span>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={parsed.opacity}
+            onChange={(e) => handleChange('opacity', parseInt(e.target.value, 10))}
+            className="mt-1 w-full accent-primary"
+          />
+        </div>
+      </div>
+    </fieldset>
+  );
 }
 
 function SliderTokenField({
@@ -531,7 +729,7 @@ function ThemePreview({ tokens, mode }: { tokens: UIThemeTokens; mode: ThemeMode
   return (
     <aside className="sticky top-6 h-fit rounded-radius-xl border border-border-default bg-surface-panel p-5 shadow-drop-lg">
       <p className="text-label-sm uppercase tracking-[0.14em] text-text-muted">Canlı önizleme</p>
-      <h2 className="mt-1 text-heading-lg">{mode === 'light' ? 'Light' : 'Dark'} tema</h2>
+      <h2 className="mt-1 text-nav-label">{mode === 'light' ? 'Light' : 'Dark'} tema</h2>
       <p className="mt-1 text-body-sm text-text-secondary">
         Bu kart aktif tokenları kullanır; değişiklikler anında DOM’a uygulanır.
       </p>
@@ -554,14 +752,23 @@ function ThemePreview({ tokens, mode }: { tokens: UIThemeTokens; mode: ThemeMode
         </div>
       </div>
 
-      <div className="mt-4 space-y-2 rounded-radius-lg border border-border-default bg-surface-panel p-4 shadow-drop-sm">
-        <p className="text-heading-sm">Tipografi ölçeği</p>
-        <p className="text-body-md text-text-primary">Body MD örnek metin</p>
-        <p className="text-body-sm text-text-secondary">Body SM açıklama metni</p>
-        <p className="text-label-sm text-text-muted">Label SM / muted metin</p>
+      <div className="mt-4 space-y-3 rounded-radius-lg border border-border-default bg-surface-panel p-4 shadow-drop-sm">
+        <p className="text-heading-sm mb-2">Tipografi ölçeği</p>
+        <div className="space-y-2 divide-y divide-border-default">
+          <div className="pt-2"><span className="text-body-xs text-text-muted block mb-1">text-heading-xl:</span><p className="text-heading-xl">Modal Başlığı</p></div>
+          <div className="pt-2"><span className="text-body-xs text-text-muted block mb-1">text-nav-label:</span><p className="text-nav-label">Panel Bölüm Başlığı</p></div>
+          <div className="pt-2"><span className="text-body-xs text-text-muted block mb-1">text-heading-md:</span><p className="text-heading-md">Akordiyon Başlığı</p></div>
+          <div className="pt-2"><span className="text-body-xs text-text-muted block mb-1">text-heading-sm:</span><p className="text-heading-sm">Form Grup Başlığı</p></div>
+          <div className="pt-2"><span className="text-body-xs text-text-muted block mb-1">text-body-md:</span><p className="text-body-md">İçerik Metni</p></div>
+          <div className="pt-2"><span className="text-body-xs text-text-muted block mb-1">text-body-sm:</span><p className="text-body-sm">Açıklama Metni</p></div>
+          <div className="pt-2"><span className="text-body-xs text-text-muted block mb-1">text-body-xs:</span><p className="text-body-xs">Alt Etiket</p></div>
+          <div className="pt-2"><span className="text-body-xs text-text-muted block mb-1">text-label-md:</span><p className="text-label-md">Form Etiketi</p></div>
+          <div className="pt-2"><span className="text-body-xs text-text-muted block mb-1">text-label-sm:</span><p className="text-label-sm">Sekme Etiketi</p></div>
+          <div className="pt-2"><span className="text-body-xs text-text-muted block mb-1">text-icon-label:</span><p className="text-icon-label">İkon Etiketi</p></div>
+        </div>
       </div>
 
-      <div className="mt-4 rounded-radius-lg border border-border-default bg-surface-panel p-4 shadow-drop-lg">
+      <div className="mt-4 rounded-radius-lg border border-border-default bg-surface-panel p-4 shadow-drop-md">
         <p className="text-heading-sm">Gölge örneği</p>
         <p className="mt-1 text-body-sm text-text-secondary">Shadow tokenlarının genel kart etkisi.</p>
       </div>

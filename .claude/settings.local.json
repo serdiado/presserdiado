@@ -54,7 +54,12 @@
       "Bash(node_modules/.bin/vite build *)",
       "Bash(pnpm --filter @matbaapro/web build)",
       "Bash(node -e \"const p = require\\('./packages/shared/dist/index.js'\\); console.log\\('primary:', p.defaultLightTheme?.colors?.primary || 'MISSING'\\); console.log\\('exports:', Object.keys\\(p\\).filter\\(k=>k.includes\\('heme'\\)||k.includes\\('Token'\\)\\).join\\(', '\\)\\)\")",
-      "Bash(pnpm exec *)"
+      "Bash(pnpm exec *)",
+      "Bash(unzip -l \"docs/Presserdiado Design System-handoff.zip\")",
+      "Bash(python3 -c \"import zipfile; z=zipfile.ZipFile\\('docs/Presserdiado Design System-handoff.zip'\\); [print\\(f\\) for f in z.namelist\\(\\)]\")",
+      "Bash(python3 -c ' *)",
+      "Bash(powershell -Command ' *)",
+      "Bash(pnpm --filter @matbaapro/shared build)"
     ]
   }
 }

@@ -39,10 +39,10 @@ export function applyTokensToDOM(tokens: UIThemeTokens) {
   r.style.setProperty('--heading-xl-lh',     safeTokens.typography.headingXl.lineHeight);
   r.style.setProperty('--heading-xl-ls',     safeTokens.typography.headingXl.letterSpacing);
 
-  r.style.setProperty('--heading-lg-size',   safeTokens.typography.headingLg.fontSize);
-  r.style.setProperty('--heading-lg-weight', safeTokens.typography.headingLg.fontWeight);
-  r.style.setProperty('--heading-lg-lh',     safeTokens.typography.headingLg.lineHeight);
-  r.style.setProperty('--heading-lg-ls',     safeTokens.typography.headingLg.letterSpacing);
+  r.style.setProperty('--nav-label-size',   safeTokens.typography.navLabel.fontSize);
+  r.style.setProperty('--nav-label-weight', safeTokens.typography.navLabel.fontWeight);
+  r.style.setProperty('--nav-label-lh',     safeTokens.typography.navLabel.lineHeight);
+  r.style.setProperty('--nav-label-ls',     safeTokens.typography.navLabel.letterSpacing);
 
   r.style.setProperty('--heading-md-size',   safeTokens.typography.headingMd.fontSize);
   r.style.setProperty('--heading-md-weight', safeTokens.typography.headingMd.fontWeight);
@@ -88,12 +88,15 @@ export function applyTokensToDOM(tokens: UIThemeTokens) {
   r.style.setProperty('--button-height', safeTokens.buttons.height);
 }
 
-export function ThemeInjector() {
-  const { tokens, fetchTheme } = useThemeStore();
+export function ThemeInjector({ tokens: propTokens }: { tokens?: UIThemeTokens }) {
+  const { tokens: storeTokens, fetchTheme } = useThemeStore();
+  const tokens = propTokens ?? storeTokens;
 
   useEffect(() => {
-    fetchTheme();
-  }, []);
+    if (!propTokens) {
+      fetchTheme();
+    }
+  }, [propTokens, fetchTheme]);
 
   useEffect(() => {
     applyTokensToDOM(tokens);

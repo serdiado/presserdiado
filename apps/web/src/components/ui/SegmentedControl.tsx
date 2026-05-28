@@ -21,7 +21,7 @@ export function SegmentedControl({
   return (
     <div
       className={[
-        'flex rounded-md border border-border-default overflow-hidden',
+        'flex rounded-radius-md border border-border-default overflow-hidden',
         disabled ? 'opacity-40 pointer-events-none' : '',
         className,
       ]

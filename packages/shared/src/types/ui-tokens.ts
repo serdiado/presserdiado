@@ -29,7 +29,7 @@ export interface UIThemeTokens {
     fontFamilySans: string;   // Tüm UI rolleri bu font ailesini kullanır
     // Başlık rolleri
     headingXl: UITypographyToken;  // Modal/sayfa başlığı
-    headingLg: UITypographyToken;  // Panel/bölüm başlığı
+    navLabel: UITypographyToken;   // Panel Bölüm Başlığı
     headingMd: UITypographyToken;  // Kart/akordiyon başlığı
     headingSm: UITypographyToken;  // Form grup başlığı
     // Gövde metin rolleri
@@ -83,10 +83,10 @@ export const defaultLightTheme: UIThemeTokens = {
   typography: {
     fontFamilySans: 'Inter, system-ui, sans-serif',
     headingXl: { fontSize: '1.25rem',   fontWeight: '600', lineHeight: '1.3',  letterSpacing: '0em'     },
-    headingLg: { fontSize: '1.125rem',  fontWeight: '600', lineHeight: '1.35', letterSpacing: '0em'     },
-    headingMd: { fontSize: '1rem',      fontWeight: '600', lineHeight: '1.4',  letterSpacing: '0em'     },
-    headingSm: { fontSize: '0.875rem',  fontWeight: '600', lineHeight: '1.4',  letterSpacing: '0em'     },
-    bodyMd:    { fontSize: '0.875rem',  fontWeight: '400', lineHeight: '1.5',  letterSpacing: '0em'     },
+    navLabel:  { fontSize: '0.8125rem',  fontWeight: '500', lineHeight: '1.4',  letterSpacing: '0em'     },
+    headingMd: { fontSize: '0.8125rem',  fontWeight: '600', lineHeight: '1.4',  letterSpacing: '0em'     },
+    headingSm: { fontSize: '0.75rem',   fontWeight: '600', lineHeight: '1.4',  letterSpacing: '0em'     },
+    bodyMd:    { fontSize: '0.8125rem',  fontWeight: '400', lineHeight: '1.5',  letterSpacing: '0em'     },
     bodySm:    { fontSize: '0.75rem',   fontWeight: '400', lineHeight: '1.5',  letterSpacing: '0em'     },
     bodyXs:    { fontSize: '0.6875rem', fontWeight: '400', lineHeight: '1.4',  letterSpacing: '0em'     },
     labelMd:   { fontSize: '0.75rem',   fontWeight: '500', lineHeight: '1.4',  letterSpacing: '0em'     },
@@ -101,12 +101,12 @@ export const defaultLightTheme: UIThemeTokens = {
     full: '9999px',
   },
   shadows: {
-    dropSm: '0 1px 2px 0 rgb(0 0 0 / .05)',
-    dropMd: '0 4px 6px -1px rgb(0 0 0 / .1), 0 2px 4px -2px rgb(0 0 0 / .1)',
-    dropLg: '0 10px 15px -3px rgb(0 0 0 / .1), 0 4px 6px -4px rgb(0 0 0 / .1)',
+    dropSm: '0 1px 2px 0px rgba(0,0,0,0.05)',
+    dropMd: '0 4px 6px -1px rgba(0,0,0,0.1)',
+    dropLg: '0 10px 15px -3px rgba(0,0,0,0.1)',
   },
   buttons: {
-    radius: '8px',
+    radius: '6px',
     height: '36px',
   },
 };
@@ -134,10 +134,10 @@ export const defaultDarkTheme: UIThemeTokens = {
     // Koyu temada tipografi ölçeği aynıdır, yalnızca renkler değişir
     fontFamilySans: 'Inter, system-ui, sans-serif',
     headingXl: { fontSize: '1.25rem',   fontWeight: '600', lineHeight: '1.3',  letterSpacing: '0em'    },
-    headingLg: { fontSize: '1.125rem',  fontWeight: '600', lineHeight: '1.35', letterSpacing: '0em'    },
-    headingMd: { fontSize: '1rem',      fontWeight: '600', lineHeight: '1.4',  letterSpacing: '0em'    },
-    headingSm: { fontSize: '0.875rem',  fontWeight: '600', lineHeight: '1.4',  letterSpacing: '0em'    },
-    bodyMd:    { fontSize: '0.875rem',  fontWeight: '400', lineHeight: '1.5',  letterSpacing: '0em'    },
+    navLabel:  { fontSize: '0.8125rem',  fontWeight: '500', lineHeight: '1.4',  letterSpacing: '0em'    },
+    headingMd: { fontSize: '0.8125rem',  fontWeight: '600', lineHeight: '1.4',  letterSpacing: '0em'    },
+    headingSm: { fontSize: '0.75rem',   fontWeight: '600', lineHeight: '1.4',  letterSpacing: '0em'    },
+    bodyMd:    { fontSize: '0.8125rem',  fontWeight: '400', lineHeight: '1.5',  letterSpacing: '0em'    },
     bodySm:    { fontSize: '0.75rem',   fontWeight: '400', lineHeight: '1.5',  letterSpacing: '0em'    },
     bodyXs:    { fontSize: '0.6875rem', fontWeight: '400', lineHeight: '1.4',  letterSpacing: '0em'    },
     labelMd:   { fontSize: '0.75rem',   fontWeight: '500', lineHeight: '1.4',  letterSpacing: '0em'    },
@@ -152,12 +152,12 @@ export const defaultDarkTheme: UIThemeTokens = {
     full: '9999px',
   },
   shadows: {
-    dropSm: '0 1px 2px 0 rgb(0 0 0 / .2)',
-    dropMd: '0 4px 6px -1px rgb(0 0 0 / .3), 0 2px 4px -2px rgb(0 0 0 / .3)',
-    dropLg: '0 10px 15px -3px rgb(0 0 0 / .4), 0 4px 6px -4px rgb(0 0 0 / .4)',
+    dropSm: '0 1px 2px 0px rgba(0,0,0,0.05)',
+    dropMd: '0 4px 6px -1px rgba(0,0,0,0.1)',
+    dropLg: '0 10px 15px -3px rgba(0,0,0,0.1)',
   },
   buttons: {
-    radius: '8px',
+    radius: '6px',
     height: '36px',
   },
 };
