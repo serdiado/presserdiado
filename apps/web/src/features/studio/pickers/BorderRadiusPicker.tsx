@@ -1,3 +1,4 @@
+import { Link2, Lock, LockOpen } from 'lucide-react';
 import type { BorderRadiusData } from '@matbaapro/shared';
 
 interface Props {
@@ -5,6 +6,8 @@ interface Props {
   value: BorderRadiusData;
   onChange: (val: BorderRadiusData) => void;
 }
+
+const inputCls = 'w-16 text-center text-sm font-medium border border-border-default rounded-md p-2 outline-none focus:border-border-strong';
 
 export function BorderRadiusPicker({ title = 'Köşe Ovalliği', value, onChange }: Props) {
   const setLinked = (v: number) => onChange({ tl: v, tr: v, bl: v, br: v, linked: true });
@@ -15,53 +18,81 @@ export function BorderRadiusPicker({ title = 'Köşe Ovalliği', value, onChange
     else onChange({ ...value, linked: false });
   };
 
+  const handleChange = (corner: 'tl' | 'tr' | 'bl' | 'br', raw: string) => {
+    const v = raw === '' ? 0 : Math.max(0, Math.min(99, parseInt(raw, 10) || 0));
+    value.linked ? setLinked(v) : setCorner(corner, v);
+  };
+
+  const linkBar = (
+    <div className={`flex justify-center py-1 transition-opacity ${value.linked ? 'text-text-secondary opacity-100' : 'opacity-0'}`}>
+      <Link2 size={12} style={{ transform: 'rotate(90deg)' }} />
+    </div>
+  );
+
   return (
-    <div className="pt-2 border-t border-border-default">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-[10px] font-bold text-text-secondary">{title}</span>
-        <button
-          onClick={toggleLink}
-          className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
-            value.linked
-              ? 'bg-surface-subtle text-text-primary'
-              : 'bg-surface-subtle text-text-muted hover:bg-border-default'
-          }`}
-        >
-          {value.linked ? 'BAĞLI' : 'AYRI'}
-        </button>
-      </div>
-      {value.linked ? (
-        <div className="bg-surface-subtle p-3 rounded border border-border-default text-center space-y-2">
-          <span className="text-[10px] font-medium text-text-muted block">Tüm Köşeler</span>
+    <div>
+      {title && <p className="text-[10px] font-bold text-text-secondary mb-3">{title}</p>}
+
+      <div className="grid grid-cols-[auto_1fr_auto] gap-4 items-center">
+        {/* Sol: TL + bağ + BL */}
+        <div className="flex flex-col items-center gap-1">
           <input
             type="number"
-            value={value.tl}
-            onChange={(e) => setLinked(parseInt(e.target.value) || 0)}
-            className="w-30 mx-auto block text-[10px] font-bold text-text-secondary text-center border border-border-default rounded p-1.5 outline-none focus:border-border-strong"
+            min={0}
+            max={99}
+            value={value.linked ? value.tl : value.tl}
+            onChange={(e) => handleChange('tl', e.target.value)}
+            className={inputCls}
+          />
+          {linkBar}
+          <input
+            type="number"
+            min={0}
+            max={99}
+            value={value.linked ? value.tl : value.bl}
+            onChange={(e) => handleChange('bl', e.target.value)}
+            className={inputCls}
           />
         </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-2">
-          {(
-            [
-              ['tl', 'TL'],
-              ['tr', 'TR'],
-              ['bl', 'BL'],
-              ['br', 'BR'],
-            ] as const
-          ).map(([k, label]) => (
-            <div key={k} className="bg-surface-subtle p-2 rounded border border-border-default space-y-1.5">
-              <span className="text-[10px] font-bold text-text-muted">{label}</span>
-              <input
-                type="number"
-                value={value[k] as number}
-                onChange={(e) => setCorner(k, parseInt(e.target.value) || 0)}
-                className="w-full text-[10px] font-bold text-text-secondary text-center border border-border-default rounded p-1.5 outline-none focus:border-border-strong"
-              />
-            </div>
-          ))}
+
+        {/* Orta: preview kare, kilit içinde */}
+        <div className="flex items-center justify-center">
+          <div
+            className="w-20 h-20 border-2 border-border-default relative"
+            style={{ borderRadius: `${value.tl}px ${value.tr}px ${value.br}px ${value.bl}px` }}
+          >
+            <button
+              onClick={toggleLink}
+              className={`absolute inset-0 flex items-center justify-center cursor-pointer transition-colors ${
+                value.linked ? 'text-text-primary' : 'text-text-muted hover:text-text-primary'
+              }`}
+            >
+              {value.linked ? <Lock size={16} /> : <LockOpen size={16} />}
+            </button>
+          </div>
         </div>
-      )}
+
+        {/* Sağ: TR + bağ + BR */}
+        <div className="flex flex-col items-center gap-1">
+          <input
+            type="number"
+            min={0}
+            max={99}
+            value={value.linked ? value.tl : value.tr}
+            onChange={(e) => handleChange('tr', e.target.value)}
+            className={inputCls}
+          />
+          {linkBar}
+          <input
+            type="number"
+            min={0}
+            max={99}
+            value={value.linked ? value.tl : value.br}
+            onChange={(e) => handleChange('br', e.target.value)}
+            className={inputCls}
+          />
+        </div>
+      </div>
     </div>
   );
 }

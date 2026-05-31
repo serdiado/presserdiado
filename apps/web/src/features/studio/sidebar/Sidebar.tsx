@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import { getTerm } from '@matbaapro/shared';
 import { GlobalGridSettings } from '../panels/GlobalGridSettings';
+import { GlobalCellSettings } from '../panels/GlobalCellSettings';
 import { CellPanel } from '../panels/CellPanel';
 import { BackgroundSettings } from '../panels/BackgroundSettings';
 import { ProductManagement } from '../panels/ProductManagement';
-import { LayoutTemplate, Grid3X3, Layers, ChevronDown, Bookmark, Table2, Frame, PanelBottom } from 'lucide-react';
+import { LayoutTemplate, Grid3X3, Layers, ChevronDown, Bookmark, Table2, Frame, PanelBottom, Square } from 'lucide-react';
 
 type NewPanel = 'products' | 'design' | 'grid' | 'modules' | 'cell' | 'price' | 'template';
 
@@ -61,8 +62,9 @@ const NEW_TABS: { key: NewPanel; label: string; icon: React.ReactNode }[] = [
   },
 ];
 
-export function Sidebar() {
-  const [activeTab, setActiveTab] = useState<NewPanel>('products');
+export function Sidebar({ preview = false }: { preview?: boolean }) {
+  const sidebarActivePanel = useUIStore((s) => s.sidebarState.activePanel);
+  const activeTab = (sidebarActivePanel ?? 'products') as NewPanel;
 
   return (
     <div className="w-96 bg-surface-panel border-l border-border-default flex flex-col h-full shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)]">
@@ -72,10 +74,10 @@ export function Sidebar() {
         {NEW_TABS.map((t) => (
           <button
             key={t.key}
-            onClick={() => setActiveTab(t.key)}
+            onClick={() => useUIStore.getState().setSidebarState(t.key, null)}
             className={`flex flex-col items-center justify-center py-2.5 gap-1 transition-all duration-200 ${
               activeTab === t.key
-                ? 'text-text-primary bg-surface-panel border-b-2 border-b-primary shadow-[0_-1px_0_0_var(--color-border-default)]'
+                ? 'bg-blue-50 text-blue-700 border-b-2 border-b-blue-500'
                 : 'text-text-secondary hover:text-text-primary hover:bg-surface-subtle border-b-2 border-b-transparent'
             }`}
           >
@@ -87,38 +89,87 @@ export function Sidebar() {
 
       {/* İÇERİK ALANI */}
       <div className="flex-1 overflow-auto p-5 bg-surface-panel">
-        {activeTab === 'products' && <ProductManagement />}
-        {activeTab === 'design' && <DesignPanel />}
-        {activeTab === 'grid' && <CellPanel />}
-        {activeTab === 'modules' && <ModulesPanel />}
+        {activeTab === 'products' && (preview ? <PreviewProductsPanel /> : <ProductManagement />)}
+        {activeTab === 'design' && (preview ? <PreviewDesignPanel /> : <DesignPanel />)}
+        {activeTab === 'grid' && (preview ? <PreviewGridPanel /> : <CellPanel />)}
+        {activeTab === 'modules' && (preview ? <PreviewModulesPanel /> : <ModulesPanel />)}
       </div>
     </div>
   );
 }
 
-function DesignPanel() {
+function PreviewProductsPanel() {
+  return (
+    <div className="rounded-radius-md border border-border-default bg-surface-subtle p-3">
+      <h3 className="text-heading-sm">Ürünler</h3>
+      <p className="mt-1 text-body-sm text-text-secondary">Önizleme modunda ürün listesi bulunmuyor.</p>
+    </div>
+  );
+}
+
+function PreviewDesignPanel() {
+  return (
+    <div className="space-y-2">
+      <div className="rounded-radius-md border border-border-default bg-surface-subtle p-3">
+        <h3 className="text-heading-sm">Şablon</h3>
+        <p className="mt-1 text-body-sm text-text-secondary">Seçilmedi</p>
+      </div>
+      <div className="rounded-radius-md border border-border-default bg-surface-subtle p-3">
+        <h3 className="text-heading-sm">Izgara</h3>
+        <p className="mt-1 text-body-sm text-text-secondary">Önizleme içeriği</p>
+      </div>
+    </div>
+  );
+}
+
+function PreviewGridPanel() {
+  return (
+    <div className="rounded-radius-md border border-border-default bg-surface-subtle p-3">
+      <h3 className="text-heading-sm">Hücre</h3>
+      <p className="mt-1 text-body-sm text-text-secondary">Bir hücre seçildiğinde ayarlar burada görünür.</p>
+    </div>
+  );
+}
+
+function PreviewModulesPanel() {
+  return (
+    <div className="rounded-radius-md border border-border-default bg-surface-subtle p-3">
+      <h3 className="text-heading-sm">Modüller</h3>
+      <p className="mt-1 text-body-sm text-text-secondary">Henüz kayıtlı modül yok.</p>
+    </div>
+  );
+}
+
+export function DesignPanel() {
   const [openSection, setOpenSection] = useState<string | null>('template');
   const activeTemplate = useCatalogStore((s) => s.activeTemplate);
+  const sidebarState = useUIStore((s) => s.sidebarState);
+
+  useEffect(() => {
+    if (sidebarState.activeTab) {
+      setOpenSection(sidebarState.activeTab);
+    }
+  }, [sidebarState]);
 
   const toggleSection = (section: string) => {
     setOpenSection(openSection === section ? null : section);
   };
 
   return (
-    <div className="flex flex-col w-full h-full space-y-2">
+    <div className="flex flex-col w-full space-y-2">
       {/* ŞABLON */}
       <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel shadow-drop-sm">
         <button
           onClick={() => toggleSection('template')}
-          className="flex items-center justify-between px-3 py-2.5 bg-surface-subtle hover:bg-surface-app transition-colors"
+          className={`flex items-center justify-between px-3 py-2.5 transition-colors ${openSection === 'template' ? 'bg-blue-50' : 'bg-surface-subtle hover:bg-surface-subtle'}`}
         >
-          <div className={`flex items-center gap-2 transition-colors ${openSection === 'template' ? 'text-text-primary' : 'text-text-secondary'}`}>
+          <div className={`flex items-center gap-2 transition-colors ${openSection === 'template' ? 'text-blue-700 border-l-2 border-blue-500 pl-2' : 'text-text-secondary'}`}>
             <LayoutTemplate size={18} />
-            <span className="text-heading-md text-text-primary">Şablon</span>
+            <span className={`text-heading-md ${openSection === 'template' ? 'text-blue-700' : 'text-text-primary'}`}>Şablon</span>
           </div>
           <ChevronDown
             size={18}
-            className={`transition-all duration-300 ${openSection === 'template' ? 'rotate-180 text-text-primary' : 'text-text-secondary'}`}
+            className={`transition-all duration-300 ${openSection === 'template' ? 'rotate-180 text-blue-500' : 'text-text-secondary'}`}
           />
         </button>
         <div
@@ -181,15 +232,15 @@ function DesignPanel() {
       <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel shadow-drop-sm">
         <button
           onClick={() => toggleSection('grid')}
-          className="flex items-center justify-between px-3 py-2.5 bg-surface-subtle hover:bg-surface-app transition-colors"
+          className={`flex items-center justify-between px-3 py-2.5 transition-colors ${openSection === 'grid' ? 'bg-blue-50' : 'bg-surface-subtle hover:bg-surface-subtle'}`}
         >
-          <div className={`flex items-center gap-2 transition-colors ${openSection === 'grid' ? 'text-text-primary' : 'text-text-secondary'}`}>
+          <div className={`flex items-center gap-2 transition-colors ${openSection === 'grid' ? 'text-blue-700 border-l-2 border-blue-500 pl-2' : 'text-text-secondary'}`}>
             <Grid3X3 size={18} />
-            <span className="text-heading-md text-text-primary">Izgara</span>
+            <span className={`text-heading-md ${openSection === 'grid' ? 'text-blue-700' : 'text-text-primary'}`}>Izgara</span>
           </div>
           <ChevronDown
             size={18}
-            className={`transition-all duration-300 ${openSection === 'grid' ? 'rotate-180 text-text-primary' : 'text-text-secondary'}`}
+            className={`transition-all duration-300 ${openSection === 'grid' ? 'rotate-180 text-blue-500' : 'text-text-secondary'}`}
           />
         </button>
         <div
@@ -203,19 +254,45 @@ function DesignPanel() {
         </div>
       </div>
 
+      {/* HÜCRE */}
+      <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel shadow-drop-sm">
+        <button
+          onClick={() => toggleSection('cell')}
+          className={`flex items-center justify-between px-3 py-2.5 transition-colors ${openSection === 'cell' ? 'bg-blue-50' : 'bg-surface-subtle hover:bg-surface-subtle'}`}
+        >
+          <div className={`flex items-center gap-2 transition-colors ${openSection === 'cell' ? 'text-blue-700 border-l-2 border-blue-500 pl-2' : 'text-text-secondary'}`}>
+            <Square size={18} />
+            <span className={`text-heading-md ${openSection === 'cell' ? 'text-blue-700' : 'text-text-primary'}`}>Hücre</span>
+          </div>
+          <ChevronDown
+            size={18}
+            className={`transition-all duration-300 ${openSection === 'cell' ? 'rotate-180 text-blue-500' : 'text-text-secondary'}`}
+          />
+        </button>
+        <div
+          className={`transition-all duration-300 ease-in-out overflow-hidden ${
+            openSection === 'cell' ? 'max-h-212.5 opacity-100' : 'max-h-0 opacity-0'
+          }`}
+        >
+          <div className="px-3 py-3.5 border-t border-border-default bg-surface-panel overflow-y-auto">
+            <GlobalCellSettings />
+          </div>
+        </div>
+      </div>
+
       {/* ARKAPLAN */}
       <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel shadow-drop-sm">
         <button
           onClick={() => toggleSection('background')}
-          className="flex items-center justify-between px-3 py-2.5 bg-surface-subtle hover:bg-surface-app transition-colors"
+          className={`flex items-center justify-between px-3 py-2.5 transition-colors ${openSection === 'background' ? 'bg-blue-50' : 'bg-surface-subtle hover:bg-surface-subtle'}`}
         >
-          <div className={`flex items-center gap-2 transition-colors ${openSection === 'background' ? 'text-text-primary' : 'text-text-secondary'}`}>
+          <div className={`flex items-center gap-2 transition-colors ${openSection === 'background' ? 'text-blue-700 border-l-2 border-blue-500 pl-2' : 'text-text-secondary'}`}>
             <Layers size={18} />
-            <span className="text-heading-md text-text-primary">Arka plan</span>
+            <span className={`text-heading-md ${openSection === 'background' ? 'text-blue-700' : 'text-text-primary'}`}>Arka plan</span>
           </div>
           <ChevronDown
             size={18}
-            className={`transition-all duration-300 ${openSection === 'background' ? 'rotate-180 text-text-primary' : 'text-text-secondary'}`}
+            className={`transition-all duration-300 ${openSection === 'background' ? 'rotate-180 text-blue-500' : 'text-text-secondary'}`}
           />
         </button>
         <div
@@ -274,7 +351,7 @@ function ModulesPanel() {
       <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel shadow-drop-sm">
         <button
           onClick={() => setReadyOpen((v) => !v)}
-          className="flex items-center justify-between px-3 py-2.5 bg-surface-subtle hover:bg-surface-app transition-colors"
+          className="flex items-center justify-between px-3 py-2.5 bg-surface-subtle hover:bg-surface-subtle transition-colors"
         >
           <div className={`flex items-center gap-2 transition-colors ${readyOpen ? 'text-text-primary' : 'text-text-secondary'}`}>
             <Layers size={18} />
@@ -321,7 +398,7 @@ function ModulesPanel() {
       <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel shadow-drop-sm">
         <button
           onClick={() => setMineOpen((v) => !v)}
-          className="flex items-center justify-between px-3 py-2.5 bg-surface-subtle hover:bg-surface-app transition-colors"
+          className="flex items-center justify-between px-3 py-2.5 bg-surface-subtle hover:bg-surface-subtle transition-colors"
         >
           <div className={`flex items-center gap-2 transition-colors ${mineOpen ? 'text-text-primary' : 'text-text-secondary'}`}>
             <Bookmark size={18} />

@@ -1,9 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Package, Palette, LayoutGrid, Layers } from 'lucide-react';
 import { type UITypographyToken, type UIThemeTokens } from '@matbaapro/shared';
 import { ThemeInjector, applyTokensToDOM } from '@/components/ThemeInjector';
 import { cloneTheme, defaultThemeForMode, normalizeThemeTokens } from '@/lib/themeTokens';
 import { type ThemeMode, useThemeStore } from '@/stores/theme.store';
+import { ProductManagement } from '@/features/studio/panels/ProductManagement';
+import { GlobalGridSettings } from '@/features/studio/panels/GlobalGridSettings';
+import { DesignPanel } from '@/features/studio/sidebar/Sidebar';
+import { useCatalogStore, useLayerStore, useUIStore } from '@/stores/studio';
 
 type ThemeDrafts = Record<ThemeMode, UIThemeTokens>;
 type ColorKey = keyof UIThemeTokens['colors'];
@@ -12,22 +18,23 @@ type ShadowKey = keyof UIThemeTokens['shadows'];
 type TypographyKey = Exclude<keyof UIThemeTokens['typography'], 'fontFamilySans'>;
 type ButtonKey = keyof UIThemeTokens['buttons'];
 type TypographyField = keyof UITypographyToken;
+type PreviewTab = 'products' | 'design' | 'grid' | 'modules';
 
 const COLOR_LABELS: Record<ColorKey, string> = {
-  primary: 'Primary',
-  primaryHover: 'Primary hover',
-  danger: 'Danger',
-  success: 'Success',
-  warning: 'Warning',
-  surfaceApp: 'App yüzeyi',
-  surfacePanel: 'Panel yüzeyi',
-  surfaceSubtle: 'Subtle yüzey',
-  borderDefault: 'Border default',
-  borderStrong: 'Border strong',
-  borderSelected: 'Border selected',
-  textPrimary: 'Text primary',
-  textSecondary: 'Text secondary',
-  textMuted: 'Text muted',
+  primary: 'Birincil',
+  primaryHover: 'Birincil hover',
+  danger: 'Tehlike',
+  success: 'Başarı',
+  warning: 'Uyarı',
+  surfaceApp: 'Uygulama zemini',
+  surfacePanel: 'Panel zemini',
+  surfaceSubtle: 'Hafif zemin',
+  borderDefault: 'Kenarlık',
+  borderStrong: 'Güçlü kenarlık',
+  borderSelected: 'Seçili kenarlık',
+  textPrimary: 'Birincil metin',
+  textSecondary: 'İkincil metin',
+  textMuted: 'Soluk metin',
 };
 
 const TYPOGRAPHY_LABELS: Record<TypographyKey, string> = {
@@ -114,6 +121,8 @@ export default function AdminThemePage() {
   }));
   const [isLoading, setIsLoading] = useState(true);
   const [savingMode, setSavingMode] = useState<ThemeMode | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(true);
+  const [activePreviewTab, setActivePreviewTab] = useState<PreviewTab>('products');
 
   const activeTokens = drafts[activeMode];
 
@@ -144,6 +153,35 @@ export default function AdminThemePage() {
   useEffect(() => {
     applyTokensToDOM(activeTokens);
   }, [activeTokens]);
+
+  useEffect(() => {
+    useCatalogStore.setState((state) => ({
+      ...state,
+      productPool: [],
+      masterProductPool: [],
+      formas: [],
+      activeTemplate: null as never,
+      activeFormaId: 1,
+      globalSettings: {
+        ...state.globalSettings,
+        defaultGrid: { rows: 4, cols: 4 },
+      },
+    }));
+
+    useUIStore.setState((state) => ({
+      ...state,
+      selectedSlotIds: [],
+      selectedBackgroundPageIds: [],
+      backgroundMerged: false,
+      foregroundOpacity: 100,
+      selection: { type: 'none', ids: [] },
+    }));
+
+    useLayerStore.setState((state) => ({
+      ...state,
+      selectedPageIds: [],
+    }));
+  }, []);
 
   async function switchMode(mode: ThemeMode) {
     setActiveMode(mode);
@@ -192,7 +230,10 @@ export default function AdminThemePage() {
   return (
     <main className="min-h-screen bg-surface-app text-text-primary" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <ThemeInjector tokens={activeTokens} />
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-6">
+      <div
+        className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-6 transition-[margin-right] duration-300"
+        style={{ marginRight: isPreviewOpen ? 384 : 0 }}
+      >
         <header className="flex flex-col gap-4 rounded-radius-xl border border-border-default bg-surface-panel p-5 shadow-drop-sm md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-label-sm uppercase tracking-[0.14em] text-text-muted">Admin</p>
@@ -236,8 +277,7 @@ export default function AdminThemePage() {
           </div>
         </header>
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
-          <section className="space-y-6">
+        <section className="space-y-6">
             <TokenSection
               title={`${modeLabel} renkleri`}
               description="Renk değerlerini color picker veya HEX alanı ile düzenle."
@@ -366,11 +406,87 @@ export default function AdminThemePage() {
                 </div>
               </div>
             </TokenSection>
-          </section>
-
-          <ThemePreview tokens={activeTokens} mode={activeMode} />
-        </div>
+        </section>
       </div>
+
+      <aside
+        id="preview-panel"
+        className={`fixed right-0 top-0 z-40 h-screen w-96 pt-4 pb-4 flex transition-transform duration-300 ${
+          isPreviewOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
+        <button
+          type="button"
+          aria-label={isPreviewOpen ? 'Önizleme panelini kapat' : 'Önizleme panelini aç'}
+          onClick={() => setIsPreviewOpen((prev) => !prev)}
+          className="absolute -left-4 top-1/2 z-50 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-border-default bg-surface-panel text-text-secondary shadow-drop-md transition hover:text-text-primary"
+        >
+          {isPreviewOpen ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+        </button>
+
+        <div className="rounded-l-xl shadow-xl h-full flex flex-col relative overflow-hidden bg-surface-panel w-full">
+
+        <div className="grid grid-cols-4 shrink-0 bg-surface-subtle border-b border-border-default">
+          {([
+            { key: 'products', label: 'Ürünler', icon: <Package size={24} /> },
+            { key: 'design', label: 'Tasarım', icon: <Palette size={24} /> },
+            { key: 'grid', label: 'Hücre', icon: <LayoutGrid size={24} /> },
+            { key: 'modules', label: 'Modüller', icon: <Layers size={24} /> },
+          ] as { key: PreviewTab; label: string; icon: React.ReactNode }[]).map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActivePreviewTab(tab.key)}
+              className={`flex flex-col items-center justify-center py-2.5 gap-1 transition-all duration-200 border-b-2 ${
+                activePreviewTab === tab.key
+                  ? 'text-text-primary bg-surface-panel border-primary shadow-[0_-1px_0_0_var(--color-border-default)]'
+                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-subtle border-transparent'
+              }`}
+            >
+              {tab.icon}
+              <span className="text-nav-label">{tab.label}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1 overflow-auto bg-surface-panel">
+          {activePreviewTab === 'products' && (
+            <div className="p-3 flex flex-col gap-2">
+              <ProductManagement />
+            </div>
+          )}
+          {activePreviewTab === 'design' && (
+            <div className="p-3 flex flex-col gap-2">
+              <DesignPanel />
+            </div>
+          )}
+          {activePreviewTab === 'grid' && (
+            <div className="p-3 flex flex-col gap-2">
+              <GlobalGridSettings />
+            </div>
+          )}
+          {activePreviewTab === 'modules' && (
+            <div className="p-3 flex flex-col gap-2">
+              <div className="rounded-radius-md border border-border-default bg-surface-subtle p-3">
+                <h3 className="text-heading-sm">Modüller</h3>
+                <p className="mt-1 text-body-sm text-text-secondary">Önizleme modunda varsayılan içerik.</p>
+              </div>
+            </div>
+          )}
+        </div>
+        </div>
+      </aside>
+
+      {!isPreviewOpen && (
+        <button
+          type="button"
+          aria-label="Önizleme panelini aç"
+          onClick={() => setIsPreviewOpen(true)}
+          className="fixed right-0 top-1/2 z-40 mr-2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-border-default bg-surface-panel text-text-secondary shadow-drop-md transition hover:text-text-primary"
+        >
+          <ChevronLeft size={16} />
+        </button>
+      )}
     </main>
   );
 }

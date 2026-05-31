@@ -29,13 +29,13 @@ export function GlobalCellSettings() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2 bg-white p-2.5 rounded border border-slate-200 shadow-sm">
-        <span className="text-[10px] font-bold text-slate-600 w-24">Hücre Boşluğu</span>
+      <div className="flex items-center justify-between gap-2 bg-surface-panel p-2.5 rounded border border-border-default shadow-sm">
+        <span className="text-label-md text-text-secondary w-24">Hücre Boşluğu</span>
         <input
           type="range"
           min={0}
           max={10}
-          step={0.5}
+          step={1}
           value={globalSettings.gridGap}
           onChange={(e) => setGlobalSettings({ gridGap: parseFloat(e.target.value) })}
           className="flex-1 studio-slider"
@@ -46,9 +46,9 @@ export function GlobalCellSettings() {
           onChange={(e) =>
             setGlobalSettings({ gridGap: parseFloat(e.target.value) || 0 })
           }
-          className="w-12 text-[10px] font-bold text-slate-600 text-right border border-slate-200 rounded p-0.5"
+          className="w-12 text-body-md text-text-secondary text-right border border-border-default rounded p-0.5"
         />
-        <span className="text-[11px] text-slate-400">mm</span>
+        <span className="text-[11px] text-text-muted">mm</span>
       </div>
 
       <div className="bg-white p-3 rounded border border-slate-200 shadow-sm space-y-3">
@@ -161,10 +161,10 @@ export function GlobalCellSettings() {
             type="range"
             min={0}
             max={10}
-            step={0.5}
+            step={1}
             value={globalSettings.borderWidth}
             onChange={(e) =>
-              setGlobalSettings({ borderWidth: parseFloat(e.target.value) })
+              setGlobalSettings({ borderWidth: parseInt(e.target.value) })
             }
             className="flex-1 studio-slider"
           />
@@ -172,7 +172,7 @@ export function GlobalCellSettings() {
             type="number"
             value={globalSettings.borderWidth}
             onChange={(e) =>
-              setGlobalSettings({ borderWidth: parseFloat(e.target.value) || 0 })
+              setGlobalSettings({ borderWidth: parseInt(e.target.value) || 0 })
             }
             className="w-12 text-[10px] font-bold text-slate-600 text-center border border-slate-200 rounded p-0.5"
           />

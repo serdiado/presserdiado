@@ -381,20 +381,8 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
   // === Free slot positioning override ===
   let freeStyles: React.CSSProperties = {};
   if (slot.role === 'free' && gridPosition) {
-    const R = totalRows ?? 4;
-    const C = totalColumns ?? 4;
-    const r = gridPosition.rowStart - 1;
-    const c = gridPosition.colStart - 1;
     freeStyles = {
-      position: 'absolute',
-      gridColumn: '1 / -1',
-      gridRow: '1 / -1',
-      top: `${(r / R) * 100}%`,
-      left: `${(c / C) * 100}%`,
-      width: `${(slot.colSpan / C) * 100}%`,
-      height: `${(slot.rowSpan / R) * 100}%`,
       zIndex: 40,
-      margin: 0,
     };
   }
 
@@ -435,7 +423,7 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
       onDrop={handleDrop}
       className={`product-slot group pointer-events-auto relative overflow-hidden border border-solid transition-all h-full w-full min-w-12.5 min-h-12.5 cursor-pointer ${
         isSelected
-          ? `z-50 border-2 border-border-selected shadow-2xl${isModuleSlot ? '' : ' bg-surface-subtle'}`
+          ? `z-50${isModuleSlot ? '' : ' bg-surface-subtle'}`
           : isOver
             ? 'border-border-strong scale-[0.98] z-20'
             : isModuleSlot
@@ -458,8 +446,10 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
           : {
               borderColor: colorOpacityToCss(finalSettings.colors.cellBorder),
               borderWidth: `${finalSettings.borderWidth}px`,
-              boxShadow: isSelected ? undefined : boxShadow,
+              boxShadow: boxShadow,
             }),
+        outline: isSelected ? '2px solid var(--color-border-selected)' : undefined,
+        outlineOffset: isSelected ? '2px' : undefined,
         padding: slot.role === 'free' ? undefined : paddingStyle(finalSettings.spacings.cell),
         ...freeStyles,
       }}
@@ -667,7 +657,7 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
             }}
           >
             <div
-              className={`w-full h-full outline-none transition-all ${
+              className={`w-full outline-none transition-all ${
                 editingText === 'name'
                   ? 'bg-white/90 text-black z-50 ring-2 ring-border-selected overflow-hidden whitespace-pre-wrap rounded cursor-text'
                   : 'line-clamp-3 whitespace-pre-wrap hover:ring-1 hover:ring-border-strong'
@@ -678,6 +668,7 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
                   ? 'ring-2 ring-border-selected'
                   : ''
               }`}
+              style={{ textAlign: finalSettings.fonts.productName.textAlign }}
               contentEditable={editingText === 'name'}
               suppressContentEditableWarning
               onClick={(e) => {

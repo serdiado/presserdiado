@@ -33,12 +33,16 @@ function AccordionItem({
         onClick={onToggle}
         disabled={disabled}
         className={`flex items-center justify-between p-3 transition-colors ${
-          disabled ? 'bg-surface-subtle opacity-40 cursor-not-allowed' : 'bg-surface-subtle hover:bg-surface-subtle'
+          disabled
+            ? 'bg-surface-subtle opacity-40 cursor-not-allowed'
+            : open
+            ? 'bg-blue-50'
+            : 'bg-surface-subtle hover:bg-surface-subtle'
         }`}
       >
-        <div className={`flex items-center gap-2 ${open ? 'text-text-primary' : 'text-text-secondary'}`}>
+        <div className={`flex items-center gap-2 ${open ? 'text-blue-700 border-l-2 border-blue-500 pl-2' : 'text-text-secondary'}`}>
           {icon}
-          <span className="text-xs font-medium text-text-primary">{title}</span>
+          <span className={`text-xs font-medium ${open ? 'text-blue-700' : 'text-text-primary'}`}>{title}</span>
           {badge && (
             <span className="text-[11px] font-bold px-1.5 py-0.5 rounded-full bg-surface-subtle text-text-secondary border border-border-default">
               {badge}
@@ -47,7 +51,7 @@ function AccordionItem({
         </div>
         <ChevronDown
           size={16}
-          className={`transition-all duration-300 ${open ? 'rotate-180 text-text-primary' : 'text-text-muted'}`}
+          className={`transition-all duration-300 ${open ? 'rotate-180 text-blue-500' : 'text-text-muted'}`}
         />
       </button>
       <div className={`transition-all duration-300 ease-in-out overflow-hidden ${open ? 'max-h-500 opacity-100' : 'max-h-0 opacity-0'}`}>
@@ -97,13 +101,13 @@ function AppearanceContent({ values, handlers }: { values: AppearanceValues; han
         <div className="flex items-center gap-2 pt-2 border-t border-border-default">
           <span className="text-[11px] font-medium text-text-secondary w-16">Kalınlık</span>
           <input
-            type="range" min={0} max={10} step={0.5} value={values.borderWidth}
-            onChange={(e) => handlers.onBorderWidthChange(parseFloat(e.target.value))}
+            type="range" min={0} max={10} step={1} value={values.borderWidth}
+            onChange={(e) => handlers.onBorderWidthChange(parseInt(e.target.value))}
             className="flex-1 studio-slider"
           />
           <input
             type="number" value={values.borderWidth}
-            onChange={(e) => handlers.onBorderWidthChange(parseFloat(e.target.value) || 0)}
+            onChange={(e) => handlers.onBorderWidthChange(parseInt(e.target.value) || 0)}
             className="w-12 text-xs font-normal text-text-primary text-center border border-border-default rounded p-0.5"
           />
         </div>
@@ -187,6 +191,7 @@ function TextContent({
   return (
     <div className="space-y-3">
       <TypographyPicker
+        inline
         title="Ürün Adı"
         value={productName}
         onChange={onProductNameChange}
@@ -286,7 +291,7 @@ function PriceContent({ values: v, handlers: h }: { values: PriceValues; handler
       </div>
 
       <div className="pt-2 border-t border-border-default">
-        <TypographyPicker title="Fiyat Fontu" value={v.priceFont} onChange={h.onPriceFontChange} />
+        <TypographyPicker inline title="Fiyat Fontu" value={v.priceFont} onChange={h.onPriceFontChange} />
       </div>
     </div>
   );
@@ -669,7 +674,7 @@ function FooterPanel() {
 
               {/* Font */}
               <div className="pt-2 border-t border-border-default">
-                <TypographyPicker title="Font ve Hizalama" value={firstCell.font} onChange={(v) => updateCell({ font: v })} />
+                <TypographyPicker inline title="Font ve Hizalama" value={firstCell.font} onChange={(v) => updateCell({ font: v })} />
               </div>
             </div>
           )}
@@ -841,75 +846,90 @@ function BannerPanel() {
       <AccordionItem id="banner-appearance" title="Genel Görünüm" icon={<Square size={16} />}
         open={open === 'banner-appearance'} onToggle={() => toggle('banner-appearance')}
       >
-        <div className="space-y-3">
+        <div className="space-y-1">
 
-          {/* Izgara Sayısı */}
-          <div className="space-y-2">
-            <span className="text-xs font-medium text-text-secondary">Izgara Sayısı</span>
-            <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 flex-1">
-                <span className="text-[10px] text-text-secondary w-10 shrink-0">Satır</span>
-                <input
-                  type="number" min={BANNER_MIN} max={BANNER_MAX} value={rows}
-                  onChange={(e) => resizeGrid(parseInt(e.target.value) || BANNER_MIN, cols)}
-                  className="w-full text-xs text-center border border-border-default rounded px-1 py-1 bg-surface-subtle focus:outline-none focus:ring-1 focus:ring-blue-400"
-                />
-              </label>
-              <span className="text-text-muted text-xs shrink-0">×</span>
-              <label className="flex items-center gap-2 flex-1">
-                <span className="text-[10px] text-text-secondary w-10 shrink-0">Sütun</span>
-                <input
-                  type="number" min={BANNER_MIN} max={BANNER_MAX} value={cols}
-                  onChange={(e) => resizeGrid(rows, parseInt(e.target.value) || BANNER_MIN)}
-                  className="w-full text-xs text-center border border-border-default rounded px-1 py-1 bg-surface-subtle focus:outline-none focus:ring-1 focus:ring-blue-400"
-                />
-              </label>
+          {/* Izgara Yapısı Kartı */}
+          <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel shadow-drop-sm mb-3">
+            <div className="px-3 py-2 bg-surface-subtle border-b border-border-default font-semibold text-xs text-text-primary">
+              Izgara Yapısı
             </div>
-            <p className="text-[11px] text-text-muted">En fazla {BANNER_MAX}×{BANNER_MAX}</p>
+            <div className="p-3 space-y-3">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 flex-1">
+                    <span className="text-[10px] text-text-secondary w-10 shrink-0">Satır</span>
+                    <input
+                      type="number" min={BANNER_MIN} max={BANNER_MAX} value={rows}
+                      onChange={(e) => resizeGrid(parseInt(e.target.value) || BANNER_MIN, cols)}
+                      className="w-full text-xs text-center border border-border-default rounded px-1 py-1 bg-surface-subtle focus:outline-none focus:ring-1 focus:ring-blue-400"
+                    />
+                  </label>
+                  <span className="text-text-muted text-xs shrink-0">×</span>
+                  <label className="flex items-center gap-2 flex-1">
+                    <span className="text-[10px] text-text-secondary w-10 shrink-0">Sütun</span>
+                    <input
+                      type="number" min={BANNER_MIN} max={BANNER_MAX} value={cols}
+                      onChange={(e) => resizeGrid(rows, parseInt(e.target.value) || BANNER_MIN)}
+                      className="w-full text-xs text-center border border-border-default rounded px-1 py-1 bg-surface-subtle focus:outline-none focus:ring-1 focus:ring-blue-400"
+                    />
+                  </label>
+                </div>
+                <p className="text-[11px] text-text-muted">En fazla {BANNER_MAX}×{BANNER_MAX}</p>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center justify-between pt-2 border-t border-border-default">
-            <span className="text-xs font-medium text-text-secondary">Zemin Rengi</span>
-            <ColorOpacityPicker
-              value={bgColor}
-              onChange={(v) => updateSlotModuleData(pageNumber, slotId, { bgColor: v })}
-            />
+          {/* Zemin ve Çerçeve Kartı */}
+          <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel shadow-drop-sm mb-3">
+            <div className="px-3 py-2 bg-surface-subtle border-b border-border-default font-semibold text-xs text-text-primary">
+              Zemin ve Çerçeve
+            </div>
+            <div className="p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-text-secondary">Zemin Rengi</span>
+                <ColorOpacityPicker
+                  value={bgColor}
+                  onChange={(v) => updateSlotModuleData(pageNumber, slotId, { bgColor: v })}
+                />
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-border-default">
+                <span className="text-xs font-medium text-text-secondary">Dış Kenarlık Rengi</span>
+                <ColorOpacityPicker
+                  solidOnly
+                  value={{ type: 'solid', color: cb.color.c, opacity: cb.color.o }}
+                  onChange={(v) => {
+                    if (v.type !== 'solid') return;
+                    updateSlotModuleData(pageNumber, slotId, {
+                      containerBorder: { ...cb, color: { c: v.color, o: v.opacity } },
+                    });
+                  }}
+                />
+              </div>
+              <div className="flex items-center gap-2 pt-2 border-t border-border-default">
+                <span className="text-[11px] font-medium text-text-secondary shrink-0 w-20">Dış Kenarlık Kalınlığı</span>
+                <input
+                  type="range" min={0} max={10} step={0.5} value={cb.width}
+                  onChange={(e) => updateSlotModuleData(pageNumber, slotId, {
+                    containerBorder: { ...cb, width: parseFloat(e.target.value) },
+                  })}
+                  className="flex-1 studio-slider"
+                />
+                <input
+                  type="number" value={cb.width}
+                  onChange={(e) => updateSlotModuleData(pageNumber, slotId, {
+                    containerBorder: { ...cb, width: parseFloat(e.target.value) || 0 },
+                  })}
+                  className="w-12 text-xs font-normal text-text-primary text-center border border-border-default rounded p-0.5"
+                />
+              </div>
+              <div className="pt-2 border-t border-border-default">
+                <BorderRadiusPicker title="Köşe Yuvarlaklığı" value={radius}
+                  onChange={(v) => updateSlotModuleData(pageNumber, slotId, { radius: v })}
+                />
+              </div>
+            </div>
           </div>
-          <div className="flex items-center justify-between pt-2 border-t border-border-default">
-            <span className="text-xs font-medium text-text-secondary">Dış Kenarlık Rengi</span>
-            <ColorOpacityPicker
-              solidOnly
-              value={{ type: 'solid', color: cb.color.c, opacity: cb.color.o }}
-              onChange={(v) => {
-                if (v.type !== 'solid') return;
-                updateSlotModuleData(pageNumber, slotId, {
-                  containerBorder: { ...cb, color: { c: v.color, o: v.opacity } },
-                });
-              }}
-            />
-          </div>
-          <div className="flex items-center gap-2 pt-2 border-t border-border-default">
-            <span className="text-[11px] font-medium text-text-secondary shrink-0 w-20">Dış Kenarlık Kalınlığı</span>
-            <input
-              type="range" min={0} max={10} step={0.5} value={cb.width}
-              onChange={(e) => updateSlotModuleData(pageNumber, slotId, {
-                containerBorder: { ...cb, width: parseFloat(e.target.value) },
-              })}
-              className="flex-1 studio-slider"
-            />
-            <input
-              type="number" value={cb.width}
-              onChange={(e) => updateSlotModuleData(pageNumber, slotId, {
-                containerBorder: { ...cb, width: parseFloat(e.target.value) || 0 },
-              })}
-              className="w-12 text-xs font-normal text-text-primary text-center border border-border-default rounded p-0.5"
-            />
-          </div>
-          <div className="pt-2 border-t border-border-default">
-            <BorderRadiusPicker title="Köşe Yuvarlaklığı" value={radius}
-              onChange={(v) => updateSlotModuleData(pageNumber, slotId, { radius: v })}
-            />
-          </div>
+
         </div>
       </AccordionItem>
 
@@ -919,206 +939,224 @@ function BannerPanel() {
         disabled={!hasCellSel}
       >
         {hasCellSel && firstCell && (
-          <div className="space-y-3">
-            <p className="text-[10px] text-text-secondary font-medium">{targetCells.length} hücre seçili</p>
+          <div className="space-y-1">
 
-            {/* Birleştir / Ayır */}
-            <div className="flex gap-2">
-              <Button variant="primary" size="sm" disabled={selectedCellIds.length < 2} onClick={mergeCells} className="flex-1">
-                Hücreleri birleştir
-              </Button>
-              <Button variant="secondary" size="sm" disabled={!isMerged} onClick={splitCell} className="flex-1">
-                Hücreyi ayır
-              </Button>
-            </div>
+            {/* Hücre Düzeni Kartı */}
+            <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel shadow-drop-sm mb-3">
+              <div className="px-3 py-2 bg-surface-subtle border-b border-border-default font-semibold text-xs text-text-primary">
+                Hücre Düzeni
+              </div>
+              <div className="p-3 space-y-3">
+                <p className="text-[10px] text-text-secondary font-medium">{targetCells.length} hücre seçili</p>
 
-            {/* İçerik — sadece tek hücre seçiliyse */}
-            {targetCells.length === 1 && (
-              <div className="pt-2 border-t border-border-default space-y-2">
-                <span className="text-xs font-medium text-text-secondary block">İçerik</span>
-
-                <div className="space-y-1">
-                  <span className="text-[11px] font-medium text-text-secondary">Metin</span>
-                  <textarea
-                    value={firstCell.text || ''}
-                    onChange={(e) => updateCells({ text: e.target.value })}
-                    rows={3}
-                    className="w-full text-[10px] border border-border-default rounded p-1.5 text-text-primary resize-none focus:outline-none focus:ring-1 focus:ring-blue-400"
-                    placeholder="Hücre metni..."
-                  />
+                {/* Birleştir / Ayır */}
+                <div className="flex gap-2 pb-1">
+                  <Button variant="primary" size="sm" disabled={selectedCellIds.length < 2} onClick={mergeCells} className="flex-1">
+                    Hücreleri birleştir
+                  </Button>
+                  <Button variant="secondary" size="sm" disabled={!isMerged} onClick={splitCell} className="flex-1">
+                    Hücreyi ayır
+                  </Button>
                 </div>
 
-                <div className="space-y-1.5">
-                  <span className="text-[11px] font-medium text-text-secondary">Resim</span>
-                  {firstCell.image ? (
-                    <div className="relative">
-                      <img
-                        src={firstCell.image}
-                        alt=""
-                        className="w-full h-20 object-contain rounded border border-border-default bg-surface-subtle"
-                      />
-                      <button
-                        onClick={() => updateCells({ image: null })}
-                        className="absolute top-1 right-1 p-0.5 bg-surface-panel rounded border border-border-default text-red-500 hover:bg-red-50"
-                      >
-                        <X size={10} />
-                      </button>
+                {/* Sıfırla */}
+                <div className="pt-2 border-t border-border-default">
+                  {confirmReset ? (
+                    <div className="space-y-1.5">
+                      <p className="text-[10px] text-red-600 font-medium text-center">Hücre ayarları sıfırlanacak. Emin misiniz?</p>
+                      <div className="flex gap-2">
+                        <Button variant="danger" size="sm" onClick={resetCell} className="flex-1">Sıfırla</Button>
+                        <Button variant="secondary" size="sm" onClick={() => setConfirmReset(false)} className="flex-1">İptal</Button>
+                      </div>
                     </div>
                   ) : (
-                    <Button variant="secondary" size="sm" fullWidth disabled={imgUploading} onClick={() => fileInputRef.current?.click()}>
-                      {imgUploading ? 'Yükleniyor...' : '+ Resim ekle'}
+                    <Button variant="danger" size="sm" fullWidth onClick={() => setConfirmReset(true)}>
+                      Hücre ayarlarını sıfırla
                     </Button>
                   )}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      setImgUploading(true);
-                      try {
-                        const result = await uploadImage(file);
-                        updateCells({ image: result.absoluteUrl });
-                      } catch {
-                        // ignore upload errors silently
-                      }
-                      setImgUploading(false);
-                      if (fileInputRef.current) fileInputRef.current.value = '';
-                    }}
-                  />
                 </div>
+              </div>
+            </div>
 
-                {/* Resim modu — sadece resim varsa */}
-                {firstCell.image && (
-                  <div className="space-y-2">
-                    <span className="text-[11px] font-medium text-text-secondary">Resim Modu</span>
-                    <div className="flex bg-surface-subtle rounded p-1 gap-1 border border-border-default">
-                      {([
-                        { value: 'contain', label: 'Sığdır' },
-                        { value: 'cover',   label: 'Doldur' },
-                        { value: 'free',    label: 'Serbest' },
-                      ] as const).map(({ value, label }) => (
-                        <button
-                          key={value}
-                          onClick={() => updateCells({ imageMode: value, imagePosX: 0, imagePosY: 0, imageScale: 100 })}
-                          className={`flex-1 py-1.5 text-[10px] font-medium rounded transition-colors ${
-                            (firstCell.imageMode ?? 'contain') === value
-                              ? 'bg-surface-panel shadow border border-border-default text-text-primary'
-                              : 'text-text-secondary hover:text-text-primary'
-                          }`}
-                        >
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-
-                    {(firstCell.imageMode ?? 'contain') === 'free' && (
-                      <div className="space-y-2 pt-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-medium text-text-secondary w-12">Büyütme</span>
-                          <input
-                            type="range" min={10} max={300} value={firstCell.imageScale ?? 100}
-                            onChange={(e) => updateCells({ imageScale: parseInt(e.target.value) })}
-                            className="flex-1 studio-slider"
-                          />
-                          <input
-                            type="number" value={firstCell.imageScale ?? 100}
-                            onChange={(e) => updateCells({ imageScale: parseInt(e.target.value) || 10 })}
-                            className="w-12 text-xs font-normal text-text-primary text-right border border-border-default rounded p-0.5"
-                          />
-                          <span className="text-[11px] text-text-muted">%</span>
-                        </div>
-                        <Button variant="secondary" size="sm" fullWidth onClick={() => updateCells({ imagePosX: 0, imagePosY: 0, imageScale: 100 })}>
-                          Konumu sıfırla
-                        </Button>
-                      </div>
-                    )}
+            {/* Hücre İçeriği Kartı — sadece tek hücre seçiliyse */}
+            {targetCells.length === 1 && (
+              <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel shadow-drop-sm mb-3">
+                <div className="px-3 py-2 bg-surface-subtle border-b border-border-default font-semibold text-xs text-text-primary">
+                  Hücre İçeriği
+                </div>
+                <div className="p-3 space-y-3">
+                  <div className="space-y-1">
+                    <span className="text-[11px] font-medium text-text-secondary">Metin</span>
+                    <textarea
+                      value={firstCell.text || ''}
+                      onChange={(e) => updateCells({ text: e.target.value })}
+                      rows={3}
+                      className="w-full text-[10px] border border-border-default rounded p-1.5 text-text-primary resize-none focus:outline-none focus:ring-1 focus:ring-blue-400"
+                      placeholder="Hücre metni..."
+                    />
                   </div>
-                )}
+
+                  <div className="space-y-1.5">
+                    <span className="text-[11px] font-medium text-text-secondary">Resim</span>
+                    {firstCell.image ? (
+                      <div className="relative">
+                        <img
+                          src={firstCell.image}
+                          alt=""
+                          className="w-full h-20 object-contain rounded border border-border-default bg-surface-subtle"
+                        />
+                        <button
+                          onClick={() => updateCells({ image: null })}
+                          className="absolute top-1 right-1 p-0.5 bg-surface-panel rounded border border-border-default text-red-500 hover:bg-red-50"
+                        >
+                          <X size={10} />
+                        </button>
+                      </div>
+                    ) : (
+                      <Button variant="secondary" size="sm" fullWidth disabled={imgUploading} onClick={() => fileInputRef.current?.click()}>
+                        {imgUploading ? 'Yükleniyor...' : '+ Resim ekle'}
+                      </Button>
+                    )}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setImgUploading(true);
+                        try {
+                          const result = await uploadImage(file);
+                          updateCells({ image: result.absoluteUrl });
+                        } catch {
+                          // ignore upload errors silently
+                        }
+                        setImgUploading(false);
+                        if (fileInputRef.current) fileInputRef.current.value = '';
+                      }}
+                    />
+                  </div>
+
+                  {/* Resim modu — sadece resim varsa */}
+                  {firstCell.image && (
+                    <div className="space-y-2 pt-2 border-t border-border-default">
+                      <span className="text-[11px] font-medium text-text-secondary">Resim Modu</span>
+                      <div className="flex bg-surface-subtle rounded p-1 gap-1 border border-border-default">
+                        {([
+                          { value: 'contain', label: 'Sığdır' },
+                          { value: 'cover',   label: 'Doldur' },
+                          { value: 'free',    label: 'Serbest' },
+                        ] as const).map(({ value, label }) => (
+                          <button
+                            key={value}
+                            onClick={() => updateCells({ imageMode: value, imagePosX: 0, imagePosY: 0, imageScale: 100 })}
+                            className={`flex-1 py-1.5 text-[10px] font-medium rounded transition-colors ${
+                              (firstCell.imageMode ?? 'contain') === value
+                                ? 'bg-surface-panel shadow border border-border-default text-text-primary'
+                                : 'text-text-secondary hover:text-text-primary'
+                            }`}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {(firstCell.imageMode ?? 'contain') === 'free' && (
+                        <div className="space-y-2 pt-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-medium text-text-secondary w-12">Büyütme</span>
+                            <input
+                              type="range" min={10} max={300} value={firstCell.imageScale ?? 100}
+                              onChange={(e) => updateCells({ imageScale: parseInt(e.target.value) })}
+                              className="flex-1 studio-slider"
+                            />
+                            <input
+                              type="number" value={firstCell.imageScale ?? 100}
+                              onChange={(e) => updateCells({ imageScale: parseInt(e.target.value) || 10 })}
+                              className="w-12 text-xs font-normal text-text-primary text-right border border-border-default rounded p-0.5"
+                            />
+                            <span className="text-[11px] text-text-muted">%</span>
+                          </div>
+                          <Button variant="secondary" size="sm" fullWidth onClick={() => updateCells({ imagePosX: 0, imagePosY: 0, imageScale: 100 })}>
+                            Konumu sıfırla
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
-            {/* Zemin */}
-            <div className="flex items-center justify-between pt-2 border-t border-border-default">
-              <span className="text-xs font-medium text-text-secondary">Zemin Rengi</span>
-              <ColorOpacityPicker
-                value={firstCell.bgColor}
-                onChange={(v) => updateCells({ bgColor: v })}
-              />
-            </div>
-
-            {/* Kenarlık */}
-            <div className="pt-2 border-t border-border-default space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-text-secondary">Kenarlık Rengi</span>
-                <ColorOpacityPicker
-                  solidOnly
-                  value={{ type: 'solid', color: firstCell.border.color.c, opacity: firstCell.border.color.o }}
-                  onChange={(v) => {
-                    if (v.type !== 'solid') return;
-                    updateCellBorder({ color: { c: v.color, o: v.opacity } });
-                  }}
-                />
+            {/* Hücre Görünümü Kartı */}
+            <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel shadow-drop-sm mb-3">
+              <div className="px-3 py-2 bg-surface-subtle border-b border-border-default font-semibold text-xs text-text-primary">
+                Hücre Görünümü
               </div>
-              <div className="flex items-center gap-1.5 pt-1">
-                <button
-                  title={firstCell.border.linked ? 'Kilidi aç' : 'Tüm kenarları kilitle'}
-                  onClick={() => updateCellBorder({ linked: !firstCell.border.linked })}
-                  className={`p-1 rounded border shrink-0 transition-colors ${
-                    firstCell.border.linked
-                      ? 'bg-slate-800 text-white border-slate-800'
-                      : 'bg-surface-subtle text-text-secondary border-border-default hover:bg-surface-subtle'
-                  }`}
-                >
-                  <Link2 size={10} />
-                </button>
-                {(['t', 'r', 'b', 'l'] as const).map((side) => (
-                  <div key={side} className="flex flex-col items-center gap-0.5 flex-1">
-                    <span className="text-[10px] text-text-muted">
-                      {side === 't' ? 'Üst' : side === 'r' ? 'Sağ' : side === 'b' ? 'Alt' : 'Sol'}
-                    </span>
-                    <input
-                      type="number" min={0} max={10} value={firstCell.border[side]}
-                      onChange={(e) => updateBorderSide(side, parseFloat(e.target.value) || 0)}
-                      className="w-full text-[10px] text-center border border-border-default rounded p-0.5 bg-surface-subtle"
+              <div className="p-3 space-y-3">
+                {/* Zemin */}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-text-secondary">Zemin Rengi</span>
+                  <ColorOpacityPicker
+                    value={firstCell.bgColor}
+                    onChange={(v) => updateCells({ bgColor: v })}
+                  />
+                </div>
+
+                {/* Kenarlık */}
+                <div className="pt-2 border-t border-border-default space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-text-secondary">Kenarlık Rengi</span>
+                    <ColorOpacityPicker
+                      solidOnly
+                      value={{ type: 'solid', color: firstCell.border.color.c, opacity: firstCell.border.color.o }}
+                      onChange={(v) => {
+                        if (v.type !== 'solid') return;
+                        updateCellBorder({ color: { c: v.color, o: v.opacity } });
+                      }}
                     />
                   </div>
-                ))}
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <button
+                      title={firstCell.border.linked ? 'Kilidi aç' : 'Tüm kenarları kilitle'}
+                      onClick={() => updateCellBorder({ linked: !firstCell.border.linked })}
+                      className={`p-1 rounded border shrink-0 transition-colors ${
+                        firstCell.border.linked
+                          ? 'bg-slate-800 text-white border-slate-800'
+                          : 'bg-surface-subtle text-text-secondary border-border-default hover:bg-surface-subtle'
+                      }`}
+                    >
+                      <Link2 size={10} />
+                    </button>
+                    {(['t', 'r', 'b', 'l'] as const).map((side) => (
+                      <div key={side} className="flex flex-col items-center gap-0.5 flex-1">
+                        <span className="text-[10px] text-text-muted">
+                          {side === 't' ? 'Üst' : side === 'r' ? 'Sağ' : side === 'b' ? 'Alt' : 'Sol'}
+                        </span>
+                        <input
+                          type="number" min={0} max={10} value={firstCell.border[side]}
+                          onChange={(e) => updateBorderSide(side, parseFloat(e.target.value) || 0)}
+                          className="w-full text-[10px] text-center border border-border-default rounded p-0.5 bg-surface-subtle"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* İç boşluk */}
+                <div className="pt-2 border-t border-border-default">
+                  <SpacingPicker title="İç Boşluk" value={firstCell.padding}
+                    onChange={(v) => updateCells({ padding: v })}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* Font */}
-            <div className="pt-2 border-t border-border-default">
-              <TypographyPicker title="Font ve Hizalama" value={firstCell.font}
-                onChange={(v) => updateCells({ font: v })}
-              />
-            </div>
-
-            {/* İç boşluk */}
-            <div className="pt-2 border-t border-border-default">
-              <SpacingPicker title="İç Boşluk" value={firstCell.padding}
-                onChange={(v) => updateCells({ padding: v })}
-              />
-            </div>
-
-            {/* Sıfırla */}
-            <div className="pt-2 border-t border-border-default">
-              {confirmReset ? (
-                <div className="space-y-1.5">
-                  <p className="text-[10px] text-red-600 font-medium text-center">Hücre ayarları sıfırlanacak. Emin misiniz?</p>
-                  <div className="flex gap-2">
-                    <Button variant="danger" size="sm" onClick={resetCell} className="flex-1">Sıfırla</Button>
-                    <Button variant="secondary" size="sm" onClick={() => setConfirmReset(false)} className="flex-1">İptal</Button>
-                  </div>
-                </div>
-              ) : (
-                <Button variant="danger" size="sm" fullWidth onClick={() => setConfirmReset(true)}>
-                  Hücre ayarlarını sıfırla
-                </Button>
-              )}
-            </div>
+            {/* Font ve Hizalama (TypographyPicker zaten kendi içinde kart yapısına sahip) */}
+            <TypographyPicker inline title="Font ve Hizalama" value={firstCell.font}
+              onChange={(v) => updateCells({ font: v })}
+            />
           </div>
         )}
       </AccordionItem>
@@ -1132,6 +1170,11 @@ export function CellPanel() {
 
   const selectedSlotIds = useUIStore((s) => s.selectedSlotIds);
   const selection = useUIStore((s) => s.selection);
+  const sidebarState = useUIStore((s) => s.sidebarState);
+
+  useEffect(() => {
+    if (sidebarState.activeTab) setOpenSection(sidebarState.activeTab);
+  }, [sidebarState]);
   const pages = useCatalogStore((s) =>
     s.formas.find((f) => f.id === s.activeFormaId)?.pages ?? []
   );
@@ -1140,13 +1183,15 @@ export function CellPanel() {
   const setGlobalSettings = useCatalogStore((s) => s.setGlobalSettings);
   const updateSlotCustomSettings = useCatalogStore((s) => s.updateSlotCustomSettings);
   const updateSelectedSlotsImageSettings = useCatalogStore((s) => s.updateSelectedSlotsImageSettings);
+  const toggleSlotRole = useCatalogStore((s) => s.toggleSlotRole);
 
   const effectiveSlotId =
-    selection.type === 'slot'
-      ? selectedSlotIds[0]
+    selectedSlotIds[0] ??
+    (selection.type === 'textElement'
+      ? (selection.parentId ?? undefined)
       : selection.type === 'bannerCell'
       ? (selection.parentId ?? undefined)
-      : undefined;
+      : undefined);
 
   const selectedSlot = effectiveSlotId
     ? pages.flatMap((p) => p.slots).find((s) => s.id === effectiveSlotId)
@@ -1154,6 +1199,22 @@ export function CellPanel() {
 
   const isCustom = selectedSlot?.isCustom ?? false;
   const hasSelection = !!effectiveSlotId;
+
+  const prevIsCustomRef = useRef(isCustom);
+  useEffect(() => {
+    if (prevIsCustomRef.current !== isCustom) {
+      if (isCustom) {
+        if (openSection && openSection.startsWith('general-')) {
+          setOpenSection(null);
+        }
+      } else {
+        if (openSection && openSection.startsWith('custom-')) {
+          setOpenSection(null);
+        }
+      }
+      prevIsCustomRef.current = isCustom;
+    }
+  }, [isCustom, openSection]);
 
   const toggle = (section: string) => {
     setOpenSection(openSection === section ? null : section);
@@ -1229,10 +1290,35 @@ export function CellPanel() {
   }
 
   return (
-    <div className="flex flex-col w-full h-full space-y-2">
+    <div className="flex flex-col w-full space-y-2">
+
+      {/* 📦 Hücre Yapısı Belirleme Kartı */}
+      {hasSelection && (
+        <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel shadow-drop-sm mb-3 shrink-0">
+          <div className="px-3 py-2 bg-surface-subtle border-b border-border-default font-semibold text-xs text-text-primary">
+            Hücre Yapısı
+          </div>
+          <div className="p-3">
+            <SegmentedControl
+              options={[
+                { label: 'Ürün Hücresi', value: 'product' },
+                { label: 'Serbest Alan', value: 'free' },
+              ]}
+              value={selectedSlot?.role === 'free' ? 'free' : 'product'}
+              onChange={(val) => {
+                if (val === 'free' && selectedSlot?.role !== 'free') {
+                  toggleSlotRole('free');
+                } else if (val === 'product' && selectedSlot?.role === 'free') {
+                  toggleSlotRole('product');
+                }
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* ── Genel hücre ayarları ── */}
-      <div className="flex flex-col gap-1.5">
+      <div className={`flex flex-col gap-1.5 ${hasSelection && isCustom ? 'opacity-40 pointer-events-none select-none' : ''}`}>
         <div className="flex items-center justify-between px-1 py-1">
           <span className="text-[11px] font-medium text-text-secondary tracking-normal">Genel Hücre Ayarları</span>
         </div>

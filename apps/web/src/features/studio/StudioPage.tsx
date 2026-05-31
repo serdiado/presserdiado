@@ -12,6 +12,7 @@ import NewStudioWizard from '../wizard/NewStudioWizard';
 export default function StudioPage() {
   const isSetupModalOpen = useUIStore((s) => s.isSetupModalOpen);
   const setSetupModalOpen = useUIStore((s) => s.setSetupModalOpen);
+  const selection = useUIStore((s) => s.selection);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   return (
@@ -26,7 +27,7 @@ export default function StudioPage() {
         </div>
 
         <div className="flex-1 flex flex-col min-w-0 min-h-0 relative items-center">
-          <div className="inline-flex justify-center bg-surface-panel shadow-drop-md rounded-b-lg border-b border-x border-border-default overflow-visible shrink-0 z-50 mb-2">
+          <div className={`inline-flex justify-center bg-surface-panel shadow-drop-md rounded-b-lg border-b border-x border-border-default overflow-visible shrink-0 z-50 mb-2 transition-all duration-150 ${selection.type === 'none' ? 'invisible opacity-0' : 'visible opacity-100'}`}>
             <ContextualBar />
           </div>
           <div className="flex-1 w-full relative min-h-0">

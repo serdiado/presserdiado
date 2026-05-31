@@ -26,6 +26,7 @@ export function Page({ pageNumber }: { pageNumber: number }) {
   const unmergeSlot = useCatalogStore((s) => s.unmergeSlot);
   const clearSlot = useCatalogStore((s) => s.clearSlot);
   const moveSlotToTempPool = useCatalogStore((s) => s.moveSlotToTempPool);
+  const copiedSlotSettings = useCatalogStore((s) => s.copiedSlotSettings);
   const selectPages = useLayerStore((s) => s.selectPages);
   const selectedPageIds = useLayerStore((s) => s.selectedPageIds);
   const setEditingContent = useUIStore((s) => s.setEditingContent);
@@ -77,7 +78,7 @@ export function Page({ pageNumber }: { pageNumber: number }) {
   const effectiveGap =
     currentPage.gridSettings?.gap !== undefined
       ? currentPage.gridSettings.gap
-      : (defaultGrid?.gap !== undefined ? defaultGrid.gap : globalGridGap);
+      : globalGridGap;
 
   return (
     <>
@@ -135,6 +136,36 @@ export function Page({ pageNumber }: { pageNumber: number }) {
               </>
             )}
             <div className="my-1 border-t border-border-default" />
+            <button
+              className="w-full text-left px-4 py-2 text-sm font-semibold text-text-secondary hover:bg-surface-subtle"
+              onClick={() => {
+                const selIds = useUIStore.getState().selectedSlotIds;
+                if (!selIds.includes(contextMenu.slot.id)) {
+                  useUIStore.getState().toggleSlotSelection(contextMenu.slot.id, false);
+                }
+                useCatalogStore.getState().copySlotSettings();
+                setContextMenu(null);
+              }}
+            >
+              Stil Kopyala
+            </button>
+            <button
+              className={`w-full text-left px-4 py-2 text-sm font-semibold text-text-secondary hover:bg-surface-subtle ${
+                !copiedSlotSettings ? 'opacity-40 pointer-events-none' : ''
+              }`}
+              disabled={!copiedSlotSettings}
+              onClick={() => {
+                const selIds = useUIStore.getState().selectedSlotIds;
+                if (!selIds.includes(contextMenu.slot.id)) {
+                  useUIStore.getState().toggleSlotSelection(contextMenu.slot.id, false);
+                }
+                useCatalogStore.getState().pasteSlotSettings();
+                setContextMenu(null);
+              }}
+            >
+              Stil Yapıştır
+            </button>
+            <div className="my-1 border-t border-border-default" />
             {(contextMenu.slot.role ?? 'product') === 'product' ? (
               <button
                 className="w-full text-left px-4 py-2 text-sm font-semibold text-text-primary hover:bg-surface-subtle"
@@ -176,6 +207,7 @@ export function Page({ pageNumber }: { pageNumber: number }) {
         }}
         data-hide-border-on-export="true"
         onClick={(e) => {
+          e.stopPropagation();
           setEditingContent(null);
           if (e.ctrlKey || e.metaKey) {
             if (selectedPageIds.includes(currentPage.id))
@@ -183,6 +215,7 @@ export function Page({ pageNumber }: { pageNumber: number }) {
             else selectPages([...selectedPageIds, currentPage.id]);
           } else {
             selectPages([currentPage.id]);
+            useUIStore.getState().setSelection({ type: 'pageBackground', ids: [String(pageNumber)] });
           }
         }}
       >

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { HexColorPicker } from 'react-colorful';
 import type {
@@ -19,6 +19,9 @@ interface Props {
   type?: 'fill' | 'border';
   /** Hide the gradient tab entirely (callers whose data model is solid-only). */
   solidOnly?: boolean;
+  /** Custom trigger element. When provided, renders as a bar-style button instead of the swatch. */
+  trigger?: React.ReactNode;
+  className?: string;
 }
 
 const STORAGE_KEY = 'presserdiado_saved_colors';
@@ -158,89 +161,98 @@ function SolidEditor({ color, opacity, onChange, compact }: SolidEditorProps) {
           ))}
         </div>
 
-        {tab === 'HEX' && (
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400 font-mono">#</span>
-            <input
-              type="text"
-              value={hexInput.replace(/^#/, '')}
-              onChange={(e) => {
-                const raw = e.target.value.toUpperCase().replace(/[^0-9A-F]/g, '').slice(0, 6);
-                setHexInput(raw);
-                if (raw.length === 6 && isValidHex('#' + raw)) onChange('#' + raw, opacity);
-              }}
-              className="flex-1 bg-slate-50 border border-slate-200 text-slate-800 text-sm py-2 px-2 rounded outline-none uppercase font-mono focus:border-slate-400"
-              placeholder="FFFFFF"
-              maxLength={6}
-            />
+        <div className="flex items-start gap-2">
+          <div className="w-8 h-8 rounded-md border border-slate-200 shrink-0 relative overflow-hidden">
+            <div className="absolute inset-0 opacity-30" style={{ backgroundImage: CHECKER_BG }} />
+            <div className="absolute inset-0" style={{ backgroundColor: color, opacity: opacity / 100 }} />
           </div>
-        )}
 
-        {tab === 'RGB' && (
-          <div className="flex gap-2">
-            {[
-              { label: 'R', val: rInput, set: setRInput, idx: 0 },
-              { label: 'G', val: gInput, set: setGInput, idx: 1 },
-              { label: 'B', val: bInput, set: setBInput, idx: 2 },
-            ].map(({ label, val, set, idx }) => (
-              <div key={label} className="flex flex-col items-center gap-0.5 flex-1">
+          <div className="flex-1 min-w-0">
+            {tab === 'HEX' && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-slate-400 font-mono">#</span>
                 <input
-                  type="number"
-                  min={0}
-                  max={255}
-                  value={val}
+                  type="text"
+                  value={hexInput.replace(/^#/, '')}
                   onChange={(e) => {
-                    set(e.target.value);
-                    const n = parseInt(e.target.value, 10);
-                    if (isNaN(n)) return;
-                    const vals = [rgb.r, rgb.g, rgb.b];
-                    vals[idx] = Math.max(0, Math.min(255, n));
-                    onChange(rgbToHex(vals[0], vals[1], vals[2]), opacity);
+                    const raw = e.target.value.toUpperCase().replace(/[^0-9A-F]/g, '').slice(0, 6);
+                    setHexInput(raw);
+                    if (raw.length === 6 && isValidHex('#' + raw)) onChange('#' + raw, opacity);
                   }}
-                  className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm py-2 px-2 rounded outline-none focus:border-slate-400 text-center"
+                  className="flex-1 bg-slate-50 border border-slate-200 text-slate-800 text-sm py-2 px-2 rounded outline-none uppercase font-mono focus:border-slate-400"
+                  placeholder="FFFFFF"
+                  maxLength={6}
                 />
-                <span className="text-xs text-slate-400">{label}</span>
               </div>
-            ))}
-          </div>
-        )}
+            )}
 
-        {tab === 'CMYK' && (
-          <div className="flex flex-col gap-1.5">
-            <div className="flex gap-2">
-              {[
-                { label: 'C', val: cInput, set: setCInput },
-                { label: 'M', val: mInput, set: setMInput },
-                { label: 'Y', val: yInput, set: setYInput },
-                { label: 'K', val: kInput, set: setKInput },
-              ].map(({ label, val, set }) => (
-                <div key={label} className="flex flex-col items-center gap-0.5 flex-1">
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={val}
-                    onChange={(e) => {
-                      set(e.target.value);
-                      const n = parseInt(e.target.value, 10);
-                      if (isNaN(n)) return;
-                      const cv = label === 'C' ? n : parseInt(cInput, 10) || 0;
-                      const mv = label === 'M' ? n : parseInt(mInput, 10) || 0;
-                      const yv = label === 'Y' ? n : parseInt(yInput, 10) || 0;
-                      const kv = label === 'K' ? n : parseInt(kInput, 10) || 0;
-                      onChange(cmykToHex(cv, mv, yv, kv), opacity);
-                    }}
-                    className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-sm py-2 px-2 rounded outline-none focus:border-slate-400 text-center"
-                  />
-                  <span className="text-xs text-slate-400">{label}</span>
+            {tab === 'RGB' && (
+              <div className="flex gap-1">
+                {[
+                  { label: 'R', val: rInput, set: setRInput, idx: 0 },
+                  { label: 'G', val: gInput, set: setGInput, idx: 1 },
+                  { label: 'B', val: bInput, set: setBInput, idx: 2 },
+                ].map(({ label, val, set, idx }) => (
+                  <div key={label} className="flex flex-col items-center gap-0.5 flex-1">
+                    <input
+                      type="number"
+                      min={0}
+                      max={255}
+                      value={val}
+                      onChange={(e) => {
+                        set(e.target.value);
+                        const n = parseInt(e.target.value, 10);
+                        if (isNaN(n)) return;
+                        const vals = [rgb.r, rgb.g, rgb.b];
+                        vals[idx] = Math.max(0, Math.min(255, n));
+                        onChange(rgbToHex(vals[0], vals[1], vals[2]), opacity);
+                      }}
+                      className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs py-2 px-1 rounded outline-none focus:border-slate-400 text-center"
+                    />
+                    <span className="text-[9px] text-slate-400">{label}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {tab === 'CMYK' && (
+              <div className="flex flex-col gap-1">
+                <div className="flex gap-1">
+                  {[
+                    { label: 'C', val: cInput, set: setCInput },
+                    { label: 'M', val: mInput, set: setMInput },
+                    { label: 'Y', val: yInput, set: setYInput },
+                    { label: 'K', val: kInput, set: setKInput },
+                  ].map(({ label, val, set }) => (
+                    <div key={label} className="flex flex-col items-center gap-0.5 flex-1">
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        value={val}
+                        onChange={(e) => {
+                          set(e.target.value);
+                          const n = parseInt(e.target.value, 10);
+                          if (isNaN(n)) return;
+                          const cv = label === 'C' ? n : parseInt(cInput, 10) || 0;
+                          const mv = label === 'M' ? n : parseInt(mInput, 10) || 0;
+                          const yv = label === 'Y' ? n : parseInt(yInput, 10) || 0;
+                          const kv = label === 'K' ? n : parseInt(kInput, 10) || 0;
+                          onChange(cmykToHex(cv, mv, yv, kv), opacity);
+                        }}
+                        className="w-full bg-slate-50 border border-slate-200 text-slate-800 text-xs py-2 px-0.5 rounded outline-none focus:border-slate-400 text-center"
+                      />
+                      <span className="text-[9px] text-slate-400">{label}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-            <p className="text-[10px] text-slate-400 leading-snug">
-              Ekran rengi, baskıda farklılık gösterebilir.
-            </p>
+                <p className="text-[10px] text-slate-400 leading-snug">
+                  Ekran rengi, baskıda farklılık gösterebilir.
+                </p>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
 
       {!compact && (
@@ -588,6 +600,8 @@ export function ColorOpacityPicker({
   onThicknessChange,
   type = 'fill',
   solidOnly = false,
+  trigger,
+  className,
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [savedColors, setSavedColors] = useState<{ c: string; o: number }[]>([]);
@@ -688,31 +702,41 @@ export function ColorOpacityPicker({
   return (
     <>
       {/* trigger button */}
-      <div
-        ref={buttonRef}
-        className="w-8 h-8 rounded cursor-pointer border border-slate-300 shadow-sm relative overflow-hidden shrink-0 bg-white"
-        onClick={() => setIsOpen(!isOpen)}
-        title={
-          value.type === 'solid'
-            ? `${value.color} (%${value.opacity})`
-            : `Gradient (${value.gradientType})`
-        }
-      >
-        <div className="absolute inset-0 opacity-40" style={{ backgroundImage: CHECKER_BG }} />
-        {type === 'border' ? (
-          <div
-            className="absolute inset-1.5 border-[3px] rounded-[1px] z-10"
-            style={{
-              borderColor:
-                value.type === 'solid' ? value.color : value.stops[0]?.color ?? '#000',
-              opacity:
-                value.type === 'solid' ? value.opacity / 100 : 1,
-            }}
-          />
-        ) : (
-          <div className="absolute inset-0 z-10" style={preview} />
-        )}
-      </div>
+      {trigger ? (
+        <div
+          ref={buttonRef}
+          className={className ?? "h-9 px-3 inline-flex items-center gap-1.5 rounded-md text-xs font-medium whitespace-nowrap hover:bg-border-default transition-colors text-text-secondary cursor-pointer"}
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          {trigger}
+        </div>
+      ) : (
+        <div
+          ref={buttonRef}
+          className="w-8 h-8 rounded cursor-pointer border border-slate-300 shadow-sm relative overflow-hidden shrink-0 bg-white"
+          onClick={() => setIsOpen(!isOpen)}
+          title={
+            value.type === 'solid'
+              ? `${value.color} (%${value.opacity})`
+              : `Gradient (${value.gradientType})`
+          }
+        >
+          <div className="absolute inset-0 opacity-40" style={{ backgroundImage: CHECKER_BG }} />
+          {type === 'border' ? (
+            <div
+              className="absolute inset-1.5 border-[3px] rounded-[1px] z-10"
+              style={{
+                borderColor:
+                  value.type === 'solid' ? value.color : value.stops[0]?.color ?? '#000',
+                opacity:
+                  value.type === 'solid' ? value.opacity / 100 : 1,
+              }}
+            />
+          ) : (
+            <div className="absolute inset-0 z-10" style={preview} />
+          )}
+        </div>
+      )}
 
       {/* popup */}
       {isOpen &&

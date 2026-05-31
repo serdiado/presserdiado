@@ -8,7 +8,8 @@ export type SelectionType =
   | 'layer'
   | 'bannerCell'
   | 'textElement'
-  | 'footerCell';
+  | 'footerCell'
+  | 'pageBackground';
 
 export type TextElementType = 'name' | 'price' | 'badge';
 

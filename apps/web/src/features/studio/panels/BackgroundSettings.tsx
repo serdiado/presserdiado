@@ -9,6 +9,7 @@ import type { CatalogPage, ColorValue } from '@matbaapro/shared';
 import { useCatalogStore, useLayerStore, useUIStore } from '@/stores/studio';
 import api from '@/lib/api';
 import { ColorOpacityPicker } from '../pickers';
+import { Slider } from '@/components/ui/Slider';
 
 type BgType = 'color' | 'image';
 type ImageTab = 'pattern' | 'image';
@@ -87,13 +88,12 @@ export function BackgroundSettings() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const prevSelKey = useRef('');
+
+  const firstSelectedPage = activePages.find((p) => selectedBackgroundPageIds.includes(p.pageNumber));
+  const firstBgType = firstSelectedPage?.background?.type;
+  const firstBgImageUrl = firstSelectedPage?.background?.imageUrl;
 
   useEffect(() => {
-    const key = selectedBackgroundPageIds.join(',');
-    if (key === prevSelKey.current) return;
-    prevSelKey.current = key;
-
     const firstPage = activePages.find((p) => selectedBackgroundPageIds.includes(p.pageNumber));
     const bg = firstPage?.background;
     if (!bg) {
@@ -111,7 +111,7 @@ export function BackgroundSettings() {
     setImageSize(bg.imageSize ?? 'fill');
     setImagePosition(bg.imagePosition ?? 'center');
     setImageOpacity(bg.imageOpacity ?? 100);
-  }, [selectedBackgroundPageIds]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedBackgroundPageIds, firstBgType, firstBgImageUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const noPages = selectedBackgroundPageIds.length === 0;
 
@@ -208,24 +208,14 @@ export function BackgroundSettings() {
           )}
         </div>
         <div className="p-3 space-y-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-xs font-medium text-text-secondary">Ön Plan Saydamlığı</span>
-            <span className="text-xs font-normal text-text-primary tabular-nums w-10 text-right">
-              %{foregroundOpacity}
-            </span>
-          </div>
-
-          <input
-            type="range"
+          <Slider
             min={0}
             max={100}
             step={1}
             value={foregroundOpacity}
-            onChange={(e) => setForegroundOpacity(parseInt(e.target.value))}
-            className="w-full studio-slider"
-            style={{
-              background: `linear-gradient(to right, #2563eb ${foregroundOpacity}%, #e2e8f0 ${foregroundOpacity}%)`,
-            }}
+            onChange={setForegroundOpacity}
+            label="Ön Plan Saydamlığı"
+            unit="%"
           />
 
           <div className="flex justify-between text-[11px] font-normal text-text-muted leading-relaxed">
@@ -618,8 +608,8 @@ export function BackgroundSettings() {
                         <div className="grid grid-cols-4 gap-1">
                           {(
                             [
-                              { value: 'fit', label: 'Fit' },
-                              { value: 'fill', label: 'Fill' },
+                              { value: 'fit', label: 'Sığdır' },
+                              { value: 'fill', label: 'Doldur' },
                               { value: 'stretch', label: 'Uzat' },
                               { value: 'tile', label: 'Döşe' },
                             ] as { value: ImageSizeType; label: string }[]
