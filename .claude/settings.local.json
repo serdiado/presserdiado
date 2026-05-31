@@ -59,7 +59,15 @@
       "Bash(python3 -c \"import zipfile; z=zipfile.ZipFile\\('docs/Presserdiado Design System-handoff.zip'\\); [print\\(f\\) for f in z.namelist\\(\\)]\")",
       "Bash(python3 -c ' *)",
       "Bash(powershell -Command ' *)",
-      "Bash(pnpm --filter @matbaapro/shared build)"
+      "Bash(pnpm --filter @matbaapro/shared build)",
+      "Bash(claude config *)",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(curl -s -X POST http://localhost:3001/api/v1/auth/login -H \"Content-Type: application/json\" -d \"{\\\\\"email\\\\\":\\\\\"dev@local.test\\\\\",\\\\\"password\\\\\":\\\\\"dev12345\\\\\"}\")",
+      "PowerShell(Stop-Process -Id 25656 -Force)",
+      "PowerShell(netstat -ano)",
+      "Bash(pnpm --filter api dev)",
+      "Bash(curl -s -I -X OPTIONS http://localhost:3001/api/v1/auth/login -H \"Origin: http://localhost:5175\" -H \"Access-Control-Request-Method: POST\")"
     ]
   }
 }

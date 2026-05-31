@@ -876,6 +876,14 @@ export const useCatalogStore = create<Store>()(
               } else {
                 s.moduleData = null;
                 s.moduleType = null;
+                s.isCustom = false;
+                s.customSettings = undefined;
+                s.imageSettings = {
+                  editMode: initialGlobalSettings.imageEditMode,
+                  scale: initialGlobalSettings.imageScale,
+                  posX: initialGlobalSettings.imagePosX,
+                  posY: initialGlobalSettings.imagePosY,
+                };
               }
             }
           }

@@ -1,7 +1,7 @@
 // Compact 4-mode contextual bar. Faithful to reference behaviour, simplified UI.
 
 import { useEffect, useRef, useState } from 'react';
-import { AlignCenter, AlignLeft, AlignRight, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, AlignVerticalJustifyStart, Check, Clipboard, Copy, CopyPlus, Image, Move, PackageOpen, Palette, Settings, Square, Trash2, Upload, ZoomIn, Pencil, Table2, Tag, Box, GitMerge, Scissors } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, AlignVerticalJustifyStart, Check, Clipboard, Copy, CopyPlus, Image, Move, PackageOpen, Palette, Settings, Square, Trash2, Upload, ZoomIn, Pencil, Table2, Tag, Box, Combine, Slice, Frame } from 'lucide-react';
 import type { CatalogSettings, ColorValue, DeepPartial, TypographyData, BorderRadiusData } from '@matbaapro/shared';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import api from '@/lib/api';
@@ -87,6 +87,76 @@ function Popover({
   );
 }
 
+function AddModuleDropdown({
+  slot,
+  pageNumber,
+  toggleSlotRole,
+  setSlotModule,
+}: {
+  slot: any;
+  pageNumber: number;
+  toggleSlotRole: (role: 'product' | 'free') => void;
+  setSlotModule: (pageNumber: number, slotId: string, moduleType: any) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Element)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const btnCls = 'h-9 px-3 inline-flex items-center gap-1.5 rounded-md text-xs font-medium whitespace-nowrap hover:bg-border-default transition-colors disabled:opacity-30';
+
+  const handleSelect = (moduleType: string) => {
+    if (slot.role !== 'free') {
+      toggleSlotRole('free');
+    }
+    setSlotModule(pageNumber, slot.id, moduleType);
+    setOpen(false);
+  };
+
+  return (
+    <div ref={ref} className="relative inline-block">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`${btnCls} ${open ? 'bg-blue-50 text-blue-700' : ''}`}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="8" height="8" rx="1" />
+          <rect x="13" y="3" width="8" height="8" rx="1" />
+          <rect x="3" y="13" width="8" height="8" rx="1" />
+          <path d="M13 13h8v8h-8z" />
+        </svg>
+        <span>Modül Ekle</span>
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 z-50 bg-surface-panel border border-border-default rounded-radius-md shadow-drop-md min-w-[180px] overflow-hidden">
+          <button
+            onClick={() => handleSelect('banner')}
+            className="w-full flex items-center gap-2 px-3 py-2 text-body-sm text-text-secondary hover:bg-surface-subtle cursor-pointer text-left transition-colors"
+          >
+            <Table2 size={16} />
+            <span>Tablo Alanı</span>
+          </button>
+          <button
+            onClick={() => handleSelect('free-design')}
+            className="w-full flex items-center gap-2 px-3 py-2 text-body-sm text-text-secondary hover:bg-surface-subtle cursor-pointer text-left transition-colors"
+          >
+            <Frame size={16} />
+            <span>Serbest Tasarım Alanı</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ContextualBar() {
   const selection = useUIStore((s) => s.selection);
   const selectedSlotIds = useUIStore((s) => s.selectedSlotIds);
@@ -126,6 +196,7 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
   const clearSlot = useCatalogStore((s) => s.clearSlot);
   const updateSelectedSlotsImageSettings = useCatalogStore((s) => s.updateSelectedSlotsImageSettings);
   const setSidebarState = useUIStore((s) => s.setSidebarState);
+  const setSlotModule = useCatalogStore((s) => s.setSlotModule);
 
   const pages = getActivePages();
   const pageWithSlot = pages.find((p) => p.slots.some((s) => s.id === slotIds[0]));
@@ -267,7 +338,7 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
           disabled
           className={`${btnCls} opacity-40 pointer-events-none`}
         >
-          <GitMerge size={16} />
+          <Combine size={16} />
           Birleştir
         </button>
       ) : slotIds.length === 1 && isMerged ? (
@@ -275,18 +346,17 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
           onClick={() => unmergeSlot(pageNumber, slot.id)}
           className={btnCls}
         >
-          <Scissors size={16} />
+          <Slice size={16} />
           Ayır
         </button>
-      ) : slotIds.length >= 2 ? (
-        <button
-          onClick={() => mergeSelected(pageNumber, slotIds[0])}
-          className={btnCls}
-        >
-          <GitMerge size={16} />
-          Birleştir
-        </button>
       ) : null}
+
+      <AddModuleDropdown
+        slot={slot}
+        pageNumber={pageNumber}
+        toggleSlotRole={toggleSlotRole}
+        setSlotModule={setSlotModule}
+      />
 
       <Divider />
 
