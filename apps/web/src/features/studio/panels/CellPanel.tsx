@@ -1317,6 +1317,29 @@ export function CellPanel() {
         </div>
       )}
 
+      {/* ── Hücre Boşluğu (gridGap) Slider'ı ── */}
+      <div className="flex items-center justify-between gap-2 bg-surface-panel p-2.5 rounded border border-border-default shadow-sm mb-2 shrink-0">
+        <span className="text-label-md text-text-secondary w-24">Hücre Boşluğu</span>
+        <input
+          type="range"
+          min={0}
+          max={10}
+          step={1}
+          value={globalSettings.gridGap}
+          onChange={(e) => setGlobalSettings({ gridGap: parseFloat(e.target.value) })}
+          className="flex-1 studio-slider"
+        />
+        <input
+          type="number"
+          value={globalSettings.gridGap}
+          onChange={(e) =>
+            setGlobalSettings({ gridGap: parseFloat(e.target.value) || 0 })
+          }
+          className="w-12 text-body-md text-text-secondary text-right border border-border-default rounded p-0.5"
+        />
+        <span className="text-[11px] text-text-muted">mm</span>
+      </div>
+
       {/* ── Genel hücre ayarları ── */}
       <div className={`flex flex-col gap-1.5 ${hasSelection && isCustom ? 'opacity-40 pointer-events-none select-none' : ''}`}>
         <div className="flex items-center justify-between px-1 py-1">

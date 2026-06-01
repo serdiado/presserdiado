@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import { getTerm } from '@matbaapro/shared';
 import { GlobalGridSettings } from '../panels/GlobalGridSettings';
-import { GlobalCellSettings } from '../panels/GlobalCellSettings';
 import { CellPanel } from '../panels/CellPanel';
 import { BackgroundSettings } from '../panels/BackgroundSettings';
 import { ProductManagement } from '../panels/ProductManagement';
@@ -254,31 +253,6 @@ export function DesignPanel() {
         </div>
       </div>
 
-      {/* HÜCRE */}
-      <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel shadow-drop-sm">
-        <button
-          onClick={() => toggleSection('cell')}
-          className={`flex items-center justify-between px-3 py-2.5 transition-colors ${openSection === 'cell' ? 'bg-blue-50' : 'bg-surface-subtle hover:bg-surface-subtle'}`}
-        >
-          <div className={`flex items-center gap-2 transition-colors ${openSection === 'cell' ? 'text-blue-700 border-l-2 border-blue-500 pl-2' : 'text-text-secondary'}`}>
-            <Square size={18} />
-            <span className={`text-heading-md ${openSection === 'cell' ? 'text-blue-700' : 'text-text-primary'}`}>Hücre</span>
-          </div>
-          <ChevronDown
-            size={18}
-            className={`transition-all duration-300 ${openSection === 'cell' ? 'rotate-180 text-blue-500' : 'text-text-secondary'}`}
-          />
-        </button>
-        <div
-          className={`transition-all duration-300 ease-in-out overflow-hidden ${
-            openSection === 'cell' ? 'max-h-212.5 opacity-100' : 'max-h-0 opacity-0'
-          }`}
-        >
-          <div className="px-3 py-3.5 border-t border-border-default bg-surface-panel overflow-y-auto">
-            <GlobalCellSettings />
-          </div>
-        </div>
-      </div>
 
       {/* ARKAPLAN */}
       <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel shadow-drop-sm">

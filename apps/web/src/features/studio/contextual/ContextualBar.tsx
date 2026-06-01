@@ -1,7 +1,7 @@
 // Compact 4-mode contextual bar. Faithful to reference behaviour, simplified UI.
 
 import { useEffect, useRef, useState } from 'react';
-import { AlignCenter, AlignLeft, AlignRight, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, AlignVerticalJustifyStart, Check, Clipboard, Copy, CopyPlus, Image, Move, PackageOpen, Palette, Settings, Square, Trash2, Upload, ZoomIn, Pencil, Table2, Tag, Box, Combine, Slice, Frame } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, AlignVerticalJustifyStart, Check, Clipboard, Copy, CopyPlus, Image, Move, PackageOpen, Palette, Settings, Square, Trash2, Upload, ZoomIn, Pencil, Table2, Tag, Box, Combine, Slice, Frame, ChevronDown } from 'lucide-react';
 import type { CatalogSettings, ColorValue, DeepPartial, TypographyData, BorderRadiusData } from '@matbaapro/shared';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import api from '@/lib/api';
@@ -9,7 +9,7 @@ import {
   ColorOpacityPicker,
   BorderRadiusPicker,
 } from '../pickers';
-import { deepMerge } from '../util/style';
+import { deepMerge, colorValueBackground, colorOpacityToCss } from '../util/style';
 import { CornerRadiusIcon } from '@/components/icons/CornerRadiusIcon';
 
 const DEFAULT_COLOR: ColorValue = { type: 'solid', color: '#ffffff', opacity: 100 };
@@ -136,7 +136,7 @@ function AddModuleDropdown({
         <span>Modül Ekle</span>
       </button>
       {open && (
-        <div className="absolute top-full left-0 mt-1 z-50 bg-surface-panel border border-border-default rounded-radius-md shadow-drop-md min-w-[180px] overflow-hidden">
+        <div className="absolute top-full left-0 mt-1 z-50 bg-surface-panel border border-border-default rounded-radius-md shadow-drop-md min-w-45 overflow-hidden">
           <button
             onClick={() => handleSelect('banner')}
             className="w-full flex items-center gap-2 px-3 py-2 text-body-sm text-text-secondary hover:bg-surface-subtle cursor-pointer text-left transition-colors"
@@ -178,6 +178,58 @@ export function ContextualBar() {
       {selection.type === 'footerCell' && <FooterMode />}
       {selection.type === 'pageBackground' && (
         <BackgroundMode pageNumber={Number(selection.ids[0])} />
+      )}
+    </div>
+  );
+}
+
+function ImageScaleDropdown({
+  scale,
+  onChange,
+}: {
+  scale: number;
+  onChange: (value: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Element)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, []);
+
+  const btnCls = 'h-9 px-3 inline-flex items-center gap-1.5 rounded-md text-xs font-medium whitespace-nowrap hover:bg-border-default transition-colors';
+
+  return (
+    <div ref={ref} className="relative inline-block">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`${btnCls} ${open ? 'bg-blue-50 text-blue-700' : 'text-text-secondary'}`}
+      >
+        <ZoomIn size={16} />
+        <span>Görsel Boyutu</span>
+        <ChevronDown size={14} className="opacity-60" />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 z-50 bg-surface-panel border border-border-default rounded-radius-md shadow-drop-md p-3 min-w-48 flex items-center gap-3">
+          <input
+            type="range"
+            min={10}
+            max={300}
+            step={1}
+            value={scale}
+            onChange={(e) => onChange(Number(e.target.value))}
+            className="w-full studio-slider"
+          />
+          <span className="text-body-sm text-text-secondary text-right shrink-0">
+            % {scale}
+          </span>
+        </div>
       )}
     </div>
   );
@@ -256,7 +308,19 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
 
       {/* 3 — Zemin */}
       <ColorOpacityPicker
-        trigger={<><Palette size={16} /><span>Zemin</span></>}
+        trigger={
+          <>
+            <div
+              className="w-3.5 h-3.5 rounded-sm shrink-0"
+              style={{
+                ...colorValueBackground(settings.colors.cellBg),
+                border: '1px solid rgba(0,0,0,0.15)',
+                borderRadius: '4px',
+              }}
+            />
+            <span>Zemin</span>
+          </>
+        }
         value={settings.colors.cellBg}
         onChange={(v) => update({ colors: { ...settings.colors, cellBg: v } })}
       />
@@ -270,7 +334,22 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
       </Popover>
 
       {/* 5 — Çerçeve */}
-      <Popover trigger={<><Square size={16} />Çerçeve</>} width="w-72">
+      <Popover
+        trigger={
+          <>
+            <div
+              className="w-3.5 h-3.5 rounded-sm shrink-0"
+              style={{
+                backgroundColor: 'transparent',
+                border: `2px solid ${colorOpacityToCss(settings.colors.cellBorder)}`,
+                borderRadius: '4px',
+              }}
+            />
+            <span>Çerçeve</span>
+          </>
+        }
+        width="w-72"
+      >
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-medium text-text-secondary">Kenarlık Rengi</span>
@@ -316,18 +395,10 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
 
       {/* 7 — Görsel Ölçeği */}
       {!isFree && (
-        <div className="inline-flex items-center gap-1.5 h-9 px-2">
-          <ZoomIn size={16} className="text-text-secondary shrink-0" />
-          <input
-            type="number"
-            min={10}
-            max={300}
-            value={slot.imageSettings?.scale ?? 100}
-            onChange={(e) => updateSelectedSlotsImageSettings({ scale: Number(e.target.value) })}
-            className="w-12 text-xs border border-border-default rounded px-1.5 py-1 text-center"
-          />
-          <span className="text-xs text-text-secondary">%</span>
-        </div>
+        <ImageScaleDropdown
+          scale={slot.imageSettings?.scale ?? 100}
+          onChange={(value) => updateSelectedSlotsImageSettings({ scale: value })}
+        />
       )}
 
       <Divider />
@@ -348,6 +419,14 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
         >
           <Slice size={16} />
           Ayır
+        </button>
+      ) : slotIds.length >= 2 ? (
+        <button
+          onClick={() => mergeSelected(pageNumber, slotIds[0])}
+          className={btnCls}
+        >
+          <Combine size={16} />
+          Birleştir
         </button>
       ) : null}
 
@@ -632,7 +711,19 @@ function TextMode({
       {element === 'price' && (
         <>
           <ColorOpacityPicker
-            trigger={<><Palette size={16} /><span>Zemin</span></>}
+            trigger={
+              <>
+                <div
+                  className="w-3.5 h-3.5 rounded-sm shrink-0"
+                  style={{
+                    ...colorValueBackground(settings.colors.priceBg),
+                    border: '1px solid rgba(0,0,0,0.15)',
+                    borderRadius: '4px',
+                  }}
+                />
+                <span>Zemin</span>
+              </>
+            }
             value={settings.colors.priceBg}
             onChange={(v) => updatePrice({ colors: { ...settings.colors, priceBg: v } })}
           />
@@ -640,7 +731,19 @@ function TextMode({
           <ColorOpacityPicker
             solidOnly
             type="border"
-            trigger={<><Square size={16} /><span>Çerçeve</span></>}
+            trigger={
+              <>
+                <div
+                  className="w-3.5 h-3.5 rounded-sm shrink-0"
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: `2px solid ${colorOpacityToCss(settings.colors.priceBorder)}`,
+                    borderRadius: '4px',
+                  }}
+                />
+                <span>Çerçeve</span>
+              </>
+            }
             value={{ type: 'solid', color: settings.colors.priceBorder.c, opacity: settings.colors.priceBorder.o }}
             thickness={settings.priceBorderWidth}
             onChange={(v) => {
@@ -756,7 +859,19 @@ function BackgroundMode({ pageNumber }: { pageNumber: number }) {
         className={`h-9 px-3 flex items-center gap-1.5 rounded text-xs cursor-pointer ${
           bgType === 'color' ? 'bg-surface-subtle text-text-primary font-medium' : 'text-text-secondary hover:bg-border-default'
         }`}
-        trigger={<><Palette size={16} /><span>Renk</span></>}
+        trigger={
+          <>
+            <div
+              className="w-3.5 h-3.5 rounded-sm shrink-0"
+              style={{
+                ...colorValueBackground(colorValue),
+                border: '1px solid rgba(0,0,0,0.15)',
+                borderRadius: '4px',
+              }}
+            />
+            <span>Renk</span>
+          </>
+        }
         value={colorValue}
         onChange={(v) => {
           setBgType('color');
@@ -876,11 +991,25 @@ function FooterMode() {
   const updateFooterCellStore = useCatalogStore((s) => s.updateFooterCellStore);
   const mergeFooterCellsStore = useCatalogStore((s) => s.mergeFooterCellsStore);
   const unmergeFooterCellStore = useCatalogStore((s) => s.unmergeFooterCellStore);
+  const getActivePages = useCatalogStore((s) => s.getActivePages);
+  const globalSettings = useCatalogStore((s) => s.globalSettings);
 
   const pageNum = selection.parentId
     ? parseInt(selection.parentId.replace('page-', ''), 10)
     : NaN;
   const scope: number | 'global' = isNaN(pageNum) ? 'global' : pageNum;
+
+  const firstSelectedId = selection.ids[0];
+  let currentBgColor = { c: '#ffffff', o: 100 };
+
+  if (firstSelectedId) {
+    const page = getActivePages().find((p) => p.pageNumber === scope);
+    const activeFooter = page?.footerMode === 'custom' && page.customFooter ? page.customFooter : globalSettings.footer;
+    const cell = activeFooter?.cells?.find((c) => c.id === firstSelectedId);
+    if (cell?.bgColor) {
+      currentBgColor = cell.bgColor;
+    }
+  }
 
   return (
     <>
@@ -905,7 +1034,21 @@ function FooterMode() {
 
       <Divider />
 
-      <Popover trigger={<>🎨 Zemin</>}>
+      <Popover
+        trigger={
+          <>
+            <div
+              className="w-3.5 h-3.5 rounded-sm shrink-0"
+              style={{
+                backgroundColor: colorOpacityToCss(currentBgColor),
+                border: '1px solid rgba(0,0,0,0.15)',
+                borderRadius: '4px',
+              }}
+            />
+            <span>Zemin</span>
+          </>
+        }
+      >
         <div className="space-y-2">
           <span className="text-[10px] font-bold text-text-secondary block">Hücre Zemin Rengi</span>
           <input
@@ -993,7 +1136,7 @@ function FreeSlotMode({ slot, pageNumber, slotIds }: FreeSlotProps) {
         mergedInto: null,
         font: { fontFamily: 'Inter', fontSize: 12, fontWeight: '400', color: '#000000', opacity: 100, textAlign: 'center', verticalAlign: 'middle' },
         padding: { t: 0, r: 0, b: 0, l: 0, linked: true },
-        bgColor: { type: 'solid', color: '#ffffff', opacity: 0 },
+        bgColor: { type: 'solid', color: '#ffffff', opacity: 100 },
         border: { t: 0, r: 0, b: 0, l: 0, linked: true, color: { c: '#e2e8f0', o: 100 }, style: 'solid' },
         image: null,
         imageMode: 'contain',
@@ -1056,13 +1199,40 @@ function FreeSlotMode({ slot, pageNumber, slotIds }: FreeSlotProps) {
 
         {/* Zemin Rengi */}
         <ColorOpacityPicker
-          trigger={<><Palette size={16} /><span>Zemin</span></>}
+          trigger={
+            <>
+              <div
+                className="w-3.5 h-3.5 rounded-sm shrink-0"
+                style={{
+                  ...colorValueBackground(bgColor),
+                  border: '1px solid rgba(0,0,0,0.15)',
+                  borderRadius: '4px',
+                }}
+              />
+              <span>Zemin</span>
+            </>
+          }
           value={bgColor}
           onChange={(v) => updateSlotModuleData(pageNumber, slot.id, { bgColor: v })}
         />
 
         {/* Çerçeve Popover'ı */}
-        <Popover trigger={<><Square size={16} />Çerçeve</>} width="w-72">
+        <Popover
+          trigger={
+            <>
+              <div
+                className="w-3.5 h-3.5 rounded-sm shrink-0"
+                style={{
+                  backgroundColor: 'transparent',
+                  border: `2px solid ${colorOpacityToCss(cb.color)}`,
+                  borderRadius: '4px',
+                }}
+              />
+              <span>Çerçeve</span>
+            </>
+          }
+          width="w-72"
+        >
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-medium text-text-secondary">Dış Kenarlık</span>
@@ -1123,6 +1293,16 @@ function FreeSlotMode({ slot, pageNumber, slotIds }: FreeSlotProps) {
           <Trash2 size={16} />
           Kaldır
         </button>
+
+        <Divider />
+
+        <button
+          onClick={() => setSidebarState('grid', 'banner-appearance')}
+          className={btnCls}
+        >
+          <Settings size={16} />
+          Ayarlar
+        </button>
       </>
     );
   }
@@ -1147,6 +1327,116 @@ function FreeSlotMode({ slot, pageNumber, slotIds }: FreeSlotProps) {
 }
 
 
+function BannerTextAlignDropdown({
+  textAlign,
+  onChange,
+}: {
+  textAlign: 'left' | 'center' | 'right';
+  onChange: (v: 'left' | 'center' | 'right') => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Element)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const active = H_ALIGNS.find((a) => a.value === textAlign) ?? H_ALIGNS[0];
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="h-9 px-3 inline-flex items-center gap-1.5 rounded-md text-xs font-medium text-text-secondary whitespace-nowrap hover:bg-border-default transition-colors"
+      >
+        <active.Icon size={16} />
+        <span>{active.label}</span>
+        <ChevronDown size={14} className="text-text-muted shrink-0" />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 z-50 w-32 bg-surface-panel border border-border-default rounded-radius-md shadow-drop-md overflow-hidden">
+          {H_ALIGNS.map(({ value, label, Icon }) => (
+            <button
+              key={value}
+              onClick={() => {
+                onChange(value);
+                setOpen(false);
+              }}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-body-sm transition-colors text-left ${
+                textAlign === value
+                  ? 'bg-surface-subtle text-text-primary font-medium'
+                  : 'text-text-secondary hover:bg-surface-subtle'
+              }`}
+            >
+              <Icon size={14} />
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BannerTextVerticalAlignDropdown({
+  verticalAlign,
+  onChange,
+}: {
+  verticalAlign: 'top' | 'middle' | 'bottom';
+  onChange: (v: 'top' | 'middle' | 'bottom') => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Element)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const active = V_ALIGNS.find((a) => a.value === verticalAlign) ?? V_ALIGNS[0];
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="h-9 px-3 inline-flex items-center gap-1.5 rounded-md text-xs font-medium text-text-secondary whitespace-nowrap hover:bg-border-default transition-colors"
+      >
+        <active.Icon size={16} />
+        <span>{active.label}</span>
+        <ChevronDown size={14} className="text-text-muted shrink-0" />
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 z-50 w-32 bg-surface-panel border border-border-default rounded-radius-md shadow-drop-md overflow-hidden">
+          {V_ALIGNS.map(({ value, label, Icon }) => (
+            <button
+              key={value}
+              onClick={() => {
+                onChange(value);
+                setOpen(false);
+              }}
+              className={`w-full flex items-center gap-2 px-3 py-2 text-body-sm transition-colors text-left ${
+                verticalAlign === value
+                  ? 'bg-surface-subtle text-text-primary font-medium'
+                  : 'text-text-secondary hover:bg-surface-subtle'
+              }`}
+            >
+              <Icon size={14} />
+              <span>{label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Tablo Modülü Düzenle Modunda Hücre Hızlı Erişim Barı ───────────────────
 function BannerCellMode() {
   const selection = useUIStore((s) => s.selection);
@@ -1156,6 +1446,9 @@ function BannerCellMode() {
   const getActivePages = useCatalogStore((s) => s.getActivePages);
   const updateSlotModuleData = useCatalogStore((s) => s.updateSlotModuleData);
   const formas = useCatalogStore((s) => s.formas); // Reaktif tetikleme için bağımlılık eklendi
+  const setSidebarState = useUIStore((s) => s.setSidebarState);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   let pageNumber = 0;
   let moduleData: any = null;
@@ -1179,6 +1472,21 @@ function BannerCellMode() {
       selectedCellIds.includes(c.id) ? { ...c, ...patch } : c,
     );
     updateSlotModuleData(pageNumber, slotId!, { cells });
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      updateCells({
+        image: base64,
+        imageMode: firstCell?.imageMode || 'contain'
+      });
+    };
+    reader.readAsDataURL(file);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const mergeCells = () => {
@@ -1217,7 +1525,7 @@ function BannerCellMode() {
 
   const resetCell = () => {
     updateCells({
-      bgColor: { type: 'solid', color: '#ffffff', opacity: 0 },
+      bgColor: { type: 'solid', color: '#ffffff', opacity: 100 },
       border: { t: 0, r: 0, b: 0, l: 0, linked: true, color: { c: '#e2e8f0', o: 100 }, style: 'solid' },
       padding: { t: 0, r: 0, b: 0, l: 0, linked: true },
     });
@@ -1247,15 +1555,58 @@ function BannerCellMode() {
 
       {firstCell && (
         <>
+          {/* Görsel Butonu */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className={btnCls}
+          >
+            <Image size={16} />
+            <span>Görsel</span>
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={handleFileSelect}
+          />
+
           {/* Hücre Zemin Rengi */}
           <ColorOpacityPicker
-            trigger={<><Palette size={16} /><span>Zemin</span></>}
+            trigger={
+              <>
+                <div
+                  className="w-3.5 h-3.5 rounded-sm shrink-0"
+                  style={{
+                    ...colorValueBackground(firstCell.bgColor),
+                    border: '1px solid rgba(0,0,0,0.15)',
+                    borderRadius: '4px',
+                  }}
+                />
+                <span>Zemin</span>
+              </>
+            }
             value={firstCell.bgColor}
             onChange={(v) => updateCells({ bgColor: v })}
           />
 
           {/* Hücre Çerçeve Ayarı Popover'ı */}
-          <Popover trigger={<><Square size={16} />Çerçeve</>} width="w-72">
+          <Popover
+            trigger={
+              <>
+                <div
+                  className="w-3.5 h-3.5 rounded-sm shrink-0"
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: `2px solid ${colorOpacityToCss(firstCell.border.color)}`,
+                    borderRadius: '4px',
+                  }}
+                />
+                <span>Çerçeve</span>
+              </>
+            }
+            width="w-72"
+          >
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-medium text-text-secondary">Kenarlık Rengi</span>
@@ -1287,7 +1638,17 @@ function BannerCellMode() {
 
           <Divider />
 
-          {/* Yazı Tipi Boyutu ve Kalınlığı */}
+          {/* Yazı Tipi Ailesi, Boyutu ve Kalınlığı */}
+          <select
+            value={firstCell.font.fontFamily || 'Inter'}
+            onChange={(e) => updateCells({ font: { ...firstCell.font, fontFamily: e.target.value } })}
+            className="text-xs border border-border-default rounded-md px-2 py-1.5 bg-surface-panel"
+          >
+            {['Inter', 'Roboto', 'Arial', 'Oswald', 'Helvetica', 'Georgia'].map((f) => (
+              <option key={f} value={f}>{f}</option>
+            ))}
+          </select>
+
           <input
             type="number" min={6} max={120} value={firstCell.font.fontSize}
             onChange={(e) => updateCells({ font: { ...firstCell.font, fontSize: parseInt(e.target.value) || 12 } })}
@@ -1319,40 +1680,16 @@ function BannerCellMode() {
           <Divider />
 
           {/* Yatay Hizalama */}
-          <div className="flex bg-slate-100 rounded border border-slate-200 p-0.5 gap-0.5">
-            {H_ALIGNS.map((ha) => {
-              const Icon = ha.Icon;
-              return (
-                <button
-                  key={ha.value}
-                  onClick={() => updateCells({ font: { ...firstCell.font, textAlign: ha.value } })}
-                  className={`p-1.5 rounded-sm transition-colors ${
-                    firstCell.font.textAlign === ha.value ? 'bg-white shadow text-slate-800' : 'text-slate-400 hover:text-slate-600'
-                  }`}
-                >
-                  <Icon size={12} />
-                </button>
-              );
-            })}
-          </div>
+          <BannerTextAlignDropdown
+            textAlign={firstCell.font.textAlign || 'center'}
+            onChange={(v) => updateCells({ font: { ...firstCell.font, textAlign: v } })}
+          />
 
           {/* Dikey Hizalama */}
-          <div className="flex bg-slate-100 rounded border border-slate-200 p-0.5 gap-0.5">
-            {V_ALIGNS.map((va) => {
-              const Icon = va.Icon;
-              return (
-                <button
-                  key={va.value}
-                  onClick={() => updateCells({ font: { ...firstCell.font, verticalAlign: va.value } })}
-                  className={`p-1.5 rounded-sm transition-colors ${
-                    firstCell.font.verticalAlign === va.value ? 'bg-white shadow text-slate-800' : 'text-slate-400 hover:text-slate-600'
-                  }`}
-                >
-                  <Icon size={12} />
-                </button>
-              );
-            })}
-          </div>
+          <BannerTextVerticalAlignDropdown
+            verticalAlign={firstCell.font.verticalAlign || 'middle'}
+            onChange={(v) => updateCells({ font: { ...firstCell.font, verticalAlign: v } })}
+          />
         </>
       )}
 
@@ -1360,6 +1697,16 @@ function BannerCellMode() {
 
       <button onClick={resetCell} className={`${btnCls} text-danger hover:bg-red-50`}>
         Hücreyi Sıfırla
+      </button>
+
+      <Divider />
+
+      <button
+        onClick={() => setSidebarState('grid', 'banner-cell')}
+        className={btnCls}
+      >
+        <Settings size={16} />
+        Ayarlar
       </button>
     </>
   );

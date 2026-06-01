@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useState } from 'react';
-import { Pencil } from 'lucide-react';
+import { Pencil, Move } from 'lucide-react';
 import type { BadgeConfig, CatalogSettings, StudioSlot } from '@matbaapro/shared';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import {
@@ -627,19 +627,31 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
           {/* Image */}
           <div
             title={slot.product.sku ?? ''}
-            className="flex-1 flex items-center justify-center min-h-0 min-w-0 mb-2 mt-6 pointer-events-auto relative z-10 overflow-hidden"
+            className="flex-1 flex items-center justify-center min-h-0 min-w-0 mb-2 mt-6 pointer-events-auto relative z-10"
           >
             {slot.product.image ? (
-              <img
-                src={slot.product.image}
-                onMouseDown={handleImgMouseDown}
-                draggable={false}
-                className="max-w-full max-h-full object-contain select-none"
-                style={{
-                  transform: `translate(${displayX}px, ${displayY}px) scale(${displayScale})`,
-                  cursor: isImgEditMode ? 'grab' : 'default',
-                }}
-              />
+              <>
+                <img
+                  src={slot.product.image}
+                  onMouseDown={handleImgMouseDown}
+                  draggable={false}
+                  className="max-w-full max-h-full object-contain select-none"
+                  style={{
+                    transform: `translate(${displayX}px, ${displayY}px) scale(${displayScale})`,
+                    cursor: isImgEditMode ? 'grab' : 'default',
+                  }}
+                />
+                {isImgEditMode && (
+                  <div
+                    className="absolute top-1/2 left-1/2 pointer-events-none bg-slate-900/60 text-white rounded-full p-4 flex items-center justify-center shadow-md border border-white/20 z-20"
+                    style={{
+                      transform: `translate(calc(-50% + ${displayX}px), calc(-50% + ${displayY}px))`,
+                    }}
+                  >
+                    <Move size={40} />
+                  </div>
+                )}
+              </>
             ) : (
               <div className="text-[10px] text-slate-300 italic uppercase">Resim Yok</div>
             )}

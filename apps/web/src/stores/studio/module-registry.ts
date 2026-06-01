@@ -39,7 +39,7 @@ const bannerInit = () => ({
       decimalScale: 100,
     },
     padding: { t: 0, r: 0, b: 0, l: 0, linked: true },
-    bgColor: { type: 'solid', color: '#ffffff', opacity: 0 },
+    bgColor: { type: 'solid', color: '#ffffff', opacity: 100 },
     border: { t: 0, r: 0, b: 0, l: 0, linked: true, color: { c: '#e2e8f0', o: 100 }, style: 'solid' },
     image: null,
   })),
