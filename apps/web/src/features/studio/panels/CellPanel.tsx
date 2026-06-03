@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useUIStore, useCatalogStore } from '@/stores/studio';
-import { ChevronDown, Square, Layers, Image, Type, Tag, Link2, X } from 'lucide-react';
+import { ChevronDown, Square, Layers, Image, Type, Tag, Link2, X, PanelBottom } from 'lucide-react';
 import { Button, SegmentedControl, Toggle } from '@/components/ui';
 import { uploadImage } from '@/lib/upload';
 import type { BannerCellData, BannerModuleData } from '../modules';
@@ -18,6 +18,7 @@ import type {
   StudioFooterCell,
   StudioSlotImageSettings,
   TypographyData,
+  TextElementSettings,
 } from '@matbaapro/shared';
 
 
@@ -114,7 +115,7 @@ function AppearanceContent({ values, handlers }: { values: AppearanceValues; han
       </div>
       <div className="pt-1 border-t border-border-default">
         <BorderRadiusPicker
-          title="Köşe Yuvarlaklığı"
+          title="Köşe ovalliği"
           value={values.radius}
           onChange={handlers.onRadiusChange}
         />
@@ -184,9 +185,13 @@ function VisualContent({
 function TextContent({
   productName,
   onProductNameChange,
+  nameSettings,
+  onNameSettingsChange,
 }: {
   productName: TypographyData;
   onProductNameChange: (v: TypographyData) => void;
+  nameSettings?: TextElementSettings;
+  onNameSettingsChange?: (v: Partial<TextElementSettings>) => void;
 }) {
   return (
     <div className="space-y-3">
@@ -196,6 +201,112 @@ function TextContent({
         value={productName}
         onChange={onProductNameChange}
       />
+
+      {nameSettings && onNameSettingsChange && (
+        <>
+          <div className="space-y-2 pt-2 border-t border-border-default">
+            <span className="text-xs font-medium text-text-secondary block">Boyut</span>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-medium text-text-secondary w-16">Genişlik</span>
+              <input
+                type="range"
+                min={10}
+                max={100}
+                step={1}
+                value={nameSettings.width ?? 100}
+                onChange={(e) => onNameSettingsChange({ width: parseInt(e.target.value) })}
+                className="flex-1 studio-slider"
+              />
+              <input
+                type="number"
+                value={nameSettings.width ?? ''}
+                placeholder="Auto"
+                onChange={(e) => {
+                  const val = e.target.value === '' ? undefined : parseInt(e.target.value);
+                  onNameSettingsChange({ width: val });
+                }}
+                className="w-12 text-xs font-normal text-text-primary text-center border border-border-default rounded p-0.5"
+              />
+              <span className="text-[11px] text-text-muted">%</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-medium text-text-secondary w-16">Yükseklik</span>
+              <input
+                type="range"
+                min={3}
+                max={30}
+                step={1}
+                value={nameSettings.height ?? 0}
+                onChange={(e) => onNameSettingsChange({ height: parseInt(e.target.value) })}
+                className="flex-1 studio-slider"
+              />
+              <input
+                type="number"
+                value={nameSettings.height ?? ''}
+                placeholder="Auto"
+                onChange={(e) => {
+                  const val = e.target.value === '' ? undefined : parseInt(e.target.value);
+                  onNameSettingsChange({ height: val });
+                }}
+                className="w-12 text-xs font-normal text-text-primary text-center border border-border-default rounded p-0.5"
+              />
+              <span className="text-[11px] text-text-muted">mm</span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-2 border-t border-border-default">
+            <span className="text-xs font-medium text-text-secondary">Zemin Rengi</span>
+            <ColorOpacityPicker
+              value={{
+                type: 'solid',
+                color: nameSettings.bgColor ?? '#ffffff',
+                opacity: nameSettings.bgOpacity ?? 0,
+              }}
+              onChange={(v) => {
+                if (v.type === 'solid') {
+                  onNameSettingsChange({ bgColor: v.color, bgOpacity: v.opacity });
+                }
+              }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between pt-2 border-t border-border-default">
+            <span className="text-xs font-medium text-text-secondary">Çerçeve</span>
+            <ColorOpacityPicker
+              solidOnly
+              type="border"
+              value={{
+                type: 'solid',
+                color: nameSettings.borderColor ?? '#e2e8f0',
+                opacity: nameSettings.borderOpacity ?? 0,
+              }}
+              thickness={nameSettings.borderWidth ?? 0}
+              onChange={(v) => {
+                if (v.type === 'solid') {
+                  onNameSettingsChange({ borderColor: v.color, borderOpacity: v.opacity });
+                }
+              }}
+              onThicknessChange={(v) => onNameSettingsChange({ borderWidth: v })}
+            />
+          </div>
+
+          <div className="pt-2 border-t border-border-default">
+            <BorderRadiusPicker
+              title="Köşe ovalliği"
+              value={{
+                tl: nameSettings.borderRadius ?? 0,
+                tr: nameSettings.borderRadius ?? 0,
+                bl: nameSettings.borderRadius ?? 0,
+                br: nameSettings.borderRadius ?? 0,
+                linked: true,
+              }}
+              onChange={(v) => onNameSettingsChange({ borderRadius: v.tl })}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -210,6 +321,7 @@ interface PriceValues {
   priceBorderWidth: number;
   priceRadius: BorderRadiusData;
   priceFont: TypographyData;
+  priceSettings?: TextElementSettings;
 }
 
 interface PriceHandlers {
@@ -221,17 +333,39 @@ interface PriceHandlers {
   onPriceBorderWidthChange: (v: number) => void;
   onPriceRadiusChange: (v: BorderRadiusData) => void;
   onPriceFontChange: (v: TypographyData) => void;
+  onPriceSettingsChange?: (v: Partial<TextElementSettings>) => void;
 }
 
 function PriceContent({ values: v, handlers: h }: { values: PriceValues; handlers: PriceHandlers }) {
   return (
     <div className="space-y-3">
-      <div>
+      {v.priceSettings && h.onPriceSettingsChange && (
+        <div className="space-y-3 pb-3 border-b border-border-default">
+          <Toggle
+            checked={v.priceSettings.isFreePosition}
+            onChange={(val) => h.onPriceSettingsChange!({ isFreePosition: val })}
+            label="Fiyat serbest konum"
+          />
+          {v.priceSettings.isFreePosition && (
+            <Button
+              variant="secondary"
+              size="sm"
+              fullWidth
+              onClick={() => h.onPriceSettingsChange!({ isFreePosition: false, posX: 50, posY: 50 })}
+            >
+              Konumu sıfırla
+            </Button>
+          )}
+        </div>
+      )}
+
+      <div className={v.priceSettings?.isFreePosition ? 'opacity-40 pointer-events-none select-none' : ''}>
         <span className="text-xs font-medium text-text-secondary block mb-1.5">Konum</span>
         <div className="flex bg-surface-subtle rounded p-1 gap-1 border border-border-default">
           {(['left', 'center', 'right'] as const).map((pos) => (
             <button
               key={pos}
+              disabled={v.priceSettings?.isFreePosition}
               onClick={() => h.onPositionChange(pos)}
               className={`flex-1 py-1.5 text-[10px] font-medium rounded transition-colors ${
                 v.pricePosition === pos
@@ -287,7 +421,7 @@ function PriceContent({ values: v, handlers: h }: { values: PriceValues; handler
       </div>
 
       <div className="pt-2 border-t border-border-default">
-        <BorderRadiusPicker title="Ovallik" value={v.priceRadius} onChange={h.onPriceRadiusChange} />
+        <BorderRadiusPicker title="Köşe ovalliği" value={v.priceRadius} onChange={h.onPriceRadiusChange} />
       </div>
 
       <div className="pt-2 border-t border-border-default">
@@ -297,18 +431,61 @@ function PriceContent({ values: v, handlers: h }: { values: PriceValues; handler
   );
 }
 
-const POSITIONS: { value: BadgePosition; label: string }[] = [
-  { value: 'top-left',     label: 'Sol Üst'  },
-  { value: 'top-right',    label: 'Sağ Üst'  },
-  { value: 'bottom-left',  label: 'Sol Alt'  },
-  { value: 'bottom-right', label: 'Sağ Alt'  },
-];
-
-const SHAPES: { value: BadgeShape; label: string }[] = [
-  { value: 'circle',    label: 'Yuvarlak'    },
-  { value: 'rectangle', label: 'Dikdörtgen'  },
-  { value: 'burst',     label: 'Yıldız'      },
-  { value: 'flama',     label: 'Bayrak'      },
+const SHAPE_ITEMS = [
+  {
+    value: 'rectangle' as const,
+    label: 'Dikdörtgen',
+    icon: (
+      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="6" width="18" height="12" rx="1" />
+      </svg>
+    ),
+  },
+  {
+    value: 'pill' as const,
+    label: 'Kapsül',
+    icon: (
+      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="8" width="18" height="8" rx="4" />
+      </svg>
+    ),
+  },
+  {
+    value: 'circle' as const,
+    label: 'Daire',
+    icon: (
+      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="12" cy="12" r="8" />
+      </svg>
+    ),
+  },
+  {
+    value: 'banner' as const,
+    label: 'Şerit',
+    icon: (
+      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M4 15V4h16v11l-8-3-8 3z" />
+      </svg>
+    ),
+  },
+  {
+    value: 'burst' as const,
+    label: 'Yıldız',
+    icon: (
+      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+      </svg>
+    ),
+  },
+  {
+    value: 'flama' as const,
+    label: 'Flama',
+    icon: (
+      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M4 21V4h16l-4 5 4 5H4" />
+      </svg>
+    ),
+  },
 ];
 
 function BadgeContent({
@@ -320,6 +497,7 @@ function BadgeContent({
 }) {
   return (
     <div className="space-y-3">
+      {/* [toggle] Etiketi göster — en üstte, ayraç yok */}
       <Toggle
         checked={badge.active}
         onChange={(v) => onUpdate({ active: v })}
@@ -327,6 +505,10 @@ function BadgeContent({
       />
 
       <div className={`space-y-3 ${!badge.active ? 'opacity-40 pointer-events-none' : ''}`}>
+        {/* <hr> ayraç */}
+        <hr className="border-border-default" />
+
+        {/* Etiket Metni — tek satır input, badge.text */}
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-text-secondary w-20 shrink-0">Etiket Metni</span>
           <input
@@ -334,89 +516,113 @@ function BadgeContent({
             value={badge.text}
             onChange={(e) => onUpdate({ text: e.target.value })}
             placeholder="Örn: %20 İndirim"
-            className="flex-1 text-[10px] border border-border-default rounded p-1.5 text-text-primary"
+            className="flex-1 text-[10px] border border-border-default rounded p-1.5 text-text-primary bg-surface-panel"
           />
         </div>
 
-        <div className="space-y-2 pt-2 border-t border-border-default">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-text-secondary">Zemin Rengi</span>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] text-text-muted font-mono uppercase">{badge.bgColor}</span>
-              <input
-                type="color"
-                value={badge.bgColor}
-                onChange={(e) => onUpdate({ bgColor: e.target.value })}
-                className="w-7 h-7 rounded border border-border-default cursor-pointer p-0.5"
-              />
-            </div>
-          </div>
-          <div className="flex items-center justify-between pt-1 border-t border-border-default">
-            <span className="text-xs font-medium text-text-secondary">Yazı Rengi</span>
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] text-text-muted font-mono uppercase">{badge.textColor}</span>
-              <input
-                type="color"
-                value={badge.textColor}
-                onChange={(e) => onUpdate({ textColor: e.target.value })}
-                className="w-7 h-7 rounded border border-border-default cursor-pointer p-0.5"
-              />
-            </div>
-          </div>
+        {/* <hr> ayraç */}
+        <hr className="border-border-default" />
+
+        {/* Zemin — ColorOpacityPicker (solidOnly) */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-medium text-text-secondary">Zemin</span>
+          <ColorOpacityPicker
+            solidOnly
+            value={{ type: 'solid', color: badge.bgColor, opacity: badge.bgOpacity ?? 100 }}
+            onChange={(v) => {
+              if (v.type === 'solid') {
+                onUpdate({ bgColor: v.color, bgOpacity: v.opacity });
+              }
+            }}
+          />
         </div>
 
-        <div className="pt-2 border-t border-border-default">
-          <span className="text-xs font-medium text-text-secondary block mb-1.5">Konum</span>
-          <div className="grid grid-cols-2 gap-1">
-            {POSITIONS.map((p) => (
-              <button
-                key={p.value}
-                onClick={() => onUpdate({ position: p.value })}
-                className={`py-1.5 text-[10px] font-medium rounded transition-colors ${
-                  badge.position === p.value
-                    ? 'bg-slate-800 text-white'
-                    : 'bg-surface-subtle text-text-secondary border border-border-default hover:text-text-primary'
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
+
+        {/* Çerçeve Rengi — aynı pattern */}
+        <div className="flex items-center justify-between pt-2 border-t border-border-default">
+          <span className="text-xs font-medium text-text-secondary">Çerçeve Rengi</span>
+          <ColorOpacityPicker
+            solidOnly
+            value={{ type: 'solid', color: badge.borderColor, opacity: badge.borderOpacity ?? 100 }}
+            onChange={(v) => {
+              if (v.type === 'solid') {
+                onUpdate({ borderColor: v.color, borderOpacity: v.opacity });
+              }
+            }}
+          />
         </div>
 
-        <div className="pt-2 border-t border-border-default">
-          <span className="text-xs font-medium text-text-secondary block mb-1.5">Şekil</span>
-          <div className="grid grid-cols-2 gap-1">
-            {SHAPES.map((s) => (
-              <button
-                key={s.value}
-                onClick={() => onUpdate({ shape: s.value })}
-                className={`py-1.5 text-[10px] font-medium rounded transition-colors ${
-                  badge.shape === s.value
-                    ? 'bg-slate-800 text-white'
-                    : 'bg-surface-subtle text-text-secondary border border-border-default hover:text-text-primary'
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
+        {/* Çerçeve Kalınlığı — slider min 0, max 10, step 1, badge.borderWidth */}
         <div className="flex items-center gap-2 pt-2 border-t border-border-default">
-          <span className="text-[11px] font-medium text-text-secondary w-12">Boyut</span>
+          <span className="text-[11px] font-medium text-text-secondary shrink-0 w-20">Çerçeve Kalınlığı</span>
           <input
-            type="range" min={50} max={200} value={badge.size}
-            onChange={(e) => onUpdate({ size: parseInt(e.target.value) })}
+            type="range" min={0} max={10} step={1} value={badge.borderWidth}
+            onChange={(e) => onUpdate({ borderWidth: parseInt(e.target.value) })}
             className="flex-1 studio-slider"
           />
           <input
-            type="number" value={badge.size}
-            onChange={(e) => onUpdate({ size: parseInt(e.target.value) || 50 })}
-            className="w-12 text-xs font-normal text-text-primary text-right border border-border-default rounded p-0.5"
+            type="number" value={badge.borderWidth}
+            onChange={(e) => onUpdate({ borderWidth: parseInt(e.target.value) || 0 })}
+            className="w-12 text-xs font-normal text-text-primary text-center border border-border-default rounded p-0.5"
           />
-          <span className="text-[11px] text-text-muted">%</span>
         </div>
+
+        {/* <hr> ayraç */}
+        <hr className="border-border-default" />
+
+        {/* Şekil — kart içinde, başlık "Şekil" */}
+        <div className="flex flex-col border border-border-default rounded-md overflow-hidden bg-surface-panel">
+          <div className="px-3 py-2 bg-surface-subtle border-b border-border-default font-semibold text-xs text-text-primary">
+            Şekil
+          </div>
+          <div className="p-3">
+            <div className="grid grid-cols-2 gap-1.5">
+              {SHAPE_ITEMS.map((s) => (
+                <button
+                  key={s.value}
+                  onClick={() => onUpdate({ shape: s.value })}
+                  className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded transition-colors border ${
+                    badge.shape === s.value
+                      ? 'bg-slate-800 text-white border-slate-800'
+                      : 'bg-surface-subtle text-text-secondary border-border-default hover:text-text-primary hover:bg-surface-panel'
+                  }`}
+                >
+                  {s.icon}
+                  <span>{s.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* <hr> ayraç */}
+        <hr className="border-border-default" />
+
+        {/* Boyut — tek satır, slider min 50, max 500, step 10, yanında %{badge.size} göster */}
+        <div className="flex items-center gap-2">
+          <span className="text-[11px] font-medium text-text-secondary shrink-0 w-12">Boyut</span>
+          <input
+            type="range" min={50} max={500} step={10} value={badge.size}
+            onChange={(e) => onUpdate({ size: parseInt(e.target.value) })}
+            className="flex-1 studio-slider"
+          />
+          <span className="text-xs font-semibold text-text-primary min-w-9 text-right">%{badge.size}</span>
+        </div>
+
+        {/* Font — TypographyPicker bileşeni, badge.font değeri */}
+        <TypographyPicker
+          inline
+          title="Font"
+          value={badge.font}
+          onChange={(v) => onUpdate({ font: v })}
+        />
+
+        {/* Gölge — ShadowPicker bileşeni, badge.shadow */}
+        <ShadowPicker
+          title="Gölge"
+          value={badge.shadow}
+          onChange={(v) => onUpdate({ shadow: v })}
+        />
       </div>
     </div>
   );
@@ -433,7 +639,7 @@ let _footerClipboard: FooterClipboard | null = null;
 
 function FooterPanel() {
   const [cellSectionOpen, setCellSectionOpen] = useState(false);
-  const [hasClipboard, setHasClipboard] = useState(_footerClipboard !== null);
+  const [generalSectionOpen, setGeneralSectionOpen] = useState(true);
 
   const selection = useUIStore((s) => s.selection);
   const getActivePages = useCatalogStore((s) => s.getActivePages);
@@ -461,6 +667,15 @@ function FooterPanel() {
   const heightScope: FooterScope = isCustom ? pageNum : 'global';
   const activeFooter = isCustom ? page?.customFooter : globalSettings.footer;
   const heightMm = activeFooter?.heightMm ?? 15;
+
+  // BG, border and radius fallback definitions
+  const rawBgColor = activeFooter?.bgColor ?? { type: 'solid', color: '#ffffff', opacity: 0 };
+  const footerBg: ColorValue = ('c' in rawBgColor)
+    ? { type: 'solid', color: (rawBgColor as any).c, opacity: (rawBgColor as any).o }
+    : rawBgColor as ColorValue;
+
+  const footerBorder = activeFooter?.containerBorder ?? { color: { c: '#e2e8f0', o: 100 }, width: 0 };
+  const footerRadius = activeFooter?.radius ?? { tl: 0, tr: 0, bl: 0, br: 0, linked: true };
 
   // Hücre seçimi
   const selectedCellIds = selection.type === 'footerCell' ? selection.ids : [];
@@ -495,19 +710,6 @@ function FooterPanel() {
   const handleScope = (custom: boolean) => {
     if (isNaN(pageNum)) return;
     setPageFooterMode(pageNum, custom ? 'custom' : 'global');
-  };
-
-  const handleCopy = () => {
-    if (!activeFooter) return;
-    _footerClipboard = { heightMm: activeFooter.heightMm, cells: activeFooter.cells };
-    setHasClipboard(true);
-  };
-
-  const handlePaste = () => {
-    if (!_footerClipboard || isNaN(pageNum)) return;
-    // Sayfa custom moda geçsin (zustand sync), ardından yapıştır
-    if (!isCustom) setPageFooterMode(pageNum, 'custom');
-    updateFooterSettings(pageNum, _footerClipboard);
   };
 
   return (
@@ -545,31 +747,86 @@ function FooterPanel() {
         </div>
       )}
 
-      {/* Yükseklik */}
-      <div className="flex items-center gap-2">
-        <span className="text-[11px] font-medium text-text-secondary w-20">Yükseklik</span>
-        <input
-          type="range" min={5} max={40} value={heightMm}
-          onChange={(e) => updateFooterSettings(heightScope, { heightMm: parseInt(e.target.value) })}
-          className="flex-1 studio-slider"
-        />
-        <input
-          type="number" value={heightMm}
-          onChange={(e) => updateFooterSettings(heightScope, { heightMm: parseInt(e.target.value) || 5 })}
-          className="w-12 text-xs font-normal text-text-primary text-center border border-border-default rounded p-0.5"
-        />
-        <span className="text-[11px] text-text-muted">mm</span>
-      </div>
+      {/* Alt bilgi Akordiyonu */}
+      {!isHidden && (
+        <AccordionItem
+          id="footer-general"
+          title="Alt bilgi"
+          icon={<PanelBottom size={16} />}
+          open={generalSectionOpen}
+          onToggle={() => setGeneralSectionOpen((o) => !o)}
+        >
+          <div className="space-y-3">
+            {/* Yükseklik */}
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-medium text-text-secondary w-20">Yükseklik</span>
+              <input
+                type="range" min={5} max={40} value={heightMm}
+                onChange={(e) => updateFooterSettings(heightScope, { heightMm: parseInt(e.target.value) })}
+                className="flex-1 studio-slider"
+              />
+              <input
+                type="number" value={heightMm}
+                onChange={(e) => updateFooterSettings(heightScope, { heightMm: parseInt(e.target.value) || 5 })}
+                className="w-12 text-xs font-normal text-text-primary text-center border border-border-default rounded p-0.5"
+              />
+              <span className="text-[11px] text-text-muted">mm</span>
+            </div>
 
-      {/* Kopyala / Yapıştır */}
-      <div className="flex gap-2">
-        <Button variant="secondary" size="sm" fullWidth onClick={handleCopy}>
-          Tasarımı Kopyala
-        </Button>
-        <Button variant="secondary" size="sm" fullWidth disabled={!hasClipboard} onClick={handlePaste}>
-          Tasarımı Yapıştır
-        </Button>
-      </div>
+            {/* Zemin (ColorOpacityPicker, activeFooter.bgColor) */}
+            <div className="flex items-center justify-between pt-2 border-t border-border-default">
+              <span className="text-xs font-medium text-text-secondary">Zemin Rengi</span>
+              <ColorOpacityPicker
+                value={footerBg}
+                onChange={(v) => updateFooterSettings(heightScope, { bgColor: v })}
+              />
+            </div>
+
+            {/* Çerçeve Rengi */}
+            <div className="flex items-center justify-between pt-2 border-t border-border-default">
+              <span className="text-xs font-medium text-text-secondary">Dış Kenarlık Rengi</span>
+              <ColorOpacityPicker
+                solidOnly
+                value={{ type: 'solid', color: footerBorder.color.c, opacity: footerBorder.color.o }}
+                onChange={(v) => {
+                  if (v.type !== 'solid') return;
+                  updateFooterSettings(heightScope, {
+                    containerBorder: { ...footerBorder, color: { c: v.color, o: v.opacity } },
+                  });
+                }}
+              />
+            </div>
+
+            {/* Çerçeve Kalınlığı */}
+            <div className="flex items-center gap-2 pt-2 border-t border-border-default">
+              <span className="text-[11px] font-medium text-text-secondary shrink-0 w-20">Dış Kenarlık Kalınlığı</span>
+              <input
+                type="range" min={0} max={10} step={0.5} value={footerBorder.width}
+                onChange={(e) => updateFooterSettings(heightScope, {
+                  containerBorder: { ...footerBorder, width: parseFloat(e.target.value) },
+                })}
+                className="flex-1 studio-slider"
+              />
+              <input
+                type="number" value={footerBorder.width}
+                onChange={(e) => updateFooterSettings(heightScope, {
+                  containerBorder: { ...footerBorder, width: parseFloat(e.target.value) || 0 },
+                })}
+                className="w-12 text-xs font-normal text-text-primary text-center border border-border-default rounded p-0.5"
+              />
+            </div>
+
+            {/* Köşe Yuvarlaklığı */}
+            <div className="pt-2 border-t border-border-default">
+              <BorderRadiusPicker
+                title="Köşe ovalliği"
+                value={footerRadius}
+                onChange={(v) => updateFooterSettings(heightScope, { radius: v })}
+              />
+            </div>
+          </div>
+        </AccordionItem>
+      )}
 
       <div className="border-t border-border-default" />
 
@@ -1173,7 +1430,11 @@ export function CellPanel() {
   const sidebarState = useUIStore((s) => s.sidebarState);
 
   useEffect(() => {
-    if (sidebarState.activeTab) setOpenSection(sidebarState.activeTab);
+    if (sidebarState.activeSubTab) {
+      setOpenSection(sidebarState.activeSubTab);
+    } else if (sidebarState.activeTab) {
+      setOpenSection(sidebarState.activeTab);
+    }
   }, [sidebarState]);
   const pages = useCatalogStore((s) =>
     s.formas.find((f) => f.id === s.activeFormaId)?.pages ?? []
@@ -1450,6 +1711,17 @@ export function CellPanel() {
               onProductNameChange={(v) =>
                 updateSlotCustomSettings({ fonts: { ...cs?.fonts, productName: v } })
               }
+              nameSettings={
+                (cs?.nameSettings ?? globalSettings.nameSettings) as TextElementSettings
+              }
+              onNameSettingsChange={(partial) =>
+                updateSlotCustomSettings({
+                  nameSettings: {
+                    ...(cs?.nameSettings ?? globalSettings.nameSettings),
+                    ...partial,
+                  },
+                })
+              }
             />
           </AccordionItem>
 
@@ -1468,6 +1740,7 @@ export function CellPanel() {
                 priceBorderWidth: cs?.priceBorderWidth ?? globalSettings.priceBorderWidth,
                 priceRadius: (cs?.radiuses?.price ?? globalSettings.radiuses.price) as BorderRadiusData,
                 priceFont: (cs?.fonts?.price ?? globalSettings.fonts.price) as TypographyData,
+                priceSettings: (cs?.priceSettings ?? globalSettings.priceSettings) as TextElementSettings,
               }}
               handlers={{
                 onPositionChange: (val) => updateSlotCustomSettings({ pricePosition: val }),
@@ -1478,6 +1751,13 @@ export function CellPanel() {
                 onPriceBorderWidthChange: (val) => updateSlotCustomSettings({ priceBorderWidth: val }),
                 onPriceRadiusChange: (val) => updateSlotCustomSettings({ radiuses: { ...cs?.radiuses, price: val } }),
                 onPriceFontChange: (val) => updateSlotCustomSettings({ fonts: { ...cs?.fonts, price: val } }),
+                onPriceSettingsChange: (partial) =>
+                  updateSlotCustomSettings({
+                    priceSettings: {
+                      ...(cs?.priceSettings ?? globalSettings.priceSettings),
+                      ...partial,
+                    },
+                  }),
               }}
             />
           </AccordionItem>

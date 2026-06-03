@@ -36,6 +36,7 @@ interface UIState {
   selectedBackgroundPageIds: number[];
   backgroundMerged: boolean;
   mergedPageGroups: number[][];
+  activeBadgeMoveSlotId: string | null;
 
   // Legacy mirrors (kept in sync from `selection`)
   selectedSlotIds: string[];
@@ -81,6 +82,7 @@ interface UIState {
   setSelectedBackgroundPageIds: (ids: number[]) => void;
   setBackgroundMerged: (merged: boolean) => void;
   setMergedPageGroups: (groups: number[][]) => void;
+  setActiveBadgeMoveSlotId: (slotId: string | null) => void;
 }
 
 const initialSidebar: SidebarState = {
@@ -99,6 +101,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   selectedBackgroundPageIds: [],
   backgroundMerged: false,
   mergedPageGroups: [],
+  activeBadgeMoveSlotId: null,
   selectedSlotIds: [],
   selectedPageNumber: null,
   selectedTextElement: null,
@@ -210,6 +213,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   setSelectedBackgroundPageIds: (ids) => set({ selectedBackgroundPageIds: ids }),
   setBackgroundMerged: (merged) => set({ backgroundMerged: merged }),
   setMergedPageGroups: (groups) => set({ mergedPageGroups: groups }),
+  setActiveBadgeMoveSlotId: (slotId) => set({ activeBadgeMoveSlotId: slotId }),
 
   clearSelectionAndSelectPage: (pageNumber) => {
     get().clearSelection();

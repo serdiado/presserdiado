@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pencil } from 'lucide-react';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
-import { hexToRgba } from '../util/style';
+import { hexToRgba, colorValueBackground, colorOpacityToCss, radiusStyle } from '../util/style';
 
 interface Props {
   pageNumber: number;
@@ -24,6 +24,9 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
     if (!isEditing) return;
     const onClickOutside = (e: MouseEvent) => {
       const t = e.target as HTMLElement;
+      if (editingCellId && !t.closest(`#footer-${editingCellId}`) && !t.closest('#contextual-bar')) {
+        setEditingCellId(null);
+      }
       if (t.closest(`[data-footer-page="${pageNumber}"]`)) return;
       if (t.closest('#studio-sidebar')) return;
       if (t.closest('#contextual-bar')) return;
@@ -33,7 +36,7 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
     };
     document.addEventListener('mousedown', onClickOutside);
     return () => document.removeEventListener('mousedown', onClickOutside);
-  }, [isEditing, pageNumber]);
+  }, [isEditing, pageNumber, editingCellId]);
 
   useEffect(() => {
     if (!editingCellId) didFocusRef.current = false;
@@ -49,6 +52,10 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
   const activeFooter = isCustom ? page.customFooter : globalSettings.footer;
   const heightMm = activeFooter?.heightMm ?? globalSettings.footer.heightMm;
   const visible = activeFooter?.cells?.filter((c) => !c.hidden) ?? [];
+
+  const bgColor = activeFooter?.bgColor ?? { type: 'solid', color: '#ffffff', opacity: 0 };
+  const cb = activeFooter?.containerBorder ?? { color: { c: '#e2e8f0', o: 100 }, width: 0 };
+  const radius = activeFooter?.radius ?? { tl: 0, tr: 0, bl: 0, br: 0, linked: true };
 
   const selectedFooterCellIds =
     selection.type === 'footerCell' && selection.parentId === `page-${pageNumber}`
@@ -147,8 +154,14 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div
-        className="w-full h-full grid relative overflow-hidden box-border bg-surface-panel"
-        style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gridTemplateRows: '1fr' }}
+        className="w-full h-full grid relative overflow-hidden box-border"
+        style={{
+          gridTemplateColumns: 'repeat(5, minmax(0, 1fr))',
+          gridTemplateRows: '1fr',
+          ...colorValueBackground(bgColor),
+          borderRadius: radiusStyle(radius),
+          border: cb.width > 0 ? `${cb.width}px solid ${colorOpacityToCss(cb.color)}` : undefined,
+        }}
         onClick={!isEditing ? selectFooterContainer : undefined}
       >
         {visible.map((cell) => {
@@ -178,6 +191,9 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
                 if (!isEditing) {
                   selectFooterContainer(e);
                   return;
+                }
+                if (editingCellId !== null && editingCellId !== cell.id) {
+                  setEditingCellId(null);
                 }
                 if (!isCellEditing) {
                   toggleElementSelection(

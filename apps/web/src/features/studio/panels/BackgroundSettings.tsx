@@ -35,6 +35,7 @@ export function BackgroundSettings() {
   const activeFormaId = useCatalogStore((s) => s.activeFormaId);
   const updatePagesBackground = useCatalogStore((s) => s.updatePagesBackground);
   const applyBackgroundGlobally = useCatalogStore((s) => s.applyBackgroundGlobally);
+  const copiedBackground = useCatalogStore((s) => s.copiedBackground);
   const selectedPageIds = useLayerStore((s) => s.selectedPageIds);
 
   const activePages = formas.find((f) => f.id === activeFormaId)?.pages ?? [];
@@ -74,7 +75,6 @@ export function BackgroundSettings() {
   };
 
   // ─── Zemin Türü local state ───────────────────────────────────────
-  const [copiedBackground, setCopiedBackground] = useState<PageBackground | null>(null);
   const [applyReport, setApplyReport] = useState<
     { formaId: number; success: boolean; reason?: string }[] | null
   >(null);
@@ -336,40 +336,6 @@ export function BackgroundSettings() {
               <span className="text-[11px] font-normal text-text-muted leading-relaxed italic">
                 Birleştirme özelliği geliştirme aşamasında.
               </span>
-            </div>
-
-            {/* Satır 2 — Kopyala / Yapıştır */}
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => {
-                  const page = activePages.find(
-                    (p) => p.pageNumber === selectedBackgroundPageIds[0],
-                  );
-                  if (page?.background) setCopiedBackground(page.background);
-                }}
-                disabled={noPages}
-                className={`py-2 text-xs font-medium rounded-lg border transition-colors ${
-                  noPages
-                    ? 'border-border-default bg-white text-slate-300 cursor-not-allowed opacity-40'
-                    : 'border-border-default bg-white hover:bg-surface-subtle text-text-secondary'
-                }`}
-              >
-                Zemini Kopyala
-              </button>
-              <button
-                onClick={() => {
-                  if (copiedBackground)
-                    updatePagesBackground(selectedBackgroundPageIds, copiedBackground);
-                }}
-                disabled={copiedBackground === null || noPages}
-                className={`py-2 text-xs font-medium rounded-lg border transition-colors ${
-                  copiedBackground === null || noPages
-                    ? 'border-border-default bg-white text-slate-300 cursor-not-allowed opacity-40'
-                    : 'border-border-default bg-white hover:bg-surface-subtle text-text-secondary'
-                }`}
-              >
-                Zemini Yapıştır
-              </button>
             </div>
 
             {/* Satır 3 — Tüm Sayfalara Uygula */}

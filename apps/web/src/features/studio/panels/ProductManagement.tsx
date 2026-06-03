@@ -3,8 +3,10 @@
 
 import { useMemo, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
+import { Settings2 } from 'lucide-react';
 import type { ProductInfo } from '@matbaapro/shared';
 import { useCatalogStore } from '@/stores/studio';
+import { createProductDragImage } from '../utils/dragImage';
 import { uploadImage } from '@/lib/upload';
 import { ProductInfoSettings } from './ProductInfoSettings';
 import { Button } from '@/components/ui';
@@ -148,38 +150,6 @@ export function ProductManagement() {
           Örnek Excel indir
         </Button>
       </div>
-
-      <details open className="bg-surface-panel rounded-radius-lg border border-border-default shadow-drop-sm overflow-hidden">
-        <summary className="text-heading-md text-text-primary cursor-pointer p-3 flex items-center justify-between bg-surface-subtle/60">
-          <span className="text-heading-md text-text-primary">Ürün bilgisi</span>
-          <span className="text-body-xs text-text-muted">Seçili ürün verisini düzenle</span>
-        </summary>
-        <div className="p-3 border-t border-border-default">
-          <ProductInfoSettings />
-        </div>
-      </details>
-
-      <details className="bg-surface-panel rounded-radius-md border border-border-default">
-        <summary className="text-heading-md text-text-primary cursor-pointer p-2.5 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-heading-md text-text-primary">Excel sütunları</span>
-            <svg className="w-3.5 h-3.5 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <svg className="w-4 h-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </summary>
-        <div className="text-body-xs text-text-secondary p-2.5 pt-0 border-t border-border-default mt-1 space-y-1">
-          <div><strong>POS</strong> / SIRA / INDEX → otomatik yerleştirme sırası</div>
-          <div><strong>ARTNR</strong> / KOD / SKU → ürün kodu</div>
-          <div><strong>BEZEICHNUNG</strong> / URUN_ADI / AD → ürün adı</div>
-          <div><strong>VK_NETTO</strong> / FIYAT / PRICE → satış fiyatı</div>
-          <div><strong>KATEGORI</strong> / ARTGRP → kategori (gruplama)</div>
-          <div><strong>RESIM</strong> / IMAGE → görsel URL'si</div>
-        </div>
-      </details>
 
       {/* 1. OTOMATİK DİZİLİM */}
       <div className="bg-surface-panel rounded-radius-lg border border-border-default p-4 shadow-drop-sm">
@@ -391,8 +361,14 @@ export function ProductManagement() {
                     key={`${p.id ?? p.sku}-${i}`}
                     draggable={!placed}
                     onDragStart={(e) => {
-                      if (!placed)
+                      if (!placed) {
                         e.dataTransfer.setData('newProductFromSidebar', JSON.stringify(p));
+                        const dragImg = createProductDragImage({
+                          name: p.name ?? 'İsimsiz',
+                          imageUrl: p.image,
+                        });
+                        e.dataTransfer.setDragImage(dragImg, 20, 20);
+                      }
                     }}
                     className={`flex items-center gap-3 bg-surface-panel border border-border-default rounded-radius-lg p-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-border-strong hover:shadow-drop-sm transition-all duration-200 group ${
                       placed ? 'cursor-not-allowed opacity-60' : 'cursor-grab active:cursor-grabbing'
@@ -459,6 +435,37 @@ export function ProductManagement() {
           </div>
         )}
       </div>
+
+      {/* GELİŞMİŞ AYARLAR (BİRLEŞTİRİLMİŞ AKORDİYON) */}
+      <details className="bg-surface-panel rounded-radius-lg border border-border-default shadow-drop-sm overflow-hidden">
+        <summary className="text-heading-md text-text-primary cursor-pointer p-3 flex items-center justify-between bg-surface-subtle/60 select-none">
+          <div className="flex items-center gap-2">
+            <Settings2 className="w-4 h-4 text-text-muted" />
+            <span className="text-heading-md text-text-primary font-medium">Gelişmiş ayarlar</span>
+          </div>
+          <svg className="w-4 h-4 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </summary>
+        <div className="p-3 border-t border-border-default space-y-4">
+          <div>
+            <h5 className="text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">Ürün Bilgisi</h5>
+            <ProductInfoSettings />
+          </div>
+          <hr className="border-border-default" />
+          <div>
+            <h5 className="text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">Excel Sütunları</h5>
+            <div className="text-body-xs text-text-secondary space-y-1 p-2 bg-surface-subtle/30 rounded border border-border-default">
+              <div><strong>POS</strong> / SIRA / INDEX → otomatik yerleştirme sırası</div>
+              <div><strong>ARTNR</strong> / KOD / SKU → ürün kodu</div>
+              <div><strong>BEZEICHNUNG</strong> / URUN_ADI / AD → ürün adı</div>
+              <div><strong>VK_NETTO</strong> / FIYAT / PRICE → satış fiyatı</div>
+              <div><strong>KATEGORI</strong> / ARTGRP → kategori (gruplama)</div>
+              <div><strong>RESIM</strong> / IMAGE → görsel URL'si</div>
+            </div>
+          </div>
+        </div>
+      </details>
 
       <AddProductModal
         isOpen={isAddModalOpen}

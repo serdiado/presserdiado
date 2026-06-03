@@ -4,6 +4,7 @@
 
 import { useMemo, useState } from 'react';
 import { useCatalogStore } from '@/stores/studio';
+import { Template1 } from '@matbaapro/shared';
 import {
   calculatePrice,
   formatCurrency,
@@ -20,7 +21,7 @@ function buildDefaultValues(): Record<string, string> {
 }
 
 export function PriceCalculator() {
-  const template = useCatalogStore((s) => s.activeTemplate);
+  const template = useCatalogStore((s) => s.activeTemplate) || Template1;
 
   const [open, setOpen] = useState(false);
   const [quantity, setQuantity] = useState<number>(() => {

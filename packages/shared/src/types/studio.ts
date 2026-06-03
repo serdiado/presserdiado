@@ -33,6 +33,25 @@ export interface StudioFooterCell {
 export interface FooterSettings {
   heightMm: number;
   cells: StudioFooterCell[];
+  bgColor?: ColorValue;
+  containerBorder?: { color: ColorOpacity; width: number };
+  radius?: BorderRadiusData;
+}
+
+// === Text Element Settings ===
+
+export interface TextElementSettings {
+  isFreePosition: boolean;
+  posX: number; // 0-100 yüzde
+  posY: number; // 0-100 yüzde
+  bgColor?: string;
+  bgOpacity?: number;
+  borderColor?: string;
+  borderOpacity?: number;
+  borderWidth?: number;
+  borderRadius?: number;
+  width?: number;
+  height?: number;
 }
 
 // === Badge ===
@@ -54,10 +73,13 @@ export interface BadgeConfig {
   active: boolean;
   text: string;
   bgColor: string;
+  bgOpacity?: number;
   textColor: string;
+  textOpacity?: number;
   position: BadgePosition;
   shape: BadgeShape;
   borderColor: string;
+  borderOpacity?: number;
   borderWidth: number;
   font: TypographyData;
   shadow: ShadowData;
@@ -82,6 +104,8 @@ export interface CatalogSettings {
   imagePosY: number;
   imageEditMode: boolean;
   badge: BadgeConfig;
+  nameSettings: TextElementSettings;
+  priceSettings: TextElementSettings;
   colors: {
     cellBg: ColorValue;
     cellBorder: ColorOpacity;

@@ -14,8 +14,9 @@ import type {
   StudioForma,
   StudioSlot,
   TempPoolProduct,
+  FooterSettings,
 } from '@matbaapro/shared';
-import { availableTemplates, Template1 } from '@matbaapro/shared';
+import { availableTemplates, Template1, STUDIO_STORE_NAME, STUDIO_STORE_VERSION } from '@matbaapro/shared';
 import { recalculateLayout } from '@matbaapro/grid-engine';
 import {
   buildFormasForTemplate,
@@ -42,6 +43,8 @@ interface CatalogState {
   tempProductPool: TempPoolProduct[];
   globalSettings: CatalogSettings;
   copiedSlotSettings: DeepPartial<CatalogSettings> | null;
+  copiedFooterSettings: FooterSettings | null;
+  copiedBackground: CatalogPage['background'] | null;
 }
 
 interface CatalogActions {
@@ -75,8 +78,12 @@ interface CatalogActions {
   setPageFooterMode: (pageNumber: number, mode: 'global' | 'custom' | 'hidden') => void;
   updateFooterSettings: (
     scope: FooterScope,
-    updates: Partial<{ heightMm: number; cells: StudioFooterCell[] }>,
+    updates: Partial<FooterSettings>,
   ) => void;
+  copyFooterSettings: () => void;
+  pasteFooterSettings: (pageNumber: number) => void;
+  copyBackground: (pageNumber: number) => void;
+  pasteBackground: (pageNumber: number) => void;
   updateFooterCellStore: (
     scope: FooterScope,
     cellId: string,
@@ -196,6 +203,8 @@ export const useCatalogStore = create<Store>()(
       tempProductPool: [],
       globalSettings: clone(initialGlobalSettings),
       copiedSlotSettings: null,
+      copiedFooterSettings: null,
+      copiedBackground: null,
 
       // === Template / forma ===
       setActiveTemplate: (templateId) => {
@@ -205,13 +214,22 @@ export const useCatalogStore = create<Store>()(
       },
       applyTemplate: (tmpl) => {
         const formas = buildFormasForTemplate(tmpl);
+        const recalculated = recalculateLayout(formas, initialGlobalSettings.defaultGrid);
         set({
           activeTemplate: tmpl,
-          formas: recalculateLayout(formas, initialGlobalSettings.defaultGrid),
+          formas: recalculated,
           activeFormaId: 1,
           activeTab: 'outer',
         });
         useHistoryStore.getState().clearHistory();
+
+        // Şablon seçildiğinde varsayılan olarak kanvasın 1 numaralı ürün hücresini seçelim
+        const activeForma = recalculated.find((f) => f.id === 1);
+        const firstPage = activeForma?.pages[0];
+        const firstSlot = firstPage?.slots[0];
+        if (firstSlot) {
+          useUIStore.getState().toggleSlotSelection(firstSlot.id, false);
+        }
       },
       setActiveTab: (tab) =>
         set({ activeTab: tab, activeFormaId: tab === 'inner' ? 2 : 1 }),
@@ -690,6 +708,37 @@ export const useCatalogStore = create<Store>()(
           }
         }
         set({ copiedSlotSettings: toCopy ? clone(toCopy) : null });
+      },
+      copyFooterSettings: () => {
+        const { getActivePages, globalSettings } = get();
+        const { selection } = useUIStore.getState();
+        if (selection.type !== 'footerCell' || !selection.parentId) return;
+        const pageNum = parseInt(selection.parentId.replace('page-', ''), 10);
+        const page = getActivePages().find((p) => p.pageNumber === pageNum);
+        if (!page) return;
+        const activeFooter = page.footerMode === 'custom' ? page.customFooter : globalSettings.footer;
+        set({ copiedFooterSettings: activeFooter ? clone(activeFooter) : null });
+      },
+      pasteFooterSettings: (pageNumber) => {
+        const { copiedFooterSettings } = get();
+        if (!copiedFooterSettings || isNaN(pageNumber)) return;
+        useHistoryStore.getState().saveState(clone(get().getActivePages()));
+        get().setPageFooterMode(pageNumber, 'custom');
+        get().updateFooterSettings(pageNumber, copiedFooterSettings);
+      },
+      copyBackground: (pageNumber) => {
+        const { getActivePages } = get();
+        const page = getActivePages().find((p) => p.pageNumber === pageNumber);
+        if (page?.background) {
+          set({ copiedBackground: clone(page.background) });
+        }
+      },
+      pasteBackground: (pageNumber) => {
+        const { copiedBackground } = get();
+        if (copiedBackground) {
+          useHistoryStore.getState().saveState(clone(get().getActivePages()));
+          get().updatePagesBackground([pageNumber], copiedBackground);
+        }
       },
       pasteSlotSettings: () => {
         const { getActivePages, setActivePages, copiedSlotSettings } = get();
@@ -1233,7 +1282,64 @@ export const useCatalogStore = create<Store>()(
       redo: () => useHistoryStore.getState().redo(),
     }),
     {
-      name: 'matbaapro-studio-v1',
+      name: STUDIO_STORE_NAME,
+      version: STUDIO_STORE_VERSION,
+      migrate: (persistedState: any, version: number) => {
+        if (version < 3) {
+          // Sıfırlamak için undefined döndürüyoruz, Zustand varsayılan state'i yükler.
+          return undefined as any;
+        }
+        if (version < 4) {
+          if (persistedState?.globalSettings) {
+            if (!persistedState.globalSettings.nameSettings) {
+              persistedState.globalSettings.nameSettings = {};
+            }
+            persistedState.globalSettings.nameSettings = {
+              bgColor: '#ffffff',
+              bgOpacity: 0,
+              borderColor: '#e2e8f0',
+              borderOpacity: 100,
+              borderWidth: 0,
+              borderRadius: 0,
+              ...persistedState.globalSettings.nameSettings,
+            };
+          }
+        }
+        if (version < 5) {
+          if (persistedState?.globalSettings) {
+            if (!persistedState.globalSettings.nameSettings) {
+              persistedState.globalSettings.nameSettings = {};
+            }
+            persistedState.globalSettings.nameSettings = {
+              width: undefined,
+              height: undefined,
+              ...persistedState.globalSettings.nameSettings,
+            };
+          }
+        }
+        if (version < 6) {
+          if (persistedState?.globalSettings) {
+            if (!persistedState.globalSettings.priceSettings) {
+              persistedState.globalSettings.priceSettings = {};
+            }
+            persistedState.globalSettings.priceSettings = {
+              isFreePosition: false,
+              posX: 50,
+              posY: 50,
+              bgColor: '#ffffff',
+              bgOpacity: 0,
+              borderColor: '#e2e8f0',
+              borderOpacity: 100,
+              borderWidth: 0,
+              borderRadius: 0,
+              width: undefined,
+              height: undefined,
+              ...persistedState.globalSettings.priceSettings,
+            };
+          }
+        }
+        return persistedState;
+      },
       merge: (persisted, current) => {
         const incoming = (persisted ?? {}) as Partial<CatalogState>;
         const base = current as CatalogState;
@@ -1244,6 +1350,12 @@ export const useCatalogStore = create<Store>()(
         ) as unknown as CatalogSettings;
         if (!mergedGlobal.defaultGrid) mergedGlobal.defaultGrid = { rows: 4, cols: 4 };
         if (!mergedGlobal.footer) mergedGlobal.footer = initialGlobalSettings.footer;
+        if (!mergedGlobal.nameSettings) {
+          mergedGlobal.nameSettings = { isFreePosition: false, posX: 50, posY: 50 };
+        }
+        if (!mergedGlobal.priceSettings) {
+          mergedGlobal.priceSettings = { isFreePosition: false, posX: 50, posY: 50 };
+        }
 
         const normalizedGlobal: CatalogSettings = migrateSettingsColors({
           ...mergedGlobal,
@@ -1413,9 +1525,18 @@ function normalizeCatalogPage(page: CatalogPage): CatalogPage {
       next = { ...next, moduleData: migrateModuleData(s.moduleData) };
     }
     if (s.customSettings && typeof s.customSettings === 'object') {
+      const cs = s.customSettings as Record<string, any>;
+      if (cs.badge) {
+        cs.badge = {
+          bgOpacity: 100,
+          borderOpacity: 100,
+          textOpacity: 100,
+          ...cs.badge,
+        };
+      }
       next = {
         ...next,
-        customSettings: migrateSettingsColors(s.customSettings as { colors?: Record<string, unknown> }) as typeof s.customSettings,
+        customSettings: migrateSettingsColors(cs) as typeof s.customSettings,
       };
     }
     return next;

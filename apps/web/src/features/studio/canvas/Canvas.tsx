@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ZOOM_MAX, ZOOM_MIN } from '@matbaapro/shared';
+import { ZOOM_MAX, ZOOM_MIN, Template1 } from '@matbaapro/shared';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import { Page } from './Page';
 import { LayerStack } from './LayerStack';
@@ -11,14 +11,14 @@ const WHEEL_FACTOR_OUT = 0.9;
 export function Canvas() {
   const formas = useCatalogStore((s) => s.formas);
   const activeFormaId = useCatalogStore((s) => s.activeFormaId);
-  const template = useCatalogStore((s) => s.activeTemplate);
+  const template = useCatalogStore((s) => s.activeTemplate) || Template1;
   const clearSelection = useUIStore((s) => s.clearSelection);
   const disableAllImageEditModes = useCatalogStore((s) => s.disableAllImageEditModes);
   const userScale = useUIStore((s) => s.userScale);
   const pan = useUIStore((s) => s.pan);
   const setUserZoom = useUIStore((s) => s.setUserZoom);
 
-  const activeForma = formas.find((f) => f.id === activeFormaId);
+  const activeForma = formas.find((f) => f.id === activeFormaId) || formas[0];
   const pages = activeForma?.pages ?? [];
 
   const [fitScale, setFitScale] = useState(1);
@@ -177,20 +177,34 @@ export function Canvas() {
           height: `${physicalHeight}mm`,
           padding: `${bleedMm}mm`,
           backgroundColor: '#ffffff',
-          outline: '1px dashed #ef4444',
-          outlineOffset: '-1px',
           transform,
           transition: isPanning ? 'none' : 'transform 80ms ease-out',
           willChange: 'transform',
           pointerEvents: spaceDown ? 'none' : 'auto',
         }}
       >
+        <div
+          data-hide-on-export="true"
+          className="pointer-events-none absolute inset-0 z-50"
+          style={{
+            border: '1px dashed #ef4444',
+            boxSizing: 'border-box',
+          }}
+        />
+
         <LayerStack forma={activeForma} />
 
         <div
-          className="relative z-10 flex h-full w-full flex-row items-stretch bg-transparent"
-          style={{ outline: '1px solid #22c55e' }}
+          className="relative z-10 flex h-full w-full flex-row items-stretch bg-transparent overflow-visible"
         >
+          <div
+            data-hide-on-export="true"
+            className="pointer-events-none absolute inset-0 z-50"
+            style={{
+              border: '1px solid #22c55e',
+              boxSizing: 'border-box',
+            }}
+          />
           <div
             data-hide-on-export="true"
             className="pointer-events-none absolute z-50"
@@ -203,8 +217,13 @@ export function Canvas() {
               boxSizing: 'border-box',
             }}
           />
-          {order.map((n) => (
-            <Page key={n} pageNumber={n} />
+          {order.map((n, idx) => (
+            <Page
+              key={n}
+              pageNumber={n}
+              isFirst={idx === 0}
+              isLast={idx === order.length - 1}
+            />
           ))}
         </div>
       </div>

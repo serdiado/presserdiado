@@ -9,7 +9,7 @@ interface Props {
 
 const inputCls = 'w-16 text-center text-sm font-medium border border-border-default rounded-md p-2 outline-none focus:border-border-strong';
 
-export function BorderRadiusPicker({ title = 'Köşe Ovalliği', value, onChange }: Props) {
+export function BorderRadiusPicker({ title = 'Köşe ovalliği', value, onChange }: Props) {
   const setLinked = (v: number) => onChange({ tl: v, tr: v, bl: v, br: v, linked: true });
   const setCorner = (k: keyof BorderRadiusData, v: number) =>
     onChange({ ...value, [k]: v, linked: false });

@@ -23,6 +23,7 @@ export default function PrintView() {
   );
 
   const [ready, setReady] = useState(false);
+  const [imagesReady, setImagesReady] = useState(false);
 
   useEffect(() => {
     const injected = (window as Window & { __INJECTED_LAYER_STATE__?: { layers: unknown[] } })
@@ -33,9 +34,27 @@ export default function PrintView() {
     if (formaId) {
       setActiveFormaId(Number(formaId));
       // Wait a tick for store hydration + ResizeObserver settling.
-      setTimeout(() => setReady(true), 1500);
+      setTimeout(() => setReady(true), 100);
     }
   }, [formaId, setActiveFormaId]);
+
+  useEffect(() => {
+    if (!ready) return;
+
+    const checkImages = async () => {
+      const imgs = Array.from(document.querySelectorAll('img'));
+      await Promise.all(
+        imgs.map((img) => {
+          if (img.complete) return Promise.resolve();
+          return img.decode().catch(() => {});
+        }),
+      );
+      setImagesReady(true);
+    };
+
+    const timer = setTimeout(checkImages, 50);
+    return () => clearTimeout(timer);
+  }, [ready]);
 
   const activeForma = formas.find((f) => f.id === Number(formaId));
 
@@ -104,12 +123,17 @@ export default function PrintView() {
       >
         <LayerStack forma={activeForma} />
         <div className="relative z-10 flex h-full w-full flex-row items-stretch bg-transparent m-0 p-0">
-          {order.map((n) => (
-            <Page key={n} pageNumber={n} />
+          {order.map((n, idx) => (
+            <Page
+              key={n}
+              pageNumber={n}
+              isFirst={idx === 0}
+              isLast={idx === order.length - 1}
+            />
           ))}
         </div>
       </div>
-      <div id="print-canvas-ready" style={{ display: 'none' }} />
+      {imagesReady && <div id="print-canvas-ready" style={{ display: 'none' }} />}
     </div>
   );
 }

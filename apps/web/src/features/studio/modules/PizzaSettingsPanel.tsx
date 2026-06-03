@@ -131,14 +131,14 @@ export function PizzaSettingsPanel() {
 
       <div className="bg-white p-2 rounded border border-slate-200 shadow-sm">
         <BorderRadiusPicker
-          title="Kapsayıcı Köşesi"
+          title="Köşe ovalliği"
           value={m.radiuses.container}
           onChange={(val) => patch({ radiuses: { ...m.radiuses, container: val } })}
         />
       </div>
       <div className="bg-white p-2 rounded border border-slate-200 shadow-sm">
         <BorderRadiusPicker
-          title="Tablo Köşesi"
+          title="Köşe ovalliği"
           value={m.radiuses.table}
           onChange={(val) => patch({ radiuses: { ...m.radiuses, table: val } })}
         />

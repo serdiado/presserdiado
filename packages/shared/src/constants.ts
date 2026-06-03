@@ -21,3 +21,6 @@ export const THUMBNAIL_WIDTH = 400;
 export const PASSWORD_MIN_LENGTH = 8;
 export const ACCESS_TOKEN_EXPIRY = '15m';
 export const REFRESH_TOKEN_EXPIRY = '7d';
+
+export const STUDIO_STORE_VERSION = 6;
+export const STUDIO_STORE_NAME = 'matbaapro-studio-v1';

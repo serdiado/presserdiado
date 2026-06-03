@@ -4,6 +4,7 @@
 
 import puppeteer, { type Browser } from 'puppeteer';
 import { PDFDocument } from 'pdf-lib';
+import { STUDIO_STORE_NAME, STUDIO_STORE_VERSION } from '@matbaapro/shared';
 import { config } from '../../config.js';
 
 export type ExportFormat = 'pdf' | 'png' | 'jpeg';
@@ -83,12 +84,12 @@ async function gotoPrintView(
   // are available there even though TypeScript types don't include DOM lib here.
   await page.evaluateOnNewDocument(
     /* eslint-disable @typescript-eslint/no-explicit-any */
-    function inject(catalog: any, layers: any) {
+    function inject(catalog: any, layers: any, storeName: string, storeVersion: number) {
       const w = globalThis as any;
       try {
         w.localStorage.setItem(
-          'matbaapro-studio-v1',
-          JSON.stringify({ state: catalog, version: 0 }),
+          storeName,
+          JSON.stringify({ state: catalog, version: storeVersion }),
         );
       } catch {
         /* ignore */
@@ -97,6 +98,8 @@ async function gotoPrintView(
     },
     req.catalogState as unknown,
     req.layerState as unknown,
+    STUDIO_STORE_NAME,
+    STUDIO_STORE_VERSION,
   );
 
   const url = `${config.web.baseUrl}/print-view?formaId=${formaId}`;

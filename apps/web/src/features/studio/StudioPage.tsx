@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { TopBar } from './topbar/TopBar';
 import { ContextualBar } from './contextual/ContextualBar';
 import { Canvas } from './canvas/Canvas';
 import { Sidebar } from './sidebar/Sidebar';
-import { TempPoolBar } from './temppool/TempPoolBar';
 import { PriceCalculator } from './pricing/PriceCalculator';
-import { useUIStore } from '@/stores/studio';
+import { useCatalogStore, useUIStore, buildFormasForTemplate } from '@/stores/studio';
+import { Template1 } from '@matbaapro/shared';
 import NewStudioWizard from '../wizard/NewStudioWizard';
 
 export default function StudioPage() {
@@ -15,21 +15,50 @@ export default function StudioPage() {
   const selection = useUIStore((s) => s.selection);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
+  useEffect(() => {
+    // Guard: activeFormaId veya formas geçersiz/boşsa kurtaralım
+    const state = useCatalogStore.getState();
+    let currentFormas = state.formas;
+    
+    if (!currentFormas || currentFormas.length === 0) {
+      const defaultFormas = buildFormasForTemplate(Template1);
+      useCatalogStore.setState({
+        formas: defaultFormas,
+        activeFormaId: 1,
+      });
+      currentFormas = defaultFormas;
+    }
+    
+    const activeFormaId = useCatalogStore.getState().activeFormaId;
+    const hasActiveForma = currentFormas.some((f) => f.id === activeFormaId);
+    if (!hasActiveForma && currentFormas.length > 0) {
+      useCatalogStore.setState({ activeFormaId: currentFormas[0].id });
+    }
+
+    // Sayfa ilk açıldığında ve hiçbir şey seçilmemişse varsayılan olarak kanvasın 1 numaralı ürün hücresini seçelim
+    const activePages = useCatalogStore.getState().getActivePages();
+    if (activePages.length > 0) {
+      const firstPage = activePages[0];
+      const firstSlot = firstPage.slots[0];
+      if (firstSlot) {
+        useUIStore.getState().toggleSlotSelection(firstSlot.id, false);
+      }
+    }
+  }, []);
+
   return (
     <main className="flex flex-col h-screen w-screen overflow-hidden bg-slate-300">
       <TopBar />
 
       <div className="flex-1 flex flex-row min-h-0">
-        <div className="pt-4 pb-4 h-full shrink-0 flex relative z-1000">
-          <div className="rounded-r-xl shadow-xl h-full flex flex-col relative overflow-hidden">
-            <TempPoolBar />
-          </div>
-        </div>
+        <div className="bg-surface-panel border-r border-border-default h-full w-12 shrink-0 flex flex-col" />
 
         <div className="flex-1 flex flex-col min-w-0 min-h-0 relative items-center">
-          <div className={`inline-flex justify-center bg-surface-panel shadow-drop-md rounded-b-lg border-b border-x border-border-default overflow-visible shrink-0 z-50 mb-2 transition-all duration-150 ${selection.type === 'none' ? 'invisible opacity-0' : 'visible opacity-100'}`}>
-            <ContextualBar />
-          </div>
+          {selection.type !== 'none' && (
+            <div className="inline-flex justify-center bg-surface-panel shadow-drop-md rounded-b-lg border-b border-x border-border-default overflow-visible shrink-0 z-50 mb-2 transition-all duration-150 visible opacity-100">
+              <ContextualBar />
+            </div>
+          )}
           <div className="flex-1 w-full relative min-h-0">
             <Canvas />
           </div>
