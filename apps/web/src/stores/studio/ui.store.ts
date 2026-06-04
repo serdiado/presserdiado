@@ -37,6 +37,8 @@ interface UIState {
   backgroundMerged: boolean;
   mergedPageGroups: number[][];
   activeBadgeMoveSlotId: string | null;
+  isSidebarOpen: boolean;
+  activeFlyout: string | null;
 
   // Legacy mirrors (kept in sync from `selection`)
   selectedSlotIds: string[];
@@ -83,6 +85,8 @@ interface UIState {
   setBackgroundMerged: (merged: boolean) => void;
   setMergedPageGroups: (groups: number[][]) => void;
   setActiveBadgeMoveSlotId: (slotId: string | null) => void;
+  setSidebarOpen: (open: boolean) => void;
+  setActiveFlyout: (id: string | null) => void;
 }
 
 const initialSidebar: SidebarState = {
@@ -102,6 +106,8 @@ export const useUIStore = create<UIState>((set, get) => ({
   backgroundMerged: false,
   mergedPageGroups: [],
   activeBadgeMoveSlotId: null,
+  isSidebarOpen: true,
+  activeFlyout: null,
   selectedSlotIds: [],
   selectedPageNumber: null,
   selectedTextElement: null,
@@ -204,7 +210,10 @@ export const useUIStore = create<UIState>((set, get) => ({
   },
 
   setSidebarState: (panel, tab = null, subTab = null) =>
-    set({ sidebarState: { activePanel: panel, activeTab: tab, activeSubTab: subTab } }),
+    set((state) => ({
+      sidebarState: { activePanel: panel, activeTab: tab, activeSubTab: subTab },
+      isSidebarOpen: panel !== null ? true : state.isSidebarOpen,
+    })),
 
   setContextualBarFormaId: (id) => set({ contextualBarFormaId: id }),
   setContextualBarSelectedPages: (pages) => set({ contextualBarSelectedPages: pages }),
@@ -214,6 +223,8 @@ export const useUIStore = create<UIState>((set, get) => ({
   setBackgroundMerged: (merged) => set({ backgroundMerged: merged }),
   setMergedPageGroups: (groups) => set({ mergedPageGroups: groups }),
   setActiveBadgeMoveSlotId: (slotId) => set({ activeBadgeMoveSlotId: slotId }),
+  setSidebarOpen: (open) => set({ isSidebarOpen: open }),
+  setActiveFlyout: (id) => set({ activeFlyout: id }),
 
   clearSelectionAndSelectPage: (pageNumber) => {
     get().clearSelection();

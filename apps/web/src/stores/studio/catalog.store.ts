@@ -51,6 +51,7 @@ interface CatalogActions {
   // Template / forma
   setActiveTemplate: (templateId: string) => void;
   applyTemplate: (template: BrochureTemplate) => void;
+  startFreshCatalog: (template: BrochureTemplate) => void;
   setActiveTab: (tab: 'outer' | 'inner') => void;
   setActiveFormaId: (id: number) => void;
   setFormas: (formas: StudioForma[]) => void;
@@ -213,6 +214,49 @@ export const useCatalogStore = create<Store>()(
         get().applyTemplate(tmpl);
       },
       applyTemplate: (tmpl) => {
+        const { formas: currentFormas } = get();
+
+        // Mevcut arka plan ayarlarını sakla — forma id → pageNumber → background
+        const savedBackgrounds = new Map<number, Map<number, CatalogPage['background']>>();
+        currentFormas.forEach((f) => {
+          const pageMap = new Map<number, CatalogPage['background']>();
+          f.pages.forEach((p) => {
+            if (p.background) pageMap.set(p.pageNumber, p.background);
+          });
+          if (pageMap.size > 0) savedBackgrounds.set(f.id, pageMap);
+        });
+
+        const newFormas = buildFormasForTemplate(tmpl);
+        const recalculated = recalculateLayout(newFormas, initialGlobalSettings.defaultGrid);
+
+        // Arka planları yeni formaslara aktar
+        const formasWithBackgrounds = recalculated.map((f) => {
+          const pageMap = savedBackgrounds.get(f.id);
+          if (!pageMap) return f;
+          return {
+            ...f,
+            pages: f.pages.map((p) => ({
+              ...p,
+              background: pageMap.get(p.pageNumber) ?? p.background,
+            })),
+          };
+        });
+
+        set({
+          activeTemplate: tmpl,
+          formas: formasWithBackgrounds,
+          activeFormaId: 1,
+          activeTab: 'outer',
+          // globalSettings, productPool, masterProductPool, tempProductPool'a DOKUNMA
+        });
+        useHistoryStore.getState().clearHistory();
+
+        const firstSlot = formasWithBackgrounds.find((f) => f.id === 1)?.pages[0]?.slots[0];
+        if (firstSlot) {
+          useUIStore.getState().toggleSlotSelection(firstSlot.id, false);
+        }
+      },
+      startFreshCatalog: (tmpl) => {
         const formas = buildFormasForTemplate(tmpl);
         const recalculated = recalculateLayout(formas, initialGlobalSettings.defaultGrid);
         set({
@@ -220,13 +264,16 @@ export const useCatalogStore = create<Store>()(
           formas: recalculated,
           activeFormaId: 1,
           activeTab: 'outer',
+          globalSettings: clone(initialGlobalSettings),
+          productPool: [],
+          masterProductPool: [],
+          tempProductPool: [],
+          copiedSlotSettings: null,
+          copiedFooterSettings: null,
+          copiedBackground: null,
         });
         useHistoryStore.getState().clearHistory();
-
-        // Şablon seçildiğinde varsayılan olarak kanvasın 1 numaralı ürün hücresini seçelim
-        const activeForma = recalculated.find((f) => f.id === 1);
-        const firstPage = activeForma?.pages[0];
-        const firstSlot = firstPage?.slots[0];
+        const firstSlot = recalculated.find((f) => f.id === 1)?.pages[0]?.slots[0];
         if (firstSlot) {
           useUIStore.getState().toggleSlotSelection(firstSlot.id, false);
         }

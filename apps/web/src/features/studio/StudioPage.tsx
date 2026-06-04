@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { TopBar } from './topbar/TopBar';
 import { ContextualBar } from './contextual/ContextualBar';
 import { Canvas } from './canvas/Canvas';
 import { Sidebar } from './sidebar/Sidebar';
+import { IconSidebar } from './left-sidebar/IconSidebar';
+import { FlyoutPanel } from './left-sidebar/FlyoutPanel';
 import { PriceCalculator } from './pricing/PriceCalculator';
 import { useCatalogStore, useUIStore, buildFormasForTemplate } from '@/stores/studio';
 import { Template1 } from '@matbaapro/shared';
@@ -13,7 +15,8 @@ export default function StudioPage() {
   const isSetupModalOpen = useUIStore((s) => s.isSetupModalOpen);
   const setSetupModalOpen = useUIStore((s) => s.setSetupModalOpen);
   const selection = useUIStore((s) => s.selection);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const isSidebarOpen = useUIStore((s) => s.isSidebarOpen);
+  const setSidebarOpen = useUIStore((s) => s.setSidebarOpen);
 
   useEffect(() => {
     // Guard: activeFormaId veya formas geçersiz/boşsa kurtaralım
@@ -51,7 +54,16 @@ export default function StudioPage() {
       <TopBar />
 
       <div className="flex-1 flex flex-row min-h-0">
-        <div className="bg-surface-panel border-r border-border-default h-full w-12 shrink-0 flex flex-col" />
+        <div 
+          id="studio-left-sidebar" 
+          className="pt-4 pb-4 h-full shrink-0 flex relative z-1000"
+          style={{ width: '80px' }}
+        >
+          <div className="rounded-r-xl shadow-xl h-full w-full flex flex-col relative overflow-hidden bg-surface-panel z-20">
+            <IconSidebar />
+          </div>
+          <FlyoutPanel />
+        </div>
 
         <div className="flex-1 flex flex-col min-w-0 min-h-0 relative items-center">
           {selection.type !== 'none' && (
@@ -83,7 +95,7 @@ export default function StudioPage() {
           
           {/* Açma / Kapatma Butonu */}
           <button
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            onClick={() => setSidebarOpen(!isSidebarOpen)}
             className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 w-6 h-12 bg-surface-panel border border-border-default rounded-full hover:bg-surface-subtle shadow-md flex items-center justify-center text-text-secondary hover:text-text-primary z-50 cursor-pointer transition-colors"
             title={isSidebarOpen ? "Paneli Kapat" : "Paneli Aç"}
           >

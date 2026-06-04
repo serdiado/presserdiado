@@ -224,6 +224,7 @@ const paperBody = (o: PaperSizeOption) => (
 export default function NewStudioWizard() {
   const navigate = useNavigate();
   const applyTemplate = useCatalogStore((s) => s.applyTemplate);
+  const startFreshCatalog = useCatalogStore((s) => s.startFreshCatalog);
   const isSetupModalOpen = useUIStore((s) => s.isSetupModalOpen);
   const setSetupModalOpen = useUIStore((s) => s.setSetupModalOpen);
 
@@ -269,10 +270,11 @@ export default function NewStudioWizard() {
 
   const handleConfirm = () => {
     const tpl = buildTemplateFromWizard(sel, config);
-    applyTemplate(tpl);
     if (isSetupModalOpen) {
+      applyTemplate(tpl);
       setSetupModalOpen(false);
     } else {
+      startFreshCatalog(tpl);
       navigate('/studio');
     }
   };
