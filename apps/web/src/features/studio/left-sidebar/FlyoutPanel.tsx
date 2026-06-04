@@ -65,9 +65,7 @@ export function FlyoutPanel() {
       onDragOver={handlePanelDragOver}
       onDragLeave={handlePanelDragLeave}
       onDrop={handlePanelDrop}
-      className={`absolute top-4 bottom-4 w-60 bg-surface-panel rounded-xl shadow-xl border border-border-default flex flex-col overflow-hidden transition-transform duration-200 ease-out z-10 ${
-        isDropTarget ? 'ring-2 ring-primary ring-inset' : ''
-      }`}
+      className="absolute top-4 bottom-4 w-60 bg-surface-panel rounded-xl shadow-xl border border-border-default flex flex-col overflow-hidden transition-transform duration-200 ease-out z-10"
       style={{
         left: '80px',
         transform: isOpen ? 'translateX(0)' : 'translateX(calc(-100% - 80px))',

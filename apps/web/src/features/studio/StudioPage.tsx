@@ -6,6 +6,8 @@ import { Canvas } from './canvas/Canvas';
 import { Sidebar } from './sidebar/Sidebar';
 import { IconSidebar } from './left-sidebar/IconSidebar';
 import { FlyoutPanel } from './left-sidebar/FlyoutPanel';
+import { FormasFlyoutPanel } from './left-sidebar/FormasFlyoutPanel';
+import { PlaceholderFlyout } from './left-sidebar/PlaceholderFlyout';
 import { PriceCalculator } from './pricing/PriceCalculator';
 import { useCatalogStore, useUIStore, buildFormasForTemplate } from '@/stores/studio';
 import { Template1 } from '@matbaapro/shared';
@@ -56,13 +58,18 @@ export default function StudioPage() {
       <div className="flex-1 flex flex-row min-h-0">
         <div 
           id="studio-left-sidebar" 
-          className="pt-4 pb-4 h-full shrink-0 flex relative z-1000"
+          className="h-full shrink-0 flex relative z-1000"
           style={{ width: '80px' }}
         >
-          <div className="rounded-r-xl shadow-xl h-full w-full flex flex-col relative overflow-hidden bg-surface-panel z-20">
+          <div className="rounded-r-xl shadow-xl w-full flex flex-col relative overflow-hidden bg-surface-panel z-20 my-4">
             <IconSidebar />
           </div>
           <FlyoutPanel />
+          <PlaceholderFlyout flyoutId="projeler" title="Projeler" description="Projelerinizi buradan yönetebileceksiniz." />
+          <PlaceholderFlyout flyoutId="temalar" title="Temalar" description="Hazır ve kayıtlı tasarım temalarınız burada görünecek." />
+          <PlaceholderFlyout flyoutId="medya" title="Medya" description="Yüklediğiniz görseller ve logolar burada listelenecek." />
+          <PlaceholderFlyout flyoutId="moduller" title="Modüller" description="Hazır içerik bloklarını buradan sürükleyip bırakabileceksiniz." />
+          <FormasFlyoutPanel />
         </div>
 
         <div className="flex-1 flex flex-col min-w-0 min-h-0 relative items-center">

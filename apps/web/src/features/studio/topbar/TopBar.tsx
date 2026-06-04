@@ -30,24 +30,7 @@ export function TopBar() {
   }, [undo, redo]);
 
   return (
-    <div className="h-12 bg-surface-panel border-b border-border-default flex items-center justify-between px-4 shrink-0 shadow-drop-sm relative z-1001">
-      <div className="flex items-center gap-3">
-        <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
-          Görünüm:
-        </span>
-        <select
-          value={activeFormaId}
-          onChange={(e) => setActiveFormaId(Number(e.target.value))}
-          className="bg-surface-subtle text-text-secondary text-xs font-semibold px-3 py-1.5 rounded-radius-md border border-border-strong cursor-pointer hover:bg-border-default transition-all min-w-45 h-8 outline-none"
-        >
-          {formas.map((f) => (
-            <option key={f.id} value={f.id}>
-              {f.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
+    <div className="h-12 bg-surface-panel border-b border-border-default flex items-center justify-end px-4 shrink-0 shadow-drop-sm relative z-1001">
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1 mr-2 border-r pr-3 border-border-default">
           <button
