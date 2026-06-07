@@ -53,7 +53,7 @@ interface CatalogActions {
   // Template / forma
   setProjectName: (name: string) => void;
   setActiveTemplate: (templateId: string) => void;
-  applyTemplate: (template: BrochureTemplate) => void;
+  applyTemplate: (template: BrochureTemplate, options?: { resetProjectName?: boolean }) => void;
   startFreshCatalog: (template: BrochureTemplate) => void;
   setActiveTab: (tab: 'outer' | 'inner') => void;
   setActiveFormaId: (id: number) => void;
@@ -227,7 +227,7 @@ export const useCatalogStore = create<Store>()(
         if (!tmpl) return;
         get().applyTemplate(tmpl);
       },
-      applyTemplate: (tmpl) => {
+      applyTemplate: (tmpl, options) => {
         const { formas: currentFormas } = get();
 
         // Mevcut arka plan ayarlarını sakla — forma id → pageNumber → background
@@ -261,6 +261,7 @@ export const useCatalogStore = create<Store>()(
           formas: formasWithBackgrounds,
           activeFormaId: 1,
           activeTab: 'outer',
+          ...(options?.resetProjectName ? { projectName: generateAutoProjectName(tmpl) } : {}),
           // globalSettings, productPool, masterProductPool, tempProductPool'a DOKUNMA
         });
         useHistoryStore.getState().clearHistory();

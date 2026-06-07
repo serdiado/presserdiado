@@ -29,7 +29,7 @@ export function TemplateSettingsPanel() {
         'DİKKAT: Şablon değişiminde mevcut yerleşim sıfırlanır. Onaylıyor musunuz?',
       )
     ) {
-      applyTemplate(tpl);
+      applyTemplate(tpl, { resetProjectName: false });
     }
   };
 

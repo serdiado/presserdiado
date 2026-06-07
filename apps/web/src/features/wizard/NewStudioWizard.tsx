@@ -271,7 +271,7 @@ export default function NewStudioWizard() {
   const handleConfirm = () => {
     const tpl = buildTemplateFromWizard(sel, config);
     if (isSetupModalOpen) {
-      applyTemplate(tpl);
+      applyTemplate(tpl, { resetProjectName: true });
       setSetupModalOpen(false);
     } else {
       startFreshCatalog(tpl);
