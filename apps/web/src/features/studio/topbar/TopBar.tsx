@@ -2,20 +2,76 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCatalogStore, useHistoryStore, useUIStore } from '@/stores/studio';
 import { ThemeToggle } from '../../../components/ThemeToggle';
-import { Undo2, Redo2, Home, Sparkles, Save, Copy, Trash2, RotateCcw, ChevronDown, Search } from 'lucide-react';
+import { Undo2, Redo2, Home, Sparkles, Save, Copy, Trash2, RotateCcw, ChevronDown, Cloud, Eye } from 'lucide-react';
 import { DownloadMenu } from './DownloadMenu';
 import { PriceCalculator } from '../pricing/PriceCalculator';
 import { ConfirmDialog } from '@/components/ui';
 import { SyncStatus } from './SyncStatus';
+import { ZoomWidget } from './ZoomWidget';
+import toast from 'react-hot-toast';
+
+function EditableTitle() {
+  const activeFormaId = useCatalogStore((s) => s.activeFormaId);
+  const formas = useCatalogStore((s) => s.formas);
+  const updateFormaName = useCatalogStore((s) => s.updateFormaName);
+
+  const activeForma = formas.find((f) => f.id === activeFormaId);
+  const initialName = activeForma?.name ?? '';
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [value, setValue] = useState(initialName);
+
+  useEffect(() => {
+    setValue(initialName);
+  }, [initialName]);
+
+  const handleSave = () => {
+    setIsEditing(false);
+    const trimmed = value.trim();
+    if (trimmed && trimmed !== initialName) {
+      updateFormaName(activeFormaId, trimmed);
+    } else {
+      setValue(initialName);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+      setValue(initialName);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={handleSave}
+        onKeyDown={handleKeyDown}
+        autoFocus
+        className="bg-surface-subtle text-text-primary text-sm font-medium px-2 py-1 rounded border border-primary focus:outline-none focus:ring-1 focus:ring-primary w-48 text-center h-8"
+      />
+    );
+  }
+
+  return (
+    <span
+      onClick={() => setIsEditing(true)}
+      className="text-sm font-medium text-text-primary hover:bg-surface-subtle px-2 py-1 rounded cursor-pointer transition-colors max-w-64 truncate block"
+      title="Tıklayarak düzenleyin"
+    >
+      {initialName || 'Katalog - İsimsiz Forma'}
+    </span>
+  );
+}
 
 export function TopBar() {
   const navigate = useNavigate();
-  const formas = useCatalogStore((s) => s.formas);
   const activeFormaId = useCatalogStore((s) => s.activeFormaId);
-  const setActiveFormaId = useCatalogStore((s) => s.setActiveFormaId);
-
-  const userScale = useUIStore((s) => s.userScale);
-  const resetZoom = useUIStore((s) => s.resetZoom);
 
   const undo = useHistoryStore((s) => s.undo);
   const redo = useHistoryStore((s) => s.redo);
@@ -69,24 +125,32 @@ export function TopBar() {
     setIsResetOpen(false);
   };
 
+  const handleCloudSave = () => {
+    toast.success('Kaydedildi');
+  };
+
+  const handlePreview = () => {
+    toast('Önizleme yakında eklenecektir.');
+  };
+
   return (
     <div className="h-14 bg-surface-panel border-b border-border-default flex items-center justify-between px-4 shrink-0 shadow-drop-sm relative z-1001">
       {/* Sol Grup */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <button
           onClick={() => navigate('/dashboard')}
           title="Kullanıcı Paneli"
-          className="h-8 w-8 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-subtle border border-border-strong rounded-radius-md transition-colors"
+          className="h-8 w-8 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-subtle border border-border-strong rounded-radius-md transition-colors shrink-0"
         >
           <Home size={16} />
         </button>
 
         {/* Dosya Dropdown Menüsü */}
-        <div ref={fileMenuRef} className="relative">
+        <div ref={fileMenuRef} className="relative shrink-0">
           <button
             onClick={() => setFileMenuOpen(!fileMenuOpen)}
             title="Dosya İşlemleri"
-            className={`h-8 px-3.5 flex items-center justify-center text-body-md font-medium rounded-radius-md transition-colors gap-1.5 border border-border-strong ${
+            className={`h-8 px-3 flex items-center justify-center text-body-md font-medium rounded-radius-md transition-colors gap-1.5 border border-border-strong ${
               fileMenuOpen
                 ? 'bg-surface-subtle text-text-primary'
                 : 'text-text-secondary bg-surface-panel hover:text-text-primary hover:bg-surface-subtle'
@@ -162,6 +226,37 @@ export function TopBar() {
           )}
         </div>
 
+        {/* Geri / İleri Al butonu */}
+        <button
+          onClick={undo}
+          disabled={past.length === 0}
+          title="Geri Al (Ctrl+Z)"
+          className="h-8 w-8 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-subtle border border-border-strong rounded-radius-md disabled:opacity-30 disabled:hover:bg-transparent transition-colors shrink-0"
+        >
+          <Undo2 size={16} />
+        </button>
+
+        <button
+          onClick={redo}
+          disabled={future.length === 0}
+          title="İleri Al (Ctrl+Shift+Z)"
+          className="h-8 w-8 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-subtle border border-border-strong rounded-radius-md disabled:opacity-30 disabled:hover:bg-transparent transition-colors shrink-0"
+        >
+          <Redo2 size={16} />
+        </button>
+
+        {/* Cloud Kaydet Butonu */}
+        <button
+          onClick={handleCloudSave}
+          title="Kaydet"
+          className="h-8 w-8 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-subtle border border-border-strong rounded-radius-md transition-colors shrink-0"
+        >
+          <Cloud size={16} />
+        </button>
+
+        {/* Sync Status göstergesi */}
+        <SyncStatus />
+
         {/* Özel Onay Modalları */}
         <ConfirmDialog
           isOpen={isClearOpen}
@@ -182,46 +277,28 @@ export function TopBar() {
           onConfirm={handleResetCatalog}
           onCancel={() => setIsResetOpen(false)}
         />
-
-        <div className="flex items-center gap-1 border-l pl-3 border-border-default">
-          <button
-            onClick={undo}
-            disabled={past.length === 0}
-            title="Geri Al (Ctrl+Z)"
-            className="h-8 w-8 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-subtle rounded-radius-md disabled:opacity-30 disabled:hover:bg-transparent"
-          >
-            <Undo2 size={16} />
-          </button>
-          <button
-            onClick={redo}
-            disabled={future.length === 0}
-            title="İleri Al (Ctrl+Shift+Z)"
-            className="h-8 w-8 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-subtle rounded-radius-md disabled:opacity-30 disabled:hover:bg-transparent"
-          >
-            <Redo2 size={16} />
-          </button>
-          <SyncStatus />
-        </div>
       </div>
 
-      {/* Orta Grup */}
-      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
-        <span className="text-heading-md font-medium text-text-primary">Katalog 2026 - Taslak</span>
+      {/* Orta Grup - Absolute Center */}
+      <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center z-10">
+        <EditableTitle />
       </div>
 
       {/* Sağ Grup */}
       <div className="flex items-center gap-3">
+        <ZoomWidget />
+
+        {/* Ayraç */}
+        <div className="h-4 border-l border-border-default shrink-0" />
+
+        {/* Önizle Butonu */}
         <button
-          onClick={resetZoom}
-          title="Fit / Sıfırla (zoom %)"
-          className={`h-8 px-3.5 rounded-radius-md text-body-md font-medium border transition-all min-w-20 flex items-center justify-center gap-1.5 ${
-            userScale !== 1
-              ? 'bg-surface-subtle border-border-strong text-text-primary hover:bg-surface-subtle'
-              : 'bg-surface-panel border-border-strong text-text-secondary hover:bg-surface-subtle'
-          }`}
+          onClick={handlePreview}
+          title="Önizle"
+          className="h-8 px-3 rounded-radius-md text-xs font-medium bg-surface-panel border border-border-strong text-text-secondary hover:bg-surface-subtle hover:text-text-primary transition-colors flex items-center justify-center gap-1.5 shrink-0"
         >
-          <Search size={14} className="shrink-0" />
-          <span>{Math.round(userScale * 100)}%</span>
+          <Eye size={16} />
+          <span>Önizle</span>
         </button>
 
         <PriceCalculator />

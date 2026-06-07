@@ -55,6 +55,7 @@ interface CatalogActions {
   setActiveTab: (tab: 'outer' | 'inner') => void;
   setActiveFormaId: (id: number) => void;
   setFormas: (formas: StudioForma[]) => void;
+  updateFormaName: (formaId: number, name: string) => void;
   getActivePages: () => CatalogPage[];
   setActivePages: (pages: CatalogPage[]) => void;
 
@@ -283,6 +284,12 @@ export const useCatalogStore = create<Store>()(
       setActiveFormaId: (id) =>
         set({ activeFormaId: id, activeTab: id === 2 ? 'inner' : 'outer' }),
       setFormas: (formas) => set({ formas }),
+      updateFormaName: (formaId, name) => {
+        useHistoryStore.getState().saveState();
+        set((state) => ({
+          formas: state.formas.map((f) => (f.id === formaId ? { ...f, name } : f)),
+        }));
+      },
 
       getActivePages: () => {
         const { formas, activeFormaId } = get();
