@@ -197,14 +197,24 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
 
   return (
     <>
-      <button
+      <div
         onClick={handleClick}
-        className="text-left bg-white rounded-lg border border-slate-200
-                   hover:border-slate-400 hover:shadow-sm transition-all overflow-hidden w-full relative group"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleClick();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        className={`text-left bg-surface-panel rounded-lg border border-border-default
+                   hover:border-border-strong hover:shadow-sm transition-all w-full relative group cursor-pointer focus:outline-none focus:ring-2 focus:ring-border-strong ${
+                     isMenuOpen ? 'z-20' : 'z-10'
+                   }`}
       >
         {/* Thumbnail */}
         <div
-          className="aspect-4/3 relative flex items-center justify-center w-full"
+          className="aspect-4/3 relative flex items-center justify-center w-full rounded-t-lg overflow-hidden"
           style={{ background: project.coverColor ?? '#f1f5f9' }}
         >
           {project.thumbnailKey ? (
@@ -231,11 +241,11 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
         {/* Meta */}
         <div className="p-3 flex justify-between items-start gap-2 relative">
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-semibold text-slate-800 truncate" title={project.name}>
+            <div className="text-body-md font-semibold text-text-primary truncate" title={project.name}>
               {project.name}
             </div>
-            <div className="text-[11px] text-slate-500 mt-0.5 truncate">{project.type}</div>
-            <div className="text-[11px] text-slate-400 mt-1">
+            <div className="text-body-xs text-text-secondary mt-0.5 truncate">{project.type}</div>
+            <div className="text-body-xs text-text-muted mt-1">
               {typeof project.updatedAt === 'string' && project.updatedAt.includes('T')
                 ? new Date(project.updatedAt).toLocaleDateString('tr-TR')
                 : project.updatedAt}
@@ -246,52 +256,52 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
           <div className="relative shrink-0" ref={menuRef}>
             <button
               onClick={handleMenuToggle}
-              className="p-1 hover:bg-slate-100 rounded-md text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
+              className="p-1 hover:bg-surface-subtle rounded-md text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
             >
               <MoreVertical size={16} />
             </button>
 
             {isMenuOpen && (
-              <div className="absolute right-0 mt-1 z-10 w-44 bg-white border border-slate-200 rounded-md shadow-lg py-1 animate-in fade-in slide-in-from-top-2 duration-100">
+              <div className="absolute right-0 mt-1 z-50 w-44 bg-surface-panel border border-border-default rounded-md shadow-lg py-1 animate-in fade-in slide-in-from-top-2 duration-100">
                 <button
                   onClick={handleOpen}
-                  className="w-full px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 flex items-center gap-2 cursor-pointer"
+                  className="w-full px-3 py-2 text-left text-xs font-medium text-text-secondary hover:bg-surface-subtle hover:text-text-primary flex items-center gap-2 cursor-pointer"
                 >
-                  <FolderOpen size={14} className="text-slate-400" />
+                  <FolderOpen size={14} className="text-text-muted" />
                   <span>Aç</span>
                 </button>
                 <button
                   onClick={handleRenameClick}
-                  className="w-full px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 flex items-center gap-2 cursor-pointer"
+                  className="w-full px-3 py-2 text-left text-xs font-medium text-text-secondary hover:bg-surface-subtle hover:text-text-primary flex items-center gap-2 cursor-pointer"
                 >
-                  <Pencil size={14} className="text-slate-400" />
+                  <Pencil size={14} className="text-text-muted" />
                   <span>Yeniden Adlandır</span>
                 </button>
                 <button
                   onClick={handleDuplicate}
                   disabled={isDuplicating}
-                  className="w-full px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 flex items-center gap-2 cursor-pointer disabled:opacity-40"
+                  className="w-full px-3 py-2 text-left text-xs font-medium text-text-secondary hover:bg-surface-subtle hover:text-text-primary flex items-center gap-2 cursor-pointer disabled:opacity-40"
                 >
                   {isDuplicating ? (
-                    <Loader2 size={14} className="animate-spin text-slate-400" />
+                    <Loader2 size={14} className="animate-spin text-text-muted" />
                   ) : (
-                    <Copy size={14} className="text-slate-400" />
+                    <Copy size={14} className="text-text-muted" />
                   )}
                   <span>Çoğalt</span>
                 </button>
-                <div className="border-t border-slate-100 my-1"></div>
+                <div className="border-t border-border-default my-1"></div>
                 <button
                   onClick={handleDeleteClick}
-                  className="w-full px-3 py-2 text-left text-xs font-medium text-red-600 hover:bg-red-50 hover:text-red-700 flex items-center gap-2 cursor-pointer"
+                  className="w-full px-3 py-2 text-left text-xs font-medium text-error-default hover:bg-error-subtle hover:text-error-default flex items-center gap-2 cursor-pointer transition-colors"
                 >
-                  <Trash2 size={14} className="text-red-400" />
+                  <Trash2 size={14} className="text-error-default" />
                   <span>Sil</span>
                 </button>
               </div>
             )}
           </div>
         </div>
-      </button>
+      </div>
 
       <RenameModal
         isOpen={isRenameOpen}
