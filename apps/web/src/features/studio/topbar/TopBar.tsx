@@ -31,9 +31,13 @@ export function TopBar() {
   }, [undo, redo]);
 
   return (
-    <div className="h-12 bg-surface-panel border-b border-border-default flex items-center justify-end px-4 shrink-0 shadow-drop-sm relative z-1001">
+    <div className="h-14 bg-surface-panel border-b border-border-default flex items-center justify-between px-4 shrink-0 shadow-drop-sm relative z-1001">
+      {/* Sol Grup */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1 mr-2 border-r pr-3 border-border-default">
+        <button className="h-8 px-3 text-text-secondary hover:text-text-primary hover:bg-surface-subtle border border-border-strong rounded-radius-md text-xs font-semibold flex items-center gap-1">
+          ← Geri Dön
+        </button>
+        <div className="flex items-center gap-1 border-l pl-3 border-border-default">
           <button
             onClick={undo}
             disabled={past.length === 0}
@@ -51,7 +55,15 @@ export function TopBar() {
             İleri →
           </button>
         </div>
+      </div>
 
+      {/* Orta Grup */}
+      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+        <span className="text-sm font-bold text-text-primary">Katalog 2026 - Taslak</span>
+      </div>
+
+      {/* Sağ Grup */}
+      <div className="flex items-center gap-3">
         <button
           onClick={resetZoom}
           title="Fit / Sıfırla (zoom %)"
