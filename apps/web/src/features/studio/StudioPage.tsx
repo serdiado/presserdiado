@@ -8,7 +8,6 @@ import { IconSidebar } from './left-sidebar/IconSidebar';
 import { FlyoutPanel } from './left-sidebar/FlyoutPanel';
 import { FormasFlyoutPanel } from './left-sidebar/FormasFlyoutPanel';
 import { PlaceholderFlyout } from './left-sidebar/PlaceholderFlyout';
-import { PriceCalculator } from './pricing/PriceCalculator';
 import { useCatalogStore, useUIStore, buildFormasForTemplate } from '@/stores/studio';
 import { Template1 } from '@matbaapro/shared';
 import NewStudioWizard from '../wizard/NewStudioWizard';
@@ -110,8 +109,6 @@ export default function StudioPage() {
           </button>
         </div>
       </div>
-
-      <PriceCalculator />
 
       {isSetupModalOpen && (
         <div className="fixed inset-0 z-9999 overflow-auto">

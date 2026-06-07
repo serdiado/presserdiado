@@ -24,7 +24,7 @@ export function PlaceholderFlyout({ flyoutId, title, description }: PlaceholderF
 
   return (
     <div
-      className="absolute top-4 bottom-4 w-60 bg-surface-panel rounded-xl shadow-xl border border-border-default flex flex-col overflow-hidden transition-transform duration-200 ease-out z-10"
+      className="absolute top-0 bottom-0 w-60 bg-surface-panel rounded-xl shadow-xl border border-border-default flex flex-col overflow-hidden transition-transform duration-200 ease-out z-10"
       style={{
         left: '80px',
         transform: isOpen ? 'translateX(0)' : 'translateX(calc(-100% - 80px))',

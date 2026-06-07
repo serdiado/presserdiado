@@ -3,6 +3,7 @@ import { useCatalogStore, useHistoryStore, useUIStore } from '@/stores/studio';
 import { ThemeToggle } from '../../../components/ThemeToggle';
 import { DownloadMenu } from './DownloadMenu';
 import { ProjectMenu } from './ProjectMenu';
+import { PriceCalculator } from '../pricing/PriceCalculator';
 
 export function TopBar() {
   const formas = useCatalogStore((s) => s.formas);
@@ -64,6 +65,7 @@ export function TopBar() {
         </button>
 
         <ProjectMenu />
+        <PriceCalculator />
         <DownloadMenu />
         <ThemeToggle compact />
       </div>
