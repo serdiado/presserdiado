@@ -12,6 +12,7 @@ dist/
 # IDE
 .vscode/
 .idea/
+.claude/
 *.swp
 *.swo
 .DS_Store
@@ -39,3 +40,5 @@ apps/web/public/images/products/
 
 # Backups
 matbaapro_yedek.zip
+# Claude Code local settings (machine-specific)
+.claude/settings.local.json
