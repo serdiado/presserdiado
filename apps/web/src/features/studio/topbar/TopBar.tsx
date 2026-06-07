@@ -4,7 +4,6 @@ import { useCatalogStore, useHistoryStore, useUIStore } from '@/stores/studio';
 import { ThemeToggle } from '../../../components/ThemeToggle';
 import { Undo2, Redo2, Home } from 'lucide-react';
 import { DownloadMenu } from './DownloadMenu';
-import { ProjectMenu } from './ProjectMenu';
 import { PriceCalculator } from '../pricing/PriceCalculator';
 
 export function TopBar() {
@@ -44,6 +43,18 @@ export function TopBar() {
         >
           <Home size={16} />
         </button>
+
+        {/* Dosya Dropdown İskeleti */}
+        <div className="relative">
+          <button
+            title="Dosya İşlemleri"
+            className="h-8 px-3.5 flex items-center justify-center text-xs font-semibold text-text-secondary hover:text-text-primary hover:bg-surface-subtle border border-border-strong rounded-radius-md transition-colors gap-1.5"
+          >
+            Dosya
+            <span className="text-[9px] opacity-60">▼</span>
+          </button>
+        </div>
+
         <div className="flex items-center gap-1 border-l pl-3 border-border-default">
           <button
             onClick={undo}
@@ -83,7 +94,6 @@ export function TopBar() {
           🔍 {Math.round(userScale * 100)}%
         </button>
 
-        <ProjectMenu />
         <PriceCalculator />
         <DownloadMenu />
         <ThemeToggle compact />
