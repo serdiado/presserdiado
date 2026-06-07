@@ -274,6 +274,7 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
   const setEditingContent = useUIStore((s) => s.setEditingContent);
   const activeBadgeMoveSlotId = useUIStore((s) => s.activeBadgeMoveSlotId);
   const userScale = useUIStore((s) => s.userScale);
+  const isPreviewMode = useUIStore((s) => s.isPreviewMode);
 
   const [isOver, setIsOver] = useState(false);
   const [editingText, setEditingText] = useState<'name' | 'price' | null>(null);
@@ -759,6 +760,7 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
       ref={ref}
       id={`slot-${slot.id}`}
       onClick={(e) => {
+        if (isPreviewMode) return;
         e.stopPropagation();
         if (editingContent?.slotId === slot.id) return;
         if (editingContent) setEditingContent(null);
@@ -768,6 +770,7 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
         toggleSlotSelection(slot.id, e.ctrlKey || e.metaKey);
       }}
       onDoubleClick={(e) => {
+        if (isPreviewMode) return;
         e.stopPropagation();
         if (slot.role === 'free' && slot.moduleData) {
           const md = slot.moduleData as { type?: string };
@@ -777,8 +780,11 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
           setEditingContent({ slotId: slot.id, contentType: 'product' });
         }
       }}
-      onContextMenu={(e) => onContextMenu(e, slot)}
-      draggable={!!slot.product && !isImgEditMode}
+      onContextMenu={(e) => {
+        if (isPreviewMode) return;
+        onContextMenu(e, slot);
+      }}
+      draggable={!isPreviewMode && !!slot.product && !isImgEditMode}
       onDragStart={(e) => {
         e.stopPropagation();
         e.dataTransfer.setData('sourcePage', String(pageNumber));
@@ -792,19 +798,24 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
         }
       }}
       onDragOver={(e) => {
+        if (isPreviewMode) return;
         e.preventDefault();
         setIsOver(true);
       }}
       onDragLeave={() => setIsOver(false)}
       onDrop={handleDrop}
-      className={`product-slot group pointer-events-auto relative overflow-hidden border border-solid transition-all h-full w-full min-w-12.5 min-h-12.5 cursor-pointer ${
-        isSelected
+      className={`product-slot group relative overflow-hidden border border-solid transition-all h-full w-full min-w-12.5 min-h-12.5 ${
+        isPreviewMode ? 'pointer-events-none' : 'pointer-events-auto cursor-pointer'
+      } ${
+        !isPreviewMode && isSelected
           ? `z-50${isModuleSlot ? '' : ' bg-surface-subtle'}`
-          : isOver
+          : isOver && !isPreviewMode
             ? 'border-border-strong scale-[0.98] z-20'
             : isModuleSlot
               ? 'border-transparent z-10'
-              : 'hover:border-border-strong z-10'
+              : !isPreviewMode
+                ? 'hover:border-border-strong z-10'
+                : 'z-10'
       }`}
       style={{
         gridColumn: gridPosition
@@ -824,28 +835,32 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
               borderWidth: `${finalSettings.borderWidth}px`,
               boxShadow: boxShadow,
             }),
-        outline: isSelected ? '2px solid var(--color-border-selected)' : undefined,
+        outline: !isPreviewMode && isSelected ? '2px solid var(--color-border-selected)' : undefined,
         outlineOffset: isSelected ? '2px' : undefined,
         padding: slot.role === 'free' ? undefined : paddingStyle(finalSettings.spacings.cell),
         ...freeStyles,
       }}
     >
-      <div
-        data-hide-on-export="true"
-        className="absolute top-0 left-0 p-1 text-[11px] font-black text-slate-400/50 pointer-events-none z-50"
-      >
-        {globalNumber || ''}
-      </div>
+      {!isPreviewMode && (
+        <div
+          data-hide-on-export="true"
+          className="absolute top-0 left-0 p-1 text-[11px] font-black text-slate-400/50 pointer-events-none z-50"
+        >
+          {globalNumber || ''}
+        </div>
+      )}
 
       {slot.role === 'free' && (
         <div className="w-full h-full flex flex-col relative z-20 overflow-hidden pointer-events-auto rounded-[inherit]">
           {!slot.moduleData ? (
-            <div className="w-full h-full flex flex-col items-center justify-center bg-surface-subtle border-2 border-dashed border-border-strong pointer-events-none">
-              <span className="text-text-muted font-bold text-sm uppercase tracking-widest">
-                SERBEST ALAN
-              </span>
-              <span className="text-[11px] text-text-muted mt-1">Modül Sürükleyin</span>
-            </div>
+            !isPreviewMode && (
+              <div className="w-full h-full flex flex-col items-center justify-center bg-surface-subtle border-2 border-dashed border-border-strong pointer-events-none">
+                <span className="text-text-muted font-bold text-sm uppercase tracking-widest">
+                  SERBEST ALAN
+                </span>
+                <span className="text-[11px] text-text-muted mt-1">Modül Sürükleyin</span>
+              </div>
+            )
           ) : (
             <>
               <div
@@ -871,7 +886,8 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
               </div>
 
               {(slot.moduleData as { type?: string })?.type === 'banner' &&
-                editingContent?.slotId !== slot.id && (
+                editingContent?.slotId !== slot.id &&
+                !isPreviewMode && (
                 <div
                   data-hide-on-export="true"
                   className={`absolute inset-0 z-50 flex items-center justify-center pointer-events-none transition-opacity
@@ -900,7 +916,7 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
         </div>
       )}
 
-      {slot.role !== 'free' && !slot.product && (
+      {slot.role !== 'free' && !slot.product && !isPreviewMode && (
         <div className="w-full h-full flex items-center justify-center pointer-events-none">
           <span className="text-[10px] text-slate-200 font-bold uppercase tracking-widest">
             Boş Hücre

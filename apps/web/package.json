@@ -14,6 +14,7 @@
     "@matbaapro/shared": "workspace:*",
     "@matbaapro/slot-types": "workspace:*",
     "axios": "^1.7.0",
+    "html2canvas": "^1.4.1",
     "immer": "^10.1.0",
     "lucide-react": "^1.16.0",
     "react": "^18.3.0",

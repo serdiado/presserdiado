@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react';
 import { TopBar } from './topbar/TopBar';
 import { ContextualBar } from './contextual/ContextualBar';
 import { Canvas } from './canvas/Canvas';
@@ -21,16 +21,88 @@ export default function StudioPage() {
   const isSidebarOpen = useUIStore((s) => s.isSidebarOpen);
   const setSidebarOpen = useUIStore((s) => s.setSidebarOpen);
 
-  // Esc key listener for preview mode
+  const formas = useCatalogStore((s) => s.formas);
+  const activeFormaId = useCatalogStore((s) => s.activeFormaId);
+  const setActiveFormaId = useCatalogStore((s) => s.setActiveFormaId);
+
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const activeIndex = formas.findIndex((f) => f.id === activeFormaId);
+
+  const handlePrevForma = () => {
+    if (formas.length <= 1) return;
+    const nextIndex = (activeIndex - 1 + formas.length) % formas.length;
+    setActiveFormaId(formas[nextIndex].id);
+  };
+
+  const handleNextForma = () => {
+    if (formas.length <= 1) return;
+    const nextIndex = (activeIndex + 1) % formas.length;
+    setActiveFormaId(formas[nextIndex].id);
+  };
+
+  const handleDownloadJPG = async () => {
+    const element = document.getElementById('canvas');
+    if (!element) return;
+
+    try {
+      setIsDownloading(true);
+      const html2canvas = (await import('html2canvas')).default;
+
+      const activeForma = formas.find((f) => f.id === activeFormaId);
+      const formaName = activeForma?.name || `Forma-${activeFormaId}`;
+      const projectName = useCatalogStore.getState().projectName || 'Tasarim';
+      
+      const canvas = await html2canvas(element, {
+        scale: 1,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff',
+        onclone: (clonedDocument) => {
+          const clonedCanvas = clonedDocument.getElementById('canvas');
+          if (clonedCanvas) {
+            clonedCanvas.style.transform = 'none';
+            clonedCanvas.style.left = '0';
+            clonedCanvas.style.top = '0';
+            clonedCanvas.style.position = 'relative';
+            clonedCanvas.style.margin = '0';
+            clonedDocument.body.innerHTML = '';
+            clonedDocument.body.appendChild(clonedCanvas);
+          }
+        }
+      });
+
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      const link = document.createElement('a');
+      link.download = `${projectName}-${formaName}.jpg`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('JPG indirme hatası:', err);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // Esc and Arrow keys listener for preview mode
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setPreviewMode(false);
       }
+      if (isPreviewMode) {
+        if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          handlePrevForma();
+        } else if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          handleNextForma();
+        }
+      }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [setPreviewMode]);
+  }, [isPreviewMode, setPreviewMode, activeIndex, formas]);
 
   useEffect(() => {
     // Guard: activeFormaId veya formas geçersiz/boşsa kurtaralım
@@ -105,6 +177,48 @@ export default function StudioPage() {
               <span>←</span>
               <span>Düzenlemeye Dön</span>
             </button>
+          )}
+
+          {/* Önizleme Gezinme ve İndirme Barı */}
+          {isPreviewMode && (
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-4 bg-surface-panel/90 backdrop-blur-md border border-border-strong rounded-radius-full shadow-drop-lg px-4 py-2 animate-in slide-in-from-bottom-4 duration-200">
+              <button
+                onClick={handlePrevForma}
+                disabled={formas.length <= 1}
+                className="h-8 w-8 flex items-center justify-center rounded-radius-full text-text-secondary hover:text-text-primary hover:bg-surface-subtle disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+                title="Önceki Forma (Sol Ok)"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              
+              <span className="text-body-sm font-semibold text-text-primary min-w-[100px] text-center select-none">
+                {formas[activeIndex]?.name || `Forma ${activeIndex + 1}`} ({activeIndex + 1} / {formas.length})
+              </span>
+
+              <button
+                onClick={handleNextForma}
+                disabled={formas.length <= 1}
+                className="h-8 w-8 flex items-center justify-center rounded-radius-full text-text-secondary hover:text-text-primary hover:bg-surface-subtle disabled:opacity-30 disabled:hover:bg-transparent transition-colors cursor-pointer"
+                title="Sonraki Forma (Sağ Ok)"
+              >
+                <ChevronRight size={18} />
+              </button>
+
+              <div className="w-[1px] h-4 bg-border-strong mx-1" />
+
+              <button
+                onClick={handleDownloadJPG}
+                disabled={isDownloading}
+                className="h-8 px-4 flex items-center justify-center gap-1.5 rounded-radius-full bg-primary hover:bg-primary-hover text-white text-xs font-semibold shadow-sm transition-all disabled:opacity-50 cursor-pointer"
+              >
+                {isDownloading ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Download size={14} />
+                )}
+                <span>JPG İndir</span>
+              </button>
+            </div>
           )}
         </div>
 

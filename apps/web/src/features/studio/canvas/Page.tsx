@@ -40,6 +40,7 @@ export function Page({
   const setEditingContent = useUIStore((s) => s.setEditingContent);
   const foregroundOpacity = useUIStore((s) => s.foregroundOpacity);
   const selection = useUIStore((s) => s.selection);
+  const isPreviewMode = useUIStore((s) => s.isPreviewMode);
 
   const copiedFooterSettings = useCatalogStore((s) => s.copiedFooterSettings);
   const copyFooterSettings = useCatalogStore((s) => s.copyFooterSettings);
@@ -273,16 +274,18 @@ export function Page({
       <div
         id={`page-${currentPage.id}`}
         className={`physical-page relative shrink-0 border-r border-dashed border-border-strong last:border-r-0 ${
-          isSelected ? 'z-10 isolate' : 'z-1'
+          !isPreviewMode && isSelected ? 'z-10 isolate' : 'z-1'
         }`}
         style={{
           width: `${pageConfig.widthMm}mm`,
           height: `${template.openHeightMm}mm`,
           boxSizing: 'border-box',
           backgroundColor: 'transparent',
+          borderRightStyle: isPreviewMode ? 'none' : undefined,
         }}
         data-hide-border-on-export="true"
         onClick={(e) => {
+          if (isPreviewMode) return; // Disable click actions on page in preview mode
           e.stopPropagation();
           setEditingContent(null);
           if (e.ctrlKey || e.metaKey) {
@@ -359,7 +362,7 @@ export function Page({
           />
         )}
 
-        {isSelected && (
+        {isSelected && !isPreviewMode && (
           <div
             className="absolute pointer-events-none ring-2 ring-border-selected z-50"
             style={{

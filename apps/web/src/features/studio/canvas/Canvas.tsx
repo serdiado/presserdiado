@@ -17,6 +17,7 @@ export function Canvas() {
   const userScale = useUIStore((s) => s.userScale);
   const pan = useUIStore((s) => s.pan);
   const setUserZoom = useUIStore((s) => s.setUserZoom);
+  const isPreviewMode = useUIStore((s) => s.isPreviewMode);
 
   const activeForma = formas.find((f) => f.id === activeFormaId) || formas[0];
   const pages = activeForma?.pages ?? [];
@@ -170,7 +171,7 @@ export function Canvas() {
           clearSelection();
           disableAllImageEditModes();
         }}
-        className="canvas absolute top-1/2 left-1/2 origin-center"
+        className={`canvas absolute top-1/2 left-1/2 origin-center ${isPreviewMode ? 'preview-mode' : ''}`}
         style={{
           boxSizing: 'border-box',
           width: `${totalWidthMm}mm`,
@@ -183,40 +184,46 @@ export function Canvas() {
           pointerEvents: spaceDown ? 'none' : 'auto',
         }}
       >
-        <div
-          data-hide-on-export="true"
-          className="pointer-events-none absolute inset-0 z-50"
-          style={{
-            border: '1px dashed #ef4444',
-            boxSizing: 'border-box',
-          }}
-        />
+        {!isPreviewMode && (
+          <div
+            data-hide-on-export="true"
+            className="pointer-events-none absolute inset-0 z-50"
+            style={{
+              border: '1px dashed #ef4444',
+              boxSizing: 'border-box',
+            }}
+          />
+        )}
 
         <LayerStack forma={activeForma} />
 
         <div
           className="relative z-10 flex h-full w-full flex-row items-stretch bg-transparent overflow-visible"
         >
-          <div
-            data-hide-on-export="true"
-            className="pointer-events-none absolute inset-0 z-50"
-            style={{
-              border: '1px solid #22c55e',
-              boxSizing: 'border-box',
-            }}
-          />
-          <div
-            data-hide-on-export="true"
-            className="pointer-events-none absolute z-50"
-            style={{
-              top: '5mm',
-              bottom: '5mm',
-              left: '5mm',
-              right: '5mm',
-              border: '1px dashed #3b82f6',
-              boxSizing: 'border-box',
-            }}
-          />
+          {!isPreviewMode && (
+            <>
+              <div
+                data-hide-on-export="true"
+                className="pointer-events-none absolute inset-0 z-50"
+                style={{
+                  border: '1px solid #22c55e',
+                  boxSizing: 'border-box',
+                }}
+              />
+              <div
+                data-hide-on-export="true"
+                className="pointer-events-none absolute z-50"
+                style={{
+                  top: '5mm',
+                  bottom: '5mm',
+                  left: '5mm',
+                  right: '5mm',
+                  border: '1px dashed #3b82f6',
+                  boxSizing: 'border-box',
+                }}
+              />
+            </>
+          )}
           {order.map((n, idx) => (
             <Page
               key={n}
