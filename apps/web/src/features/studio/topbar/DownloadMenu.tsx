@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
 import { useCatalogStore, useLayerStore } from '@/stores/studio';
+import { Download } from 'lucide-react';
 
 type Format = 'pdf' | 'png' | 'jpeg';
 
@@ -80,9 +81,10 @@ export function DownloadMenu() {
       <button
         onClick={() => setOpen((v) => !v)}
         disabled={busy !== null}
-        className="h-8 px-3.5 rounded-radius-md text-xs font-medium border border-border-strong bg-surface-panel text-text-secondary hover:bg-surface-subtle disabled:opacity-60"
+        className="h-8 px-3.5 rounded-radius-md text-xs font-medium bg-primary text-white hover:bg-primary-hover hover:text-white transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
       >
-        {busy ? `Hazırlanıyor (${busy.toUpperCase()})…` : '⬇ İndir'}
+        <Download size={16} />
+        <span>{busy ? `Hazırlanıyor (${busy.toUpperCase()})…` : 'İndir'}</span>
       </button>
       {open && !busy && (
         <div className="absolute top-full right-0 mt-1 w-64 bg-surface-panel border border-border-default rounded-radius-lg shadow-xl p-1 z-99999">
