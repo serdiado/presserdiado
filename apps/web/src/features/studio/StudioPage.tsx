@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react';
 import { TopBar } from './topbar/TopBar';
 import { ContextualBar } from './contextual/ContextualBar';
@@ -10,13 +11,16 @@ import { FormasFlyoutPanel } from './left-sidebar/FormasFlyoutPanel';
 import { PlaceholderFlyout } from './left-sidebar/PlaceholderFlyout';
 import { useCatalogStore, useUIStore, buildFormasForTemplate } from '@/stores/studio';
 import { Template1 } from '@matbaapro/shared';
-import NewStudioWizard from '../wizard/NewStudioWizard';
+import api from '@/lib/api';
+import { deserializeStudioState } from './lib/projectSerializer';
+import toast from 'react-hot-toast';
 
 export default function StudioPage() {
+  const { projectId } = useParams<{ projectId: string }>();
+  const navigate = useNavigate();
+
   const isPreviewMode = useUIStore((s) => s.isPreviewMode);
   const setPreviewMode = useUIStore((s) => s.setPreviewMode);
-  const isSetupModalOpen = useUIStore((s) => s.isSetupModalOpen);
-  const setSetupModalOpen = useUIStore((s) => s.setSetupModalOpen);
   const selection = useUIStore((s) => s.selection);
   const isSidebarOpen = useUIStore((s) => s.isSidebarOpen);
   const setSidebarOpen = useUIStore((s) => s.setSidebarOpen);
@@ -24,8 +28,12 @@ export default function StudioPage() {
   const formas = useCatalogStore((s) => s.formas);
   const activeFormaId = useCatalogStore((s) => s.activeFormaId);
   const setActiveFormaId = useCatalogStore((s) => s.setActiveFormaId);
+  const projectIdStore = useCatalogStore((s) => s.projectId);
+  const setProjectId = useCatalogStore((s) => s.setProjectId);
+  const _hasHydrated = useCatalogStore((s) => s._hasHydrated);
 
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isHydratingFromServer, setIsHydratingFromServer] = useState(false);
 
   const activeIndex = formas.findIndex((f) => f.id === activeFormaId);
 
@@ -105,6 +113,41 @@ export default function StudioPage() {
   }, [isPreviewMode, setPreviewMode, activeIndex, formas]);
 
   useEffect(() => {
+    if (!_hasHydrated) return;
+
+    const loadProjectFromServer = async () => {
+      if (!projectId) {
+        if (projectIdStore) {
+          setProjectId(null);
+        }
+        return;
+      }
+
+      if (projectId === projectIdStore) return;
+
+      try {
+        setIsHydratingFromServer(true);
+        const { data } = await api.get(`/projects/${projectId}`);
+        if (data && data.canvasData) {
+          deserializeStudioState(data.canvasData);
+          setProjectId(projectId);
+          toast.success('Proje buluttan başarıyla yüklendi');
+        } else {
+          throw new Error('Proje verisi eksik');
+        }
+      } catch (err) {
+        console.error('Proje buluttan yüklenirken hata oluştu:', err);
+        toast.error('Proje yüklenemedi. Dashboard\'a yönlendiriliyorsunuz...');
+        navigate('/dashboard', { replace: true });
+      } finally {
+        setIsHydratingFromServer(false);
+      }
+    };
+
+    loadProjectFromServer();
+  }, [_hasHydrated, projectId, projectIdStore, setProjectId, navigate]);
+
+  useEffect(() => {
     // Guard: activeFormaId veya formas geçersiz/boşsa kurtaralım
     const state = useCatalogStore.getState();
     let currentFormas = state.formas;
@@ -135,6 +178,17 @@ export default function StudioPage() {
     }
   }, []);
 
+  if (!_hasHydrated || isHydratingFromServer) {
+    return (
+      <div className="min-h-screen bg-slate-300 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="animate-spin text-slate-800" size={32} />
+          <span className="text-sm font-semibold text-slate-700">Tasarım yükleniyor...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <main className={`flex flex-col h-screen w-screen overflow-hidden bg-slate-300 ${isPreviewMode ? 'relative' : ''}`}>
       {!isPreviewMode && <TopBar />}
@@ -159,11 +213,7 @@ export default function StudioPage() {
         )}
 
         <div className="flex-1 flex flex-col min-w-0 min-h-0 relative items-center">
-          {!isPreviewMode && selection.type !== 'none' && (
-            <div className="inline-flex justify-center bg-surface-panel shadow-drop-md rounded-b-lg border-b border-x border-border-default overflow-visible shrink-0 z-50 mb-2 transition-all duration-150 visible opacity-100">
-              <ContextualBar />
-            </div>
-          )}
+          {!isPreviewMode && <ContextualBar />}
           <div className="flex-1 w-full relative min-h-0">
             <Canvas />
           </div>
@@ -172,7 +222,7 @@ export default function StudioPage() {
           {isPreviewMode && (
             <button
               onClick={() => setPreviewMode(false)}
-              className="absolute top-4 left-4 z-[9999] h-8 px-3 rounded-radius-md text-xs font-semibold bg-surface-panel border border-border-strong text-text-secondary hover:bg-surface-subtle hover:text-text-primary transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
+              className="absolute top-4 left-4 z-9999 h-8 px-3 rounded-radius-md text-xs font-semibold bg-surface-panel border border-border-strong text-text-secondary hover:bg-surface-subtle hover:text-text-primary transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
             >
               <span>←</span>
               <span>Düzenlemeye Dön</span>
@@ -181,7 +231,7 @@ export default function StudioPage() {
 
           {/* Önizleme Gezinme ve İndirme Barı */}
           {isPreviewMode && (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-4 bg-surface-panel/90 backdrop-blur-md border border-border-strong rounded-radius-full shadow-drop-lg px-4 py-2 animate-in slide-in-from-bottom-4 duration-200">
+            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-9999 flex items-center gap-4 bg-surface-panel/90 backdrop-blur-md border border-border-strong rounded-radius-full shadow-drop-lg px-4 py-2 animate-in slide-in-from-bottom-4 duration-200">
               <button
                 onClick={handlePrevForma}
                 disabled={formas.length <= 1}
@@ -191,7 +241,7 @@ export default function StudioPage() {
                 <ChevronLeft size={18} />
               </button>
               
-              <span className="text-body-sm font-semibold text-text-primary min-w-[100px] text-center select-none">
+              <span className="text-body-sm font-semibold text-text-primary min-w-25 text-center select-none">
                 {formas[activeIndex]?.name || `Forma ${activeIndex + 1}`} ({activeIndex + 1} / {formas.length})
               </span>
 
@@ -204,7 +254,7 @@ export default function StudioPage() {
                 <ChevronRight size={18} />
               </button>
 
-              <div className="w-[1px] h-4 bg-border-strong mx-1" />
+              <div className="w-px h-4 bg-border-strong mx-1" />
 
               <button
                 onClick={handleDownloadJPG}
@@ -251,12 +301,6 @@ export default function StudioPage() {
           </div>
         )}
       </div>
-
-      {!isPreviewMode && isSetupModalOpen && (
-        <div className="fixed inset-0 z-9999 overflow-auto">
-          <NewStudioWizard />
-        </div>
-      )}
     </main>
   );
 }
