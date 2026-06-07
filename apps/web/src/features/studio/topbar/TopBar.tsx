@@ -204,7 +204,7 @@ export function TopBar() {
       </div>
 
       {/* Orta Grup */}
-      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3">
+      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5">
         <span className="text-sm font-bold text-text-primary">Katalog 2026 - Taslak</span>
         <SyncStatus />
       </div>

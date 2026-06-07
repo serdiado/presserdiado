@@ -5,10 +5,9 @@ export function SyncStatus() {
   return (
     <div
       title="Bulut Kaydı — Yakında"
-      className="inline-flex items-center gap-1.5 px-2 py-1 rounded-radius-md bg-surface-subtle border border-border-strong/40 select-none text-text-tertiary cursor-help transition-colors hover:text-text-secondary"
+      className="inline-flex items-center select-none text-text-tertiary opacity-50 cursor-help transition-all hover:text-text-secondary hover:opacity-80"
     >
-      <Cloud size={14} className="shrink-0" />
-      <span className="text-[10px] font-semibold tracking-wide uppercase">Yakında</span>
+      <Cloud size={13} className="shrink-0" />
     </div>
   );
 }
