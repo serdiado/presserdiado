@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useCatalogStore, useHistoryStore, useUIStore } from '@/stores/studio';
 import { ThemeToggle } from '../../../components/ThemeToggle';
+import { Undo2, Redo2 } from 'lucide-react';
 import { DownloadMenu } from './DownloadMenu';
 import { ProjectMenu } from './ProjectMenu';
 import { PriceCalculator } from '../pricing/PriceCalculator';
@@ -42,17 +43,17 @@ export function TopBar() {
             onClick={undo}
             disabled={past.length === 0}
             title="Geri Al (Ctrl+Z)"
-            className="h-8 px-3 text-text-secondary hover:text-text-primary hover:bg-border-default rounded-radius-md text-xs font-medium disabled:opacity-30 disabled:hover:bg-transparent"
+            className="h-8 w-8 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-border-default rounded-radius-md disabled:opacity-30 disabled:hover:bg-transparent"
           >
-            ← Geri
+            <Undo2 size={16} />
           </button>
           <button
             onClick={redo}
             disabled={future.length === 0}
             title="İleri Al (Ctrl+Shift+Z)"
-            className="h-8 px-3 text-text-secondary hover:text-text-primary hover:bg-border-default rounded-radius-md text-xs font-medium disabled:opacity-30 disabled:hover:bg-transparent"
+            className="h-8 w-8 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-border-default rounded-radius-md disabled:opacity-30 disabled:hover:bg-transparent"
           >
-            İleri →
+            <Redo2 size={16} />
           </button>
         </div>
       </div>

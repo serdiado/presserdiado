@@ -866,6 +866,7 @@ export const useCatalogStore = create<Store>()(
       },
       updateSlotImageSettings: (pageNumber, slotId, settings) => {
         const { getActivePages, setActivePages } = get();
+        useHistoryStore.getState().saveState(clone(getActivePages()));
         setActivePages(
           getActivePages().map((p) =>
             p.pageNumber === pageNumber
@@ -885,6 +886,7 @@ export const useCatalogStore = create<Store>()(
         const { getActivePages, setActivePages } = get();
         const { selectedSlotIds } = useUIStore.getState();
         if (selectedSlotIds.length === 0) return;
+        useHistoryStore.getState().saveState(clone(getActivePages()));
         setActivePages(
           getActivePages().map((p) => ({
             ...p,
@@ -1268,6 +1270,7 @@ export const useCatalogStore = create<Store>()(
 
       updatePagesBackground: (pageNumbers, background) => {
         const { getActivePages, setActivePages } = get();
+        useHistoryStore.getState().saveState(clone(getActivePages()));
         setActivePages(
           getActivePages().map((p) =>
             pageNumbers.includes(p.pageNumber) ? { ...p, background } : p,
