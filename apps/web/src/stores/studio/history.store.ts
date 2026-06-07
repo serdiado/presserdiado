@@ -18,7 +18,8 @@ export interface HistorySnapshot {
 interface HistoryState {
   past: HistorySnapshot[];
   future: HistorySnapshot[];
-  saveState: () => void;
+  lastSavedTime: number;
+  saveState: (force?: boolean) => void;
   undo: () => void;
   redo: () => void;
   clearHistory: () => void;
@@ -27,10 +28,19 @@ interface HistoryState {
 export const useHistoryStore = create<HistoryState>((set, get) => ({
   past: [],
   future: [],
+  lastSavedTime: 0,
 
-  saveState: () => {
+  saveState: (force = false) => {
+    const now = Date.now();
+    const { past, lastSavedTime } = get();
+
+    // Slider sürüklemeleri ve hızlı ardışık güncellemeler için 800ms cooldown koruması.
+    // Ancak sürüklemenin ilk başındaki orijinal durumu kaydetmek için ilk çağrıyı her zaman kabul ederiz.
+    if (!force && now - lastSavedTime < 800) {
+      return;
+    }
+
     const catalog = useCatalogStore.getState();
-    const { past } = get();
     const snapshot: HistorySnapshot = {
       formas: clone(catalog.formas),
       tempPool: clone(catalog.tempProductPool),
@@ -38,7 +48,11 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
       activeFormaId: catalog.activeFormaId,
       activeTab: catalog.activeTab,
     };
-    set({ past: [...past.slice(-MAX_HISTORY), snapshot], future: [] });
+    set({
+      past: [...past.slice(-MAX_HISTORY), snapshot],
+      future: [],
+      lastSavedTime: now,
+    });
   },
 
   undo: () => {

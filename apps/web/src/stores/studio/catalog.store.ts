@@ -296,15 +296,19 @@ export const useCatalogStore = create<Store>()(
       },
 
       // === Settings ===
-      setGlobalSettings: (settings) =>
+      setGlobalSettings: (settings) => {
+        useHistoryStore.getState().saveState();
         set((state) => ({
           globalSettings: deepMerge(
             state.globalSettings as unknown as Record<string, unknown>,
             settings as unknown as Record<string, unknown>,
           ) as unknown as CatalogSettings,
-        })),
-      updateGlobalSettings: (settings) =>
-        set((state) => ({ globalSettings: { ...state.globalSettings, ...settings } })),
+        }));
+      },
+      updateGlobalSettings: (settings) => {
+        useHistoryStore.getState().saveState();
+        set((state) => ({ globalSettings: { ...state.globalSettings, ...settings } }));
+      },
 
       // === Page header/footer ===
       updatePageFooter: (pageNum, data) => {
@@ -727,6 +731,7 @@ export const useCatalogStore = create<Store>()(
       updateSlotCustomSettings: (settings) => {
         const { getActivePages, setActivePages } = get();
         const { selectedSlotIds } = useUIStore.getState();
+        useHistoryStore.getState().saveState();
         const pages = clone(getActivePages());
         for (const id of selectedSlotIds) {
           for (const p of pages) {
