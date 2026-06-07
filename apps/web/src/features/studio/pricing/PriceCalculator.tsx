@@ -3,6 +3,7 @@
 // pricing.config.json formülünü uygular.
 
 import { useMemo, useState, useRef, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import { Template1 } from '@matbaapro/shared';
 import {
@@ -177,6 +178,12 @@ export function PriceCalculator() {
               <span>Birim Fiyat</span>
               <span className="font-semibold">{formatCurrency(breakdown.unitPrice)}</span>
             </div>
+            <button
+              onClick={() => toast.success('Sipariş akışı yakında')}
+              className="w-full mt-3 h-9 bg-primary hover:bg-primary-hover text-white rounded-radius-md text-body-md font-medium transition-colors flex items-center justify-center cursor-pointer"
+            >
+              Sipariş Ver
+            </button>
           </div>
         </div>
       )}
