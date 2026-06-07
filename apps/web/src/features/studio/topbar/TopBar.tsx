@@ -10,27 +10,23 @@ import { ZoomWidget } from './ZoomWidget';
 import toast from 'react-hot-toast';
 
 function EditableTitle() {
-  const activeFormaId = useCatalogStore((s) => s.activeFormaId);
-  const formas = useCatalogStore((s) => s.formas);
-  const updateFormaName = useCatalogStore((s) => s.updateFormaName);
-
-  const activeForma = formas.find((f) => f.id === activeFormaId);
-  const initialName = activeForma?.name ?? '';
+  const projectName = useCatalogStore((s) => s.projectName);
+  const setProjectName = useCatalogStore((s) => s.setProjectName);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [value, setValue] = useState(initialName);
+  const [value, setValue] = useState(projectName);
 
   useEffect(() => {
-    setValue(initialName);
-  }, [initialName]);
+    setValue(projectName);
+  }, [projectName]);
 
   const handleSave = () => {
     setIsEditing(false);
     const trimmed = value.trim();
-    if (trimmed && trimmed !== initialName) {
-      updateFormaName(activeFormaId, trimmed);
+    if (trimmed && trimmed !== projectName) {
+      setProjectName(trimmed);
     } else {
-      setValue(initialName);
+      setValue(projectName);
     }
   };
 
@@ -39,7 +35,7 @@ function EditableTitle() {
       handleSave();
     } else if (e.key === 'Escape') {
       setIsEditing(false);
-      setValue(initialName);
+      setValue(projectName);
     }
   };
 
@@ -52,7 +48,7 @@ function EditableTitle() {
         onBlur={handleSave}
         onKeyDown={handleKeyDown}
         autoFocus
-        className="bg-surface-subtle text-text-primary text-sm font-medium px-2 py-1 rounded border border-primary focus:outline-none focus:ring-1 focus:ring-primary w-48 text-center h-8"
+        className="bg-surface-subtle text-text-primary text-sm font-medium px-2 py-1 rounded border border-primary focus:outline-none focus:ring-1 focus:ring-primary w-64 text-center h-8"
       />
     );
   }
@@ -60,10 +56,10 @@ function EditableTitle() {
   return (
     <span
       onClick={() => setIsEditing(true)}
-      className="text-sm font-medium text-text-primary hover:bg-surface-subtle px-2 py-1 rounded cursor-pointer transition-colors max-w-64 truncate block"
-      title="Tıklayarak düzenleyin"
+      className="text-sm font-medium text-text-primary hover:bg-surface-subtle px-2 py-1 rounded cursor-pointer transition-colors max-w-xs truncate block"
+      title="Proje adını düzenlemek için tıklayın"
     >
-      {initialName || 'Katalog - İsimsiz Forma'}
+      {projectName || 'İsimsiz Proje'}
     </span>
   );
 }

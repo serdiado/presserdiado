@@ -7,6 +7,16 @@ import type { WizardConfig, WizardSelection } from './wizard.types';
 // değil; eşleşmiyorsa 'none' fallback'i ile devam ederiz.
 const KNOWN_FOLDS: ReadonlyArray<FoldType> = ['none', 'half-fold', 'roll-fold', 'z-fold'];
 
+export const foldNameMap: Record<string, string> = {
+  none: 'Kırım Yok',
+  'half-fold': 'Tek Kırım',
+  'roll-fold': 'Çift Kırım',
+  'z-fold': 'Z Kırım',
+  'triple-fold': 'Üç Kırım',
+  'accordion-fold': 'Akerdiyon',
+  'map-fold': 'Harita',
+};
+
 const FOLD_NORMALIZE_MAP: Record<string, FoldType> = {
   none: 'none',
   'half-fold': 'half-fold',
@@ -38,16 +48,6 @@ export function buildTemplateFromWizard(
   }));
 
   const id = `wizard-${sel.category}-${sel.paperSize}-${sel.foldType}-${Date.now().toString(36)}`;
-
-  const foldNameMap: Record<string, string> = {
-    none: 'Kırım Yok',
-    'half-fold': 'Tek Kırım',
-    'roll-fold': 'Çift Kırım',
-    'z-fold': 'Z Kırım',
-    'triple-fold': 'Üç Kırım',
-    'accordion-fold': 'Akerdiyon',
-    'map-fold': 'Harita',
-  };
 
   const foldTitle = foldNameMap[sel.foldType] || fold.title;
   const name = `${paper.title} ${foldTitle} ${category?.title ?? ''}`.trim();

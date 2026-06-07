@@ -29,11 +29,13 @@ import {
 import { ModuleRegistry } from './module-registry';
 import { useHistoryStore } from './history.store';
 import { useUIStore } from './ui.store';
+import { foldNameMap } from '../../features/wizard/buildTemplate';
 
 type FooterScope = number | 'global';
 type GridScope = 'global' | number;
 
 interface CatalogState {
+  projectName: string;
   activeTemplate: BrochureTemplate;
   formas: StudioForma[];
   activeFormaId: number;
@@ -49,6 +51,7 @@ interface CatalogState {
 
 interface CatalogActions {
   // Template / forma
+  setProjectName: (name: string) => void;
   setActiveTemplate: (templateId: string) => void;
   applyTemplate: (template: BrochureTemplate) => void;
   startFreshCatalog: (template: BrochureTemplate) => void;
@@ -193,9 +196,18 @@ interface CatalogActions {
 
 type Store = CatalogState & CatalogActions;
 
+const generateAutoProjectName = (tmpl: BrochureTemplate) => {
+  const paperTitle = (tmpl.paperSize || 'A4').trim().replace(/\s+/g, '_');
+  const foldKey = tmpl.wizardSelection?.foldType || tmpl.foldType || 'none';
+  const foldTitle = (foldNameMap[foldKey] || 'Kırım_Yok').trim().replace(/\s+/g, '_');
+  const randomNum = Math.floor(1000 + Math.random() * 9000);
+  return `${paperTitle}_${foldTitle}_${randomNum}`;
+};
+
 export const useCatalogStore = create<Store>()(
   persist(
     (set, get) => ({
+      projectName: generateAutoProjectName(Template1),
       activeTemplate: Template1,
       activeFormaId: 1,
       activeTab: 'outer',
@@ -209,6 +221,7 @@ export const useCatalogStore = create<Store>()(
       copiedBackground: null,
 
       // === Template / forma ===
+      setProjectName: (name) => set({ projectName: name }),
       setActiveTemplate: (templateId) => {
         const tmpl = availableTemplates.find((t) => t.id === templateId);
         if (!tmpl) return;
@@ -244,6 +257,7 @@ export const useCatalogStore = create<Store>()(
         });
 
         set({
+          projectName: generateAutoProjectName(tmpl),
           activeTemplate: tmpl,
           formas: formasWithBackgrounds,
           activeFormaId: 1,
@@ -261,6 +275,7 @@ export const useCatalogStore = create<Store>()(
         const formas = buildFormasForTemplate(tmpl);
         const recalculated = recalculateLayout(formas, initialGlobalSettings.defaultGrid);
         set({
+          projectName: generateAutoProjectName(tmpl),
           activeTemplate: tmpl,
           formas: recalculated,
           activeFormaId: 1,
