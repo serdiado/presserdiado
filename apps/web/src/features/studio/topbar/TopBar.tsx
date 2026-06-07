@@ -1,12 +1,14 @@
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCatalogStore, useHistoryStore, useUIStore } from '@/stores/studio';
 import { ThemeToggle } from '../../../components/ThemeToggle';
-import { Undo2, Redo2 } from 'lucide-react';
+import { Undo2, Redo2, Home } from 'lucide-react';
 import { DownloadMenu } from './DownloadMenu';
 import { ProjectMenu } from './ProjectMenu';
 import { PriceCalculator } from '../pricing/PriceCalculator';
 
 export function TopBar() {
+  const navigate = useNavigate();
   const formas = useCatalogStore((s) => s.formas);
   const activeFormaId = useCatalogStore((s) => s.activeFormaId);
   const setActiveFormaId = useCatalogStore((s) => s.setActiveFormaId);
@@ -35,8 +37,12 @@ export function TopBar() {
     <div className="h-14 bg-surface-panel border-b border-border-default flex items-center justify-between px-4 shrink-0 shadow-drop-sm relative z-1001">
       {/* Sol Grup */}
       <div className="flex items-center gap-3">
-        <button className="h-8 px-3 text-text-secondary hover:text-text-primary hover:bg-surface-subtle border border-border-strong rounded-radius-md text-xs font-semibold flex items-center gap-1">
-          ← Geri Dön
+        <button
+          onClick={() => navigate('/dashboard')}
+          title="Kullanıcı Paneli"
+          className="h-8 w-8 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-subtle border border-border-strong rounded-radius-md transition-colors"
+        >
+          <Home size={16} />
         </button>
         <div className="flex items-center gap-1 border-l pl-3 border-border-default">
           <button
