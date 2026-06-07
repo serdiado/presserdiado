@@ -6,6 +6,7 @@ import { Undo2, Redo2, Home, Sparkles, Save, Copy, Trash2, RotateCcw } from 'luc
 import { DownloadMenu } from './DownloadMenu';
 import { PriceCalculator } from '../pricing/PriceCalculator';
 import { ConfirmDialog } from '@/components/ui';
+import { SyncStatus } from './SyncStatus';
 
 export function TopBar() {
   const navigate = useNavigate();
@@ -203,8 +204,9 @@ export function TopBar() {
       </div>
 
       {/* Orta Grup */}
-      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-3">
         <span className="text-sm font-bold text-text-primary">Katalog 2026 - Taslak</span>
+        <SyncStatus />
       </div>
 
       {/* Sağ Grup */}
