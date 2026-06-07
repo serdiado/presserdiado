@@ -207,7 +207,7 @@ const generateAutoProjectName = (tmpl: BrochureTemplate) => {
 export const useCatalogStore = create<Store>()(
   persist(
     (set, get) => ({
-      projectName: generateAutoProjectName(Template1),
+      projectName: 'A4_Kırım_Yok_1001',
       activeTemplate: Template1,
       activeFormaId: 1,
       activeTab: 'outer',
