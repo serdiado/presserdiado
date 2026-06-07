@@ -257,7 +257,6 @@ export const useCatalogStore = create<Store>()(
         });
 
         set({
-          projectName: generateAutoProjectName(tmpl),
           activeTemplate: tmpl,
           formas: formasWithBackgrounds,
           activeFormaId: 1,
