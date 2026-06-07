@@ -2,9 +2,10 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCatalogStore, useHistoryStore, useUIStore } from '@/stores/studio';
 import { ThemeToggle } from '../../../components/ThemeToggle';
-import { Undo2, Redo2, Home } from 'lucide-react';
+import { Undo2, Redo2, Home, Sparkles, Save, Copy, Trash2, RotateCcw } from 'lucide-react';
 import { DownloadMenu } from './DownloadMenu';
 import { PriceCalculator } from '../pricing/PriceCalculator';
+import { ConfirmDialog } from '@/components/ui';
 
 export function TopBar() {
   const navigate = useNavigate();
@@ -26,6 +27,9 @@ export function TopBar() {
 
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
   const fileMenuRef = useRef<HTMLDivElement>(null);
+
+  const [isClearOpen, setIsClearOpen] = useState(false);
+  const [isResetOpen, setIsResetOpen] = useState(false);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -55,17 +59,13 @@ export function TopBar() {
   };
 
   const handleClearProducts = () => {
-    if (window.confirm('Tüm hücrelerdeki ürünler temizlenecek. Devam etmek istiyor musunuz?')) {
-      clearProducts();
-    }
-    setFileMenuOpen(false);
+    clearProducts();
+    setIsClearOpen(false);
   };
 
   const handleResetCatalog = () => {
-    if (window.confirm('Tüm tasarım sıfırlanacak, emin misiniz?')) {
-      resetCatalog();
-    }
-    setFileMenuOpen(false);
+    resetCatalog();
+    setIsResetOpen(false);
   };
 
   return (
@@ -96,55 +96,91 @@ export function TopBar() {
           </button>
 
           {fileMenuOpen && (
-            <div className="absolute top-full left-0 mt-1 w-64 bg-surface-panel border border-border-default rounded-radius-lg shadow-xl p-1 z-99999">
+            <div className="absolute top-full left-0 mt-1.5 w-64 bg-surface-panel border border-border-default rounded-radius-lg shadow-drop-lg p-1 z-99999 animate-in fade-in slide-in-from-top-2 duration-100">
               {/* Yeni Tasarım Başlat */}
               <button
                 onClick={handleNewDesign}
-                className="w-full text-left px-3 py-2 hover:bg-surface-subtle rounded text-xs font-medium text-text-secondary hover:text-text-primary transition-colors flex items-center justify-between"
+                className="w-full text-left px-3 py-2.5 hover:bg-surface-subtle rounded-radius-md text-xs font-medium text-text-secondary hover:text-text-primary transition-all flex items-center gap-2.5 cursor-pointer"
               >
-                <span>✨ Yeni Tasarım Başlat...</span>
+                <Sparkles size={14} className="text-amber-500 shrink-0" />
+                <span>Yeni Tasarım Başlat...</span>
               </button>
 
               {/* Değişiklikleri Kaydet */}
               <button
                 disabled
                 title="Tasarımı kaydetmek için bulut bağlantısı yakında eklenecektir."
-                className="w-full text-left px-3 py-2 rounded text-xs font-medium text-text-muted opacity-40 cursor-not-allowed flex items-center justify-between"
+                className="w-full text-left px-3 py-2.5 rounded-radius-md text-xs font-medium text-text-muted opacity-35 cursor-not-allowed flex items-center justify-between gap-2.5 select-none"
               >
-                <span>💾 Değişiklikleri Kaydet</span>
-                <span className="text-[9px] bg-surface-subtle text-text-muted px-1.5 py-0.5 rounded border border-border-default uppercase tracking-wider font-bold">Yakında</span>
+                <span className="flex items-center gap-2.5">
+                  <Save size={14} className="shrink-0" />
+                  <span>Değişiklikleri Kaydet</span>
+                </span>
+                <span className="text-[8px] font-bold tracking-wider uppercase bg-brand-subtle/30 border border-brand-strong/30 text-brand-strong px-1 rounded-sm">Yakında</span>
               </button>
 
               {/* Projeyi Çoğalt */}
               <button
                 disabled
                 title="Tasarımı çoğaltmak için proje yönetimi yakında eklenecektir."
-                className="w-full text-left px-3 py-2 rounded text-xs font-medium text-text-muted opacity-40 cursor-not-allowed flex items-center justify-between"
+                className="w-full text-left px-3 py-2.5 rounded-radius-md text-xs font-medium text-text-muted opacity-35 cursor-not-allowed flex items-center justify-between gap-2.5 select-none"
               >
-                <span>📋 Projeyi Çoğalt (Klonla)</span>
-                <span className="text-[9px] bg-surface-subtle text-text-muted px-1.5 py-0.5 rounded border border-border-default uppercase tracking-wider font-bold">Yakında</span>
+                <span className="flex items-center gap-2.5">
+                  <Copy size={14} className="shrink-0" />
+                  <span>Projeyi Çoğalt (Klonla)</span>
+                </span>
+                <span className="text-[8px] font-bold tracking-wider uppercase bg-brand-subtle/30 border border-brand-strong/30 text-brand-strong px-1 rounded-sm">Yakında</span>
               </button>
 
               <hr className="border-border-default my-1" />
 
               {/* Sadece Ürünleri Temizle */}
               <button
-                onClick={handleClearProducts}
-                className="w-full text-left px-3 py-2 hover:bg-surface-subtle rounded text-xs font-medium text-text-secondary hover:text-text-primary transition-colors flex items-center justify-between"
+                onClick={() => {
+                  setIsClearOpen(true);
+                  setFileMenuOpen(false);
+                }}
+                className="w-full text-left px-3 py-2.5 hover:bg-surface-subtle rounded-radius-md text-xs font-medium text-text-secondary hover:text-text-primary transition-all flex items-center gap-2.5 cursor-pointer"
               >
-                <span>🧹 Sadece Ürünleri Temizle</span>
+                <Trash2 size={14} className="text-text-muted shrink-0" />
+                <span>Sadece Ürünleri Temizle</span>
               </button>
 
               {/* Tasarımı Sıfırla */}
               <button
-                onClick={handleResetCatalog}
-                className="w-full text-left px-3 py-2 hover:bg-surface-subtle rounded text-xs font-medium text-error-default hover:text-error-hover hover:bg-error-subtle transition-colors flex items-center justify-between"
+                onClick={() => {
+                  setIsResetOpen(true);
+                  setFileMenuOpen(false);
+                }}
+                className="w-full text-left px-3 py-2.5 hover:bg-error-subtle rounded-radius-md text-xs font-medium text-error-default hover:text-error-hover transition-all flex items-center gap-2.5 cursor-pointer"
               >
-                <span>❌ Tasarımı Sıfırla</span>
+                <RotateCcw size={14} className="text-error-default shrink-0" />
+                <span>Tasarımı Sıfırla</span>
               </button>
             </div>
           )}
         </div>
+
+        {/* Özel Onay Modalları */}
+        <ConfirmDialog
+          isOpen={isClearOpen}
+          title="Ürünleri Temizle"
+          description="Katalog sayfalarındaki tüm yerleştirilmiş ürünler kaldırılacaktır. Sayfa tasarımlarınız, mizanpajınız ve arka plan ayarlarınız korunur. Devam etmek istiyor musunuz?"
+          confirmLabel="Ürünleri Temizle"
+          confirmVariant="primary"
+          onConfirm={handleClearProducts}
+          onCancel={() => setIsClearOpen(false)}
+        />
+
+        <ConfirmDialog
+          isOpen={isResetOpen}
+          title="Tüm Tasarımı Sıfırla"
+          description="Tasarımınız ilk haline döndürülecektir. Yapılan tüm değişiklikler, eklenen katmanlar ve yerleştirilen ürünler geri alınamaz şekilde silinecektir. Emin misiniz?"
+          confirmLabel="Tasarımı Sıfırla"
+          confirmVariant="danger"
+          onConfirm={handleResetCatalog}
+          onCancel={() => setIsResetOpen(false)}
+        />
 
         <div className="flex items-center gap-1 border-l pl-3 border-border-default">
           <button
