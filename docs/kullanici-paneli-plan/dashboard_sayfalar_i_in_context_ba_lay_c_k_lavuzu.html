@@ -1,0 +1,47 @@
+# Alt Sayfaların Context Verilerine Bağlanması Kılavuzu
+
+Yeni `DashboardLayout` mimarimiz, React Router v7'nin `<Outlet context={...} />` gücünü kullanarak tüm alt sayfalara (AnaSayfa, Projelerim, Siparislerim) tek bir elden veri akışı sağlar. 
+
+Alt sayfalarda mock veri bağımlılığını tamamen ortadan kaldırmak ve onları layout'tan gelen dinamik verilere bağlamak için ilgili dosyaları aşağıdaki basit formülle güncelleyebilirsiniz:
+
+### 1. AnaSayfa.tsx Güncelleme Şeması
+```typescript
+import { useDashboardContext } from '../DashboardLayout';
+
+export function AnaSayfa() {
+  // Tek satırda tüm API projelerine, siparişlerine ve istatistiklerine erişin!
+  const { projects, orders, stats, loading } = useDashboardContext();
+  const { user } = useAuthStore(); // Veya layout'tan geçilen user verisi
+
+  if (loading && projects.length === 0) return <div>Yükleniyor...</div>;
+
+  return (
+    // ... layout'tan gelen projects, orders ve stats nesnelerini doğrudan render edin ...
+  );
+}
+```
+
+### 2. Projelerim.tsx Güncelleme Şeması
+```typescript
+import { useDashboardContext } from '../DashboardLayout';
+
+export function Projelerim() {
+  const { projects, loading } = useDashboardContext();
+
+  return (
+    // ... projects listesini doğrudan döngüye sokun ...
+  );
+}
+```
+
+### 3. Siparislerim.tsx Güncelleme Şeması
+```typescript
+import { useDashboardContext } from '../DashboardLayout';
+
+export function Siparislerim() {
+  const { orders, loading } = useDashboardContext();
+
+  return (
+    // ... orders tablosunu güncel verilerle doldurun ...
+  );
+}

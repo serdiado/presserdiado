@@ -2,7 +2,11 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/auth.store';
 import LoginPage from '@/features/auth/LoginPage';
 import RegisterPage from '@/features/auth/RegisterPage';
-import DashboardPage from '@/features/dashboard/DashboardPage';
+import { DashboardLayout } from '@/features/dashboard/DashboardLayout';
+import { AnaSayfa } from '@/features/dashboard/pages/AnaSayfa';
+import { Projelerim } from '@/features/dashboard/pages/Projelerim';
+import { Siparislerim } from '@/features/dashboard/pages/Siparislerim';
+import { ComingSoon } from '@/features/dashboard/pages/ComingSoon';
 import StudioPage from '@/features/studio/StudioPage';
 import NewStudioWizard from '@/features/wizard/NewStudioWizard';
 import PrintView from '@/features/print-view/PrintView';
@@ -67,6 +71,19 @@ export default function App() {
         }
       />
       <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <DashboardLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route index element={<AnaSayfa />} />
+        <Route path="projeler" element={<Projelerim />} />
+        <Route path="siparisler" element={<Siparislerim />} />
+        <Route path="coming-soon" element={<ComingSoon />} />
+      </Route>
+      <Route
         path="/"
         element={
           <ProtectedRoute>
@@ -75,7 +92,6 @@ export default function App() {
         }
       >
         <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<DashboardPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

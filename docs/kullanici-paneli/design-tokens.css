@@ -1,0 +1,68 @@
+/* Presserdiado Design System — Kullanıcı Paneli Token'ları
+ * apps/web/src/index.css veya global CSS'e @import edin.
+ * Tailwind 4 sınıflarına 1-1 karşılık gelir.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Oswald:wght@400;500;600;700&display=swap');
+
+:root {
+  /* ——— ZEMIN ——— */
+  /* bg-stone-100  ← uygulama zemini; bg-slate-* KULLANILMAZ */
+  --bg-app:         oklch(0.946 0.013 80);
+  --bg-page:        oklch(0.974 0.005 80);   /* stone-50  */
+  --bg-app-strong:  oklch(0.875 0.014 84);   /* stone-200 */
+
+  /* ——— YÜZEYLER ——— */
+  --surface:        #ffffff;                  /* panel / kart / modal */
+  --surface-sub:    oklch(0.984 0.003 247);   /* slate-50  */
+  --surface-hover:  oklch(0.968 0.007 247);   /* slate-100 */
+
+  /* ——— KENARL IK ——— */
+  --border:          oklch(0.929 0.013 256);  /* slate-200 */
+  --border-strong:   oklch(0.869 0.022 252);  /* slate-300 */
+  --border-selected: oklch(0.372 0.044 257);  /* slate-700 — seçili, MAVİ DEĞİL */
+
+  /* ——— METİN ——— */
+  --fg-1:        oklch(0.208 0.042 265);  /* slate-900 · başlık    */
+  --fg-2:        oklch(0.279 0.041 260);  /* slate-800 · gövde     */
+  --fg-3:        oklch(0.446 0.030 257);  /* slate-500 · ikincil   */
+  --fg-disabled: oklch(0.704 0.024 256);  /* slate-400             */
+
+  /* ——— İKON ——— */
+  --icon:        var(--fg-3);   /* slate-500 — varsayılan  */
+  --icon-active: var(--fg-2);   /* slate-800 — aktif       */
+
+  /* ——— CTA — tek vurgu, sayfada 1 adet ——— */
+  --cta:       oklch(0.546 0.245 262.881); /* blue-600 */
+  --cta-hover: oklch(0.488 0.243 264.376); /* blue-700 */
+  --cta-soft:  oklch(0.932 0.032 255.585); /* blue-50  */
+  --cta-fg:    #ffffff;
+
+  /* ——— SEMANTİK ——— */
+  --success: oklch(0.596 0.145 163.225); /* emerald-600 */
+  --warning: oklch(0.681 0.162 75.834);  /* amber-500   */
+  --danger:  oklch(0.577 0.245 27.325);  /* red-600     */
+
+  /* ——— RADIUS ——— */
+  --r-xs:  4px;   /* chip / micro badge  */
+  --r-sm:  6px;   /* input               */
+  --r-md:  8px;   /* buton / kart        */
+  --r-lg:  12px;  /* panel kart          */
+  --r-xl:  16px;  /* modal               */
+  --r-2xl: 20px;  /* auth kart           */
+
+  /* ——— GÖLGE ——— */
+  --shadow-sm:   0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --shadow-pop:  0 10px 25px -5px rgb(0 0 0 / 0.10), 0 4px 6px -4px rgb(0 0 0 / 0.06);
+  --shadow-modal:0 24px 48px -12px rgb(0 0 0 / 0.18);
+
+  /* ——— TİPOGRAFİ ——— */
+  --font-sans:    'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Oswald', 'Inter', system-ui, sans-serif; /* fiyat / sayı */
+  --font-mono:    ui-monospace, 'JetBrains Mono', Menlo, monospace;
+
+  /* ——— LAYOUT (Kullanıcı Paneli) ——— */
+  --topbar-h:   56px;  /* h-14 */
+  --sidenav-w:  256px; /* w-64 */
+}
