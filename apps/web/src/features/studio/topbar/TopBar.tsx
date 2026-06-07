@@ -6,7 +6,6 @@ import { Undo2, Redo2, Home, Sparkles, Save, Copy, Trash2, RotateCcw, ChevronDow
 import { DownloadMenu } from './DownloadMenu';
 import { PriceCalculator } from '../pricing/PriceCalculator';
 import { ConfirmDialog } from '@/components/ui';
-import { SyncStatus } from './SyncStatus';
 import { ZoomWidget } from './ZoomWidget';
 import toast from 'react-hot-toast';
 
@@ -253,9 +252,6 @@ export function TopBar() {
         >
           <Cloud size={16} />
         </button>
-
-        {/* Sync Status göstergesi */}
-        <SyncStatus />
 
         {/* Özel Onay Modalları */}
         <ConfirmDialog

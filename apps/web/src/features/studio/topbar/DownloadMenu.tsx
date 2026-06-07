@@ -84,7 +84,7 @@ export function DownloadMenu() {
         className="h-8 px-3.5 rounded-radius-md text-xs font-medium bg-surface-panel border border-border-strong text-text-secondary hover:bg-surface-subtle hover:text-text-primary transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
       >
         <Download size={16} />
-        <span>{busy ? `Hazırlanıyor (${busy.toUpperCase()})…` : '↓ Dışa Aktar'}</span>
+        <span>{busy ? `Hazırlanıyor (${busy.toUpperCase()})…` : 'Dışa Aktar'}</span>
       </button>
       {open && !busy && (
         <div className="absolute top-full right-0 mt-1 w-64 bg-surface-panel border border-border-default rounded-radius-lg shadow-xl p-1 z-99999">
