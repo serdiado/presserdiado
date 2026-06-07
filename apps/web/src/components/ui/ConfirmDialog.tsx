@@ -24,14 +24,14 @@ export function ConfirmDialog({
 
   const btnConfirmColor =
     confirmVariant === 'danger'
-      ? 'bg-error-default hover:bg-error-hover text-white focus:ring-error-default/20'
-      : 'bg-brand-default hover:bg-brand-hover text-white focus:ring-brand-default/20';
+      ? 'bg-danger hover:bg-danger-hover text-white focus:ring-danger/20'
+      : 'bg-primary hover:bg-primary-hover text-white focus:ring-primary/20';
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-99999 animate-fade-in">
       <div className="bg-surface-panel border border-border-default rounded-radius-xl p-6 w-full max-w-md shadow-drop-lg animate-in fade-in zoom-in-95 duration-150 relative">
         <div className="flex gap-4">
-          <div className={`h-10 w-10 shrink-0 flex items-center justify-center rounded-full ${confirmVariant === 'danger' ? 'bg-error-subtle text-error-default' : 'bg-brand-subtle text-brand-default'}`}>
+          <div className={`h-10 w-10 shrink-0 flex items-center justify-center rounded-full ${confirmVariant === 'danger' ? 'bg-danger-subtle text-danger' : 'bg-primary-subtle text-primary'}`}>
             <AlertTriangle size={20} />
           </div>
           <div className="flex-1 min-w-0">

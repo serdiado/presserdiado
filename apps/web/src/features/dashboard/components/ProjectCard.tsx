@@ -16,98 +16,26 @@ interface ProjectCardProps {
   onClick?: () => void;
 }
 
-interface RenameModalProps {
-  isOpen: boolean;
-  initialName: string;
-  onConfirm: (newName: string) => Promise<void> | void;
-  onCancel: () => void;
-}
-
-export function RenameModal({ isOpen, initialName, onConfirm, onCancel }: RenameModalProps) {
-  const [name, setName] = useState(initialName);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    if (isOpen) {
-      setName(initialName);
-    }
-  }, [isOpen, initialName]);
-
-  if (!isOpen) return null;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim() || isLoading) return;
-    try {
-      setIsLoading(true);
-      await onConfirm(name);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-99999 animate-fade-in"
-      onClick={(e) => {
-        e.stopPropagation();
-        e.preventDefault();
-      }}
-    >
-      <div className="bg-surface-panel border border-border-default rounded-radius-xl p-6 w-full max-w-sm shadow-drop-lg animate-in fade-in zoom-in-95 duration-150 relative">
-        <h3 className="text-base font-bold text-text-primary mb-3">Projeyi Yeniden Adlandır</h3>
-        <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="h-10 px-3 border border-slate-300 focus:border-slate-500 rounded-md text-sm w-full outline-none transition-colors mb-4"
-            placeholder="Proje adı"
-            autoFocus
-            disabled={isLoading}
-          />
-          <div className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={onCancel}
-              disabled={isLoading}
-              className="h-9 px-4 text-xs font-semibold bg-surface-subtle hover:bg-border-default border border-border-strong text-text-secondary rounded-md transition-all cursor-pointer disabled:opacity-40"
-            >
-              İptal
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading || !name.trim()}
-              className="h-9 px-4 text-xs font-semibold bg-primary hover:bg-primary-hover text-white border border-transparent rounded-md transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 size={14} className="animate-spin" />
-                  <span>Kaydediliyor...</span>
-                </>
-              ) : (
-                <span>Kaydet</span>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
 export function ProjectCard({ project, onClick }: ProjectCardProps) {
   const navigate = useNavigate();
   const { refetchProjects } = useDashboardContext();
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDuplicating, setIsDuplicating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(project.name);
+  const [isSaving, setIsSaving] = useState(false);
 
   const menuRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditing && inputRef.current) {
+      inputRef.current.focus();
+      inputRef.current.select();
+    }
+  }, [isEditing]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -140,17 +68,38 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
     e.stopPropagation();
     e.preventDefault();
     setIsMenuOpen(false);
-    setIsRenameOpen(true);
+    setIsEditing(true);
   };
 
-  const handleRenameConfirm = async (newName: string) => {
+  const handleSaveRename = async () => {
+    if (!editName.trim() || editName === project.name) {
+      setIsEditing(false);
+      return;
+    }
     try {
-      await api.patch(`/projects/${project.id}`, { name: newName });
+      setIsSaving(true);
+      await api.patch(`/projects/${project.id}`, { name: editName.trim() });
       toast.success('Proje adı güncellendi');
-      setIsRenameOpen(false);
+      setIsEditing(false);
       await refetchProjects();
     } catch {
       toast.error('Proje adı güncellenemedi');
+      setEditName(project.name);
+      setIsEditing(false);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    e.stopPropagation();
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSaveRename();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setEditName(project.name);
+      setIsEditing(false);
     }
   };
 
@@ -241,9 +190,31 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
         {/* Meta */}
         <div className="p-3 flex justify-between items-start gap-2 relative">
           <div className="min-w-0 flex-1">
-            <div className="text-body-md font-semibold text-text-primary truncate" title={project.name}>
-              {project.name}
-            </div>
+            {isEditing ? (
+              <input
+                ref={inputRef}
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                onBlur={handleSaveRename}
+                onKeyDown={handleInputKeyDown}
+                onClick={(e) => e.stopPropagation()}
+                disabled={isSaving}
+                className="w-full h-7 px-1.5 py-0.5 text-body-md font-semibold text-text-primary bg-surface-subtle border border-border-strong rounded-radius-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              />
+            ) : (
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  e.preventDefault();
+                  setIsEditing(true);
+                }}
+                className="text-body-md font-semibold text-text-primary truncate hover:bg-surface-subtle px-1 -mx-1 rounded-radius-sm cursor-text"
+                title={project.name}
+              >
+                {project.name}
+              </div>
+            )}
             <div className="text-body-xs text-text-secondary mt-0.5 truncate">{project.type}</div>
             <div className="text-body-xs text-text-muted mt-1">
               {typeof project.updatedAt === 'string' && project.updatedAt.includes('T')
@@ -292,9 +263,9 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
                 <div className="border-t border-border-default my-1"></div>
                 <button
                   onClick={handleDeleteClick}
-                  className="w-full px-3 py-2 text-left text-xs font-medium text-error-default hover:bg-error-subtle hover:text-error-default flex items-center gap-2 cursor-pointer transition-colors"
+                  className="w-full px-3 py-2 text-left text-xs font-medium text-danger hover:bg-danger-subtle hover:text-danger-hover flex items-center gap-2 cursor-pointer transition-colors"
                 >
-                  <Trash2 size={14} className="text-error-default" />
+                  <Trash2 size={14} className="text-danger" />
                   <span>Sil</span>
                 </button>
               </div>
@@ -302,13 +273,6 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
           </div>
         </div>
       </div>
-
-      <RenameModal
-        isOpen={isRenameOpen}
-        initialName={project.name}
-        onConfirm={handleRenameConfirm}
-        onCancel={() => setIsRenameOpen(false)}
-      />
 
       <ConfirmModal
         isOpen={isDeleteOpen}

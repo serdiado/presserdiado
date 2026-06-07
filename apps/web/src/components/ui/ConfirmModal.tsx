@@ -28,7 +28,7 @@ export function ConfirmModal({
 
   const btnConfirmColor =
     confirmVariant === 'danger'
-      ? 'bg-error-default hover:bg-error-hover text-white border-transparent focus:ring-error-default/20'
+      ? 'bg-danger hover:bg-danger-hover text-white border-transparent focus:ring-danger/20'
       : 'bg-primary hover:bg-primary-hover text-white border-transparent focus:ring-primary/20';
 
   const handleConfirm = async () => {
@@ -46,7 +46,7 @@ export function ConfirmModal({
     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-99999 animate-fade-in">
       <div className="bg-surface-panel border border-border-default rounded-radius-xl p-6 w-full max-w-md shadow-drop-lg animate-in fade-in zoom-in-95 duration-150 relative">
         <div className="flex gap-4">
-          <div className={`h-10 w-10 shrink-0 flex items-center justify-center rounded-full ${confirmVariant === 'danger' ? 'bg-error-subtle text-error-default' : 'bg-warning/10 text-warning'}`}>
+          <div className={`h-10 w-10 shrink-0 flex items-center justify-center rounded-full ${confirmVariant === 'danger' ? 'bg-danger-subtle text-danger' : 'bg-warning/10 text-warning'}`}>
             <AlertTriangle size={20} />
           </div>
           <div className="flex-1 min-w-0">
