@@ -130,6 +130,8 @@ export default function StudioPage() {
         const { data } = await api.get(`/projects/${projectId}`);
         if (data && data.canvasData) {
           deserializeStudioState(data.canvasData);
+          // Rehydration ve deserialization tamamlandıktan sonra güncel proje ismini db'den gelenle senkronize et
+          useCatalogStore.setState({ projectName: data.name });
           setProjectId(projectId);
           toast.success('Proje buluttan başarıyla yüklendi');
         } else {
