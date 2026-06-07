@@ -3,7 +3,7 @@
 // pricing.config.json formülünü uygular.
 
 import { useMemo, useState, useRef, useEffect } from 'react';
-import { useCatalogStore } from '@/stores/studio';
+import { useCatalogStore, useUIStore } from '@/stores/studio';
 import { Template1 } from '@matbaapro/shared';
 import {
   calculatePrice,
@@ -21,9 +21,12 @@ function buildDefaultValues(): Record<string, string> {
 }
 
 export function PriceCalculator() {
+  const isPreviewMode = useUIStore((s) => s.isPreviewMode);
   const template = useCatalogStore((s) => s.activeTemplate) || Template1;
 
   const [open, setOpen] = useState(false);
+
+  if (isPreviewMode) return null;
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [quantity, setQuantity] = useState<number>(() => {

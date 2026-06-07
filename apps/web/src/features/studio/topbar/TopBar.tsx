@@ -76,6 +76,7 @@ export function TopBar() {
   const clearProducts = useCatalogStore((s) => s.clearProducts);
   const resetCatalog = useCatalogStore((s) => s.resetCatalog);
   const setSetupModalOpen = useUIStore((s) => s.setSetupModalOpen);
+  const setPreviewMode = useUIStore((s) => s.setPreviewMode);
 
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
   const fileMenuRef = useRef<HTMLDivElement>(null);
@@ -106,7 +107,7 @@ export function TopBar() {
   }, []);
 
   const handleNewDesign = () => {
-    setSetupModalOpen(true);
+    setSetupModalOpen(true, 'newProject');
     setFileMenuOpen(false);
   };
 
@@ -125,7 +126,7 @@ export function TopBar() {
   };
 
   const handlePreview = () => {
-    toast('Önizleme yakında eklenecektir.');
+    setPreviewMode(true);
   };
 
   return (
