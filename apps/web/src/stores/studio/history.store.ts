@@ -1,21 +1,24 @@
-// Snapshot-based undo/redo (20 levels). Captures pages + tempPool together.
+// Snapshot-based undo/redo (20 levels). Captures the entire studio state (all formas, tempPool, globalSettings, activeFormaId, activeTab).
 
 import { create } from 'zustand';
-import type { CatalogPage, TempPoolProduct } from '@matbaapro/shared';
+import type { StudioForma, TempPoolProduct, CatalogSettings } from '@matbaapro/shared';
 import { useCatalogStore } from './catalog.store';
 import { clone } from './defaults';
 
 const MAX_HISTORY = 20;
 
 export interface HistorySnapshot {
-  pages: CatalogPage[];
+  formas: StudioForma[];
   tempPool: TempPoolProduct[];
+  globalSettings: CatalogSettings;
+  activeFormaId: number;
+  activeTab: 'outer' | 'inner';
 }
 
 interface HistoryState {
   past: HistorySnapshot[];
   future: HistorySnapshot[];
-  saveState: (pages: CatalogPage[], tempPool?: TempPoolProduct[]) => void;
+  saveState: () => void;
   undo: () => void;
   redo: () => void;
   clearHistory: () => void;
@@ -25,41 +28,69 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
   past: [],
   future: [],
 
-  saveState: (pages, tempPool) => {
+  saveState: () => {
+    const catalog = useCatalogStore.getState();
     const { past } = get();
-    const tp = tempPool ?? clone(useCatalogStore.getState().tempProductPool);
-    const next = [...past.slice(-MAX_HISTORY), { pages: clone(pages), tempPool: clone(tp) }];
-    set({ past: next, future: [] });
+    const snapshot: HistorySnapshot = {
+      formas: clone(catalog.formas),
+      tempPool: clone(catalog.tempProductPool),
+      globalSettings: clone(catalog.globalSettings),
+      activeFormaId: catalog.activeFormaId,
+      activeTab: catalog.activeTab,
+    };
+    set({ past: [...past.slice(-MAX_HISTORY), snapshot], future: [] });
   },
 
   undo: () => {
     const { past, future } = get();
     if (past.length === 0) return;
     const catalog = useCatalogStore.getState();
-    const currentPages = catalog.getActivePages();
-    const currentTempPool = catalog.tempProductPool;
+    const currentSnapshot: HistorySnapshot = {
+      formas: clone(catalog.formas),
+      tempPool: clone(catalog.tempProductPool),
+      globalSettings: clone(catalog.globalSettings),
+      activeFormaId: catalog.activeFormaId,
+      activeTab: catalog.activeTab,
+    };
     const previous = past[past.length - 1];
     set({
       past: past.slice(0, -1),
-      future: [{ pages: clone(currentPages), tempPool: clone(currentTempPool) }, ...future],
+      future: [currentSnapshot, ...future],
     });
-    catalog.setActivePages(previous.pages);
-    useCatalogStore.setState({ tempProductPool: previous.tempPool });
+    
+    catalog.setFormas(previous.formas);
+    useCatalogStore.setState({
+      tempProductPool: previous.tempPool,
+      globalSettings: previous.globalSettings,
+      activeFormaId: previous.activeFormaId,
+      activeTab: previous.activeTab,
+    });
   },
 
   redo: () => {
     const { past, future } = get();
     if (future.length === 0) return;
     const catalog = useCatalogStore.getState();
-    const currentPages = catalog.getActivePages();
-    const currentTempPool = catalog.tempProductPool;
+    const currentSnapshot: HistorySnapshot = {
+      formas: clone(catalog.formas),
+      tempPool: clone(catalog.tempProductPool),
+      globalSettings: clone(catalog.globalSettings),
+      activeFormaId: catalog.activeFormaId,
+      activeTab: catalog.activeTab,
+    };
     const next = future[0];
     set({
-      past: [...past, { pages: clone(currentPages), tempPool: clone(currentTempPool) }],
+      past: [...past, currentSnapshot],
       future: future.slice(1),
     });
-    catalog.setActivePages(next.pages);
-    useCatalogStore.setState({ tempProductPool: next.tempPool });
+
+    catalog.setFormas(next.formas);
+    useCatalogStore.setState({
+      tempProductPool: next.tempPool,
+      globalSettings: next.globalSettings,
+      activeFormaId: next.activeFormaId,
+      activeTab: next.activeTab,
+    });
   },
 
   clearHistory: () => set({ past: [], future: [] }),

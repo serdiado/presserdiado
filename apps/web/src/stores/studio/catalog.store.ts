@@ -475,7 +475,7 @@ export const useCatalogStore = create<Store>()(
 
       autoFillSlots: () => {
         const { formas, productPool, globalSettings } = get();
-        useHistoryStore.getState().saveState(clone(get().getActivePages()));
+        useHistoryStore.getState().saveState();
 
         const next = clone(formas);
         const valid: StudioSlot[] = [];
@@ -514,7 +514,7 @@ export const useCatalogStore = create<Store>()(
 
       clearProducts: () => {
         const { getActivePages, setActivePages } = get();
-        useHistoryStore.getState().saveState(clone(getActivePages()));
+        useHistoryStore.getState().saveState();
         const next = clone(getActivePages());
         next.forEach((p) => p.slots.forEach((s) => (s.product = null)));
         setActivePages(next);
@@ -522,7 +522,7 @@ export const useCatalogStore = create<Store>()(
 
       resetCatalog: () => {
         const { getActivePages, activeTemplate } = get();
-        useHistoryStore.getState().saveState(clone(getActivePages()));
+        useHistoryStore.getState().saveState();
         set({
           formas: recalculateLayout(
             buildFormasForTemplate(activeTemplate),
@@ -537,7 +537,7 @@ export const useCatalogStore = create<Store>()(
 
       swapSlotContents: (sPageNum, sIdx, tPageNum, tIdx) => {
         const { getActivePages, globalSettings, activeFormaId, formas } = get();
-        useHistoryStore.getState().saveState(clone(getActivePages()));
+        useHistoryStore.getState().saveState();
 
         const pages = clone(getActivePages());
         const sPage = pages.find((p) => p.pageNumber === sPageNum);
@@ -556,7 +556,7 @@ export const useCatalogStore = create<Store>()(
       mergeSelected: (pageNumber, targetSlotId) => {
         const { getActivePages, tempProductPool, globalSettings, activeFormaId, formas } = get();
         const { selectedSlotIds, clearSelection } = useUIStore.getState();
-        useHistoryStore.getState().saveState(clone(getActivePages()), clone(tempProductPool));
+        useHistoryStore.getState().saveState();
 
         const pages = getActivePages();
         const pageIdx = pages.findIndex((p) => p.pageNumber === pageNumber);
@@ -681,7 +681,7 @@ export const useCatalogStore = create<Store>()(
 
       unmergeSlot: (pageNumber, slotId) => {
         const { getActivePages, globalSettings, activeFormaId, formas } = get();
-        useHistoryStore.getState().saveState(clone(getActivePages()));
+        useHistoryStore.getState().saveState();
 
         const pages = getActivePages();
         const pageIdx = pages.findIndex((p) => p.pageNumber === pageNumber);
@@ -708,7 +708,7 @@ export const useCatalogStore = create<Store>()(
       toggleSlotCustomSettings: (enabled) => {
         const { getActivePages, setActivePages, globalSettings } = get();
         const { selectedSlotIds } = useUIStore.getState();
-        useHistoryStore.getState().saveState(clone(getActivePages()));
+        useHistoryStore.getState().saveState();
         const pages = clone(getActivePages());
         for (const id of selectedSlotIds) {
           for (const p of pages) {
@@ -769,7 +769,7 @@ export const useCatalogStore = create<Store>()(
       pasteFooterSettings: (pageNumber) => {
         const { copiedFooterSettings } = get();
         if (!copiedFooterSettings || isNaN(pageNumber)) return;
-        useHistoryStore.getState().saveState(clone(get().getActivePages()));
+        useHistoryStore.getState().saveState();
         get().setPageFooterMode(pageNumber, 'custom');
         get().updateFooterSettings(pageNumber, copiedFooterSettings);
       },
@@ -783,7 +783,7 @@ export const useCatalogStore = create<Store>()(
       pasteBackground: (pageNumber) => {
         const { copiedBackground } = get();
         if (copiedBackground) {
-          useHistoryStore.getState().saveState(clone(get().getActivePages()));
+          useHistoryStore.getState().saveState();
           get().updatePagesBackground([pageNumber], copiedBackground);
         }
       },
@@ -791,7 +791,7 @@ export const useCatalogStore = create<Store>()(
         const { getActivePages, setActivePages, copiedSlotSettings } = get();
         const { selectedSlotIds } = useUIStore.getState();
         if (!copiedSlotSettings || selectedSlotIds.length === 0) return;
-        useHistoryStore.getState().saveState(clone(getActivePages()));
+        useHistoryStore.getState().saveState();
         const pages = clone(getActivePages());
         for (const id of selectedSlotIds) {
           for (const p of pages) {
@@ -814,7 +814,7 @@ export const useCatalogStore = create<Store>()(
         const { getActivePages, setActivePages } = get();
         const { selectedSlotIds } = useUIStore.getState();
         if (selectedSlotIds.length === 0) return;
-        useHistoryStore.getState().saveState(clone(getActivePages()));
+        useHistoryStore.getState().saveState();
         const pages = clone(getActivePages());
         for (const id of selectedSlotIds) {
           for (const p of pages) {
@@ -832,7 +832,7 @@ export const useCatalogStore = create<Store>()(
       // === Slot product ops ===
       clearSlot: (pageNumber, slotId) => {
         const { getActivePages, setActivePages } = get();
-        useHistoryStore.getState().saveState(clone(getActivePages()));
+        useHistoryStore.getState().saveState();
         const pages = clone(getActivePages());
         const page = pages.find((p) => p.pageNumber === pageNumber);
         if (page) {
@@ -843,7 +843,7 @@ export const useCatalogStore = create<Store>()(
       },
       setSlotProduct: (pageNumber, slotId, product) => {
         const { getActivePages, setActivePages } = get();
-        useHistoryStore.getState().saveState(clone(getActivePages()));
+        useHistoryStore.getState().saveState();
         const pages = clone(getActivePages());
         const page = pages.find((p) => p.pageNumber === pageNumber);
         if (page) {
@@ -855,7 +855,7 @@ export const useCatalogStore = create<Store>()(
       },
       updateSlotProduct: (pageNumber, slotId, updates) => {
         const { getActivePages, setActivePages } = get();
-        useHistoryStore.getState().saveState(clone(getActivePages()));
+        useHistoryStore.getState().saveState();
         const pages = clone(getActivePages());
         const page = pages.find((p) => p.pageNumber === pageNumber);
         if (page) {
@@ -866,7 +866,7 @@ export const useCatalogStore = create<Store>()(
       },
       updateSlotImageSettings: (pageNumber, slotId, settings) => {
         const { getActivePages, setActivePages } = get();
-        useHistoryStore.getState().saveState(clone(getActivePages()));
+        useHistoryStore.getState().saveState();
         setActivePages(
           getActivePages().map((p) =>
             p.pageNumber === pageNumber
@@ -886,7 +886,7 @@ export const useCatalogStore = create<Store>()(
         const { getActivePages, setActivePages } = get();
         const { selectedSlotIds } = useUIStore.getState();
         if (selectedSlotIds.length === 0) return;
-        useHistoryStore.getState().saveState(clone(getActivePages()));
+        useHistoryStore.getState().saveState();
         setActivePages(
           getActivePages().map((p) => ({
             ...p,
@@ -952,7 +952,7 @@ export const useCatalogStore = create<Store>()(
         const { getActivePages, globalSettings, activeFormaId, formas } = get();
         const { selectedSlotIds } = useUIStore.getState();
         if (selectedSlotIds.length === 0) return;
-        useHistoryStore.getState().saveState(clone(getActivePages()));
+        useHistoryStore.getState().saveState();
 
         const pages = clone(getActivePages());
         for (const id of selectedSlotIds) {
@@ -991,7 +991,7 @@ export const useCatalogStore = create<Store>()(
       },
       setSlotModule: (pageNumber, slotId, moduleType) => {
         const { getActivePages, setActivePages } = get();
-        useHistoryStore.getState().saveState(clone(getActivePages()));
+        useHistoryStore.getState().saveState();
         const pages = clone(getActivePages());
         const page = pages.find((p) => p.pageNumber === pageNumber);
         if (!page) return;
@@ -1113,7 +1113,7 @@ export const useCatalogStore = create<Store>()(
       },
       applyGridChanges: () => {
         const { formas, globalSettings } = get();
-        useHistoryStore.getState().saveState(clone(get().getActivePages()));
+        useHistoryStore.getState().saveState();
         const next = clone(formas);
         for (const f of next) {
           for (const p of f.pages) {
@@ -1137,7 +1137,7 @@ export const useCatalogStore = create<Store>()(
       },
       applyPageGridChange: (pageNumber) => {
         const { formas, globalSettings } = get();
-        useHistoryStore.getState().saveState(clone(get().getActivePages()));
+        useHistoryStore.getState().saveState();
         const next = clone(formas);
         for (const f of next) {
           const page = f.pages.find((p) => p.pageNumber === pageNumber);
@@ -1149,7 +1149,7 @@ export const useCatalogStore = create<Store>()(
       },
       revertToGlobalGrid: (pageNumber) => {
         const { formas } = get();
-        useHistoryStore.getState().saveState(clone(get().getActivePages()));
+        useHistoryStore.getState().saveState();
         const next = clone(formas);
         const page = next.flatMap((f) => f.pages).find((p) => p.pageNumber === pageNumber);
         if (!page) return;
@@ -1162,7 +1162,7 @@ export const useCatalogStore = create<Store>()(
       addToTempPool: (product, originalPage, originalSlotId) => {
         useHistoryStore
           .getState()
-          .saveState(clone(get().getActivePages()), clone(get().tempProductPool));
+          .saveState();
         if (!product?.sku) return;
         set((state) => {
           const filtered = state.tempProductPool.filter((p) => p.sku !== product.sku);
@@ -1177,7 +1177,7 @@ export const useCatalogStore = create<Store>()(
       removeFromTempPool: (sku) => {
         useHistoryStore
           .getState()
-          .saveState(clone(get().getActivePages()), clone(get().tempProductPool));
+          .saveState();
         set((state) => ({
           tempProductPool: state.tempProductPool.filter((p) => p.sku !== sku),
         }));
@@ -1185,12 +1185,12 @@ export const useCatalogStore = create<Store>()(
       clearTempPool: () => {
         useHistoryStore
           .getState()
-          .saveState(clone(get().getActivePages()), clone(get().tempProductPool));
+          .saveState();
         set({ tempProductPool: [] });
       },
       moveSlotToTempPool: (pageNumber, slotId) => {
         const { getActivePages, setActivePages, tempProductPool } = get();
-        useHistoryStore.getState().saveState(clone(getActivePages()), clone(tempProductPool));
+        useHistoryStore.getState().saveState();
         const pages = clone(getActivePages());
         const page = pages.find((p) => p.pageNumber === pageNumber);
         let moved: ProductInfo | null = null;
@@ -1214,7 +1214,7 @@ export const useCatalogStore = create<Store>()(
       },
       dumpPageToTempPool: (pageNumber) => {
         const { getActivePages, setActivePages, tempProductPool } = get();
-        useHistoryStore.getState().saveState(clone(getActivePages()), clone(tempProductPool));
+        useHistoryStore.getState().saveState();
         const pages = clone(getActivePages());
         const page = pages.find((p) => p.pageNumber === pageNumber);
         if (!page) return;
@@ -1237,7 +1237,7 @@ export const useCatalogStore = create<Store>()(
       },
       returnProductFromTempPool: (sku) => {
         const { getActivePages, setActivePages, tempProductPool } = get();
-        useHistoryStore.getState().saveState(clone(getActivePages()), clone(tempProductPool));
+        useHistoryStore.getState().saveState();
         const idx = tempProductPool.findIndex((p) => p.sku === sku);
         if (idx === -1) return;
         const product = tempProductPool[idx];
@@ -1270,7 +1270,7 @@ export const useCatalogStore = create<Store>()(
 
       updatePagesBackground: (pageNumbers, background) => {
         const { getActivePages, setActivePages } = get();
-        useHistoryStore.getState().saveState(clone(getActivePages()));
+        useHistoryStore.getState().saveState();
         setActivePages(
           getActivePages().map((p) =>
             pageNumbers.includes(p.pageNumber) ? { ...p, background } : p,
