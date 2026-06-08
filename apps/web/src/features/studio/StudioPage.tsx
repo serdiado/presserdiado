@@ -8,6 +8,7 @@ import { Sidebar } from './sidebar/Sidebar';
 import { IconSidebar } from './left-sidebar/IconSidebar';
 import { FlyoutPanel } from './left-sidebar/FlyoutPanel';
 import { FormasFlyoutPanel } from './left-sidebar/FormasFlyoutPanel';
+import { ProjelerFlyoutPanel } from './left-sidebar/ProjelerFlyoutPanel';
 import { PlaceholderFlyout } from './left-sidebar/PlaceholderFlyout';
 import { useCatalogStore, useUIStore, buildFormasForTemplate } from '@/stores/studio';
 import { Template1 } from '@matbaapro/shared';
@@ -55,7 +56,7 @@ export default function StudioPage() {
 
     try {
       setIsDownloading(true);
-      const html2canvas = (await import('html2canvas')).default;
+      const html2canvas = (await import('html2canvas-pro')).default;
 
       const activeForma = formas.find((f) => f.id === activeFormaId);
       const formaName = activeForma?.name || `Forma-${activeFormaId}`;
@@ -206,7 +207,7 @@ export default function StudioPage() {
               <IconSidebar />
             </div>
             <FlyoutPanel />
-            <PlaceholderFlyout flyoutId="projeler" title="Projeler" description="Projelerinizi buradan yönetebileceksiniz." />
+            <ProjelerFlyoutPanel />
             <PlaceholderFlyout flyoutId="temalar" title="Temalar" description="Hazır ve kayıtlı tasarım temalarınız burada görünecek." />
             <PlaceholderFlyout flyoutId="medya" title="Medya" description="Yüklediğiniz görseller ve logolar burada listelenecek." />
             <PlaceholderFlyout flyoutId="moduller" title="Modüller" description="Hazır içerik bloklarını buradan sürükleyip bırakabileceksiniz." />
