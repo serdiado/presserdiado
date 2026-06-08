@@ -104,6 +104,23 @@ export const projectService = {
     return project;
   },
 
+  async updateThumbnail(userId: string, id: string, thumbnailUrl: string) {
+    const where = and(eq(projects.id, id), eq(projects.userId, userId));
+    const result = await db
+      .update(projects)
+      .set({
+        thumbnailKey: thumbnailUrl,
+        autoSavedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      })
+      .where(where);
+    const affected = (result as unknown as [{ affectedRows: number }])[0]?.affectedRows ?? 0;
+    if (affected === 0) throw new NotFoundError('Proje bulunamadı');
+
+    const project = await db.query.projects.findFirst({ where });
+    if (!project) throw new NotFoundError('Proje bulunamadı');
+    return project;
+  },
+
   async remove(userId: string, id: string) {
     const result = await db
       .delete(projects)

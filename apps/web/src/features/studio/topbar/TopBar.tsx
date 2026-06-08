@@ -10,6 +10,7 @@ import { ZoomWidget } from './ZoomWidget';
 import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import { serializeStudioState } from '../lib/projectSerializer';
+import { captureAndUploadThumbnail } from '@/lib/thumbnailCapture';
 
 function EditableTitle() {
   const projectName = useCatalogStore((s) => s.projectName);
@@ -179,6 +180,12 @@ export function TopBar() {
         setIsDirty(false);
         navigate(`/studio/${newId}`, { replace: true });
         toast.success('Tasarım buluta başarıyla kaydedildi!', { id: toastId });
+
+        // Fire-and-forget thumbnail capture
+        const canvasEl = document.getElementById('studio-canvas-root');
+        if (canvasEl && newId) {
+          void captureAndUploadThumbnail(canvasEl, newId);
+        }
       } else {
         // Güncelleme
         await api.patch(`/projects/${projectId}/canvas`, {
@@ -187,6 +194,12 @@ export function TopBar() {
         });
         setIsDirty(false);
         toast.success('Değişiklikler buluta kaydedildi!', { id: toastId });
+
+        // Fire-and-forget thumbnail capture
+        const canvasEl = document.getElementById('studio-canvas-root');
+        if (canvasEl && projectId) {
+          void captureAndUploadThumbnail(canvasEl, projectId);
+        }
       }
     } catch (error) {
       console.error('Kaydetme hatası:', error);

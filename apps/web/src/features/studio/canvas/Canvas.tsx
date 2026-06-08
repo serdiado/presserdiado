@@ -153,6 +153,7 @@ export function Canvas() {
 
   return (
     <div
+      id="studio-canvas-root"
       ref={wrapperRef}
       onWheel={handleWheel}
       onMouseDown={handleMouseDown}

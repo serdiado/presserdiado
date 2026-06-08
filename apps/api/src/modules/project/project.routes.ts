@@ -18,6 +18,10 @@ const updateProjectSchema = z.object({
   name: z.string().min(1),
 });
 
+const updateThumbnailSchema = z.object({
+  thumbnailUrl: z.string().min(1),
+});
+
 export async function projectRoutes(app: FastifyInstance) {
   app.addHook('onRequest', app.authenticate);
 
@@ -52,6 +56,13 @@ export async function projectRoutes(app: FastifyInstance) {
     const { id } = request.params as { id: string };
     const body = updateProjectSchema.parse(request.body);
     const project = await projectService.updateName(request.user.id, id, body.name);
+    return reply.send(project);
+  });
+
+  app.patch('/projects/:id/thumbnail', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const body = updateThumbnailSchema.parse(request.body);
+    const project = await projectService.updateThumbnail(request.user.id, id, body.thumbnailUrl);
     return reply.send(project);
   });
 

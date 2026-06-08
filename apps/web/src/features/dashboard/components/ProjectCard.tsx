@@ -168,7 +168,7 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
         >
           {project.thumbnailKey ? (
             <img
-              src={`/uploads/${project.thumbnailKey}`}
+              src={project.thumbnailKey}
               alt={project.name}
               className="w-full h-full object-cover"
             />
