@@ -11,6 +11,11 @@ const createProjectSchema = z.object({
 
 const updateCanvasSchema = z.object({
   canvasData: z.record(z.unknown()),
+  name: z.string().min(1).optional(),
+});
+
+const updateProjectSchema = z.object({
+  name: z.string().min(1),
 });
 
 export async function projectRoutes(app: FastifyInstance) {
@@ -36,7 +41,17 @@ export async function projectRoutes(app: FastifyInstance) {
   app.patch('/projects/:id/canvas', async (request, reply) => {
     const { id } = request.params as { id: string };
     const body = updateCanvasSchema.parse(request.body);
-    const project = await projectService.updateCanvas(request.user.id, id, body.canvasData);
+    const project = await projectService.updateCanvas(request.user.id, id, {
+      canvasData: body.canvasData,
+      name: body.name,
+    });
+    return reply.send(project);
+  });
+
+  app.patch('/projects/:id', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const body = updateProjectSchema.parse(request.body);
+    const project = await projectService.updateName(request.user.id, id, body.name);
     return reply.send(project);
   });
 

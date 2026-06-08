@@ -3,3 +3,4 @@ export { SegmentedControl } from './SegmentedControl';
 export { Slider } from './Slider';
 export { Toggle } from './Toggle';
 export { ConfirmDialog } from './ConfirmDialog';
+export { ConfirmModal } from './ConfirmModal';

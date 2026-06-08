@@ -162,29 +162,76 @@ export function ContextualBar() {
   const selection = useUIStore((s) => s.selection);
   const selectedSlotIds = useUIStore((s) => s.selectedSlotIds);
   const selectedTextElement = useUIStore((s) => s.selectedTextElement);
+  const getActivePages = useCatalogStore((s) => s.getActivePages);
+
+  let hasValidSelection = false;
+
+  if (selection.type === 'slot' && selectedSlotIds.length > 0) {
+    const pages = getActivePages();
+    const pageWithSlot = pages.find((p) => p.slots.some((s) => s.id === selectedSlotIds[0]));
+    const slot = pageWithSlot?.slots.find((s) => s.id === selectedSlotIds[0]);
+    if (slot) {
+      hasValidSelection = true;
+    }
+  } else if (selection.type === 'bannerCell') {
+    if (selection.parentId) {
+      const pages = getActivePages();
+      const slot = pages
+        .flatMap((p) => p.slots)
+        .find((s) => s.id === selection.parentId);
+      if (slot && slot.role === 'free' && slot.moduleData) {
+        hasValidSelection = true;
+      }
+    }
+  } else if (selection.type === 'textElement' && selectedTextElement) {
+    const pages = getActivePages();
+    const slot = pages
+      .flatMap((p) => p.slots)
+      .find((s) => s.id === selectedTextElement.slotId);
+    if (slot) {
+      hasValidSelection = true;
+    }
+  } else if (selection.type === 'footerCell' && selection.ids[0] === '__footer__') {
+    hasValidSelection = true;
+  } else if (selection.type === 'footerCell' && selection.ids[0] !== '__footer__' && selection.ids.length > 0) {
+    hasValidSelection = true;
+  } else if (selection.type === 'pageBackground' && selection.ids.length > 0) {
+    const pageNum = Number(selection.ids[0]);
+    if (!isNaN(pageNum)) {
+      const pages = getActivePages();
+      const page = pages.find((p) => p.pageNumber === pageNum);
+      if (page) {
+        hasValidSelection = true;
+      }
+    }
+  }
+
+  if (!hasValidSelection) return null;
 
   return (
-    <div
-      id="contextual-bar"
-      className="h-12 px-3 flex items-center gap-1 text-xs text-text-secondary bg-surface-panel"
-    >
-      {selection.type === 'slot' && <SlotMode slotIds={selectedSlotIds} />}
-      {selection.type === 'bannerCell' && <BannerCellMode />}
-      {selection.type === 'textElement' && selectedTextElement && (
-        selectedTextElement.elementType === 'badge' ? (
-          <BadgeMode />
-        ) : (
-          <TextMode
-            slotId={selectedTextElement.slotId}
-            element={selectedTextElement.elementType}
-          />
-        )
-      )}
-      {selection.type === 'footerCell' && selection.ids[0] === '__footer__' && <FooterContainerMode />}
-      {selection.type === 'footerCell' && selection.ids[0] !== '__footer__' && selection.ids.length > 0 && <FooterCellMode />}
-      {selection.type === 'pageBackground' && (
-        <BackgroundMode pageNumber={Number(selection.ids[0])} />
-      )}
+    <div className="inline-flex justify-center bg-surface-panel shadow-drop-md rounded-b-lg border-b border-x border-border-default overflow-visible shrink-0 z-50 mb-2 transition-all duration-150 visible opacity-100">
+      <div
+        id="contextual-bar"
+        className="h-12 px-3 flex items-center gap-1 text-xs text-text-secondary bg-surface-panel rounded-b-lg"
+      >
+        {selection.type === 'slot' && <SlotMode slotIds={selectedSlotIds} />}
+        {selection.type === 'bannerCell' && <BannerCellMode />}
+        {selection.type === 'textElement' && selectedTextElement && (
+          selectedTextElement.elementType === 'badge' ? (
+            <BadgeMode />
+          ) : (
+            <TextMode
+              slotId={selectedTextElement.slotId}
+              element={selectedTextElement.elementType}
+            />
+          )
+        )}
+        {selection.type === 'footerCell' && selection.ids[0] === '__footer__' && <FooterContainerMode />}
+        {selection.type === 'footerCell' && selection.ids[0] !== '__footer__' && selection.ids.length > 0 && <FooterCellMode />}
+        {selection.type === 'pageBackground' && (
+          <BackgroundMode pageNumber={Number(selection.ids[0])} />
+        )}
+      </div>
     </div>
   );
 }

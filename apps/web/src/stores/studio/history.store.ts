@@ -41,6 +41,7 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
     }
 
     const catalog = useCatalogStore.getState();
+    catalog.setIsDirty(true);
     const snapshot: HistorySnapshot = {
       formas: clone(catalog.formas),
       tempPool: clone(catalog.tempProductPool),

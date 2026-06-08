@@ -223,10 +223,8 @@ const paperBody = (o: PaperSizeOption) => (
 
 export default function NewStudioWizard() {
   const navigate = useNavigate();
-  const applyTemplate = useCatalogStore((s) => s.applyTemplate);
   const startFreshCatalog = useCatalogStore((s) => s.startFreshCatalog);
-  const isSetupModalOpen = useUIStore((s) => s.isSetupModalOpen);
-  const setSetupModalOpen = useUIStore((s) => s.setSetupModalOpen);
+  const _hasHydrated = useCatalogStore((s) => s._hasHydrated);
 
   const activeTemplate = useCatalogStore((s) => s.activeTemplate);
   
@@ -270,24 +268,15 @@ export default function NewStudioWizard() {
 
   const handleConfirm = () => {
     const tpl = buildTemplateFromWizard(sel, config);
-    if (isSetupModalOpen) {
-      applyTemplate(tpl, { resetProjectName: true });
-      setSetupModalOpen(false);
-    } else {
-      startFreshCatalog(tpl);
-      navigate('/studio');
-    }
+    startFreshCatalog(tpl);
+    navigate('/studio');
   };
 
   const handleNext = () => setActiveStep(2);
   const handleBack = () => setActiveStep(1);
 
   const handleCancel = () => {
-    if (isSetupModalOpen) {
-      setSetupModalOpen(false);
-    } else {
-      navigate('/dashboard');
-    }
+    navigate('/dashboard');
   };
 
   const openWidth = summary.paper && summary.fold ? summary.paper.widthMm * summary.fold.pageCount : 0;
@@ -558,7 +547,8 @@ export default function NewStudioWizard() {
             {activeStep === 2 && (
               <button
                 onClick={handleBack}
-                className="px-4 py-2 text-sm font-medium text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50"
+                disabled={!_hasHydrated}
+                className="px-4 py-2 text-sm font-medium text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50"
               >
                 ← Geri
               </button>
@@ -566,16 +556,18 @@ export default function NewStudioWizard() {
             {activeStep === 1 ? (
               <button
                 onClick={handleNext}
-                className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                disabled={!_hasHydrated}
+                className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1.5"
               >
-                Devam Et →
+                {!_hasHydrated ? 'Yükleniyor...' : 'Devam Et →'}
               </button>
             ) : (
               <button
                 onClick={handleConfirm}
-                className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                disabled={!_hasHydrated}
+                className="px-5 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1.5"
               >
-                Tasarıma Başla →
+                {!_hasHydrated ? 'Yükleniyor...' : 'Tasarıma Başla →'}
               </button>
             )}
           </div>

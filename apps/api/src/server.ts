@@ -26,7 +26,11 @@ const app = Fastify({
 });
 
 // Plugins
-await app.register(cors, { origin: config.cors.origin, credentials: true });
+await app.register(cors, {
+  origin: config.cors.origin,
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+});
 await app.register(jwt, { secret: config.jwt.secret });
 await app.register(multipart, { limits: { fileSize: 25 * 1024 * 1024 } });
 await app.register(staticPlugin, {

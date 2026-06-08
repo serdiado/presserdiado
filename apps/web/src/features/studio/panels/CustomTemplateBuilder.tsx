@@ -69,7 +69,7 @@ export function CustomTemplateBuilder({ onSaved }: { onSaved: () => void }) {
 
     saveCustomTemplate(tpl);
     toast.success(`"${tpl.name}" kaydedildi`);
-    applyTemplate(tpl, { resetProjectName: false });
+    applyTemplate(tpl);
     onSaved();
   };
 

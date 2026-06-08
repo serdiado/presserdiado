@@ -13,8 +13,6 @@ export type SelectionType =
 
 export type TextElementType = 'name' | 'price' | 'badge';
 
-export type SetupModalIntent = 'newProject' | 'changeTemplate' | null;
-
 export interface SelectionState {
   type: SelectionType;
   ids: string[];
@@ -31,8 +29,6 @@ interface SidebarState {
 interface UIState {
   isZoomed: boolean;
   isTempPoolOpen: boolean;
-  isSetupModalOpen: boolean;
-  setupModalIntent: SetupModalIntent;
   userScale: number;
   pan: { x: number; y: number };
   foregroundOpacity: number;
@@ -61,7 +57,6 @@ interface UIState {
   resetZoom: () => void;
   toggleTempPool: () => void;
   setTempPoolOpen: (open: boolean) => void;
-  setSetupModalOpen: (open: boolean, intent?: SetupModalIntent) => void;
 
   setSelection: (updates: Partial<SelectionState>) => void;
   toggleElementSelection: (
@@ -103,8 +98,6 @@ const initialSidebar: SidebarState = {
 export const useUIStore = create<UIState>((set, get) => ({
   isZoomed: false,
   isTempPoolOpen: false,
-  isSetupModalOpen: false,
-  setupModalIntent: null,
   userScale: 1,
   pan: { x: 0, y: 0 },
   foregroundOpacity: 100,
@@ -131,7 +124,6 @@ export const useUIStore = create<UIState>((set, get) => ({
   resetZoom: () => set({ userScale: 1, pan: { x: 0, y: 0 } }),
   toggleTempPool: () => set((s) => ({ isTempPoolOpen: !s.isTempPoolOpen })),
   setTempPoolOpen: (open) => set({ isTempPoolOpen: open }),
-  setSetupModalOpen: (open, intent = null) => set({ isSetupModalOpen: open, setupModalIntent: intent }),
 
   setSelection: (updates) =>
     set((state) => {

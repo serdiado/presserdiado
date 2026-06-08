@@ -35,6 +35,8 @@ type FooterScope = number | 'global';
 type GridScope = 'global' | number;
 
 interface CatalogState {
+  _hasHydrated: boolean;
+  projectId: string | null;
   projectName: string;
   activeTemplate: BrochureTemplate;
   formas: StudioForma[];
@@ -47,13 +49,17 @@ interface CatalogState {
   copiedSlotSettings: DeepPartial<CatalogSettings> | null;
   copiedFooterSettings: FooterSettings | null;
   copiedBackground: CatalogPage['background'] | null;
+  isDirty: boolean;
 }
 
 interface CatalogActions {
+  setHasHydrated: (state: boolean) => void;
+  setProjectId: (id: string | null) => void;
+  setIsDirty: (val: boolean) => void;
   // Template / forma
   setProjectName: (name: string) => void;
   setActiveTemplate: (templateId: string) => void;
-  applyTemplate: (template: BrochureTemplate, options?: { resetProjectName?: boolean }) => void;
+  applyTemplate: (template: BrochureTemplate) => void;
   startFreshCatalog: (template: BrochureTemplate) => void;
   setActiveTab: (tab: 'outer' | 'inner') => void;
   setActiveFormaId: (id: number) => void;
@@ -207,6 +213,8 @@ const generateAutoProjectName = (tmpl: BrochureTemplate) => {
 export const useCatalogStore = create<Store>()(
   persist(
     (set, get) => ({
+      _hasHydrated: false,
+      projectId: null,
       projectName: 'A4_Kırım_Yok_1001',
       activeTemplate: Template1,
       activeFormaId: 1,
@@ -219,15 +227,22 @@ export const useCatalogStore = create<Store>()(
       copiedSlotSettings: null,
       copiedFooterSettings: null,
       copiedBackground: null,
+      isDirty: false,
+
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
+      setProjectId: (id) => set({ projectId: id }),
+      setIsDirty: (val) => set({ isDirty: val }),
 
       // === Template / forma ===
-      setProjectName: (name) => set({ projectName: name }),
+      setProjectName: (name) => {
+        set({ projectName: name, isDirty: true });
+      },
       setActiveTemplate: (templateId) => {
         const tmpl = availableTemplates.find((t) => t.id === templateId);
         if (!tmpl) return;
         get().applyTemplate(tmpl);
       },
-      applyTemplate: (tmpl, options) => {
+      applyTemplate: (tmpl) => {
         const { formas: currentFormas } = get();
 
         // Mevcut arka plan ayarlarını sakla — forma id → pageNumber → background
@@ -261,7 +276,6 @@ export const useCatalogStore = create<Store>()(
           formas: formasWithBackgrounds,
           activeFormaId: 1,
           activeTab: 'outer',
-          ...(options?.resetProjectName ? { projectName: generateAutoProjectName(tmpl) } : {}),
           // globalSettings, productPool, masterProductPool, tempProductPool'a DOKUNMA
         });
         useHistoryStore.getState().clearHistory();
@@ -275,6 +289,7 @@ export const useCatalogStore = create<Store>()(
         const formas = buildFormasForTemplate(tmpl);
         const recalculated = recalculateLayout(formas, initialGlobalSettings.defaultGrid);
         set({
+          projectId: null,
           projectName: generateAutoProjectName(tmpl),
           activeTemplate: tmpl,
           formas: recalculated,
@@ -287,6 +302,7 @@ export const useCatalogStore = create<Store>()(
           copiedSlotSettings: null,
           copiedFooterSettings: null,
           copiedBackground: null,
+          isDirty: false,
         });
         useHistoryStore.getState().clearHistory();
         const firstSlot = recalculated.find((f) => f.id === 1)?.pages[0]?.slots[0];
@@ -1361,6 +1377,13 @@ export const useCatalogStore = create<Store>()(
     {
       name: STUDIO_STORE_NAME,
       version: STUDIO_STORE_VERSION,
+      onRehydrateStorage: (_) => {
+        return (state, error) => {
+          if (!error) {
+            state?.setHasHydrated(true);
+          }
+        };
+      },
       migrate: (persistedState: any, version: number) => {
         if (version < 3) {
           // Sıfırlamak için undefined döndürüyoruz, Zustand varsayılan state'i yükler.
@@ -1461,6 +1484,7 @@ export const useCatalogStore = create<Store>()(
             incoming.activeTab ?? (incoming.activeFormaId === 2 ? 'inner' : 'outer'),
           globalSettings: normalizedGlobal,
           tempProductPool: incoming.tempProductPool ?? [],
+          isDirty: false,
         } as Store;
       },
     },

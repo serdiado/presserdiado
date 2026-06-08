@@ -3,22 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useCatalogStore, useHistoryStore, useLayerStore } from '@/stores/studio';
-
-interface ProjectFile {
-  version: 1;
-  catalog: {
-    activeTemplate: ReturnType<typeof useCatalogStore.getState>['activeTemplate'];
-    formas: ReturnType<typeof useCatalogStore.getState>['formas'];
-    activeFormaId: number;
-    activeTab: 'outer' | 'inner';
-    productPool: ReturnType<typeof useCatalogStore.getState>['productPool'];
-    masterProductPool: ReturnType<typeof useCatalogStore.getState>['masterProductPool'];
-    tempProductPool: ReturnType<typeof useCatalogStore.getState>['tempProductPool'];
-    globalSettings: ReturnType<typeof useCatalogStore.getState>['globalSettings'];
-  };
-  layers: ReturnType<typeof useLayerStore.getState>['layers'];
-  exportedAt: string;
-}
+import { serializeProjectFile, deserializeProjectFile } from '../lib/projectSerializer';
 
 export function ProjectMenu() {
   const [open, setOpen] = useState(false);
@@ -34,35 +19,23 @@ export function ProjectMenu() {
   }, []);
 
   const handleSave = () => {
-    const c = useCatalogStore.getState();
-    const l = useLayerStore.getState();
-    const data: ProjectFile = {
-      version: 1,
-      catalog: {
-        activeTemplate: c.activeTemplate,
-        formas: c.formas,
-        activeFormaId: c.activeFormaId,
-        activeTab: c.activeTab,
-        productPool: c.productPool,
-        masterProductPool: c.masterProductPool,
-        tempProductPool: c.tempProductPool,
-        globalSettings: c.globalSettings,
-      },
-      layers: l.layers,
-      exportedAt: new Date().toISOString(),
-    };
-
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `matbaapro-proje-${Date.now()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    toast.success('Proje JSON olarak kaydedildi');
-    setOpen(false);
+    try {
+      const data = serializeProjectFile();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${data.name || 'proje'}-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Proje JSON olarak kaydedildi');
+      setOpen(false);
+    } catch (err) {
+      console.error(err);
+      toast.error('Proje serialize edilirken hata oluştu');
+    }
   };
 
   const handleDuplicate = () => {
@@ -86,30 +59,8 @@ export function ProjectMenu() {
     const reader = new FileReader();
     reader.onload = (evt) => {
       try {
-        const data = JSON.parse(String(evt.target?.result)) as ProjectFile;
-        if (!data.catalog?.formas) throw new Error('Geçersiz proje');
-
-        // Reset image edit fields to safe defaults (legacy normalize).
-        const gs = data.catalog.globalSettings ?? ({} as never);
-        useCatalogStore.setState({
-          activeTemplate: data.catalog.activeTemplate,
-          formas: data.catalog.formas,
-          activeFormaId: data.catalog.activeFormaId ?? 1,
-          activeTab: data.catalog.activeTab ?? 'outer',
-          productPool: data.catalog.productPool ?? [],
-          masterProductPool: data.catalog.masterProductPool ?? [],
-          tempProductPool: data.catalog.tempProductPool ?? [],
-          globalSettings: {
-            ...gs,
-            imageScale: 100,
-            imagePosX: 0,
-            imagePosY: 0,
-            imageEditMode: false,
-          },
-          copiedSlotSettings: null,
-        });
-        useLayerStore.setState({ layers: data.layers ?? [], selectedPageIds: [] });
-        useHistoryStore.getState().clearHistory();
+        const data = JSON.parse(String(evt.target?.result));
+        deserializeProjectFile(data);
         toast.success('Proje yüklendi');
       } catch (err) {
         console.error(err);

@@ -65,12 +65,34 @@ export const projectService = {
     return project;
   },
 
-  async updateCanvas(userId: string, id: string, canvasData: Record<string, unknown>) {
+  async updateCanvas(
+    userId: string,
+    id: string,
+    updates: { canvasData: Record<string, unknown>; name?: string },
+  ) {
     const where = and(eq(projects.id, id), eq(projects.userId, userId));
     const result = await db
       .update(projects)
       .set({
-        canvasData,
+        canvasData: updates.canvasData,
+        ...(updates.name !== undefined ? { name: updates.name } : {}),
+        autoSavedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
+      })
+      .where(where);
+    const affected = (result as unknown as [{ affectedRows: number }])[0]?.affectedRows ?? 0;
+    if (affected === 0) throw new NotFoundError('Proje bulunamadı');
+
+    const project = await db.query.projects.findFirst({ where });
+    if (!project) throw new NotFoundError('Proje bulunamadı');
+    return project;
+  },
+
+  async updateName(userId: string, id: string, name: string) {
+    const where = and(eq(projects.id, id), eq(projects.userId, userId));
+    const result = await db
+      .update(projects)
+      .set({
+        name,
         autoSavedAt: new Date().toISOString().slice(0, 19).replace('T', ' '),
       })
       .where(where);

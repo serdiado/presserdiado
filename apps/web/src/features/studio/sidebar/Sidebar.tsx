@@ -177,15 +177,6 @@ export function DesignPanel() {
           }`}
         >
           <div className="px-3 py-3.5 flex flex-col gap-4 border-t border-border-default bg-surface-panel">
-            {/* A) Şablon Seç Butonu */}
-            <button
-              onClick={() => useUIStore.getState().setSetupModalOpen(true)}
-              className="w-full flex items-center justify-center gap-2 border border-border-strong bg-surface-panel hover:bg-surface-subtle text-text-secondary text-body-md py-2.5 rounded-radius-lg transition-all"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
-              Şablon Seç
-            </button>
-
             {/* B) Şablon Bilgileri */}
             <div className="flex flex-col gap-2">
               <div className="flex justify-between items-center py-1 text-sm border-b border-border-default last:border-0">

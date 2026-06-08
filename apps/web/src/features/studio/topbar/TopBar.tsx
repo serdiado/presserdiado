@@ -5,9 +5,11 @@ import { ThemeToggle } from '../../../components/ThemeToggle';
 import { Undo2, Redo2, Home, Sparkles, Save, Copy, Trash2, RotateCcw, ChevronDown, Cloud, Eye } from 'lucide-react';
 import { DownloadMenu } from './DownloadMenu';
 import { PriceCalculator } from '../pricing/PriceCalculator';
-import { ConfirmDialog } from '@/components/ui';
+import { ConfirmDialog, ConfirmModal } from '@/components/ui';
 import { ZoomWidget } from './ZoomWidget';
 import toast from 'react-hot-toast';
+import api from '@/lib/api';
+import { serializeStudioState } from '../lib/projectSerializer';
 
 function EditableTitle() {
   const projectName = useCatalogStore((s) => s.projectName);
@@ -67,6 +69,11 @@ function EditableTitle() {
 export function TopBar() {
   const navigate = useNavigate();
   const activeFormaId = useCatalogStore((s) => s.activeFormaId);
+  const projectId = useCatalogStore((s) => s.projectId);
+  const setProjectId = useCatalogStore((s) => s.setProjectId);
+  const projectName = useCatalogStore((s) => s.projectName);
+  const isDirty = useCatalogStore((s) => s.isDirty);
+  const setIsDirty = useCatalogStore((s) => s.setIsDirty);
 
   const undo = useHistoryStore((s) => s.undo);
   const redo = useHistoryStore((s) => s.redo);
@@ -75,7 +82,6 @@ export function TopBar() {
 
   const clearProducts = useCatalogStore((s) => s.clearProducts);
   const resetCatalog = useCatalogStore((s) => s.resetCatalog);
-  const setSetupModalOpen = useUIStore((s) => s.setSetupModalOpen);
   const setPreviewMode = useUIStore((s) => s.setPreviewMode);
 
   const [fileMenuOpen, setFileMenuOpen] = useState(false);
@@ -83,6 +89,8 @@ export function TopBar() {
 
   const [isClearOpen, setIsClearOpen] = useState(false);
   const [isResetOpen, setIsResetOpen] = useState(false);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [pendingNavigatePath, setPendingNavigatePath] = useState<string | null>(null);
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -107,8 +115,40 @@ export function TopBar() {
   }, []);
 
   const handleNewDesign = () => {
-    setSetupModalOpen(true, 'newProject');
-    setFileMenuOpen(false);
+    if (isDirty) {
+      setPendingNavigatePath('/new');
+      setConfirmModalOpen(true);
+    } else {
+      navigate('/new');
+      setFileMenuOpen(false);
+    }
+  };
+
+  const handleHomeClick = () => {
+    if (isDirty) {
+      setPendingNavigatePath('/dashboard');
+      setConfirmModalOpen(true);
+    } else {
+      navigate('/dashboard');
+    }
+  };
+
+  const handleConfirmSaveAndNavigate = async () => {
+    try {
+      await handleCloudSave();
+      if (pendingNavigatePath) {
+        navigate(pendingNavigatePath);
+      }
+      setConfirmModalOpen(false);
+      setPendingNavigatePath(null);
+    } catch (error) {
+      console.error('Modal kaydet ve yönlendir hatası:', error);
+    }
+  };
+
+  const handleCancelModal = () => {
+    setConfirmModalOpen(false);
+    setPendingNavigatePath(null);
   };
 
   const handleClearProducts = () => {
@@ -121,11 +161,42 @@ export function TopBar() {
     setIsResetOpen(false);
   };
 
-  const handleCloudSave = () => {
-    toast.success('Kaydedildi');
+  const handleCloudSave = async () => {
+    const toastId = toast.loading('Tasarım buluta kaydediliyor...');
+    try {
+      const canvasData = serializeStudioState();
+      if (!projectId) {
+        // İlk kayıt
+        // TODO: productTypeId'yi aktif template kategorisinden türet (şu an sabit broşür)
+        const response = await api.post('/projects', {
+          name: projectName,
+          productTypeId: '00000000-0000-0000-0000-000000000001',
+          canvasData,
+          status: 'saved',
+        });
+        const newId = response.data.id;
+        setProjectId(newId);
+        setIsDirty(false);
+        navigate(`/studio/${newId}`, { replace: true });
+        toast.success('Tasarım buluta başarıyla kaydedildi!', { id: toastId });
+      } else {
+        // Güncelleme
+        await api.patch(`/projects/${projectId}/canvas`, {
+          canvasData,
+          name: projectName,
+        });
+        setIsDirty(false);
+        toast.success('Değişiklikler buluta kaydedildi!', { id: toastId });
+      }
+    } catch (error) {
+      console.error('Kaydetme hatası:', error);
+      toast.error('Tasarım kaydedilirken bir hata oluştu.', { id: toastId });
+      throw error;
+    }
   };
 
   const handlePreview = () => {
+    useUIStore.getState().clearSelection();
     setPreviewMode(true);
   };
 
@@ -134,7 +205,7 @@ export function TopBar() {
       {/* Sol Grup */}
       <div className="flex items-center gap-2">
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={handleHomeClick}
           title="Kullanıcı Paneli"
           className="h-8 w-8 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-subtle border border-border-strong rounded-radius-md transition-colors shrink-0"
         >
@@ -167,17 +238,21 @@ export function TopBar() {
                 <span>Yeni Tasarım Başlat...</span>
               </button>
 
-              {/* Değişiklikleri Kaydet */}
+              {/* Kaydet */}
               <button
-                disabled
-                title="Tasarımı kaydetmek için bulut bağlantısı yakında eklenecektir."
-                className="w-full text-left px-3 py-2.5 rounded-radius-md text-body-md font-medium text-text-muted opacity-35 cursor-not-allowed flex items-center justify-between gap-2.5 select-none"
+                onClick={() => {
+                  if (isDirty) {
+                    handleCloudSave();
+                    setFileMenuOpen(false);
+                  }
+                }}
+                disabled={!isDirty}
+                className="w-full text-left px-3 py-2.5 hover:bg-surface-subtle rounded-radius-md text-body-md font-medium text-text-secondary hover:text-text-primary transition-all flex items-center gap-2.5 disabled:opacity-40 disabled:cursor-not-allowed select-none"
               >
                 <span className="flex items-center gap-2.5">
                   <Save size={16} className="shrink-0" />
-                  <span>Değişiklikleri Kaydet</span>
+                  <span>Kaydet</span>
                 </span>
-                <span className="text-body-xs font-medium bg-primary/10 border border-primary/20 text-primary px-1.5 py-0.5 rounded-radius-md">Yakında</span>
               </button>
 
               {/* Projeyi Çoğalt */}
@@ -244,8 +319,9 @@ export function TopBar() {
         {/* Cloud Kaydet Butonu */}
         <button
           onClick={handleCloudSave}
+          disabled={!isDirty}
           title="Kaydet"
-          className="h-8 w-8 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-subtle border border-border-strong rounded-radius-md transition-colors shrink-0"
+          className="h-8 w-8 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-subtle border border-border-strong rounded-radius-md transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <Cloud size={16} />
         </button>
@@ -269,6 +345,16 @@ export function TopBar() {
           confirmVariant="danger"
           onConfirm={handleResetCatalog}
           onCancel={() => setIsResetOpen(false)}
+        />
+
+        <ConfirmModal
+          isOpen={confirmModalOpen}
+          title="Kaydedilmemiş Değişiklikler"
+          description="Tasarımda yaptığınız değişiklikler kaydedilmemiş. Sayfadan ayrılmadan önce değişiklikleri kaydetmek istiyor musunuz?"
+          confirmLabel="Kaydet ve Devam Et"
+          cancelLabel="Çalışmaya Geri Dön"
+          onConfirm={handleConfirmSaveAndNavigate}
+          onCancel={handleCancelModal}
         />
       </div>
 
