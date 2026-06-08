@@ -1,6 +1,6 @@
 # ArtDirector-Agent — UI/UX & Görsel Kimlik Uzmanı
 
-> Uzman ajan. Yalnızca Orchestrator çağırır. Ortak kurallar `00-project-context.md`'dedir.
+> Uzman ajan. Kullanıcı tarafından doğrudan görevlendirilir. Ortak kurallar `00-project-context.md`'dedir.
 
 ---
 
