@@ -1,72 +1,60 @@
 # Ürün Modülü — Mimari Karar Belgesi
 > Presserdiado / MatbaaPro — Kalıcı Ürün Havuzu, Medya Kütüphanesi, SKU↔Resim Eşleşmesi
-> Tüm SeniorDev, ExcelLayout, ArtDirector komutlarında bu belge referans alınır.
+> Tüm SeniorDev, ExcelLayout, ArtDirector, StudioCanvas komutlarında bu belge referans alınır.
+> Son güncelleme: Parça 1-3 tamamlandı, Parça 7 kısmen tamamlandı.
 
 ---
 
-## Bağlam: Mevcut Durum ve Sorun
-
-Şu an stüdyoda üç ayrı "havuz" kavramı var, bu karmaşa yaratıyor:
+## Bağlam: Mevcut Durum
 
 | Alan | Gerçek İşlev | Durum |
 |---|---|---|
-| Sağ Panel → "Excel ile otomatik yerleştir" | Sıralı Excel'i slot→POS eşleştirip kanvasa dizer. DB'ye yazmaz. | **KALIR — dokunulmaz** |
-| Sağ Panel → "Ürün havuzu" bölümü | Eski geçici havuz (Excel'den yüklenir, proje JSON'unda yaşır) | **TAMAMEN KALDIRILIR** |
-| Sol Panel → "Bekleme Alanı" | Hücreden çıkarılan ürünleri geçici park etme — ürün havuzu değil | **KALIR — dokunulmaz** |
-| Kullanıcı Paneli → Kalıcı Havuz | DB tabanlı, userId bazlı, tüm projelerde ortak | **KURULACAK** |
-
-**Kaldırılacak UI elemanları** (Sağ Panel → Ürünler sekmesi):
-- "Ürün havuzu" başlıklı bölümün tamamı
-- "Ürün havuzu Excel'i yükle" dropzone
-- "Dosya değiştir" butonu
-- "Havuzu temizle" butonu
-- "Ürün ekle" butonu
-- "Ürün ara ve sürükle" arama kutusu
-- Tümü / Kullanılan / Kalan filtreleri
-
-Bu elemanların işlevi Parça 4'te DB'den beslenecek yeni bileşenle karşılanacak.
+| Sağ Panel → "Excel ile otomatik yerleştir" | Sıralı Excel'i slot→POS eşleştirip kanvasa dizer. DB'ye yazmaz. | ✅ KALIR — dokunulmaz |
+| Sağ Panel → "Ürün havuzu" bölümü | Eski geçici havuz | ✅ KALDIRILDI (Parça 7 kısmi) |
+| Sol Panel → "Bekleme Alanı" | Hücreden çıkarılan ürünleri geçici park etme | ✅ KALIR — dokunulmaz |
+| Kullanıcı Paneli → Kalıcı Havuz | DB tabanlı, userId bazlı | ✅ KURULDU (Parça 1-3) |
 
 ---
 
 ## Veri Modeli
 
-### Tablo 1: `products` (kalıcı ürün havuzu)
+### Tablo 1: `products` (kalıcı ürün havuzu) ✅ MEVCUT
 ```sql
-id          VARCHAR(36) PRIMARY KEY   -- uuid
-userId      VARCHAR(36) NOT NULL      -- sahip (izolasyon)
-sku         VARCHAR(100) NOT NULL     -- benzersiz ürün kodu (userId bazlı)
-name        VARCHAR(255) NOT NULL     -- ürün adı
-price       DECIMAL(10,2)             -- fiyat (kuruş bazlı hesap için INT de olabilir)
-category    VARCHAR(100)              -- kategori
-unit        VARCHAR(50)               -- birim (adet, kg, lt...)
-description TEXT                      -- açıklama
+id          VARCHAR(36) PRIMARY KEY
+userId      VARCHAR(36) NOT NULL
+sku         VARCHAR(100) NOT NULL
+name        VARCHAR(500) NOT NULL       -- 500 olarak korundu (veri kesilme riski)
+price       DECIMAL(10,2)
+category    VARCHAR(100)
+unit        VARCHAR(50)
+description TEXT
 createdAt   DATETIME
-updatedAt   DATETIME
-UNIQUE KEY (userId, sku)              -- aynı kullanıcıda SKU tekrarlanamaz
+updatedAt   DATETIME ON UPDATE CURRENT_TIMESTAMP
+UNIQUE KEY (userId, sku)
 ```
 
-### Tablo 2: `product_images` (ürün resimleri — SKU eşleşmeli)
+### Tablo 2: `product_images` (ürün resimleri — SKU eşleşmeli) ✅ MEVCUT
 ```sql
 id            VARCHAR(36) PRIMARY KEY
 userId        VARCHAR(36) NOT NULL
-sku           VARCHAR(100) NOT NULL   -- eşleşme anahtarı (products.sku ile)
-imageKey      VARCHAR(500) NOT NULL   -- /uploads/userId/products/<uuid>.ext
-fileName      VARCHAR(255)            -- kullanıcının yüklediği orijinal ad
-sortOrder     INT DEFAULT 1           -- çoklu resim sırası
-isTransparent BOOLEAN DEFAULT FALSE   -- PNG köşe piksel analizi sonucu
+sku           VARCHAR(100) NOT NULL
+imageKey      VARCHAR(500) NOT NULL
+fileName      VARCHAR(255)
+sortOrder     INT DEFAULT 1
+isTransparent BOOLEAN DEFAULT FALSE
 createdAt     DATETIME
 INDEX (userId, sku)
 ```
 
-### Tablo 3: `media_assets` (genel medya — logo, arka plan, şekil)
+### Tablo 3: `media_assets` (genel medya — logo, arka plan, şekil) ✅ MEVCUT
 ```sql
 id          VARCHAR(36) PRIMARY KEY
 userId      VARCHAR(36) NOT NULL
 type        ENUM('logo','background','shape','other')
-imageKey    VARCHAR(500) NOT NULL     -- /uploads/userId/media/<uuid>.ext
+imageKey    VARCHAR(500) NOT NULL
 fileName    VARCHAR(255)
 mimeType    VARCHAR(100)
-size        INT                       -- byte
+size        INT
 createdAt   DATETIME
 INDEX (userId, type)
 ```
@@ -79,12 +67,12 @@ INDEX (userId, type)
 
 ---
 
-## Neden İki Ayrı Tablo (product_images + media_assets)?
+## Neden İki Ayrı Tablo?
 
-- Ürün resimleri SKU eşleşmesi, sortOrder, isTransparent gibi ürüne özel mantık taşır
-- Logo/arka plan serbest, eşleşmesiz — type ile ayrışır
+- Ürün resimleri: SKU eşleşmesi, sortOrder, isTransparent — ürüne özel mantık
+- Genel medya: serbest, eşleşmesiz — type ile ayrışır
 - Tek tabloda ürün-özel kolonlar logo kayıtlarında boş kalır → kirli model
-- İleride bir ürünün birden fazla resmi (galeri) veya resim ERP'den gelmesi durumunda ayrı tablo temiz kalır
+- ERP entegrasyonunda ayrı tablo temiz kalır
 
 ---
 
@@ -92,10 +80,9 @@ INDEX (userId, type)
 
 ### Temel ilke
 Resim dosyasının fiziksel adı önemsiz. Eşleşme DB'deki `product_images.sku` kolonunda tutulur.
-Fiziksel ad: `<uuid>.<ext>` — sistem üretir, kullanıcı adlandırmasına bağımlılık yok.
+Fiziksel ad: `<uuid>.<ext>` — sistem üretir.
 
 ### Akıllı eşleştirme (toplu yüklemede öneri motoru)
-Kullanıcı resim yüklediğinde, sistem dosya adından SKU tahmini yapar:
 
 | Dosya adı | Tahmin | Güven |
 |---|---|---|
@@ -107,102 +94,134 @@ Kullanıcı resim yüklediğinde, sistem dosya adından SKU tahmini yapar:
 | `WhatsApp Image.jpg` | — | Düşük — elle atanmalı |
 
 Tahmin algoritması: Levenshtein mesafesi ile DB'deki SKU listesine karşı skor hesaplanır.
-Yüksek güven → otomatik eşleştir. Düşük güven → kullanıcıya öneri sun, onay iste.
 
 ### Eşleştirme önizleme adımı (zorunlu)
-Toplu yüklemede "Kör yükleme" yapılmaz. Kullanıcı her zaman özet görür:
+Toplu yüklemede kör yükleme yapılmaz:
 > "423 resimden 380'i otomatik eşleşti, 43'ü elle atanmalı"
-→ Otomatikleri "Hepsini Onayla", geri kalanları tek tek ata.
 
 ### Şeffaflık kontrolü
-PNG yüklendiğinde 4 köşe piksel analizi:
-- Alfa kanalı yoksa veya tüm köşeler opaksa → `isTransparent = false` + UI'da ⚠️ uyarısı
-- Uyarı engelleme değil, bilgilendirme — kullanıcı yine de yükleyebilir
+PNG yüklendiğinde client-side canvas ile 4 köşe piksel analizi:
+- Opak köşeler → `isTransparent = false` + UI'da ⚠️ uyarısı
+- Uyarı engelleme değil, bilgilendirme
 
 ---
 
 ## Kullanıcı Akışları
 
-### Akış 1: İlk Kurulum (Wizard — yeni kullanıcı)
+### Akış 1: İlk Kurulum (Wizard — yeni kullanıcı) — Parça 5'te yapılacak
 ```
 Adım 1 — Ürün Listeni Yükle
-  → Harici Excel sürükle (herhangi format)
-  → Kolon eşleştirme UI: "Hangi kolon SKU? Hangisi isim? Hangisi fiyat?"
-  → Eşleştirme şablonu kaydedilebilir (bir sonraki seferde tekrar yapılmaz)
-  → Önizleme: "500 ürün bulundu, 3 satırda hata var"
-  → Onayla → products tablosuna yaz
+  → Harici Excel sürükle (ExcelImportModal — ✅ HAZIR)
+  → Kolon eşleştirme + önizleme + onayla → products tablosuna yaz
 
 Adım 2 — Ürün Resimlerini Yükle
-  → Toplu sürükle (400-600 dosya)
-  → Akıllı eşleştirme çalışır
-  → Özet: "380 otomatik, 43 elle atanmalı"
-  → Hızlı onay ekranı
-  → Onayla → product_images tablosuna yaz
+  → Toplu sürükle (MediaUploadModal — Parça 4'te yapılacak)
+  → Akıllı eşleştirme + özet + onayla → product_images tablosuna yaz
 
 Adım 3 — Hazır
   → "Ürün havuzun kuruldu, tasarım yapmaya başla"
   → Stüdyoya yönlendir
 ```
 
-### Akış 2: Tek Ürün Kartı (sonraki kullanım)
+### Akış 2: Tekil Ürün Kartı ✅ HAZIR
 ```
 Kullanıcı Paneli → Ürün Listelerim → "+ Ürün Ekle"
-  → SKU (zorunlu, userId bazlı unique)
-  → Ürün Adı (zorunlu)
-  → Fiyat, Kategori, Birim, Açıklama (opsiyonel)
-  → Resim yükle (şeffaflık uyarısı)
-  → Kaydet → products + product_images'a yaz
+  → SKU, isim, fiyat, kategori, birim, açıklama
+  → Kaydet → products tablosuna yaz
+  NOT: Resim yükleme alanı Parça 4 sonrası eklenecek
 ```
 
-### Akış 3: Medya Kütüphanesi (resim yönetimi)
+### Akış 3: Medya Kütüphanesi — Parça 4+6'da yapılacak
 ```
-Kullanıcı Paneli → Medya Kütüphanesi
+Kullanıcı Paneli → Medya Kütüphanesi (şu an "Dosyalarım")
   ├── Ürün Resimleri sekmesi
+  │     → Toplu resim yükle + akıllı SKU eşleştirme
   │     → Yüklü resimleri gör, SKU eşleşmelerini düzenle
-  │     → Yeni resim yükle + eşleştir
   │     → Eşleşmemiş resimleri filtrele
   └── Medya sekmesi (logo / arka plan / şekil)
         → Yükle, type seç, kullan
 ```
 
-### Akış 4: Stüdyoda Ürün Kullanımı (Parça 4'te yapılacak)
+### Akış 4: Stüdyoda Ürün Kullanımı — Parça 7'de tamamlanacak
 ```
 Stüdyo → Sağ Panel → Ürünler sekmesi
-  ├── Excel ile otomatik yerleştir  ← MEVCUT, DOKUNULMAZ
-  └── [Eski "Ürün havuzu" bölümü KALDIRILDI]
-      Yerine gelecek (Parça 4):
+  ├── Excel ile otomatik yerleştir  ← MEVCUT, DOKUNULMAZ ✅
+  └── Ürün Havuzu [KALDIRILDI ✅]
+      Yerine gelecek (Parça 7):
       → DB'den arama + listeleme
       → Sürükle-bırak hücreye
       → "Ürün Havuzunu Yönet" → Kullanıcı Paneline link
 ```
 
+### Akış 5: Excel Import ✅ HAZIR
+```
+Kullanıcı Paneli → Ürün Listelerim → "Excel'den İçe Aktar"
+  → ExcelImportModal: dosya yükle → kolon eşleştir → önizle → import
+  → POST /api/v1/products/bulk
+  → "X eklendi, Y atlandı" özeti
+```
+
 ---
 
-## Uygulama Parçaları (öncelik sırası)
+## Uygulama Parçaları (güncel durum)
 
-| Parça | İş | Ajan |
-|---|---|---|
-| **Parça 1** | DB migration: 3 tablo oluştur | SeniorDev |
-| **Parça 2** | Tekil ürün CRUD endpoint + ürün kartı UI | SeniorDev + ArtDirector |
-| **Parça 3** | Harici Excel import (kolon eşleştirme) | SeniorDev + ExcelLayout |
-| **Parça 4** | Toplu resim yükleme + akıllı SKU eşleştirme | SeniorDev |
-| **Parça 5** | Wizard (ilk kurulum akışı) | SeniorDev + ArtDirector |
-| **Parça 6** | Medya Kütüphanesi UI | ArtDirector + SeniorDev |
-| **Parça 7** | Stüdyo sağ panel: eski havuz kaldır, DB bağla | StudioCanvas + SeniorDev |
+| Parça | İş | Ajan | Durum |
+|---|---|---|---|
+| **Parça 1** | DB migration: 3 tablo | SeniorDev | ✅ TAMAMLANDI |
+| **Parça 2** | Tekil ürün CRUD + UI | SeniorDev + ArtDirector | ✅ TAMAMLANDI |
+| **Parça 3** | Harici Excel import | SeniorDev + ExcelLayout | ✅ TAMAMLANDI |
+| **Parça 6A** | Medya Kütüphanesi iskelet: "Dosyalarım"→"Medya Kütüphanesi", sekmeli yapı | ArtDirector + SeniorDev — Gemini | ⏳ SIRADA |
+| **Parça 4** | Toplu resim yükleme + akıllı SKU eşleştirme (Medya Kütüphanesi → Ürün Resimleri sekmesi) | SeniorDev — **Opus** | ⏳ SIRADA |
+| **Parça 5** | Wizard (ilk kurulum akışı) | SeniorDev + ArtDirector — **Opus** | ⏳ SIRADA |
+| **Parça 6B** | Medya sekmesi tamamla (logo/arka plan/şekil) | ArtDirector + SeniorDev — Gemini | ⏳ SIRADA |
+| **Parça 7** | Stüdyo sağ panel: DB'den beslenen ürün havuzu | StudioCanvas + SeniorDev | 🔄 KISMI |
+
+### Güncel öncelik sırası
+```
+Parça 6A → Medya Kütüphanesi iskelet (Gemini)
+    ↓
+Parça 4  → Toplu resim yükleme + SKU eşleştirme (Opus)
+    ↓
+Parça 5  → Wizard (Opus)
+    ↓
+Parça 6B → Medya sekmesi tamamla (Gemini)
+    ↓
+Parça 7  → Stüdyo DB bağlantısı (Gemini + Opus)
+```
+
+---
+
+## Mevcut API Endpoint'leri
+
+| Method | Path | Durum | Açıklama |
+|---|---|---|---|
+| GET | `/api/v1/products` | ✅ | Kullanıcı ürün listesi |
+| POST | `/api/v1/products` | ✅ | Tekil ürün ekle |
+| PATCH | `/api/v1/products/:id` | ✅ | Ürün güncelle |
+| DELETE | `/api/v1/products/:id` | ✅ | Ürün sil (cascade: product_images) |
+| POST | `/api/v1/products/bulk` | ✅ | Toplu ürün ekle (max 1000) |
+| GET | `/api/v1/product-images` | 🔲 iskelet | Kullanıcı resim listesi |
+| GET | `/api/v1/product-images/:sku` | 🔲 iskelet | SKU'ya ait resimler |
+| POST | `/api/v1/product-images` | 🔲 iskelet | Resim yükle + SKU ata |
+| DELETE | `/api/v1/product-images/:id` | 🔲 iskelet | Resim sil |
+| GET | `/api/v1/media-assets` | 🔲 iskelet | Medya listesi |
+| POST | `/api/v1/media-assets` | 🔲 iskelet | Medya yükle |
+| DELETE | `/api/v1/media-assets/:id` | 🔲 iskelet | Medya sil |
 
 ---
 
 ## Güvenlik Notları (SecurityAuth için)
 
-- Her endpoint'te `userId` sahiplik kontrolü (IDOR'a karşı)
-- `products`, `product_images`, `media_assets` sorgularında her zaman `WHERE userId = :userId`
-- `/uploads/{userId}/` altındaki dosyalara doğrudan URL erişimi — ileride signed URL'e taşınacak
-- SKU unique constraint `(userId, sku)` bazlı — farklı kullanıcılar aynı SKU'yu kullanabilir
+- Her endpoint'te `userId` sahiplik kontrolü (IDOR koruması)
+- Tüm sorgularda `WHERE userId = :userId`
+- `/uploads/{userId}/` şu an public — pilot sonrası signed URL'e taşınacak
+- SKU unique: `(userId, sku)` — farklı kullanıcılar aynı SKU'yu kullanabilir
 
 ---
 
-## Açık Kararlar (pilot sonrasına bırakılan)
+## Açık Kararlar (pilot sonrasına)
 
-- ERP entegrasyonu: SKU listesi dışarıdan geldiğinde `products` tablosu kaynak olarak kalır, sadece import adaptörü değişir
-- Signed URL: şu an `/uploads/` public — pilot sonrası S3 + signed URL'e geçişte `imageKey` yapısı değişmez, sadece URL üretim mantığı değişir
-- Ürün galerisi (çoklu resim UI): `sortOrder` altyapısı hazır, sürükle-bırak sıralama UI'ı pilot sonrası
+- ERP entegrasyonu: `products` tablosu kaynak kalır, sadece import adaptörü değişir
+- Signed URL: `imageKey` yapısı değişmez, sadece URL üretim mantığı değişir
+- Ürün galerisi çoklu resim UI: `sortOrder` altyapısı hazır, sürükle-bırak UI sonraya
+- Tekil ürün kartına resim yükleme alanı: Parça 4 sonrası eklenecek

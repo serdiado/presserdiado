@@ -1,12 +1,13 @@
 // Kullanıcı Paneli — App Shell (TopBar + SideNav + layout wrapper)
 // apps/web/src/features/dashboard/Shell.tsx
 
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home, FileText, LayoutTemplate, List, Palette,
   Package, Folder, Users, CreditCard, Settings,
   HelpCircle, Bell, Search, Plus, LogOut,
+  LibraryBig, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import type { NavItem, NavItemId, User, UsageStat } from './types';
 
@@ -18,7 +19,7 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'lists',     label: 'Ürün Listelerim'       },
   { id: 'brand',     label: 'Marka Varlıklarım'     },
   { id: 'orders',    label: 'Baskı Siparişlerim',   badge: 3  },
-  { id: 'files',     label: 'Dosyalarım'            },
+  { id: 'files',     label: 'Medya Kütüphanesi'     },
   { id: 'team',      label: 'Ekip ve Paylaşım'      },
   { id: 'billing',   label: 'Fatura ve Ödeme'       },
   { id: 'account',   label: 'Hesap Ayarları'        },
@@ -33,7 +34,7 @@ export const NAV_ROUTES: Record<NavItemId, string> = {
   lists:     '/dashboard/urunler',
   brand:     '/dashboard/coming-soon',
   orders:    '/dashboard/siparisler',
-  files:     '/dashboard/coming-soon',
+  files:     '/dashboard/medya',
   team:      '/dashboard/coming-soon',
   billing:   '/dashboard/coming-soon',
   account:   '/dashboard/coming-soon',
@@ -47,7 +48,7 @@ const NAV_ICONS: Record<NavItemId, React.ElementType> = {
   lists:     List,
   brand:     Palette,
   orders:    Package,
-  files:     Folder,
+  files:     LibraryBig,
   team:      Users,
   billing:   CreditCard,
   account:   Settings,
@@ -176,6 +177,7 @@ function DashboardSideNav({
 }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isMedyaOpen, setIsMedyaOpen] = useState(() => location.pathname.startsWith('/dashboard/medya'));
 
   // Aktif route'dan active id bul (home için tam eşleşme, diğerleri için startswith kontrolü)
   let activeId: NavItemId = 'home';
@@ -207,6 +209,54 @@ function DashboardSideNav({
         {NAV_ITEMS.map((item) => {
           const isActive = item.id === activeId;
           const Icon = NAV_ICONS[item.id];
+
+          if (item.id === 'files') {
+            return (
+              <div key={item.id} className="w-full flex flex-col space-y-0.5">
+                <button
+                  onClick={() => setIsMedyaOpen(!isMedyaOpen)}
+                  className={[
+                    'w-full inline-flex items-center gap-3 px-3 py-2 rounded-md transition-colors text-body-md hover:bg-surface-subtle',
+                    isMedyaOpen ? 'text-text-primary' : 'text-text-secondary',
+                  ].join(' ')}
+                >
+                  <Icon
+                    size={18}
+                    className={isMedyaOpen ? 'text-text-primary' : 'text-text-secondary'}
+                  />
+                  <span className="flex-1 text-left truncate">{item.label}</span>
+                  {isMedyaOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </button>
+                {isMedyaOpen && (
+                  <div className="flex flex-col space-y-0.5">
+                    <Link
+                      to="/dashboard/medya/urun-resimleri"
+                      className={[
+                        'w-full inline-flex items-center pl-8 pr-3 py-2 rounded-md text-body-sm transition-colors',
+                        location.pathname === '/dashboard/medya/urun-resimleri'
+                          ? 'bg-surface-subtle text-text-primary'
+                          : 'text-text-secondary hover:bg-surface-subtle',
+                      ].join(' ')}
+                    >
+                      Ürün Resimleri
+                    </Link>
+                    <Link
+                      to="/dashboard/medya/genel"
+                      className={[
+                        'w-full inline-flex items-center pl-8 pr-3 py-2 rounded-md text-body-sm transition-colors',
+                        location.pathname === '/dashboard/medya/genel'
+                          ? 'bg-surface-subtle text-text-primary'
+                          : 'text-text-secondary hover:bg-surface-subtle',
+                      ].join(' ')}
+                    >
+                      Medya
+                    </Link>
+                  </div>
+                )}
+              </div>
+            );
+          }
+
           return (
             <Link
               key={item.id}
