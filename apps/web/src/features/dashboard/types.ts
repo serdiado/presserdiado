@@ -73,6 +73,19 @@ export interface User {
   avatarInitials?: string;// "MK"
 }
 
+export interface Product {
+  id: string;
+  sku: string;
+  name: string;
+  price?: string | number | null;
+  currency?: string;
+  category?: string | null;
+  unit?: string | null;
+  description?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface UsageStat {
   used: number;
   limit: number;

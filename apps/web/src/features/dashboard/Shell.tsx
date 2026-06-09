@@ -30,7 +30,7 @@ export const NAV_ROUTES: Record<NavItemId, string> = {
   home:      '/dashboard',
   projects:  '/dashboard/projeler',
   templates: '/dashboard/coming-soon',
-  lists:     '/dashboard/coming-soon',
+  lists:     '/dashboard/urunler',
   brand:     '/dashboard/coming-soon',
   orders:    '/dashboard/siparisler',
   files:     '/dashboard/coming-soon',
