@@ -200,6 +200,7 @@ export function Canvas() {
 
         <div
           className="relative z-10 flex h-full w-full flex-row items-stretch bg-transparent overflow-visible"
+          style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch' }}
         >
           {!isPreviewMode && (
             <>

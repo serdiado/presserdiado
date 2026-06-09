@@ -158,7 +158,6 @@ export default function AdminThemePage() {
     useCatalogStore.setState((state) => ({
       ...state,
       productPool: [],
-      masterProductPool: [],
       formas: [],
       activeTemplate: null as never,
       activeFormaId: 1,

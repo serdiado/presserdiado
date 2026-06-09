@@ -166,6 +166,7 @@ export function TopBar() {
     const toastId = toast.loading('Tasarım buluta kaydediliyor...');
     try {
       const canvasData = serializeStudioState();
+
       if (!projectId) {
         // İlk kayıt
         // TODO: productTypeId'yi aktif template kategorisinden türet (şu an sabit broşür)
@@ -181,7 +182,8 @@ export function TopBar() {
         navigate(`/studio/${newId}`, { replace: true });
         toast.success('Tasarım buluta başarıyla kaydedildi!', { id: toastId });
 
-        // Fire-and-forget thumbnail capture
+        // Thumbnail yakalama + yükleme kaydetme akışını bloklamaz; arka planda koşar.
+        // navigate replace sonrası canvas DOM'u yeniden render edilmediği için yakalama güvenle tamamlanır.
         const canvasEl = document.getElementById('studio-canvas-root');
         if (canvasEl && newId) {
           void captureAndUploadThumbnail(canvasEl, newId);
@@ -195,9 +197,9 @@ export function TopBar() {
         setIsDirty(false);
         toast.success('Değişiklikler buluta kaydedildi!', { id: toastId });
 
-        // Fire-and-forget thumbnail capture
+        // Thumbnail yakalama + yükleme kaydetme akışını bloklamaz; arka planda koşar.
         const canvasEl = document.getElementById('studio-canvas-root');
-        if (canvasEl && projectId) {
+        if (canvasEl) {
           void captureAndUploadThumbnail(canvasEl, projectId);
         }
       }

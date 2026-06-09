@@ -9,7 +9,7 @@ export interface StudioCanvasData {
     activeFormaId: number;
     activeTab: 'outer' | 'inner';
     productPool: ProductInfo[];
-    masterProductPool: ProductInfo[];
+    masterProductPool?: ProductInfo[]; // for backward compatibility
     tempProductPool: TempPoolProduct[];
     globalSettings: CatalogSettings;
   };
@@ -35,7 +35,6 @@ export function serializeStudioState(): StudioCanvasData {
       activeFormaId: c.activeFormaId,
       activeTab: c.activeTab,
       productPool: c.productPool,
-      masterProductPool: c.masterProductPool,
       tempProductPool: c.tempProductPool,
       globalSettings: c.globalSettings,
     },
@@ -56,7 +55,6 @@ export function deserializeStudioState(data: StudioCanvasData) {
     activeFormaId: data.catalog.activeFormaId ?? 1,
     activeTab: data.catalog.activeTab ?? 'outer',
     productPool: data.catalog.productPool ?? [],
-    masterProductPool: data.catalog.masterProductPool ?? [],
     tempProductPool: data.catalog.tempProductPool ?? [],
     globalSettings: {
       ...gs,

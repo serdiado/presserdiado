@@ -239,6 +239,7 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
               {cell.image ? (
                 <img
                   src={cell.image}
+                  crossOrigin="anonymous"
                   alt="Footer Logo"
                   className="max-w-full max-h-full object-contain pointer-events-none"
                 />

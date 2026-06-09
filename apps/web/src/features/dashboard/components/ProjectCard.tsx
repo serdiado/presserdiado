@@ -163,14 +163,14 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
       >
         {/* Thumbnail */}
         <div
-          className="aspect-4/3 relative flex items-center justify-center w-full rounded-t-lg overflow-hidden"
-          style={{ background: project.coverColor ?? '#f1f5f9' }}
+          className="aspect-4/3 relative flex items-center justify-center w-full rounded-t-lg overflow-hidden bg-surface-subtle"
+          style={{ background: project.coverColor }}
         >
           {project.thumbnailKey ? (
             <img
               src={project.thumbnailKey}
               alt={project.name}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
           ) : (
             /* Görsel yoksa mini ızgara placeholder */

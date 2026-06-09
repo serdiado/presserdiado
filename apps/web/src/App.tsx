@@ -7,6 +7,7 @@ import { AnaSayfa } from '@/features/dashboard/pages/AnaSayfa';
 import { Projelerim } from '@/features/dashboard/pages/Projelerim';
 import { Siparislerim } from '@/features/dashboard/pages/Siparislerim';
 import { UrunListelerim } from '@/features/dashboard/pages/UrunListelerim';
+
 import { ComingSoon } from '@/features/dashboard/pages/ComingSoon';
 import StudioPage from '@/features/studio/StudioPage';
 import NewStudioWizard from '@/features/wizard/NewStudioWizard';

@@ -43,7 +43,6 @@ interface CatalogState {
   activeFormaId: number;
   activeTab: 'outer' | 'inner';
   productPool: ProductInfo[];
-  masterProductPool: ProductInfo[];
   tempProductPool: TempPoolProduct[];
   globalSettings: CatalogSettings;
   copiedSlotSettings: DeepPartial<CatalogSettings> | null;
@@ -108,7 +107,6 @@ interface CatalogActions {
 
   // Product pool
   setProductPool: (products: ProductInfo[]) => void;
-  setMasterProductPool: (products: ProductInfo[]) => void;
   autoFillSlots: () => void;
   clearProducts: () => void;
   resetCatalog: () => void;
@@ -221,7 +219,6 @@ export const useCatalogStore = create<Store>()(
       activeTab: 'outer',
       formas: buildFormasForTemplate(Template1),
       productPool: [],
-      masterProductPool: [],
       tempProductPool: [],
       globalSettings: clone(initialGlobalSettings),
       copiedSlotSettings: null,
@@ -276,7 +273,7 @@ export const useCatalogStore = create<Store>()(
           formas: formasWithBackgrounds,
           activeFormaId: 1,
           activeTab: 'outer',
-          // globalSettings, productPool, masterProductPool, tempProductPool'a DOKUNMA
+          // globalSettings, productPool, tempProductPool'a DOKUNMA
         });
         useHistoryStore.getState().clearHistory();
 
@@ -297,7 +294,6 @@ export const useCatalogStore = create<Store>()(
           activeTab: 'outer',
           globalSettings: clone(initialGlobalSettings),
           productPool: [],
-          masterProductPool: [],
           tempProductPool: [],
           copiedSlotSettings: null,
           copiedFooterSettings: null,
@@ -513,7 +509,6 @@ export const useCatalogStore = create<Store>()(
 
       // === Product pool ===
       setProductPool: (products) => set({ productPool: products }),
-      setMasterProductPool: (products) => set({ masterProductPool: products }),
 
       autoFillSlots: () => {
         const { formas, productPool, globalSettings } = get();

@@ -1114,6 +1114,7 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
               <>
                 <img
                   src={slot.product.image}
+                  crossOrigin="anonymous"
                   onMouseDown={handleImgMouseDown}
                   draggable={false}
                   className="max-w-full max-h-full object-contain select-none"

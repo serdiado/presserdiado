@@ -6,8 +6,6 @@ import * as XLSX from 'xlsx';
 import { Settings2 } from 'lucide-react';
 import type { ProductInfo } from '@matbaapro/shared';
 import { useCatalogStore } from '@/stores/studio';
-import { createProductDragImage } from '../utils/dragImage';
-import { uploadImage } from '@/lib/upload';
 import { ProductInfoSettings } from './ProductInfoSettings';
 import { Button } from '@/components/ui';
 
@@ -29,23 +27,15 @@ function rowToProduct(row: ExcelRow, i: number): ProductInfo {
 
 export function ProductManagement() {
   const productPool = useCatalogStore((s) => s.productPool);
-  const masterProductPool = useCatalogStore((s) => s.masterProductPool);
-  const formas = useCatalogStore((s) => s.formas);
   const setProductPool = useCatalogStore((s) => s.setProductPool);
-  const setMasterProductPool = useCatalogStore((s) => s.setMasterProductPool);
   const autoFillSlots = useCatalogStore((s) => s.autoFillSlots);
   const clearProducts = useCatalogStore((s) => s.clearProducts);
   const resetCatalog = useCatalogStore((s) => s.resetCatalog);
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'used' | 'unused'>('all');
   const [layoutDrag, setLayoutDrag] = useState(false);
-  const [masterDrag, setMasterDrag] = useState(false);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const layoutRef = useRef<HTMLInputElement>(null);
-  const masterRef = useRef<HTMLInputElement>(null);
 
-  const processFile = (file: File, target: 'layout' | 'master') => {
+  const processFile = (file: File) => {
     const reader = new FileReader();
     reader.onload = (evt) => {
       const data = new Uint8Array(evt.target?.result as ArrayBuffer);
@@ -54,8 +44,7 @@ export function ProductManagement() {
         defval: '',
       });
       const products = rows.map((r, i) => rowToProduct(r, i));
-      if (target === 'layout') setProductPool(products);
-      else setMasterProductPool(products);
+      setProductPool(products);
     };
     reader.readAsArrayBuffer(file);
   };
@@ -63,8 +52,6 @@ export function ProductManagement() {
   const handleClearAll = () => {
     clearProducts();
     setProductPool([]);
-    setMasterProductPool([]);
-    setSearchTerm('');
   };
 
   const downloadDemoExcel = () => {
@@ -87,50 +74,6 @@ export function ProductManagement() {
     XLSX.utils.book_append_sheet(wb, ws, 'Urunler');
     XLSX.writeFile(wb, 'matbaapro-ornek.xlsx');
   };
-
-  const activeSkus = useMemo(() => {
-    const skus = new Set<string>();
-    formas.forEach((f) =>
-      f.pages.forEach((p) =>
-        p.slots.forEach((s) => {
-          if (s.product?.sku) skus.add(s.product.sku);
-        }),
-      ),
-    );
-    return skus;
-  }, [formas]);
-
-  const filteredMaster = useMemo(() => {
-    let result = masterProductPool;
-
-    if (filterType === 'used') {
-      result = result.filter(p => activeSkus.has(p.sku ?? ''));
-    } else if (filterType === 'unused') {
-      result = result.filter(p => !activeSkus.has(p.sku ?? ''));
-    }
-
-    if (searchTerm) {
-      const q = searchTerm.toLowerCase();
-      result = result.filter(
-        (p) => p.name?.toLowerCase().includes(q) || p.sku?.toLowerCase().includes(q),
-      );
-    }
-
-    return result;
-  }, [masterProductPool, searchTerm, filterType, activeSkus]);
-
-  const groupedMaster = useMemo(() => {
-    const acc: Record<string, ProductInfo[]> = {};
-    for (const p of filteredMaster) {
-      const cat = p.category ?? 'Diğer';
-      if (!acc[cat]) acc[cat] = [];
-      acc[cat].push(p);
-    }
-    return acc;
-  }, [filteredMaster]);
-
-  const usedCount = masterProductPool.filter(p => activeSkus.has(p.sku ?? '')).length;
-  const unusedCount = masterProductPool.length - usedCount;
 
   return (
     <div className="space-y-4 font-sans text-text-primary">
@@ -162,7 +105,7 @@ export function ProductManagement() {
           <DropZone
             dragging={layoutDrag}
             setDragging={setLayoutDrag}
-            onFile={(f) => processFile(f, 'layout')}
+            onFile={(f) => processFile(f)}
             onClick={() => layoutRef.current?.click()}
             title="Sıralı broşür Excel'i yükle"
             iconColor="text-text-secondary"
@@ -175,7 +118,7 @@ export function ProductManagement() {
             accept=".xlsx,.xls,.csv"
             onChange={(e) => {
               const f = e.target.files?.[0];
-              if (f) processFile(f, 'layout');
+              if (f) processFile(f);
               if (layoutRef.current) layoutRef.current.value = '';
             }}
             className="hidden"
@@ -226,216 +169,6 @@ export function ProductManagement() {
         </div>
       </div>
 
-      {/* 2. ÜRÜN HAVUZU */}
-      <div className="bg-surface-panel rounded-radius-lg border border-border-default p-4 shadow-drop-sm">
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <h4 className="text-label-sm text-text-secondary">Ürün havuzu</h4>
-            <p className="text-body-xs text-text-muted mt-0.5">Genel ürün listenizi yükleyin, arayın ve boş hücrelere sürükleyin.</p>
-          </div>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setIsAddModalOpen(true)}
-            leftIcon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>}
-            className="shrink-0"
-          >
-            Ürün ekle
-          </Button>
-        </div>
-
-        <div className="mt-3">
-          <DropZone
-            dragging={masterDrag}
-            setDragging={setMasterDrag}
-            onFile={(f) => processFile(f, 'master')}
-            onClick={() => masterRef.current?.click()}
-            title="Ürün havuzu Excel'i yükle"
-            iconColor="text-text-secondary"
-            borderColor={masterDrag ? 'border-border-strong' : 'border-border-default'}
-            bgColor={masterDrag ? 'bg-surface-subtle' : 'bg-surface-subtle/30'}
-          />
-          <input
-            ref={masterRef}
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) processFile(f, 'master');
-              if (masterRef.current) masterRef.current.value = '';
-            }}
-            className="hidden"
-          />
-        </div>
-
-        <div className="flex items-center gap-1.5 mt-3 text-body-xs text-success">
-           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-           </svg>
-           <span>{masterProductPool.length} ürün havuzda</span>
-        </div>
-
-        <div className="flex gap-2 mt-4">
-           <Button
-             variant="secondary"
-             size="sm"
-             onClick={() => masterRef.current?.click()}
-             leftIcon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>}
-             className="flex-1"
-           >
-             Dosya değiştir
-           </Button>
-           <Button
-             variant="danger"
-             size="sm"
-             onClick={() => { if (confirm('Ürün havuzu temizlensin mi?')) setMasterProductPool([]); }}
-             leftIcon={<svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>}
-             className="flex-1"
-           >
-             Havuzu temizle
-           </Button>
-        </div>
-      </div>
-
-      {/* 3. ÜRÜN ARA VE SÜRÜKLE */}
-      <div className="bg-surface-panel rounded-radius-lg border border-border-default p-4 shadow-drop-sm pb-2">
-        <div className="mb-4">
-          <h4 className="text-label-sm text-text-secondary">Ürün ara ve sürükle</h4>
-        </div>
-
-        <div className="flex flex-col gap-3 mb-4">
-          <div className="relative w-full">
-            <svg className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Ürün adı veya kod ara..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full text-[13px] border rounded-radius-full border-border-default pl-10 pr-3 py-2 outline-none focus:border-border-strong placeholder:text-text-muted"
-            />
-          </div>
-
-          {/* Sekmeler: Segmented Control */}
-          <div className="border border-border-default rounded-md p-0.5 bg-surface-panel grid grid-cols-3">
-            <button
-              onClick={() => setFilterType('all')}
-              className={`py-1.5 text-[13px] text-center transition-all rounded-[4px] ${filterType === 'all' ? 'bg-[#1e293b] text-white font-medium' : 'bg-transparent text-text-secondary font-normal hover:bg-surface-subtle hover:text-text-primary'}`}
-            >
-              Tümü ({masterProductPool.length})
-            </button>
-            <button
-              onClick={() => setFilterType('used')}
-              className={`py-1.5 text-[13px] text-center transition-all rounded-[4px] ${filterType === 'used' ? 'bg-[#1e293b] text-white font-medium' : 'bg-transparent text-text-secondary font-normal hover:bg-surface-subtle hover:text-text-primary'}`}
-            >
-              Kullanılan ({usedCount})
-            </button>
-            <button
-              onClick={() => setFilterType('unused')}
-              className={`py-1.5 text-[13px] text-center transition-all rounded-[4px] ${filterType === 'unused' ? 'bg-[#1e293b] text-white font-medium' : 'bg-transparent text-text-secondary font-normal hover:bg-surface-subtle hover:text-text-primary'}`}
-            >
-              Kalan ({unusedCount})
-            </button>
-          </div>
-        </div>
-
-        <div className="max-h-[60vh] overflow-y-auto pr-1 space-y-3 pb-3">
-          {masterProductPool.length === 0 ? (
-            <div className="py-8 text-center text-text-muted flex flex-col items-center">
-              <svg className="w-8 h-8 mb-2 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-              </svg>
-              <p className="text-body-sm">Havuz boş. Yukarıdaki alandan Excel yükleyin.</p>
-            </div>
-          ) : filteredMaster.length === 0 ? (
-            <div className="py-6 text-center text-text-muted">
-               <p className="text-body-sm">Sonuç bulunamadı.</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {filteredMaster.map((p, i) => {
-                const placed = activeSkus.has(p.sku ?? '');
-                return (
-                  <div
-                    key={`${p.id ?? p.sku}-${i}`}
-                    draggable={!placed}
-                    onDragStart={(e) => {
-                      if (!placed) {
-                        e.dataTransfer.setData('newProductFromSidebar', JSON.stringify(p));
-                        const dragImg = createProductDragImage({
-                          name: p.name ?? 'İsimsiz',
-                          imageUrl: p.image,
-                        });
-                        e.dataTransfer.setDragImage(dragImg, 20, 20);
-                      }
-                    }}
-                    className={`flex items-center gap-3 bg-surface-panel border border-border-default rounded-radius-lg p-3 shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-border-strong hover:shadow-drop-sm transition-all duration-200 group ${
-                      placed ? 'cursor-not-allowed opacity-60' : 'cursor-grab active:cursor-grabbing'
-                    }`}
-                  >
-                    <div className="w-10 h-10 bg-surface-panel rounded-radius-md border border-border-default flex justify-center items-center overflow-hidden shrink-0">
-                      {p.image ? (
-                        <img
-                          src={p.image}
-                          alt={p.name ?? ''}
-                          className={`max-w-full max-h-full object-contain ${placed ? 'opacity-50 grayscale' : ''}`}
-                        />
-                      ) : (
-                        <span className="text-label-sm text-text-muted">Yok</span>
-                      )}
-                    </div>
-
-                    <div className="flex-1 min-w-0 flex flex-col justify-center">
-                      <div className={`text-label-md truncate ${placed ? 'text-text-muted' : 'text-text-primary'}`}>
-                        {p.name}
-                      </div>
-                      <div className="text-body-xs text-text-muted mt-0.5">{p.sku}</div>
-                    </div>
-
-                    <div className="flex items-center gap-4 shrink-0">
-                      <div className={`text-label-md ${placed ? 'text-text-muted' : 'text-text-primary'}`}>
-                        {p.price} €
-                      </div>
-
-                      {placed ? (
-                         <div className="px-2 py-0.5 bg-success/10 text-success rounded text-label-sm border border-success/20">
-                           Tasarımda var
-                         </div>
-                      ) : (
-                         <div className="w-21"></div>
-                      )}
-
-                      <div className={`text-text-muted ${placed ? 'opacity-30' : 'group-hover:text-text-secondary'}`}>
-                        <svg width="12" height="20" viewBox="0 0 12 20" fill="currentColor">
-                           <circle cx="4" cy="4" r="1.5"/>
-                           <circle cx="4" cy="10" r="1.5"/>
-                           <circle cx="4" cy="16" r="1.5"/>
-                           <circle cx="8" cy="4" r="1.5"/>
-                           <circle cx="8" cy="10" r="1.5"/>
-                           <circle cx="8" cy="16" r="1.5"/>
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {masterProductPool.length > 0 && (
-          <div className="pt-3 border-t border-border-default text-center">
-            <Button variant="ghost" fullWidth>
-              Tümünü gör ({filteredMaster.length} ürün)
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </Button>
-          </div>
-        )}
-      </div>
-
       {/* GELİŞMİŞ AYARLAR (BİRLEŞTİRİLMİŞ AKORDİYON) */}
       <details className="bg-surface-panel rounded-radius-lg border border-border-default shadow-drop-sm overflow-hidden">
         <summary className="text-heading-md text-text-primary cursor-pointer p-3 flex items-center justify-between bg-surface-subtle/60 select-none">
@@ -467,249 +200,6 @@ export function ProductManagement() {
         </div>
       </details>
 
-      <AddProductModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onAdd={(product) => setMasterProductPool([product, ...masterProductPool])}
-      />
-    </div>
-  );
-}
-
-function AddProductModal({
-  isOpen,
-  onClose,
-  onAdd
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onAdd: (product: ProductInfo) => void;
-}) {
-  const [name, setName] = useState('');
-  const [sku, setSku] = useState('');
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [purchasePrice, setPurchasePrice] = useState('');
-  const [price, setPrice] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-
-  if (!isOpen) return null;
-
-  const handleFile = (file: File) => {
-    setImageFile(file);
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-  };
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) handleFile(file);
-  };
-
-  const cleanupAndClose = () => {
-    setName('');
-    setSku('');
-    setImageFile(null);
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(null);
-    setPurchasePrice('');
-    setPrice('');
-    setIsLoading(false);
-    onClose();
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      let finalImageUrl = '';
-      const newSku = sku.trim() || `SKU-${Date.now()}`;
-
-      if (imageFile) {
-        const ext = imageFile.name.substring(imageFile.name.lastIndexOf('.')) || '.png';
-        const renamedFile = new File([imageFile], `${newSku}${ext}`, { type: imageFile.type });
-        const uploadResult = await uploadImage(renamedFile);
-        finalImageUrl = uploadResult.absoluteUrl;
-      }
-      const newProduct: ProductInfo = {
-        id: newSku,
-        sku: newSku,
-        name: name.trim() || 'İsimsiz Ürün',
-        price: price.trim() || '0',
-        category: 'Manuel Eklenen',
-        image: finalImageUrl || `/images/products/${newSku}.png`,
-        raw: {
-          AD: name,
-          KOD: newSku,
-          FIYAT: price,
-          ALIS_FIYAT: purchasePrice
-        },
-      };
-
-      onAdd(newProduct);
-      cleanupAndClose();
-    } catch (error) {
-      console.error('Ürün eklenirken hata oluştu:', error);
-      alert('Ürün yüklenirken bir hata oluştu, lütfen tekrar deneyin.');
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0f172a]/40 backdrop-blur-sm">
-      <div className="bg-surface-panel rounded-radius-xl shadow-drop-lg w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="px-6 py-4 border-b border-border-default flex items-center justify-between bg-surface-subtle/50">
-          <h3 className="text-heading-xl text-text-primary">Yeni ürün ekle</h3>
-          <button onClick={onClose} className="text-text-muted hover:text-text-secondary transition-colors p-1 rounded-radius-md hover:bg-surface-subtle">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <div className="flex gap-4">
-            {/* Sol Taraf: Görsel Alanı (Kare) */}
-            <div className="w-28 shrink-0">
-              <label className="block text-label-md text-text-secondary mb-1.5">Ürün görseli</label>
-              <div
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setIsDragging(true);
-                }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setIsDragging(false);
-                  const file = e.dataTransfer.files?.[0];
-                  if (file && file.type.startsWith('image/')) {
-                    handleFile(file);
-                  }
-                }}
-                className={`relative w-full aspect-square border-2 border-dashed rounded-radius-lg overflow-hidden shadow-drop-sm group transition-all flex flex-col items-center justify-center text-center cursor-pointer ${
-                  isDragging
-                    ? 'border-border-strong bg-surface-subtle/50'
-                    : previewUrl
-                      ? 'border-transparent bg-surface-subtle'
-                      : 'border-border-default hover:border-border-strong hover:bg-surface-subtle'
-                }`}
-              >
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-                />
-
-                {previewUrl ? (
-                  <>
-                    <img src={previewUrl} alt="Önizleme" className="w-full h-full object-contain p-1" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                      <span className="text-white text-label-sm flex flex-col items-center gap-1">
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                        </svg>
-                        Değiştir
-                      </span>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center gap-1.5 text-text-muted p-2 pointer-events-none">
-                    <svg className="w-6 h-6 text-text-muted group-hover:text-text-secondary transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span className="text-body-xs">Sürükle veya<br/>Seç</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Sağ Taraf: İsim ve SKU */}
-            <div className="flex-1 space-y-4 flex flex-col justify-center">
-              <div>
-                <label className="block text-label-md text-text-secondary mb-1.5">Ürün Adı</label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Örn: Domates 1 Kg"
-                  className="w-full text-[13px] border border-border-default rounded-radius-lg px-3 py-2 outline-none focus:border-border-strong focus:ring-1 focus:ring-border-strong transition-all placeholder:text-text-muted shadow-drop-sm"
-                />
-              </div>
-              <div>
-                <label className="block text-label-md text-text-secondary mb-1.5">Ürün kodu</label>
-                <input
-                  type="text"
-                  value={sku}
-                  onChange={(e) => setSku(e.target.value)}
-                  placeholder="Örn: SKU-1001"
-                  className="w-full text-[13px] border border-border-default rounded-radius-lg px-3 py-2 outline-none focus:border-border-strong focus:ring-1 focus:ring-border-strong transition-all placeholder:text-text-muted shadow-drop-sm"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-label-md text-text-secondary mb-1.5">Alış Fiyatı</label>
-              <input
-                type="text"
-                value={purchasePrice}
-                onChange={(e) => setPurchasePrice(e.target.value)}
-                placeholder="Örn: 10,00"
-                className="w-full text-[13px] border border-border-default rounded-radius-lg px-3 py-2 outline-none focus:border-border-strong focus:ring-1 focus:ring-border-strong transition-all placeholder:text-text-muted shadow-drop-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-label-md text-text-secondary mb-1.5">Satış fiyatı</label>
-              <input
-                type="text"
-                required
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                placeholder="Örn: 15,00"
-                className="w-full text-[13px] border border-border-default rounded-radius-lg px-3 py-2 outline-none focus:border-border-strong focus:ring-1 focus:ring-border-strong transition-all placeholder:text-text-muted bg-surface-panel shadow-drop-sm font-medium"
-              />
-            </div>
-          </div>
-
-          <div className="pt-4 mt-2 flex gap-3">
-            <Button
-              variant="secondary"
-              onClick={cleanupAndClose}
-              disabled={isLoading}
-            >
-              Vazgeç
-            </Button>
-            <Button
-              type="submit"
-              variant="primary"
-              disabled={isLoading}
-              className="flex-1"
-            >
-              {isLoading ? (
-                <>
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Yükleniyor...
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  Ürünü havuza ekle
-                </>
-              )}
-            </Button>
-          </div>
-        </form>
-      </div>
     </div>
   );
 }

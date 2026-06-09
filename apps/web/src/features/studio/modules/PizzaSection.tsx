@@ -240,7 +240,7 @@ export function PizzaSection({ instanceData, slotId, pageNumber }: Props) {
             }}
           >
             {imageUrl ? (
-              <img src={imageUrl} alt="Pizza" className="w-full h-full object-contain p-2" />
+              <img src={imageUrl} crossOrigin="anonymous" alt="Pizza" className="w-full h-full object-contain p-2" />
             ) : (
               <div className="text-text-muted font-bold text-sm flex flex-col items-center">
                 <span className="text-3xl mb-1">+</span>

@@ -2,7 +2,6 @@
 
 > **Her zaman aktif kuraldır.** Cline her mesajda bunu okur. Tüm ajanların ortak zemini budur.
 > Taşınabilir: Claude için `CLAUDE.md`, Gemini için `GEMINI.md` olarak da kullanılabilir.
-> `[DOLDUR: ...]` etiketli yerleri Cline'a projeyi okutarak veya elle tamamla.
 
 ---
 
@@ -26,6 +25,7 @@
 - **ORM / DB:** Drizzle ORM + MySQL (`mysql2` sürücüsü kullanılmaktadır.)
 - **Tasarım editörü:** Harici bir canvas kütüphanesi (Fabric.js, Konva vb.) kullanılmamaktadır; tamamen custom React, DOM ve CSS tabanlı mizanpaj ve katman sistemi (`Canvas.tsx`, `LayerRenderer.tsx`) kullanılmaktadır.
 - **Altyapı:** Docker (repo'da `docker/` klasörü var) + Yerel disk depolama (Yüklemeler şimdilik `/uploads` yerel dizinine kaydedilmekte ve `@fastify/static` ile sunulmaktadır; S3 uyumlu obje depolama (MinIO/S3) yapılandırması hazırdır ancak aktif değildir). Arka plan işleri için BullMQ ve Redis kullanılmaktadır. PDF üretimi ve render işlemleri için `pdf-lib` ve `puppeteer` mevcuttur.
+- **Görüntü yakalama (thumbnail + JPG export):** `html2canvas-pro` (oklch/lab/color() destekli; `useCORS` ile cross-origin görseller, foreignObject kullanmadığı için flex satır düzeni korunur). Eski `html-to-image` ve `html2canvas` kaldırılmıştır — tek standart `html2canvas-pro`.
 - **Diğer:** Kimlik doğrulama çözümü olarak `@fastify/jwt` ve `bcrypt` ile özel (custom) JWT tabanlı bir kimlik doğrulama yapısı mevcuttur. Ödeme sağlayıcı entegrasyonu (Stripe/iyzico vb.) henüz bulunmamaktadır.
 
 ## Monorepo Yapısı
@@ -37,8 +37,6 @@ docker/      → konteyner tanımları
 docs/        → proje dokümantasyonu
 scripts/     → yardımcı scriptler
 ```
-
-> Cline bu bölümü `pnpm-workspace.yaml`, `turbo.json`, `apps/*/package.json` ve `packages/*/package.json` dosyalarını okuyarak doldurabilir.
 
 ## Geliştirme Komutları
 
@@ -55,42 +53,53 @@ scripts/     → yardımcı scriptler
 
 ---
 
-## KULLANICI HAKKINDA (tüm ajanlar için zorunlu kural)
+## ÇALIŞMA MODELİ (tüm ajanlar için zorunlu kural)
 
-Kullanıcı **acemi bir geliştiricidir** ve **karar mercii değildir.** Rolü: ne istediğini ve sistemin nasıl işlemesi gerektiğini anlatmak. Mimari ve kod kararlarını **Orchestrator verir ve uygular.** Bu yüzden:
+Bu projede **orkestratör ajan yoktur.** Eski hub-and-spoke modeli (Kaan + çoklu ajan müzakeresi) emekliye ayrılmıştır. Yeni model:
 
-- **Otonom çalış, onayla yavaşlatma.** Sürekli "yapayım mı?" diye sorma. Kullanıcı bir şey istediğinde uzmanlara danış, kararı ver ve uygula. Güvenlik ağı zaten var: Git ve Cline "restore all" ile kod değişiklikleri geri alınabiliyor.
-- **Tahmin etme, ama akışı kesme.** İş kuralı veya gereksinim gerçekten belirsizse tek net soru sor. Teknik "nasıl"da (kütüphane, desen, mimari) kararı kendin ver — bu senin işin, kullanıcıya sorma.
-- **Sade dil:** Kararı önce tek cümleyle söyle, sonra kısa gerekçe. Jargonu parantezle açıkla.
-- **Maliyet bilinci:** Vertex AI kredisiyle çalışıyorsun. Gereksiz uzun çıktı, tekrar dosya okuma, boş tur yapma.
+- **Kullanıcı, her görevi doğrudan tek bir uzman ajana verir.** Hangi uzmanın gerektiğine kullanıcı karar verir. Ajanlar birbirini çağırmaz, aralarında müzakere yapmaz.
+- **Her ajan kendi uzmanlık dökümanına ve bu bağlam dosyasına göre çalışır.** Görevi alır, kendi alanı çerçevesinde en doğru çözümü tasarlar.
+- **Denetim katmanı Cline'ın Plan/Act akışıdır.** Ajan **Plan modunda** çözümünü/planını sunar, uygulamaz. Kullanıcı planı dış bir mimari danışmanla (Claude) birlikte inceler, gerekirse düzeltir, sonra **Act moduna** alır. Act'e alınana kadar ajan kod yazmaz.
+- **Karar mercii kullanıcı + mimari danışmandır (Claude).** Ajan kendi başına "uygula" kararı vermez; Plan'ı sunar, onay Act geçişiyle gelir.
 
-### Onay GEREKMEYEN (doğrudan yap, sonra kısaca bildir)
-Kod yazma/düzenleme/silme, dosya oluşturma, refactor, yeni kütüphane ekleme, lint/test/build çalıştırma, migration **üretme** (`db:generate`). Bunlar Git/restore ile geri alınabilir → durma, uygula.
+### Kullanıcı hakkında
+Kullanıcı ürün sahibidir ve **ne istediğini + sistemin nasıl işlemesi gerektiğini** anlatır. Mimari ve plan kararları kullanıcı ile mimari danışman (Claude) tarafından, ajanın sunduğu plan üzerinden birlikte verilir. Ajanın işi: alanında **en doğru, kökten ve mimari açıdan sağlam** çözümü planlamak ve (Act'te) uygulamak.
 
-### Onay GEREKEN (Git'in geri alamayacağı, geri dönüşsüz işler — yalnızca bunlarda dur ve sor)
+> **Geçici çözüm / yama / workaround istenmez.** Her sorunda öncelik daima kökten, mimari açıdan doğru ("olması gerektiği gibi") çözümdür. Geçici fix'i varsayılan olarak sunma; en baştan doğru mimariyi öner.
+
+### Plan modunda ajandan beklenen
+- Sorunun/işin **kök nedenini veya gerçek gereksinimini** tespit et — tahminle değil, ilgili kodu/dosyaları okuyarak.
+- Çözümü net adımlarla sun: hangi dosyada ne değişecek, neden.
+- Daha önce denenmiş ve işe yaramamış bir yaklaşım varsa belirt (tekrar denenmesin).
+- Kararın yapısal/kritik (sonradan değiştirmesi pahalı; baskı/güvenlik/veri/para riski taşıyan) olduğunu düşünüyorsan **"Bu önemli bir karar"** diye işaretle.
+- Belirsiz bir iş kuralı/gereksinim varsa **tek net soru** sor; teknik "nasıl"da (kütüphane, desen) kararı kendin öner.
+
+### Act modunda ajandan beklenen
+- Planı uygula. Mevcut desenleri taklit et.
+- Değişiklik sonrası `pnpm typecheck` + `pnpm lint` çalıştır.
+- Uygun, tek amaçlı bir commit öner (aşağıdaki Git kuralları).
+- Otomatik doğrulayamadığın runtime adımlarını dürüstçe belirt ("şunu sen test etmelisin"). **Sahte "test ettim" deme.**
+
+### Onay GEREKEN (geri dönüşsüz, Act'te bile önce sor)
 - Veritabanına yazan/silen çalıştırmalar: migration **uygulama** (`db:migrate`), veri silme/güncelleme scriptleri
 - Dış dünyaya kalıcı etki: gerçek ödeme/işlem, e-posta/SMS gönderimi, prod ortama deploy
 - Sır/güvenlik: `.env` veya kimlik bilgisi içeren dosyaların paylaşımı/commit'i, erişim izni değişikliği
 - Geri dönüşü olmayan altyapı: storage göçü, kuyruk/DB temizleme
 
-Kural: **kod = otonom; veri kaybı, para, dış gönderim, sır, prod = önce sor.**
+Kural: **kod yazma/düzenleme = Plan→Act akışıyla; veri kaybı, para, dış gönderim, sır, prod = ek olarak önce sor.**
 
-## SİSTEM MİMARİSİ (ajan protokolü)
+### Maliyet bilinci
+Vertex AI kredisiyle çalışıyorsun. Gereksiz uzun çıktı, tekrar dosya okuma, boş tur yapma. Tek bir uzmanlık alanına odaklı, net çalış.
 
-Bu proje **hub-and-spoke** çok-ajanlı modelle çalışır:
+---
 
-- Tek bir **Kaan (Yönetici Ajan)** vardır — kullanıcının konuştuğu tek muhatap. Tanımı `01-orchestrator.md`'dedir.
-- Uzman ajanlar `.clinerules/agents/` klasöründedir ve **yalnızca Orchestrator tarafından** çağrılır.
-- Uzman ajanlar **birbiriyle konuşmaz**; sadece Orchestrator'a görüş bildirir.
-- **Doğrulama turu:** Orchestrator bir planı veya yazılmış kodu sana **denetlettiğinde**, onu kendi alanın/standardın açısından gerçekten incele. Göstermelik onay verme; sorun varsa somut olarak (neyin, neden, nasıl düzeltileceği) söyle. Sorun yoksa net onayla.
-- **Uzmanlar silosunda cevap vermez.** Bir uzman görüş verirken yalnızca kendi alanına bakmaz; önerisinin **diğer uzmanları ve sistemi nasıl etkilediğini, mevcut altyapı/yazılım kabiliyetiyle gerçekten yapılabilir olup olmadığını, ve bütün için doğru karar olup olmadığını** da değerlendirir. Orchestrator'ın bağlam yüklü sorusundaki diğer uzman görüşlerini ve kısıtları hesaba katar. Kendi önerisinin başka bir uzmanın işini zorlaştırdığını görürse bunu açıkça söyler.
-- Son kararı **her zaman Orchestrator** verir.
-- Bir uzman, görüşünü verirken konunun **yapısal/kritik** olduğunu (sonradan değiştirmesi pahalı, baskı/güvenlik/veri/para riski taşıyan) düşünüyorsa bunu açıkça işaretler: **"Bu önemli bir karar"**. Orchestrator bu sinyali alınca o konuyu daha derin ve çok turlu tartışır.
+## UZMAN AJANLAR
 
-### Uzman ajan listesi (`.clinerules/agents/`)
+Ajanlar `.clinerules/agents/` klasöründedir. Kullanıcı işi doğrudan ilgili ajana verir. Her ajan yalnızca kendi alanında çalışır; başka ajanı çağırmaz.
+
 | Dosya | Rol |
 |---|---|
-| `printmaster.md` | Baskıya hâkim grafik tasarım & dosya hazırlık (bleed, CMYK, 300 DPI, doğru PDF) — marks matbaa işidir |
+| `printmaster.md` | Baskıya hâkim grafik tasarım & dosya hazırlık (bleed, CMYK, 300 DPI, doğru PDF) |
 | `senior-dev.md` | Mimari ve core backend |
 | `art-director.md` | UI/UX ve design system |
 | `business-logic.md` | Matbaa fiyatlandırma matrisi |
@@ -101,13 +110,31 @@ Bu proje **hub-and-spoke** çok-ajanlı modelle çalışır:
 | `qa-tester.md` | Test ve edge-case denetimi |
 | `product-manager.md` | PRD, user story, sprint planı |
 
+### Hangi iş → hangi ajan (kullanıcı için hızlı rehber)
+| İstek türü | Ajan |
+|---|---|
+| Baskı/PDF/çözünürlük/renk | `printmaster` |
+| Backend mimari, API, DB şeması | `senior-dev` |
+| Arayüz, tasarım, UX, Tailwind, font/renk denetimi | `art-director` |
+| Fiyat, gramaj, varyant, sepet hesabı | `business-logic` |
+| Excel okuma + otomatik yerleştirme | `excel-layout` |
+| Tasarım editörü, katman, render | `studio-canvas` |
+| Docker, CI/CD, Redis/BullMQ, storage | `devops` |
+| Login, JWT, multi-tenant, veri izolasyonu | `security-auth` |
+| Test, hata senaryosu, bozuk girdi | `qa-tester` |
+| Öncelik, kapsam, sprint, "ne yapmalıyız" | `product-manager` |
+
+> Bir iş birden fazla alana dokunuyorsa: kullanıcı işi parçalara böler ve her parçayı ilgili ajana ayrı verir; veya ana alanın ajanına verip, planında diğer alanı da hesaba katmasını ister. Sentez ve çapraz kontrol kullanıcı + Claude tarafında yapılır.
+
+---
+
 ## GENEL KOD KURALLARI
 
 - TypeScript strict; `any` kullanma, tipleri açık yaz.
 - Monorepo sınırlarına saygı: paylaşılan kod `packages/`e, uygulamaya özel kod `apps/`e.
-- Mevcut desenleri taklit et; yeni kütüphane eklemeyi kendin kararlaştırabilirsin (onay gerekmez), ama seçimini ve nedenini kısaca belirt.
+- Mevcut desenleri taklit et; yeni kütüphane eklemeyi planında gerekçesiyle öner.
 - Sır/anahtar (API key, DB şifresi) asla koda gömülmez; env üzerinden.
-- Her anlamlı değişiklikten sonra ilgili lint/test'i öner.
+- Her anlamlı değişiklikten sonra ilgili lint/test'i çalıştır.
 
 ## TASARIM STANDARTLARI
 
@@ -120,84 +147,64 @@ Tüm UI/UX kararları için yetkili kaynaklar `docs/ui/` klasöründedir:
 | `Presserdiado_UX_Kilavuzu.docx` | Kullanım kararları, prensipler |
 | `Presserdiado_Bagimsiz_UX_UI_Raporu.md` | Bağımsız denetim, öncelik sırası, kritik bulgular |
 
-ArtDirector görsel karar verirken bu dosyaları okur. Hardcode hex, font-bold, uppercase gibi yasaklar bu belgelerde tanımlıdır.
+ArtDirector görsel/font/renk kararı verirken bu dosyaları okur. Hardcode hex, font-bold, uppercase gibi yasaklar bu belgelerde tanımlıdır. Tanımsız Tailwind class (`bg-brand-default`, `bg-error-default` gibi) üretme; yalnızca tanımlı token'ları kullan (`bg-primary`, `bg-danger` vb.).
 
 ## BİLEŞEN SÖZLÜĞÜ (Komut ↔ Dosya Eşleşmesi)
 
-Kullanıcı komutlarında aşağıdaki Türkçe isimleri kullanır. Sen bu isimleri gördüğünde doğrudan ilgili dosyaya git, açıklama isteme.
+Kullanıcı komutlarında aşağıdaki Türkçe isimleri kullanır. Bu isimleri gördüğünde doğrudan ilgili dosyaya git, açıklama isteme.
 
 | Kullanıcı Adı | Dosya / Component | Açıklama |
 |---|---|---|
 | **Üst Bar** | `TopBar.tsx` | Sabit üst araç çubuğu: geri/ileri, zoom, proje menüsü, fiyat, indir |
-| **Hızlı Bar** | `ContextualBar.tsx` | Seçime göre değişen bağlamsal araç çubuğu: slot/zemin/modül seçilince ilgili hızlı ayarlar |
+| **Hızlı Bar** | `ContextualBar.tsx` | Seçime göre değişen bağlamsal araç çubuğu |
 | **Sağ Panel** | `Sidebar.tsx` | Açılır/kapanır sağ panel: Ürünler, Tasarım, Hücre, Modüller sekmeleri |
-| **Sol Panel** | `IconSidebar.tsx` | Sol kenar dikey ikon menüsü: Bekleme, Formalar, Projeler, Temalar, Medya, Modüller, Araçlar |
+| **Sol Panel** | `IconSidebar.tsx` | Sol kenar dikey ikon menüsü |
 | **Kanvas** | `Canvas.tsx` | Tasarım çizim alanı |
 | **Katman Renderer** | `LayerRenderer.tsx` | Kanvas içindeki katman render motoru |
+| **Kullanıcı Paneli / Ana Sayfa** | `AnaSayfa.tsx` (`features/dashboard/pages/`) | Dashboard karşılama sayfası; "Son Tasarımlar", istatistik kartları |
+| **Proje Kartı** | `ProjectCard.tsx` (`features/dashboard/components/`) | Dashboard'daki tek tasarım kartı (thumbnail + isim + tarih) |
+| **Panel Kabuğu** | `Shell.tsx` / `DashboardLayout.tsx` (`features/dashboard/`) | Dashboard TopBar + SideNav düzeni |
 
 > Bu sözlük büyüyebilir. Yeni bir bileşene Türkçe isim verildiğinde buraya ekle.
 
+---
 
+## GIT VE COMMIT DİSİPLİNİ
 
-Bu projeyi bir yazılımcıya devredeceksiniz. Commit geçmişi onun için teknik belge niteliği taşır — "ne yapıldı, neden yapıldı" geçmişe bakıldığında anlaşılabilmeli.
+Bu projeyi ileride bir yazılımcıya devredeceğiz. Commit geçmişi teknik belge niteliği taşır — "ne yapıldı, neden yapıldı" geçmişe bakıldığında anlaşılabilmeli.
 
 ### Branch stratejisi
 - `main` → kararlı, çalışan kod. Direkt commit atma.
 - `dev` → aktif geliştirme branchi. Buraya çalış.
-- Yeni özellik veya düzeltme başlarken: `git checkout -b feature/ozellik-adi` veya `fix/sorun-adi`.
-- İş bitince `dev`'e merge et. `main`e sadece kararlı sürümler gider.
+- Yeni özellik/düzeltme: `git checkout -b feature/ozellik-adi` veya `fix/sorun-adi`.
+- İş bitince `dev`'e merge. `main`e sadece kararlı sürümler.
 
 ### Ne zaman commit at
-Her anlamlı, tek bir amacı olan değişiklik tamamlandığında — **kod çalışıyor olsun, ama küçük ve odaklı olsun.** Şu durumlar commit tetikler:
-- Yeni bir bileşen/özellik tamamlandı
-- Bir hata düzeltildi
-- Refactor edildi (davranış değişmeden)
-- Konfigürasyon/ortam değişikliği yapıldı
-- Bağımlılık eklendi/kaldırıldı
-
-"Her şeyi bitince tek commit" yapma — bu geçmişi anlamsız kılar.
+Her anlamlı, tek amaçlı değişiklik tamamlandığında — kod çalışıyor olsun, küçük ve odaklı olsun. "Her şeyi bitince tek commit" yapma.
 
 ### Commit mesajı formatı (Conventional Commits)
 ```
 <tip>(<kapsam>): <ne yapıldı — Türkçe, net, kısa>
 ```
-
-**Tipler:**
-- `feat` → yeni özellik
-- `fix` → hata düzeltme
-- `refactor` → davranış değişmeden kod iyileştirme
-- `style` → UI/CSS değişikliği (mantık değil)
-- `chore` → bağımlılık, config, tooling
-- `docs` → dokümantasyon
-
-**Kapsam:** değişikliğin etkilediği alan — `studio`, `api`, `auth`, `pdf`, `excel`, `topbar` gibi.
+**Tipler:** `feat`, `fix`, `refactor`, `style`, `chore`, `docs`
+**Kapsam:** `studio`, `api`, `auth`, `pdf`, `excel`, `topbar`, `dashboard` gibi.
 
 **Örnekler:**
 ```
 feat(studio): fiyat hesabı topbar'a popover olarak taşındı
 fix(auth): JWT token süresi dolunca yönlendirme düzeltildi
-refactor(pdf): mm-px-pt dönüşümü merkezi modüle alındı
-chore(deps): pdf-lib ve puppeteer güncellendi
-style(studio): kanvas arka plan rengi ayarlandı
+fix(thumbnail): html2canvas-pro'ya geçiş, oklch + foreignObject sorunları giderildi
 ```
-
-❌ Kötü mesajlar: `fix`, `update`, `değişiklik`, `wip`, `asdfgh`
-✅ Bir yazılımcı mesajı okuyunca ne değiştiğini anlamalı.
+❌ Kötü: `fix`, `update`, `değişiklik`, `wip`
+✅ Mesajı okuyan ne değiştiğini anlamalı.
 
 ### Commit atmadan önce kontrol
 1. `pnpm typecheck` geçiyor mu?
 2. `pnpm lint` temiz mi?
-3. `.env` veya sır içeren dosya commit'e girmiyor mu? (`git status` ile kontrol et)
-4. Commit tek bir amaca mı odaklanıyor, yoksa karışık mı?
+3. `.env` veya sır içeren dosya commit'e girmiyor mu? (`git status`)
+4. Commit tek bir amaca mı odaklı?
 
-### Push ve senkron
-- Her çalışma sonunda `git push` — local'de bırakma, uzak repoya gönder.
-- `main`e doğrudan push atma; PR veya `dev`'den merge yap.
-
-### Orchestrator'ın görevi
-Bir iş tamamlandığında otomatik olarak uygun bir commit öner:
-- Tipi ve kapsamı belirle
-- Mesajı Conventional Commits formatında yaz
-- `pnpm typecheck` + `pnpm lint` geçtikten sonra commit'i at
-- `git push` ile uzağa gönder
-- Kullanıcıya kısaca bildir: hangi branch'te, hangi commit atıldı
+### Push
+- Her çalışma sonunda `git push` — local'de bırakma.
+- `main`e doğrudan push atma; `dev`'den merge yap.
+- Act'te iş bitince: tip/lint geçir → commit öner → kullanıcı onaylarsa at → push → kısaca bildir (hangi branch, hangi commit).

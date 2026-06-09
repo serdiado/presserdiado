@@ -138,6 +138,7 @@ export function LayerRenderer({ layer, forma, template }: Props) {
         ) : layer.properties.imageUrl ? (
           <img
             src={layer.properties.imageUrl as string}
+            crossOrigin="anonymous"
             alt={layer.name ?? ''}
             style={{
               width: layer.properties.fitMode === 'fit-height' ? 'auto' : '100%',

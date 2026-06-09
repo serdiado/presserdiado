@@ -279,6 +279,7 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
               cell.imageMode === 'free' ? (
                 <img
                   src={cell.image}
+                  crossOrigin="anonymous"
                   alt=""
                   draggable={false}
                   style={{
@@ -307,6 +308,7 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
               ) : (
                 <img
                   src={cell.image}
+                  crossOrigin="anonymous"
                   alt=""
                   className="absolute inset-0 w-full h-full pointer-events-none"
                   style={{

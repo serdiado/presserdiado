@@ -40,7 +40,6 @@ export function DownloadMenu() {
         activeFormaId: catalogState.activeFormaId,
         activeTab: catalogState.activeTab,
         productPool: catalogState.productPool,
-        masterProductPool: catalogState.masterProductPool,
         tempProductPool: catalogState.tempProductPool,
         globalSettings: catalogState.globalSettings,
         copiedSlotSettings: catalogState.copiedSlotSettings,
