@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { X, Loader2, Package } from 'lucide-react';
+import axios from 'axios';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
@@ -9,7 +10,8 @@ interface ProductFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   product?: Product | null;
-  onSave: () => void;
+  // Kaydetme sonrası çağrılır. Yeni ürün oluşturulduysa oluşturulan ürünü iletir.
+  onSave: (saved?: Product) => void;
 }
 
 export function ProductFormModal({ isOpen, onClose, product, onSave }: ProductFormModalProps) {
@@ -63,18 +65,20 @@ export function ProductFormModal({ isOpen, onClose, product, onSave }: ProductFo
         description: description.trim() || undefined,
       };
 
+      let saved: Product | undefined;
       if (product) {
         await api.patch(`/products/${product.id}`, payload);
         toast.success('Ürün güncellendi');
       } else {
-        await api.post('/products', payload);
+        const res = await api.post<Product>('/products', payload);
+        saved = res.data;
         toast.success('Ürün eklendi');
       }
-      
-      onSave();
+
+      onSave(saved);
       onClose();
-    } catch (err: any) {
-      if (err.response?.status === 409) {
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response?.status === 409) {
         setSkuError('Bu SKU zaten kullanımda');
       } else {
         toast.error('Bir hata oluştu');

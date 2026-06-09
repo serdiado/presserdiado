@@ -12,6 +12,12 @@ export interface UploadResult {
 const apiOrigin = (import.meta.env.VITE_API_URL ?? 'http://localhost:3001/api/v1')
   .replace(/\/api\/v\d+\/?$/, '');
 
+// DB'den gelen relative imageKey'i (/uploads/...) <img src> için absolute URL'e çevirir.
+export function toAbsoluteUrl(key: string): string {
+  if (/^https?:\/\//.test(key)) return key;
+  return apiOrigin + key;
+}
+
 export async function uploadImage(file: File): Promise<UploadResult> {
   const fd = new FormData();
   fd.append('file', file);

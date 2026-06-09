@@ -86,6 +86,17 @@ export interface Product {
   updatedAt?: string;
 }
 
+export interface ProductImage {
+  id: string;
+  userId: string;
+  sku: string | null;
+  imageKey: string;
+  fileName?: string | null;
+  sortOrder: number;
+  isTransparent: boolean;
+  createdAt?: string;
+}
+
 export interface UsageStat {
   used: number;
   limit: number;

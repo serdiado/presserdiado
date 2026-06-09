@@ -1,0 +1,1 @@
+ALTER TABLE `product_images` MODIFY COLUMN `sku` varchar(100);
