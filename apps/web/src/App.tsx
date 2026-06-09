@@ -6,7 +6,7 @@ import { DashboardLayout } from '@/features/dashboard/DashboardLayout';
 import { AnaSayfa } from '@/features/dashboard/pages/AnaSayfa';
 import { Projelerim } from '@/features/dashboard/pages/Projelerim';
 import { Siparislerim } from '@/features/dashboard/pages/Siparislerim';
-import { UrunListelerim } from '@/features/dashboard/pages/UrunListelerim';
+import { UrunListelerim } from "@/features/dashboard/pages/UrunListelerim";
 import { UrunResimleriPage } from '@/features/dashboard/pages/UrunResimleriPage';
 import { GenelMedyaPage } from '@/features/dashboard/pages/GenelMedyaPage';
 

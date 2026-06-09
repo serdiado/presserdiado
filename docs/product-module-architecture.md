@@ -225,3 +225,4 @@ Parça 7  → Stüdyo DB bağlantısı (Gemini + Opus)
 - Signed URL: `imageKey` yapısı değişmez, sadece URL üretim mantığı değişir
 - Ürün galerisi çoklu resim UI: `sortOrder` altyapısı hazır, sürükle-bırak UI sonraya
 - Tekil ürün kartına resim yükleme alanı: Parça 4 sonrası eklenecek
+- Resim sıra yönetimi (sortOrder swap UI): Parça 6B'de uygulanacak. Stüdyoda birincil resim = en düşük sortOrder'lı. Tek resimli SKU'larda sıra alanı gizli/kilitli.
