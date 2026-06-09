@@ -6,7 +6,6 @@ import staticPlugin from '@fastify/static';
 import { join } from 'node:path';
 import { config } from './config.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
-import { catalogRoutes } from './modules/catalog/catalog.routes.js';
 import { projectRoutes } from './modules/project/project.routes.js';
 import { exportRoutes } from './modules/export/export.routes.js';
 import { uploadRoutes } from './modules/upload/upload.routes.js';
@@ -73,7 +72,6 @@ app.setErrorHandler((error, request, reply) => {
 await app.register(
   async (api) => {
     await api.register(authRoutes);
-    await api.register(catalogRoutes);
     await api.register(projectRoutes);
     await api.register(exportRoutes);
     await api.register(uploadRoutes);
