@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { eq, and, asc, count } from 'drizzle-orm';
+import { eq, and, asc, count, inArray } from 'drizzle-orm';
 import { db } from '../../db/index.js';
 import { productImages } from '../../db/schema/index.js';
 import { NotFoundError, ConflictError } from '../../lib/errors.js';
@@ -97,5 +97,24 @@ export const productImagesService = {
       .where(and(eq(productImages.id, id), eq(productImages.userId, userId)));
 
     return { success: true };
+  },
+
+  async bulkRemove(userId: string, ids: string[]) {
+    // Yalnız bu kullanıcıya ait id'leri al (IDOR koruması).
+    const owned = await db
+      .select({ id: productImages.id })
+      .from(productImages)
+      .where(and(eq(productImages.userId, userId), inArray(productImages.id, ids)));
+
+    if (owned.length === 0) {
+      return { deleted: 0 };
+    }
+
+    const ownedIds = owned.map((i) => i.id);
+    await db
+      .delete(productImages)
+      .where(and(eq(productImages.userId, userId), inArray(productImages.id, ownedIds)));
+
+    return { deleted: ownedIds.length };
   },
 };

@@ -17,6 +17,10 @@ const bulkCreateSchema = z.object({
   products: z.array(createProductSchema).min(1).max(1000),
 });
 
+const bulkDeleteSchema = z.object({
+  ids: z.array(z.string()).min(1).max(100),
+});
+
 const listProductsQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
@@ -48,6 +52,14 @@ export async function productsRoutes(app: FastifyInstance) {
     const body = bulkCreateSchema.parse(request.body);
     const userId = request.user.id; // IDOR Protection: Sadece kendi adına ürün ekleyebilir.
     const result = await productsService.bulkCreate(userId, body.products);
+    return reply.send(result);
+  });
+
+  // DELETE /products/bulk — toplu sil (cascade: product_images). :id'den önce tanımlı.
+  app.delete('/products/bulk', async (request, reply) => {
+    const { ids } = bulkDeleteSchema.parse(request.body);
+    const userId = request.user.id; // IDOR Protection: Sadece kendi ürünlerini silebilir.
+    const result = await productsService.bulkRemove(userId, ids);
     return reply.send(result);
   });
 

@@ -140,6 +140,35 @@ export const productsService = {
     };
   },
 
+  async bulkRemove(userId: string, ids: string[]) {
+    // Yalnız bu kullanıcıya ait id'leri al (IDOR koruması).
+    const owned = await db
+      .select({ id: products.id, sku: products.sku })
+      .from(products)
+      .where(and(eq(products.userId, userId), inArray(products.id, ids)));
+
+    if (owned.length === 0) {
+      return { deleted: 0 };
+    }
+
+    const ownedIds = owned.map((p) => p.id);
+    const skus = [...new Set(owned.map((p) => p.sku))];
+
+    await db.transaction(async (tx) => {
+      // Cascade: silinen ürünlerin SKU'larına ait resimleri de sil.
+      if (skus.length > 0) {
+        await tx
+          .delete(productImages)
+          .where(and(eq(productImages.userId, userId), inArray(productImages.sku, skus)));
+      }
+      await tx
+        .delete(products)
+        .where(and(eq(products.userId, userId), inArray(products.id, ownedIds)));
+    });
+
+    return { deleted: ownedIds.length };
+  },
+
   async update(userId: string, id: string, input: Partial<CreateProductInput>) {
     // Ensure product exists and belongs to user
     const existing = await db.query.products.findFirst({

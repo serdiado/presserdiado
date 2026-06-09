@@ -14,6 +14,10 @@ const updateSkuSchema = z.object({
   sku: z.string().min(1).max(100).nullable(),
 });
 
+const bulkDeleteSchema = z.object({
+  ids: z.array(z.string()).min(1).max(100),
+});
+
 export async function productImagesRoutes(app: FastifyInstance) {
   app.addHook('onRequest', app.authenticate);
 
@@ -48,6 +52,14 @@ export async function productImagesRoutes(app: FastifyInstance) {
     const userId = request.user.id; // IDOR Protection: Sadece kendi resmini güncelleyebilir.
     const image = await productImagesService.updateSku(userId, id, sku);
     return reply.send(image);
+  });
+
+  // DELETE /product-images/bulk — toplu sil. Statik segment :id'den önce tanımlı.
+  app.delete('/product-images/bulk', async (request, reply) => {
+    const { ids } = bulkDeleteSchema.parse(request.body);
+    const userId = request.user.id; // IDOR Protection: Sadece kendi resimlerini silebilir.
+    const result = await productImagesService.bulkRemove(userId, ids);
+    return reply.send(result);
   });
 
   // DELETE /product-images/:id — resim sil

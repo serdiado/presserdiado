@@ -25,6 +25,9 @@ export function UrunResimleriPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [deleting, setDeleting] = useState<ProductImage | null>(null);
+  // Çoklu seçim
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   // SKU eşleştirme onayı (combobox'tan seçim sonrası)
   const [assigning, setAssigning] = useState<{ image: ProductImage; sku: string } | null>(null);
   // SKU eşleştirmesini kaldırma onayı
@@ -143,6 +146,46 @@ export function UrunResimleriPage() {
     }
   };
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const allSelected = filtered.length > 0 && filtered.every((i) => selectedIds.has(i.id));
+
+  const toggleAll = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (filtered.every((i) => prev.has(i.id))) {
+        filtered.forEach((i) => next.delete(i.id));
+      } else {
+        filtered.forEach((i) => next.add(i.id));
+      }
+      return next;
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    try {
+      const res = await api.delete('/product-images/bulk', { data: { ids } });
+      toast.success(`${res.data.deleted} resim silindi`);
+      clearSelection();
+      setIsBulkDeleteOpen(false);
+      fetchData();
+    } catch (err) {
+      console.error('Bulk delete error', err);
+      toast.error('Resimler silinemedi');
+    }
+  };
+
   const filterTabs: { key: Filter; label: string }[] = [
     { key: 'all', label: `Tümü (${images.length})` },
     { key: 'matched', label: `Eşleşmiş (${matchedCount})` },
@@ -223,16 +266,53 @@ export function UrunResimleriPage() {
                 {tab.label}
               </button>
             ))}
+            <label className="ml-auto flex items-center gap-2 text-body-sm text-text-secondary cursor-pointer select-none">
+              <input
+                type="checkbox"
+                className="w-4 h-4 accent-primary cursor-pointer"
+                checked={allSelected}
+                onChange={toggleAll}
+              />
+              Tümünü Seç
+            </label>
           </div>
+
+          {/* Seçim aksiyon bar'ı */}
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-3 mb-4 shrink-0 bg-surface-subtle border border-border-default rounded-radius-md px-4 py-2">
+              <span className="text-body-sm text-text-primary">
+                {selectedIds.size} öğe seçildi
+              </span>
+              <button
+                onClick={clearSelection}
+                className="text-body-sm text-text-secondary hover:text-text-primary transition-colors"
+              >
+                Seçimi Temizle
+              </button>
+              <div className="ml-auto">
+                <Button
+                  variant="danger"
+                  size="sm"
+                  leftIcon={<Trash2 size={14} />}
+                  onClick={() => setIsBulkDeleteOpen(true)}
+                >
+                  Seçilenleri Sil
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Grid */}
           <div className="grid grid-cols-3 lg:grid-cols-4 gap-4">
             {filtered.map((img) => {
               const matched = isMatched(img);
+              const selected = selectedIds.has(img.id);
               return (
                 <div
                   key={img.id}
-                  className="group relative bg-surface-panel border border-border-default hover:border-border-strong rounded-radius-lg overflow-hidden transition-colors"
+                  className={`group relative bg-surface-panel border rounded-radius-lg overflow-hidden transition-colors ${
+                    selected ? 'border-border-strong bg-surface-subtle' : 'border-border-default hover:border-border-strong'
+                  }`}
                 >
                   <div className="aspect-square bg-surface-subtle flex items-center justify-center overflow-hidden">
                     <img
@@ -243,6 +323,16 @@ export function UrunResimleriPage() {
                     />
                   </div>
 
+                  {/* Seçim checkbox'ı — sol üst */}
+                  <input
+                    type="checkbox"
+                    className={`absolute top-2 left-2 w-4 h-4 accent-primary cursor-pointer transition-opacity ${
+                      selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    }`}
+                    checked={selected}
+                    onChange={() => toggleSelect(img.id)}
+                  />
+
                   {/* Sil butonu */}
                   <button
                     onClick={() => setDeleting(img)}
@@ -252,11 +342,11 @@ export function UrunResimleriPage() {
                     <Trash2 size={16} />
                   </button>
 
-                  {/* PNG opak uyarısı */}
+                  {/* PNG opak uyarısı — checkbox'ın sağına kaydırıldı */}
                   {!img.isTransparent && img.fileName?.toLowerCase().endsWith('.png') && (
                     <span
                       title="Bu PNG'nin köşeleri opak olabilir — şeffaf arka plan beklentinizi kontrol edin"
-                      className="absolute top-2 left-2 p-1 rounded-radius-md bg-surface-panel/90 text-warning"
+                      className="absolute top-2 left-9 p-1 rounded-radius-md bg-surface-panel/90 text-warning"
                     >
                       <AlertTriangle size={14} />
                     </span>
@@ -382,6 +472,17 @@ export function UrunResimleriPage() {
         isOpen={creatingForImage !== null}
         onClose={() => setCreatingForImage(null)}
         onSave={handleProductCreated}
+      />
+
+      <ConfirmModal
+        isOpen={isBulkDeleteOpen}
+        title="Seçilenleri Sil"
+        description={`${selectedIds.size} resim silinecek. Bu işlem geri alınamaz.`}
+        confirmLabel="Sil"
+        cancelLabel="Vazgeç"
+        confirmVariant="danger"
+        onConfirm={handleBulkDelete}
+        onCancel={() => setIsBulkDeleteOpen(false)}
       />
     </div>
   );

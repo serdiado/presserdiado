@@ -22,6 +22,10 @@ export function UrunListelerim() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
 
+  // Çoklu seçim
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+
   const fetchProducts = async () => {
     setIsLoading(true);
     setError(null);
@@ -77,6 +81,48 @@ export function UrunListelerim() {
     } catch (err) {
       console.error('Delete error', err);
       toast.error('Ürün silinemedi');
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const allSelected =
+    filteredProducts.length > 0 && filteredProducts.every((p) => selectedIds.has(p.id));
+
+  const toggleAll = () => {
+    setSelectedIds((prev) => {
+      if (filteredProducts.every((p) => prev.has(p.id))) {
+        const next = new Set(prev);
+        filteredProducts.forEach((p) => next.delete(p.id));
+        return next;
+      }
+      const next = new Set(prev);
+      filteredProducts.forEach((p) => next.add(p.id));
+      return next;
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    try {
+      const res = await api.delete('/products/bulk', { data: { ids } });
+      toast.success(`${res.data.deleted} ürün silindi`);
+      clearSelection();
+      setIsBulkDeleteOpen(false);
+      fetchProducts();
+    } catch (err) {
+      console.error('Bulk delete error', err);
+      toast.error('Ürünler silinemedi');
     }
   };
 
@@ -156,20 +202,70 @@ export function UrunListelerim() {
                 className="w-full h-9 pl-9 pr-3 rounded-md border border-border-default hover:border-border-strong bg-white text-body-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-border-strong"
               />
             </div>
-            <div className="text-body-sm text-text-secondary">
-              Toplam {filteredProducts.length} ürün
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 text-body-sm text-text-secondary cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 accent-primary cursor-pointer"
+                  checked={allSelected}
+                  onChange={toggleAll}
+                />
+                Tümünü Seç
+              </label>
+              <div className="text-body-sm text-text-secondary">
+                Toplam {filteredProducts.length} ürün
+              </div>
             </div>
           </div>
+
+          {/* Seçim aksiyon bar'ı */}
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-3 mb-4 shrink-0 bg-surface-subtle border border-border-default rounded-radius-md px-4 py-2">
+              <span className="text-body-sm text-text-primary">
+                {selectedIds.size} öğe seçildi
+              </span>
+              <button
+                onClick={clearSelection}
+                className="text-body-sm text-text-secondary hover:text-text-primary transition-colors"
+              >
+                Seçimi Temizle
+              </button>
+              <div className="ml-auto">
+                <Button
+                  variant="danger"
+                  size="sm"
+                  leftIcon={<Trash2 size={14} />}
+                  onClick={() => setIsBulkDeleteOpen(true)}
+                >
+                  Seçilenleri Sil
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* List */}
           <div className="flex-1 overflow-auto">
             <div className="space-y-2">
-              {filteredProducts.map((product) => (
+              {filteredProducts.map((product) => {
+                const selected = selectedIds.has(product.id);
+                return (
                 <div
                   key={product.id}
-                  className="group flex items-center justify-between bg-white border border-border-default hover:border-border-strong p-4 rounded-md transition-colors"
+                  className={`group flex items-center justify-between border p-4 rounded-md transition-colors ${
+                    selected
+                      ? 'bg-surface-subtle border-border-strong'
+                      : 'bg-white border-border-default hover:border-border-strong'
+                  }`}
                 >
                   <div className="flex items-center gap-4 flex-1 min-w-0">
+                    <input
+                      type="checkbox"
+                      className={`w-4 h-4 accent-primary cursor-pointer shrink-0 transition-opacity ${
+                        selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                      }`}
+                      checked={selected}
+                      onChange={() => toggleSelect(product.id)}
+                    />
                     <div className="w-24 shrink-0">
                       <span className="font-mono text-body-xs text-text-muted bg-slate-50 px-2 py-1 rounded">
                         {product.sku}
@@ -226,7 +322,8 @@ export function UrunListelerim() {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
 
               {filteredProducts.length === 0 && search && (
                 <div className="text-center py-12 text-body-md text-text-secondary">
@@ -264,6 +361,17 @@ export function UrunListelerim() {
         confirmVariant="danger"
         onConfirm={handleConfirmDelete}
         onCancel={() => setIsDeleteOpen(false)}
+      />
+
+      <ConfirmModal
+        isOpen={isBulkDeleteOpen}
+        title="Seçilenleri Sil"
+        description={`${selectedIds.size} ürün silinecek. Bu işlem geri alınamaz.`}
+        confirmLabel="Sil"
+        cancelLabel="Vazgeç"
+        confirmVariant="danger"
+        onConfirm={handleBulkDelete}
+        onCancel={() => setIsBulkDeleteOpen(false)}
       />
     </div>
   );
