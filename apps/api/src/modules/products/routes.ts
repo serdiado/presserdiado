@@ -13,6 +13,10 @@ const createProductSchema = z.object({
 
 const updateProductSchema = createProductSchema.partial();
 
+const bulkCreateSchema = z.object({
+  products: z.array(createProductSchema).min(1).max(1000),
+});
+
 const listProductsQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(20),
@@ -37,6 +41,14 @@ export async function productsRoutes(app: FastifyInstance) {
     const userId = request.user.id; // IDOR Protection: Sadece kendi adına ürün ekleyebilir.
     const product = await productsService.create(userId, body);
     return reply.status(201).send(product);
+  });
+
+  // POST /products/bulk — toplu ürün ekle (kolon eşleştirmeli Excel import)
+  app.post('/products/bulk', async (request, reply) => {
+    const body = bulkCreateSchema.parse(request.body);
+    const userId = request.user.id; // IDOR Protection: Sadece kendi adına ürün ekleyebilir.
+    const result = await productsService.bulkCreate(userId, body.products);
+    return reply.send(result);
   });
 
   // PATCH /products/:id — güncelle

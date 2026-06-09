@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { eq, and, desc, like, ne } from 'drizzle-orm';
+import { eq, and, desc, like, ne, inArray } from 'drizzle-orm';
 import { db } from '../../db/index.js';
 import { products, productImages } from '../../db/schema/index.js';
 import { NotFoundError, ConflictError } from '../../lib/errors.js';
@@ -76,6 +76,68 @@ export const productsService = {
     });
     if (!product) throw new Error('Insert failed');
     return product;
+  },
+
+  async bulkCreate(userId: string, items: CreateProductInput[]) {
+    // 1. Dosya-içi tekrar eden SKU'ları ele (ilkini tut), boş SKU'ları çıkar
+    const seen = new Set<string>();
+    const skippedSkus: string[] = [];
+    const unique: CreateProductInput[] = [];
+    for (const item of items) {
+      const sku = item.sku?.trim();
+      if (!sku || !item.name?.trim()) {
+        if (sku) skippedSkus.push(sku);
+        continue;
+      }
+      if (seen.has(sku)) {
+        skippedSkus.push(sku);
+        continue;
+      }
+      seen.add(sku);
+      unique.push(item);
+    }
+
+    // 2. Bu kullanıcıda zaten var olan SKU'ları tek sorguda çek
+    const skus = unique.map((i) => i.sku);
+    const existing = skus.length
+      ? await db
+          .select({ sku: products.sku })
+          .from(products)
+          .where(and(eq(products.userId, userId), inArray(products.sku, skus)))
+      : [];
+    const existingSet = new Set(existing.map((e) => e.sku));
+
+    // 3. Eklenecekleri hazırla, mevcutları atla
+    const toInsert: (typeof products.$inferInsert)[] = [];
+    for (const item of unique) {
+      if (existingSet.has(item.sku)) {
+        skippedSkus.push(item.sku);
+        continue;
+      }
+      toInsert.push({
+        id: randomUUID(),
+        userId,
+        sku: item.sku,
+        name: item.name,
+        price: item.price?.toString() ?? null,
+        category: item.category ?? null,
+        unit: item.unit ?? null,
+        description: item.description ?? null,
+      });
+    }
+
+    // 4. Transaction içinde toplu insert
+    if (toInsert.length > 0) {
+      await db.transaction(async (tx) => {
+        await tx.insert(products).values(toInsert);
+      });
+    }
+
+    return {
+      inserted: toInsert.length,
+      skipped: skippedSkus.length,
+      skippedSkus,
+    };
   },
 
   async update(userId: string, id: string, input: Partial<CreateProductInput>) {

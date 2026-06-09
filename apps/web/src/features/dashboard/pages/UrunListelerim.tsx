@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Plus, Search, Edit2, Trash2, PackageSearch, AlertCircle, RefreshCw } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, PackageSearch, AlertCircle, RefreshCw, FileSpreadsheet } from 'lucide-react';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { ProductFormModal } from '../components/ProductFormModal';
+import { ExcelImportModal } from '../components/ExcelImportModal';
 import type { Product } from '../types';
 
 export function UrunListelerim() {
@@ -15,6 +16,7 @@ export function UrunListelerim() {
 
   // Modals state
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -111,9 +113,19 @@ export function UrunListelerim() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8 shrink-0">
         <h1 className="text-heading-xl text-text-primary">Ürün Listelerim</h1>
-        <Button variant="primary" size="md" leftIcon={<Plus size={16} />} onClick={handleAddClick}>
-          Ürün Ekle
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="secondary"
+            size="md"
+            leftIcon={<FileSpreadsheet size={16} />}
+            onClick={() => setIsImportOpen(true)}
+          >
+            Excel'den İçe Aktar
+          </Button>
+          <Button variant="primary" size="md" leftIcon={<Plus size={16} />} onClick={handleAddClick}>
+            Ürün Ekle
+          </Button>
+        </div>
       </div>
 
       {products.length === 0 ? (
@@ -231,6 +243,12 @@ export function UrunListelerim() {
         onClose={() => setIsFormOpen(false)}
         product={editingProduct}
         onSave={fetchProducts}
+      />
+
+      <ExcelImportModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
+        onImported={fetchProducts}
       />
 
       <ConfirmModal
