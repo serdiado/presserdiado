@@ -1,18 +1,69 @@
 // Ana Sayfa — KPI'lar + son projeler + hızlı erişim + sipariş durumu
 // apps/web/src/features/dashboard/pages/AnaSayfa.tsx
 
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, Package, ArrowRight } from 'lucide-react';
 import { NAV_ROUTES } from '../Shell';
 import { ProjectCard } from '../components/ProjectCard';
 import { StatusPill } from '../components/StatusPill';
+import { WelcomeWizardModal } from '../components/WelcomeWizardModal';
 import { useDashboardContext } from '../DashboardLayout';
 import { useAuthStore } from '../../../stores/auth.store';
+import api from '@/lib/api';
+
+const WIZARD_DISMISSED_KEY = 'matbaapro:wizard-dismissed';
 
 export function AnaSayfa() {
   const navigate = useNavigate();
   const { projects, orders, stats, loading } = useDashboardContext();
   const { user } = useAuthStore();
+
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [productCount, setProductCount] = useState<number | null>(null);
+
+  // Mount: ürün sayısını kontrol et. Ürün yoksa ve daha önce kapatılmadıysa
+  // 1 sn gecikmeyle kurulum wizard'ını aç.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let active = true;
+    void (async () => {
+      try {
+        const res = await api.get('/products', { params: { limit: 1 } });
+        if (!active) return;
+        const total = res.data?.total ?? 0;
+        setProductCount(total);
+        if (total === 0 && localStorage.getItem(WIZARD_DISMISSED_KEY) !== 'true') {
+          timer = setTimeout(() => setWizardOpen(true), 1000);
+        }
+      } catch {
+        if (active) setProductCount(null);
+      }
+    })();
+    return () => {
+      active = false;
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
+
+  const handleWizardClose = () => {
+    localStorage.setItem(WIZARD_DISMISSED_KEY, 'true');
+    setWizardOpen(false);
+  };
+
+  const handleWizardComplete = async () => {
+    try {
+      const res = await api.get('/products', { params: { limit: 1 } });
+      setProductCount(res.data?.total ?? 0);
+    } catch {
+      // sayım tazelenemedi — banner bir sonraki yüklemede güncellenir
+    }
+  };
+
+  const handleOpenWizard = () => {
+    localStorage.removeItem(WIZARD_DISMISSED_KEY);
+    setWizardOpen(true);
+  };
 
   const firstName = user?.companyName 
     ? user.companyName.split(' ')[0] 
@@ -28,6 +79,25 @@ export function AnaSayfa() {
 
   return (
     <div className="max-w-7xl mx-auto px-8 py-8">
+      {/* Ürün havuzu hatırlatma banner'ı — ürün yoksa (wizard kapatılmış olsa bile) görünür */}
+      {productCount === 0 && (
+        <div className="mb-6 flex items-center gap-3 bg-surface-subtle border border-border-default rounded-radius-lg px-4 py-3">
+          <div className="w-8 h-8 rounded-full bg-surface-panel text-text-secondary flex items-center justify-center shrink-0">
+            <Package size={16} />
+          </div>
+          <p className="flex-1 text-body-sm text-text-secondary">
+            📦 Ürün havuzunuz henüz kurulmamış.
+          </p>
+          <button
+            onClick={handleOpenWizard}
+            className="inline-flex items-center gap-1.5 text-label-md text-primary hover:text-primary-hover transition-colors"
+          >
+            Ürün Havuzunu Kur
+            <ArrowRight size={14} />
+          </button>
+        </div>
+      )}
+
       {/* Başlık */}
       <div className="flex items-end justify-between mb-8">
         <div>
@@ -117,6 +187,12 @@ export function AnaSayfa() {
           </div>
         </aside>
       </div>
+
+      <WelcomeWizardModal
+        isOpen={wizardOpen}
+        onClose={handleWizardClose}
+        onComplete={handleWizardComplete}
+      />
     </div>
   );
 }
