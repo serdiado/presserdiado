@@ -175,8 +175,13 @@ export function UrunResimleriPage() {
     const ids = [...selectedIds];
     if (ids.length === 0) return;
     try {
-      const res = await api.delete('/product-images/bulk', { data: { ids } });
-      toast.success(`${res.data.deleted} resim silindi`);
+      // Backend istek başına en fazla 100 id kabul ediyor — 100'lük dilimlere böl.
+      let deleted = 0;
+      for (let i = 0; i < ids.length; i += 100) {
+        const res = await api.delete('/product-images/bulk', { data: { ids: ids.slice(i, i + 100) } });
+        deleted += res.data?.deleted ?? 0;
+      }
+      toast.success(`${deleted} resim silindi`);
       clearSelection();
       setIsBulkDeleteOpen(false);
       fetchData();

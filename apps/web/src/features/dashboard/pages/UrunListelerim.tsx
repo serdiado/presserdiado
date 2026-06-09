@@ -115,8 +115,13 @@ export function UrunListelerim() {
     const ids = [...selectedIds];
     if (ids.length === 0) return;
     try {
-      const res = await api.delete('/products/bulk', { data: { ids } });
-      toast.success(`${res.data.deleted} ürün silindi`);
+      // Backend istek başına en fazla 100 id kabul ediyor — 100'lük dilimlere böl.
+      let deleted = 0;
+      for (let i = 0; i < ids.length; i += 100) {
+        const res = await api.delete('/products/bulk', { data: { ids: ids.slice(i, i + 100) } });
+        deleted += res.data?.deleted ?? 0;
+      }
+      toast.success(`${deleted} ürün silindi`);
       clearSelection();
       setIsBulkDeleteOpen(false);
       fetchProducts();
