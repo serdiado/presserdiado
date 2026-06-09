@@ -5,7 +5,7 @@ import { products } from '../../db/schema/index.js';
 import { NotFoundError } from '../../lib/errors.js';
 
 interface CreateProductInput {
-  sku?: string;
+  sku: string;
   name: string;
   price?: number;
   originalPrice?: number;
@@ -73,7 +73,7 @@ export const catalogService = {
     await db.insert(products).values({
       id,
       userId,
-      sku: input.sku ?? null,
+      sku: input.sku,
       name: input.name,
       price: input.price?.toString() ?? null,
       originalPrice: input.originalPrice?.toString() ?? null,

@@ -11,6 +11,9 @@ import { projectRoutes } from './modules/project/project.routes.js';
 import { exportRoutes } from './modules/export/export.routes.js';
 import { uploadRoutes } from './modules/upload/upload.routes.js';
 import { themeRoutes } from './modules/theme/theme.routes.js';
+import { productsRoutes } from './modules/products/routes.js';
+import { productImagesRoutes } from './modules/product-images/routes.js';
+import { mediaAssetsRoutes } from './modules/media-assets/routes.js';
 import { AppError } from './lib/errors.js';
 import { ZodError } from 'zod';
 
@@ -75,6 +78,9 @@ await app.register(
     await api.register(exportRoutes);
     await api.register(uploadRoutes);
     await api.register(themeRoutes);
+    await api.register(productsRoutes);
+    await api.register(productImagesRoutes);
+    await api.register(mediaAssetsRoutes);
   },
   { prefix: '/api/v1' },
 );

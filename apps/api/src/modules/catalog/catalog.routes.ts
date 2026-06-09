@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { catalogService } from './catalog.service.js';
 
 const createProductSchema = z.object({
-  sku: z.string().optional(),
+  sku: z.string().min(1),
   name: z.string().min(1),
   price: z.number().positive().optional(),
   originalPrice: z.number().positive().optional(),
