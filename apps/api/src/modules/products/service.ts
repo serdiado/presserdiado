@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { eq, and, desc, like, ne, inArray } from 'drizzle-orm';
+import { eq, and, desc, like, ne, inArray, sql } from 'drizzle-orm';
 import { db } from '../../db/index.js';
 import { products, productImages } from '../../db/schema/index.js';
 import { NotFoundError, ConflictError } from '../../lib/errors.js';
@@ -47,6 +47,32 @@ export const productsService = {
       limit: data.length,
       totalPages: 1,
     };
+  },
+
+  // Stüdyo ürün havuzu: her ürünü birincil resmiyle (en düşük sortOrder, eşitlikte
+  // en eski) döndürür. primaryImage relative imageKey'dir; mutlak URL çevirimi frontend'de.
+  async listWithImages(userId: string) {
+    // Korelasyon kolonları (products.user_id / products.sku) literal yazılmalı:
+    // ham sql`` içine ${products.sku} interpolasyonu tablo-qualifiye edilmeden basılır
+    // ve alt-sorguda pi.sku'ya çözülür -> korelasyon kopar, herkese aynı resim döner.
+    const primaryImage = sql<string | null>`(
+      SELECT pi.image_key FROM product_images pi
+      WHERE pi.user_id = products.user_id AND pi.sku = products.sku
+      ORDER BY pi.sort_order ASC, pi.created_at ASC LIMIT 1
+    )`;
+    return db
+      .select({
+        id: products.id,
+        sku: products.sku,
+        name: products.name,
+        price: products.price,
+        category: products.category,
+        unit: products.unit,
+        primaryImage,
+      })
+      .from(products)
+      .where(eq(products.userId, userId))
+      .orderBy(desc(products.createdAt));
   },
 
   async create(userId: string, input: CreateProductInput) {

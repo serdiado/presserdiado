@@ -39,6 +39,13 @@ export async function productsRoutes(app: FastifyInstance) {
     return reply.send(result);
   });
 
+  // GET /products/with-images — stüdyo havuzu: ürün + birincil resim
+  app.get('/products/with-images', async (request, reply) => {
+    const userId = request.user.id; // IDOR Protection: Sadece kendi ürünlerini listeleyebilir.
+    const result = await productsService.listWithImages(userId);
+    return reply.send(result);
+  });
+
   // POST /products — tekil ürün ekle
   app.post('/products', async (request, reply) => {
     const body = createProductSchema.parse(request.body);
