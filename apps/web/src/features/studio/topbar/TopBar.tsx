@@ -7,10 +7,7 @@ import { DownloadMenu } from './DownloadMenu';
 import { PriceCalculator } from '../pricing/PriceCalculator';
 import { ConfirmDialog, ConfirmModal } from '@/components/ui';
 import { ZoomWidget } from './ZoomWidget';
-import toast from 'react-hot-toast';
-import api from '@/lib/api';
-import { serializeStudioState } from '../lib/projectSerializer';
-import { captureAndUploadThumbnail } from '@/lib/thumbnailCapture';
+import { useProjectSave } from '../hooks/useProjectSave';
 
 function EditableTitle() {
   const projectName = useCatalogStore((s) => s.projectName);
@@ -70,11 +67,9 @@ function EditableTitle() {
 export function TopBar() {
   const navigate = useNavigate();
   const activeFormaId = useCatalogStore((s) => s.activeFormaId);
-  const projectId = useCatalogStore((s) => s.projectId);
-  const setProjectId = useCatalogStore((s) => s.setProjectId);
   const projectName = useCatalogStore((s) => s.projectName);
   const isDirty = useCatalogStore((s) => s.isDirty);
-  const setIsDirty = useCatalogStore((s) => s.setIsDirty);
+  const { saveProject, isSaving } = useProjectSave();
 
   const undo = useHistoryStore((s) => s.undo);
   const redo = useHistoryStore((s) => s.redo);
@@ -136,7 +131,7 @@ export function TopBar() {
 
   const handleConfirmSaveAndNavigate = async () => {
     try {
-      await handleCloudSave();
+      await saveProject();
       if (pendingNavigatePath) {
         navigate(pendingNavigatePath);
       }
@@ -152,6 +147,14 @@ export function TopBar() {
     setPendingNavigatePath(null);
   };
 
+  const handleDismissModal = () => {
+    if (pendingNavigatePath) {
+      navigate(pendingNavigatePath);
+    }
+    setConfirmModalOpen(false);
+    setPendingNavigatePath(null);
+  };
+
   const handleClearProducts = () => {
     clearProducts();
     setIsClearOpen(false);
@@ -160,54 +163,6 @@ export function TopBar() {
   const handleResetCatalog = () => {
     resetCatalog();
     setIsResetOpen(false);
-  };
-
-  const handleCloudSave = async () => {
-    const toastId = toast.loading('Tasarım buluta kaydediliyor...');
-    try {
-      const canvasData = serializeStudioState();
-
-      if (!projectId) {
-        // İlk kayıt
-        // TODO: productTypeId'yi aktif template kategorisinden türet (şu an sabit broşür)
-        const response = await api.post('/projects', {
-          name: projectName,
-          productTypeId: '00000000-0000-0000-0000-000000000001',
-          canvasData,
-          status: 'saved',
-        });
-        const newId = response.data.id;
-        setProjectId(newId);
-        setIsDirty(false);
-        navigate(`/studio/${newId}`, { replace: true });
-        toast.success('Tasarım buluta başarıyla kaydedildi!', { id: toastId });
-
-        // Thumbnail yakalama + yükleme kaydetme akışını bloklamaz; arka planda koşar.
-        // navigate replace sonrası canvas DOM'u yeniden render edilmediği için yakalama güvenle tamamlanır.
-        const canvasEl = document.getElementById('studio-canvas-root');
-        if (canvasEl && newId) {
-          void captureAndUploadThumbnail(canvasEl, newId);
-        }
-      } else {
-        // Güncelleme
-        await api.patch(`/projects/${projectId}/canvas`, {
-          canvasData,
-          name: projectName,
-        });
-        setIsDirty(false);
-        toast.success('Değişiklikler buluta kaydedildi!', { id: toastId });
-
-        // Thumbnail yakalama + yükleme kaydetme akışını bloklamaz; arka planda koşar.
-        const canvasEl = document.getElementById('studio-canvas-root');
-        if (canvasEl) {
-          void captureAndUploadThumbnail(canvasEl, projectId);
-        }
-      }
-    } catch (error) {
-      console.error('Kaydetme hatası:', error);
-      toast.error('Tasarım kaydedilirken bir hata oluştu.', { id: toastId });
-      throw error;
-    }
   };
 
   const handlePreview = () => {
@@ -257,11 +212,11 @@ export function TopBar() {
               <button
                 onClick={() => {
                   if (isDirty) {
-                    handleCloudSave();
+                    void saveProject();
                     setFileMenuOpen(false);
                   }
                 }}
-                disabled={!isDirty}
+                disabled={!isDirty || isSaving}
                 className="w-full text-left px-3 py-2.5 hover:bg-surface-subtle rounded-radius-md text-body-md font-medium text-text-secondary hover:text-text-primary transition-all flex items-center gap-2.5 disabled:opacity-40 disabled:cursor-not-allowed select-none"
               >
                 <span className="flex items-center gap-2.5">
@@ -333,8 +288,8 @@ export function TopBar() {
 
         {/* Cloud Kaydet Butonu */}
         <button
-          onClick={handleCloudSave}
-          disabled={!isDirty}
+          onClick={() => void saveProject()}
+          disabled={!isDirty || isSaving}
           title="Kaydet"
           className="h-8 w-8 flex items-center justify-center text-text-secondary hover:text-text-primary hover:bg-surface-subtle border border-border-strong rounded-radius-md transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
         >
@@ -366,10 +321,11 @@ export function TopBar() {
           isOpen={confirmModalOpen}
           title="Kaydedilmemiş Değişiklikler"
           description="Tasarımda yaptığınız değişiklikler kaydedilmemiş. Sayfadan ayrılmadan önce değişiklikleri kaydetmek istiyor musunuz?"
-          confirmLabel="Kaydet ve Devam Et"
-          cancelLabel="Çalışmaya Geri Dön"
+          confirmLabel="Kaydet"
+          dismissLabel="Kaydetmeden Çık"
           onConfirm={handleConfirmSaveAndNavigate}
           onCancel={handleCancelModal}
+          onDismiss={handleDismissModal}
         />
       </div>
 

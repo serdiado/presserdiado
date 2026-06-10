@@ -4,6 +4,7 @@ import { X, FolderOpen, Loader2, RefreshCw, Plus } from 'lucide-react';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import { ConfirmModal } from '@/components/ui';
 import api from '@/lib/api';
+import { useProjectSave } from '../hooks/useProjectSave';
 
 const FLYOUT_ID = 'projeler';
 
@@ -13,6 +14,7 @@ export function ProjelerFlyoutPanel() {
 
   const isDirty = useCatalogStore((s) => s.isDirty);
   const currentProjectId = useCatalogStore((s) => s.projectId);
+  const { saveProject } = useProjectSave();
 
   const navigate = useNavigate();
 
@@ -73,15 +75,28 @@ export function ProjelerFlyoutPanel() {
     navigate(`/studio/${id}`);
   };
 
-  const handleConfirmNavigate = () => {
-    if (pendingProjectId) {
+  const handleConfirmNavigate = async () => {
+    if (!pendingProjectId) return;
+
+    try {
+      await saveProject();
       navigateToProject(pendingProjectId);
+      setConfirmModalOpen(false);
+      setPendingProjectId(null);
+    } catch (error) {
+      console.error('Proje değiştirmeden önce kaydetme hatası:', error);
     }
+  };
+
+  const handleCancelNavigate = () => {
     setConfirmModalOpen(false);
     setPendingProjectId(null);
   };
 
-  const handleCancelNavigate = () => {
+  const handleDismissNavigate = () => {
+    if (pendingProjectId) {
+      navigateToProject(pendingProjectId);
+    }
     setConfirmModalOpen(false);
     setPendingProjectId(null);
   };
@@ -210,12 +225,12 @@ export function ProjelerFlyoutPanel() {
       <ConfirmModal
         isOpen={confirmModalOpen}
         title="Kaydedilmemiş Değişiklikler"
-        description="Tasarımda yaptığınız değişiklikler kaydedilmemiş. Sayfadan ayrılmadan önce değişiklikleri kaydetmek istiyor musunuz?"
-        confirmLabel="Evet, Çık"
-        cancelLabel="Çalışmaya Devam Et"
-        confirmVariant="danger"
+        description="Kaydedilmemiş değişiklikler var. Kaydetmeden diğer projeye geçmek istiyor musunuz?"
+        confirmLabel="Kaydet"
+        dismissLabel="Kaydetmeden Çık"
         onConfirm={handleConfirmNavigate}
         onCancel={handleCancelNavigate}
+        onDismiss={handleDismissNavigate}
       />
     </>
   );
