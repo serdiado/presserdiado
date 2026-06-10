@@ -97,6 +97,19 @@ export interface ProductImage {
   createdAt?: string;
 }
 
+export type MediaAssetType = 'logo' | 'background' | 'shape' | 'other';
+
+export interface MediaAsset {
+  id: string;
+  userId: string;
+  type: MediaAssetType;
+  imageKey: string;
+  fileName?: string | null;
+  mimeType?: string | null;
+  size?: number | null;
+  createdAt?: string;
+}
+
 export interface UsageStat {
   used: number;
   limit: number;

@@ -14,6 +14,10 @@ const listMediaAssetsQuerySchema = z.object({
   type: z.enum(['logo', 'background', 'shape', 'other']).optional(),
 });
 
+const assignMediaAssetToProductSchema = z.object({
+  sku: z.string().min(1).max(100),
+});
+
 export async function mediaAssetsRoutes(app: FastifyInstance) {
   app.addHook('onRequest', app.authenticate);
 
@@ -31,6 +35,15 @@ export async function mediaAssetsRoutes(app: FastifyInstance) {
     const userId = request.user.id; // IDOR Protection: Sadece kendi kütüphanesine medya ekleyebilir.
     const asset = await mediaAssetsService.create(userId, body);
     return reply.status(201).send(asset);
+  });
+
+  // POST /media-assets/:id/assign-to-product — medyayı ürün resmi olarak kopyala
+  app.post('/media-assets/:id/assign-to-product', async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const body = assignMediaAssetToProductSchema.parse(request.body);
+    const userId = request.user.id; // IDOR Protection: Sadece kendi medyasını ürün resmi olarak atayabilir.
+    const image = await mediaAssetsService.assignToProduct(userId, id, body);
+    return reply.status(201).send(image);
   });
 
   // DELETE /media-assets/:id — medya sil
