@@ -1,13 +1,28 @@
 // Excel import + master pool browser. Replaces the basic product list in
 // Sidebar's "Ürün" tab.
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import * as XLSX from 'xlsx';
-import { Settings2 } from 'lucide-react';
+import { Settings2, Search, PackageSearch, Check, Ban } from 'lucide-react';
 import type { ProductInfo } from '@matbaapro/shared';
 import { useCatalogStore } from '@/stores/studio';
+import api from '@/lib/api';
+import { toAbsoluteUrl } from '@/lib/upload';
+import { createProductDragImage } from '../utils/dragImage';
 import { ProductInfoSettings } from './ProductInfoSettings';
 import { Button } from '@/components/ui';
+
+// /products/with-images yanıt satırı — primaryImage relative imageKey (mutlak çevirim burada).
+interface PoolProduct {
+  id: string;
+  sku: string;
+  name: string;
+  price: string | null;
+  category: string | null;
+  unit: string | null;
+  primaryImage: string | null;
+}
 
 type ExcelRow = Record<string, string | number | undefined>;
 
@@ -20,7 +35,7 @@ function rowToProduct(row: ExcelRow, i: number): ProductInfo {
     name: String(row.BEZEICHNUNG ?? row.URUN_ADI ?? row.AD ?? row.NAME ?? 'İsimsiz').trim(),
     price: String(row.VK_NETTO ?? row.FIYAT ?? row.PRICE ?? '0').trim(),
     category: String(row.KATEGORI ?? row.ARTGRP ?? row.CATEGORY ?? 'Yüklenen').trim(),
-    image: String(row.RESIM ?? row.IMAGE ?? `/images/products/${sku}.png`).trim(),
+    image: String(row.RESIM ?? row.IMAGE ?? '').trim(),
     raw: row,
   };
 }
@@ -31,9 +46,76 @@ export function ProductManagement() {
   const autoFillSlots = useCatalogStore((s) => s.autoFillSlots);
   const clearProducts = useCatalogStore((s) => s.clearProducts);
   const resetCatalog = useCatalogStore((s) => s.resetCatalog);
+  const formas = useCatalogStore((s) => s.formas);
 
   const [layoutDrag, setLayoutDrag] = useState(false);
   const layoutRef = useRef<HTMLInputElement>(null);
+
+  // DB ürün havuzu (kalıcı) — Excel productPool'undan ayrı.
+  const [dbPool, setDbPool] = useState<PoolProduct[]>([]);
+  const [dbLoading, setDbLoading] = useState(true);
+  const [dbError, setDbError] = useState(false);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    setDbLoading(true);
+    setDbError(false);
+    api
+      .get<PoolProduct[]>('/products/with-images')
+      .then((res) => {
+        if (active) setDbPool(res.data);
+      })
+      .catch(() => {
+        if (active) setDbError(true);
+      })
+      .finally(() => {
+        if (active) setDbLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  // Projeye (herhangi bir forma/slot) yerleşik SKU'lar — havuzda silik+rozet gösterilir.
+  const placedSkus = useMemo(() => {
+    const set = new Set<string>();
+    for (const f of formas)
+      for (const p of f.pages)
+        for (const s of p.slots) if (s.product?.sku) set.add(s.product.sku);
+    return set;
+  }, [formas]);
+
+  // sku → mutlak resim URL'i. autoFillSlots'a (Excel "Yerleştir") geçilir.
+  const skuImageMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const p of dbPool) {
+      if (p.sku && p.primaryImage) map[p.sku] = toAbsoluteUrl(p.primaryImage);
+    }
+    return map;
+  }, [dbPool]);
+
+  const filteredPool = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return dbPool;
+    return dbPool.filter(
+      (p) => p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q),
+    );
+  }, [dbPool, search]);
+
+  const handlePoolDragStart = (e: React.DragEvent, p: PoolProduct) => {
+    const image = p.primaryImage ? toAbsoluteUrl(p.primaryImage) : '';
+    const info: ProductInfo = {
+      id: p.id,
+      sku: p.sku,
+      name: p.name,
+      price: String(p.price ?? ''),
+      category: p.category ?? undefined,
+      image,
+    };
+    e.dataTransfer.setData('newProductFromSidebar', JSON.stringify(info));
+    e.dataTransfer.setDragImage(createProductDragImage({ name: p.name, imageUrl: image }), 20, 20);
+  };
 
   const processFile = (file: File) => {
     const reader = new FileReader();
@@ -161,12 +243,121 @@ export function ProductManagement() {
             variant="primary"
             fullWidth
             disabled={productPool.length === 0}
-            onClick={() => autoFillSlots()}
+            onClick={() => autoFillSlots(skuImageMap)}
             leftIcon={<svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>}
           >
             Yerleştir
           </Button>
         </div>
+      </div>
+
+      {/* ÜRÜN HAVUZU (DB) */}
+      <div className="bg-surface-panel rounded-radius-lg border border-border-default p-4 shadow-drop-sm">
+        <div className="mb-3">
+          <h4 className="text-label-sm text-text-secondary">Ürün Havuzu</h4>
+          <p className="text-body-xs text-text-muted mt-0.5">
+            Kayıtlı ürünlerinizi arayıp hücreye sürükleyin.
+          </p>
+        </div>
+
+        <div className="relative mb-3">
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Ürün adı veya SKU ara"
+            className="w-full h-9 pl-8 pr-3 rounded-radius-md border border-border-default hover:border-border-strong bg-surface-panel text-body-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-border-strong"
+          />
+        </div>
+
+        {dbLoading ? (
+          <div className="space-y-2">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="h-12 bg-surface-subtle rounded-radius-md border border-border-default animate-pulse"
+              />
+            ))}
+          </div>
+        ) : dbError ? (
+          <div className="text-center py-6 text-body-xs text-text-muted">
+            Ürün havuzu yüklenemedi.
+          </div>
+        ) : dbPool.length === 0 ? (
+          <div className="flex flex-col items-center text-center py-6 px-2">
+            <PackageSearch size={28} strokeWidth={1.5} className="text-text-muted mb-2" />
+            <p className="text-body-xs text-text-secondary mb-3">Henüz ürün eklenmedi.</p>
+            <Link
+              to="/dashboard/urunler"
+              className="text-body-xs text-primary hover:underline"
+            >
+              Ürün Havuzunu Yönet →
+            </Link>
+          </div>
+        ) : (
+          <>
+            <div className="space-y-2 max-h-80 overflow-auto">
+              {filteredPool.map((p) => {
+                const img = p.primaryImage ? toAbsoluteUrl(p.primaryImage) : null;
+                const isPlaced = placedSkus.has(p.sku);
+                return (
+                  <div
+                    key={p.id}
+                    draggable
+                    onDragStart={(e) => handlePoolDragStart(e, p)}
+                    className={`group flex items-center gap-2 bg-surface-panel border border-border-default rounded-radius-md p-2 hover:border-border-strong hover:shadow-drop-sm transition-all cursor-grab active:cursor-grabbing ${
+                      isPlaced ? 'opacity-60' : ''
+                    }`}
+                    title={isPlaced ? 'Bu ürün projeye eklendi — tekrar sürükleyebilirsiniz' : undefined}
+                  >
+                    <div className="w-9 h-9 bg-surface-subtle rounded border border-border-default flex items-center justify-center overflow-hidden shrink-0">
+                      {img ? (
+                        <img
+                          src={img}
+                          crossOrigin="anonymous"
+                          alt={p.name}
+                          className="max-w-full max-h-full object-contain"
+                        />
+                      ) : (
+                        <Ban size={16} className="text-danger" aria-label="Resim yok" />
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-body-sm text-text-primary truncate">{p.name}</span>
+                        {isPlaced && (
+                          <span className="shrink-0 inline-flex items-center gap-0.5 text-[10px] text-text-secondary bg-surface-subtle border border-border-default rounded px-1.5 py-0.5">
+                            <Check size={10} />
+                            Eklendi
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-body-xs text-text-muted truncate">{p.sku}</div>
+                    </div>
+
+                    {p.price != null && p.price !== '' && (
+                      <div className="text-body-sm text-text-primary shrink-0 pr-1">{p.price}</div>
+                    )}
+                  </div>
+                );
+              })}
+
+              {filteredPool.length === 0 && (
+                <div className="text-center py-6 text-body-xs text-text-muted">
+                  Aramanızla eşleşen ürün bulunamadı.
+                </div>
+              )}
+            </div>
+
+            <div className="mt-3 text-right">
+              <Link to="/dashboard/urunler" className="text-body-xs text-primary hover:underline">
+                Ürün Havuzunu Yönet →
+              </Link>
+            </div>
+          </>
+        )}
       </div>
 
       {/* GELİŞMİŞ AYARLAR (BİRLEŞTİRİLMİŞ AKORDİYON) */}

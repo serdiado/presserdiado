@@ -719,6 +719,7 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
       if (slot.product)
         useCatalogStore.getState().addToTempPool(slot.product, pageNumber, slot.id);
       setSlotProduct(pageNumber, slot.id, JSON.parse(newProduct));
+      useCatalogStore.getState().setIsDirty(true);
       return;
     }
     const sPage = parseInt(e.dataTransfer.getData('sourcePage'), 10);

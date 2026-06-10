@@ -107,7 +107,7 @@ interface CatalogActions {
 
   // Product pool
   setProductPool: (products: ProductInfo[]) => void;
-  autoFillSlots: () => void;
+  autoFillSlots: (skuImageMap?: Record<string, string>) => void;
   clearProducts: () => void;
   resetCatalog: () => void;
   swapSlotContents: (
@@ -510,7 +510,7 @@ export const useCatalogStore = create<Store>()(
       // === Product pool ===
       setProductPool: (products) => set({ productPool: products }),
 
-      autoFillSlots: () => {
+      autoFillSlots: (skuImageMap) => {
         const { formas, productPool, globalSettings } = get();
         useHistoryStore.getState().saveState();
 
@@ -539,9 +539,12 @@ export const useCatalogStore = create<Store>()(
             }
           }
           if (posValue > 0 && posValue <= valid.length) {
-            const autoImage =
-              product.image ?? (product.sku ? `/images/products/${product.sku}.png` : undefined);
-            valid[posValue - 1].product = { ...product, image: autoImage ?? product.image };
+            // Öncelik: Excel RESIM > DB birincil resim > boş. DB değerleri panelde
+            // zaten toAbsoluteUrl ile mutlak. /images/products fallback'i kaldırıldı.
+            const excelImage =
+              product.image && product.image.trim() ? product.image.trim() : undefined;
+            const dbImage = product.sku ? skuImageMap?.[product.sku] : undefined;
+            valid[posValue - 1].product = { ...product, image: excelImage ?? dbImage };
             if (product.sku) get().removeFromTempPool(product.sku);
           }
         }
