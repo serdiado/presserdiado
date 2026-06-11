@@ -4,7 +4,7 @@ import { useCatalogStore, useHistoryStore, useUIStore } from '@/stores/studio';
 import { ThemeToggle } from '../../../components/ThemeToggle';
 import { Undo2, Redo2, Home, Sparkles, Save, Copy, Trash2, RotateCcw, ChevronDown, Cloud, Eye } from 'lucide-react';
 import { DownloadMenu } from './DownloadMenu';
-import { PriceCalculator } from '../pricing/PriceCalculator';
+import { StudioOrderButton } from '../../print-order/StudioOrderButton';
 import { ConfirmDialog, ConfirmModal } from '@/components/ui';
 import { ZoomWidget } from './ZoomWidget';
 import { useProjectSave } from '../hooks/useProjectSave';
@@ -351,7 +351,7 @@ export function TopBar() {
           <span>Önizle</span>
         </button>
 
-        <PriceCalculator />
+        <StudioOrderButton />
         <DownloadMenu />
         <ThemeToggle compact />
       </div>
