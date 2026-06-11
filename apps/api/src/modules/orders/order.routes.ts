@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { orderService } from './order.service.js';
+import { orderPdfService } from './order-pdf.service.js';
 
 const optionsSchema = z
   .object({
@@ -35,7 +36,25 @@ export async function orderRoutes(app: FastifyInstance) {
   app.post('/orders', async (request, reply) => {
     const body = createOrderSchema.parse(request.body);
     const order = await orderService.createOrder(request.user.id, body);
-    return reply.status(201).send(order);
+
+    // PDF dondurma: transaction DIŞINDA, commit sonrası, non-fatal.
+    // Render hatası siparişi bozmaz (201 döner, productionPdfKey null kalır, loglanır).
+    try {
+      await orderPdfService.freezeOrderPdf(order.id);
+    } catch (err) {
+      request.log.error({ err, orderId: order.id }, 'PDF dondurma başarısız');
+    }
+
+    const fresh = await orderService.getByIdForUser(request.user.id, order.id);
+    return reply.status(201).send(fresh);
+  });
+
+  // Başarısız/atlanmış freeze'leri manuel tetikleme (idempotent).
+  app.post('/orders/:id/freeze-pdf', async (request, reply) => {
+    const { id } = idParamSchema.parse(request.params);
+    await orderService.getByIdForUser(request.user.id, id); // sahiplik (IDOR)
+    const result = await orderPdfService.freezeOrderPdf(id);
+    return reply.send(result);
   });
 
   app.get('/orders', async (request, reply) => {

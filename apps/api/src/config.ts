@@ -23,6 +23,7 @@ export const config = {
     accessKey: process.env.S3_ACCESS_KEY!,
     secretKey: process.env.S3_SECRET_KEY!,
     bucket: process.env.S3_BUCKET || 'matbaapro',
+    ordersBucket: process.env.S3_ORDERS_BUCKET || 'presserdiado-orders',
     region: process.env.S3_REGION || 'us-east-1',
   },
 
