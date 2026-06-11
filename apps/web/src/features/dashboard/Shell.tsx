@@ -36,7 +36,7 @@ export const NAV_ROUTES: Record<NavItemId, string> = {
   orders:    '/dashboard/siparisler',
   files:     '/dashboard/medya',
   team:      '/dashboard/coming-soon',
-  billing:   '/dashboard/coming-soon',
+  billing:   '/dashboard/fatura',
   account:   '/dashboard/coming-soon',
   help:      '/dashboard/coming-soon',
 };

@@ -9,6 +9,7 @@ import { Siparislerim } from '@/features/dashboard/pages/Siparislerim';
 import { UrunListelerim } from "@/features/dashboard/pages/UrunListelerim";
 import { UrunResimleriPage } from '@/features/dashboard/pages/UrunResimleriPage';
 import { GenelMedyaPage } from '@/features/dashboard/pages/GenelMedyaPage';
+import { FaturaBilgileriPage } from '@/features/settings/pages/FaturaBilgileriPage';
 
 import { ComingSoon } from '@/features/dashboard/pages/ComingSoon';
 import StudioPage from '@/features/studio/StudioPage';
@@ -88,6 +89,7 @@ export default function App() {
         <Route path="urunler" element={<UrunListelerim />} />
         <Route path="medya/urun-resimleri" element={<UrunResimleriPage />} />
         <Route path="medya/genel" element={<GenelMedyaPage />} />
+        <Route path="fatura" element={<FaturaBilgileriPage />} />
         <Route path="coming-soon" element={<ComingSoon />} />
       </Route>
       <Route

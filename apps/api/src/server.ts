@@ -13,6 +13,7 @@ import { themeRoutes } from './modules/theme/theme.routes.js';
 import { productsRoutes } from './modules/products/routes.js';
 import { productImagesRoutes } from './modules/product-images/routes.js';
 import { mediaAssetsRoutes } from './modules/media-assets/routes.js';
+import { billingRoutes } from './modules/billing/billing.routes.js';
 import { AppError } from './lib/errors.js';
 import { ZodError } from 'zod';
 
@@ -79,6 +80,7 @@ await app.register(
     await api.register(productsRoutes);
     await api.register(productImagesRoutes);
     await api.register(mediaAssetsRoutes);
+    await api.register(billingRoutes);
   },
   { prefix: '/api/v1' },
 );

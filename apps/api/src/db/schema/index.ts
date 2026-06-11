@@ -13,6 +13,7 @@ export { printers } from './printers.js';
 export { systemTemplates } from './system-templates.js';
 export { userModules } from './user-modules.js';
 export { themeConfigs } from './theme.js';
+export { billingProfiles } from './billing-profiles.js';
 
 // Soft Relations (foreign key içermeyen, uygulama katmanında join sağlayan ilişkiler)
 export const productsRelations = relations(products, ({ many }) => ({
