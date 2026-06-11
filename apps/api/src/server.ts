@@ -14,6 +14,8 @@ import { productsRoutes } from './modules/products/routes.js';
 import { productImagesRoutes } from './modules/product-images/routes.js';
 import { mediaAssetsRoutes } from './modules/media-assets/routes.js';
 import { billingRoutes } from './modules/billing/billing.routes.js';
+import { pricingRoutes } from './modules/pricing/pricing.routes.js';
+import { printCatalogRoutes } from './modules/print-catalog/print-catalog.routes.js';
 import { AppError } from './lib/errors.js';
 import { ZodError } from 'zod';
 
@@ -81,6 +83,8 @@ await app.register(
     await api.register(productImagesRoutes);
     await api.register(mediaAssetsRoutes);
     await api.register(billingRoutes);
+    await api.register(pricingRoutes);
+    await api.register(printCatalogRoutes);
   },
   { prefix: '/api/v1' },
 );
