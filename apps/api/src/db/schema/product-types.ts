@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, json, decimal, boolean, int } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, json, decimal, boolean, int, timestamp } from 'drizzle-orm/mysql-core';
 import { uuidPk } from './_helpers.js';
 
 export const productTypes = mysqlTable('product_types', {
@@ -13,4 +13,6 @@ export const productTypes = mysqlTable('product_types', {
   basePriceTable: json('base_price_table'),
   active: boolean('active').default(true).notNull(),
   sortOrder: int('sort_order').default(0).notNull(),
+  createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { mode: 'string' }).defaultNow().notNull().onUpdateNow(),
 });
