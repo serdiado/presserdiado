@@ -1,5 +1,7 @@
 import { useCatalogStore, useLayerStore, useHistoryStore } from '@/stores/studio';
 import type { BrochureTemplate, CatalogSettings, ProductInfo, TempPoolProduct, StudioForma, Layer } from '@matbaapro/shared';
+import { DEFAULT_OPTIONS, DEFAULT_QUANTITY } from '@/features/print-order/constants';
+import type { PrintOptionsValue } from '@/features/print-order/types';
 
 export interface StudioCanvasData {
   version: 1;
@@ -12,6 +14,9 @@ export interface StudioCanvasData {
     masterProductPool?: ProductInfo[]; // for backward compatibility
     tempProductPool: TempPoolProduct[];
     globalSettings: CatalogSettings;
+    // Baskı özellikleri + adet — web/sihirbazdan taşınır (S6). Eski projelerde yok → guard ile default.
+    printOptions?: PrintOptionsValue;
+    quantity?: number;
   };
   layers: Layer[];
   exportedAt: string;
@@ -37,6 +42,8 @@ export function serializeStudioState(): StudioCanvasData {
       productPool: c.productPool,
       tempProductPool: c.tempProductPool,
       globalSettings: c.globalSettings,
+      printOptions: c.printOptions,
+      quantity: c.quantity,
     },
     layers: l.layers,
     exportedAt: new Date().toISOString(),
@@ -63,6 +70,9 @@ export function deserializeStudioState(data: StudioCanvasData) {
       imagePosY: 0,
       imageEditMode: false,
     },
+    // Guard: eski projelerde printOptions/quantity yok → default'a düş.
+    printOptions: data.catalog.printOptions ?? { ...DEFAULT_OPTIONS },
+    quantity: data.catalog.quantity ?? DEFAULT_QUANTITY,
     copiedSlotSettings: null,
     isDirty: false,
   });

@@ -31,8 +31,13 @@ export function StudioOrderButton() {
   const profiles = useBillingStore((s) => s.profiles);
   const fetchProfiles = useBillingStore((s) => s.fetchProfiles);
 
+  // Adet store'dan (tek kaynak): web/sihirbazdan taşınır, değişimde store'a geri yazılır → round-trip.
+  const quantity = useCatalogStore((s) => s.quantity);
+  const setStoreQuantity = useCatalogStore((s) => s.setQuantity);
+  // Baskı özellikleri sihirbazdan store'a taşınır; popover bunları seed alır (DEFAULT_OPTIONS fallback).
+  const storedOptions = useCatalogStore((s) => s.printOptions);
+
   const [open, setOpen] = useState(false);
-  const [quantity, setQuantity] = useState(100);
   const [submitting, setSubmitting] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<CreatedOrder | null>(null);
   const [selectedProfileId, setSelectedProfileId] = useState<string>('');
@@ -44,14 +49,16 @@ export function StudioOrderButton() {
 
   const [value, setValue] = useState<PrintOptionsValue>(() => ({
     ...DEFAULT_OPTIONS,
+    ...storedOptions,
     size: lockedSize,
     fold: lockedFold,
   }));
 
-  // Şablon değişince kilitli ebat/kırımı senkronla.
+  // Store özellikleri (sihirbaz/round-trip) veya şablon değişince seed'i senkronla.
+  // Ebat/kırım her zaman template'ten (canvas gerçeği) — kilitli.
   useEffect(() => {
-    setValue((prev) => ({ ...prev, size: lockedSize, fold: lockedFold }));
-  }, [lockedSize, lockedFold]);
+    setValue((prev) => ({ ...prev, ...storedOptions, size: lockedSize, fold: lockedFold }));
+  }, [storedOptions, lockedSize, lockedFold]);
 
   const { data: catalog, loading: catalogLoading, error: catalogError } =
     useCatalogOptions(PRODUCT_TYPE_KEY);
@@ -180,7 +187,7 @@ export function StudioOrderButton() {
                       setOpen(false);
                       navigate('/dashboard/siparisler');
                     }}
-                    className="w-full h-9 bg-primary hover:bg-primary-hover text-white rounded-radius-md text-body-md font-medium transition-colors cursor-pointer"
+                    className="w-full h-9 border border-border-strong text-text-secondary hover:bg-surface-subtle rounded-radius-md text-body-md font-medium transition-colors cursor-pointer"
                   >
                     Siparişlerime Git
                   </button>
@@ -211,7 +218,7 @@ export function StudioOrderButton() {
                   value={value}
                   onChange={setValue}
                   quantity={quantity}
-                  onQuantityChange={setQuantity}
+                  onQuantityChange={setStoreQuantity}
                   lockedCategories={lockedCategories}
                   quote={quote}
                   quoteLoading={quoteLoading}

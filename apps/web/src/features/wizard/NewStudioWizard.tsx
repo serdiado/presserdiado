@@ -13,8 +13,20 @@ import type {
   WizardConfig,
   WizardSelection,
 } from './wizard.types';
+import { PrintOptionsSelector } from '@/features/print-order/PrintOptionsSelector';
+import { useCatalogOptions } from '@/features/print-order/hooks/useCatalogOptions';
+import { usePriceQuote } from '@/features/print-order/hooks/usePriceQuote';
+import {
+  DEFAULT_OPTIONS,
+  DEFAULT_QUANTITY,
+  STUDIO_LOCKED_CATEGORIES,
+} from '@/features/print-order/constants';
+import { formatTRY, type PrintOptionsValue } from '@/features/print-order/types';
 
 const config = rawConfig as unknown as WizardConfig;
+
+// Sihirbaz kategorisi → katalog productTypeKey. Pilotta yalnızca broşür aktif; diğerleri katalogda yok.
+const CATEGORY_PRODUCT_TYPE: Record<string, string> = { brochure: 'brochure' };
 
 function SvgWrap({ children }: { children: React.ReactNode }) {
   return <svg viewBox="0 0 96 96" className="w-14 h-12" fill="none">{children}</svg>;
@@ -251,10 +263,14 @@ export default function NewStudioWizard() {
       foldType: config.steps.foldType.default,
     };
   });
-  const [activeStep, setActiveStep] = useState<1 | 2>(1);
+  const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1);
   const [otherOpen, setOtherOpen] = useState(false);
   const [paperOtherOpen, setPaperOtherOpen] = useState(false);
   const [foldOtherOpen, setFoldOtherOpen] = useState(false);
+
+  // S6: baskı özellikleri + adet — Adım 2'de seçilir, startFreshCatalog ile stüdyoya taşınır.
+  const [printOptions, setPrintOptions] = useState<PrintOptionsValue>(DEFAULT_OPTIONS);
+  const [quantity, setQuantity] = useState<number>(DEFAULT_QUANTITY);
 
   const set = <K extends keyof WizardSelection>(k: K, v: WizardSelection[K]) =>
     setSel((p) => ({ ...p, [k]: v }));
@@ -266,14 +282,28 @@ export default function NewStudioWizard() {
     return { paper, fold, mode };
   }, [sel]);
 
+  // Ebat/kırım Adım 1'den kilitli; baskı özellikleri katalogtan, fiyat canlı (POST /pricing/quote).
+  const productTypeKey = CATEGORY_PRODUCT_TYPE[sel.category] ?? sel.category;
+  const optionsValue = useMemo<PrintOptionsValue>(
+    () => ({ ...printOptions, size: sel.paperSize, fold: sel.foldType }),
+    [printOptions, sel.paperSize, sel.foldType],
+  );
+  const { data: catalog, loading: catalogLoading, error: catalogError } =
+    useCatalogOptions(productTypeKey);
+  const { quote, loading: quoteLoading, error: quoteError } = usePriceQuote(
+    productTypeKey,
+    quantity,
+    optionsValue,
+  );
+
   const handleConfirm = () => {
     const tpl = buildTemplateFromWizard(sel, config);
-    startFreshCatalog(tpl);
+    startFreshCatalog(tpl, printOptions, quantity);
     navigate('/studio');
   };
 
-  const handleNext = () => setActiveStep(2);
-  const handleBack = () => setActiveStep(1);
+  const handleNext = () => setActiveStep((s) => (s < 3 ? ((s + 1) as 1 | 2 | 3) : s));
+  const handleBack = () => setActiveStep((s) => (s > 1 ? ((s - 1) as 1 | 2 | 3) : s));
 
   const handleCancel = () => {
     navigate('/dashboard');
@@ -281,11 +311,18 @@ export default function NewStudioWizard() {
 
   const openWidth = summary.paper && summary.fold ? summary.paper.widthMm * summary.fold.pageCount : 0;
 
-  const title = activeStep === 1 ? 'Tasarım ayarlarını seçin' : 'Çalışma Biçimini Seçin';
+  const title =
+    activeStep === 1
+      ? 'Tasarım ayarlarını seçin'
+      : activeStep === 2
+        ? 'Baskı özelliklerini seçin'
+        : 'Çalışma Biçimini Seçin';
   const subtitle =
     activeStep === 1
       ? 'Ürün türü, kağıt boyutu ve katlama şeklini belirleyin.'
-      : 'Ürünleri hücrelere yerleştirerek mi, yoksa serbest düzende mi tasarlamak istediğinizi seçin.';
+      : activeStep === 2
+        ? 'Kağıt, renk ve adet seçin; fiyat anlık hesaplanır. Ebat ve kırım önceki adımdan gelir.'
+        : 'Ürünleri hücrelere yerleştirerek mi, yoksa serbest düzende mi tasarlamak istediğinizi seçin.';
 
   return (
     <div className="min-h-screen w-full bg-stone-100 flex items-center justify-center p-4">
@@ -310,10 +347,20 @@ export default function NewStudioWizard() {
               className={`px-3 py-1 rounded-full border ${
                 activeStep === 2
                   ? 'bg-slate-900 text-white border-slate-900'
+                  : 'bg-slate-50 text-slate-500 border-slate-200'
+              }`}
+            >
+              2 · Baskı Özellikleri
+            </span>
+            <span className="text-slate-300">·</span>
+            <span
+              className={`px-3 py-1 rounded-full border ${
+                activeStep === 3
+                  ? 'bg-slate-900 text-white border-slate-900'
                   : 'bg-transparent text-slate-400 border-transparent'
               }`}
             >
-              2 · Çalışma Biçimi
+              3 · Çalışma Biçimi
             </span>
           </div>
         </div>
@@ -479,6 +526,40 @@ export default function NewStudioWizard() {
         )}
 
         {activeStep === 2 && (
+          <div className="max-h-[calc(100vh-260px)] overflow-y-auto px-6 py-6">
+            <div className="max-w-md mx-auto">
+              {catalogLoading ? (
+                <p className="text-sm text-slate-400 text-center py-10">Seçenekler yükleniyor…</p>
+              ) : catalogError || !catalog ? (
+                <div className="text-center py-10 space-y-2">
+                  <p className="text-sm text-slate-500">
+                    Bu ürün için baskı özellikleri henüz tanımlı değil.
+                  </p>
+                  <p className="text-xs text-slate-400">Varsayılan ayarlarla devam edebilirsiniz.</p>
+                </div>
+              ) : (
+                <PrintOptionsSelector
+                  options={catalog}
+                  value={optionsValue}
+                  onChange={(next) => {
+                    const rest = { ...next };
+                    delete rest.size;
+                    delete rest.fold;
+                    setPrintOptions(rest);
+                  }}
+                  quantity={quantity}
+                  onQuantityChange={setQuantity}
+                  lockedCategories={STUDIO_LOCKED_CATEGORIES}
+                  quote={quote}
+                  quoteLoading={quoteLoading}
+                  quoteError={quoteError}
+                />
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeStep === 3 && (
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] border-t border-slate-100">
             <div className="p-6 border-r border-slate-100 flex flex-col">
               <h2 className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 mb-3">
@@ -532,6 +613,18 @@ export default function NewStudioWizard() {
                   </div>
                 </section>
               )}
+              <section className="mt-3 bg-white rounded-lg border border-slate-200 overflow-hidden">
+                <div className="px-3 py-2 text-xs flex items-center justify-between border-b border-slate-100">
+                  <span className="text-slate-500">Adet</span>
+                  <strong className="text-slate-900">{quantity.toLocaleString('tr-TR')}</strong>
+                </div>
+                <div className="px-3 py-2 text-sm flex items-center justify-between">
+                  <span className="text-slate-500">Tahmini Tutar</span>
+                  <strong className="text-slate-900">
+                    {quoteError ? '—' : quoteLoading && !quote ? '…' : formatTRY(quote?.grandTotal)}
+                  </strong>
+                </div>
+              </section>
             </div>
           </div>
         )}
@@ -544,7 +637,7 @@ export default function NewStudioWizard() {
             İptal
           </button>
           <div className="flex items-center gap-2">
-            {activeStep === 2 && (
+            {activeStep > 1 && (
               <button
                 onClick={handleBack}
                 disabled={!_hasHydrated}
@@ -553,7 +646,7 @@ export default function NewStudioWizard() {
                 ← Geri
               </button>
             )}
-            {activeStep === 1 ? (
+            {activeStep < 3 ? (
               <button
                 onClick={handleNext}
                 disabled={!_hasHydrated}

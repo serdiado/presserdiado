@@ -52,3 +52,6 @@ export const DEFAULT_OPTIONS: PrintOptionsValue = {
   coating: 'yok',
   binding: 'yok',
 };
+
+// Varsayılan sipariş adedi (web/sihirbaz + stüdyo başlangıcı).
+export const DEFAULT_QUANTITY = 100;

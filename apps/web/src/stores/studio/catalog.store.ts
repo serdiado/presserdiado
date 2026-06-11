@@ -30,6 +30,8 @@ import { ModuleRegistry } from './module-registry';
 import { useHistoryStore } from './history.store';
 import { useUIStore } from './ui.store';
 import { foldNameMap } from '../../features/wizard/buildTemplate';
+import { DEFAULT_OPTIONS, DEFAULT_QUANTITY } from '../../features/print-order/constants';
+import type { PrintOptionsValue } from '../../features/print-order/types';
 
 type FooterScope = number | 'global';
 type GridScope = 'global' | number;
@@ -49,6 +51,9 @@ interface CatalogState {
   copiedFooterSettings: FooterSettings | null;
   copiedBackground: CatalogPage['background'] | null;
   isDirty: boolean;
+  // Baskı özellikleri + adet — web/sihirbazdan taşınır, canvasData ile round-trip eder (S6).
+  printOptions: PrintOptionsValue;
+  quantity: number;
 }
 
 interface CatalogActions {
@@ -59,7 +64,13 @@ interface CatalogActions {
   setProjectName: (name: string) => void;
   setActiveTemplate: (templateId: string) => void;
   applyTemplate: (template: BrochureTemplate) => void;
-  startFreshCatalog: (template: BrochureTemplate) => void;
+  startFreshCatalog: (
+    template: BrochureTemplate,
+    printOptions?: PrintOptionsValue,
+    quantity?: number,
+  ) => void;
+  setPrintOptions: (options: PrintOptionsValue) => void;
+  setQuantity: (quantity: number) => void;
   setActiveTab: (tab: 'outer' | 'inner') => void;
   setActiveFormaId: (id: number) => void;
   setFormas: (formas: StudioForma[]) => void;
@@ -225,6 +236,8 @@ export const useCatalogStore = create<Store>()(
       copiedFooterSettings: null,
       copiedBackground: null,
       isDirty: false,
+      printOptions: { ...DEFAULT_OPTIONS },
+      quantity: DEFAULT_QUANTITY,
 
       setHasHydrated: (state) => set({ _hasHydrated: state }),
       setProjectId: (id) => set({ projectId: id }),
@@ -234,6 +247,9 @@ export const useCatalogStore = create<Store>()(
       setProjectName: (name) => {
         set({ projectName: name, isDirty: true });
       },
+      setPrintOptions: (options) => set({ printOptions: options, isDirty: true }),
+      setQuantity: (quantity) =>
+        set({ quantity: Math.max(1, Math.floor(quantity) || 1), isDirty: true }),
       setActiveTemplate: (templateId) => {
         const tmpl = availableTemplates.find((t) => t.id === templateId);
         if (!tmpl) return;
@@ -282,7 +298,7 @@ export const useCatalogStore = create<Store>()(
           useUIStore.getState().toggleSlotSelection(firstSlot.id, false);
         }
       },
-      startFreshCatalog: (tmpl) => {
+      startFreshCatalog: (tmpl, printOptions, quantity) => {
         const formas = buildFormasForTemplate(tmpl);
         const recalculated = recalculateLayout(formas, initialGlobalSettings.defaultGrid);
         set({
@@ -299,6 +315,8 @@ export const useCatalogStore = create<Store>()(
           copiedFooterSettings: null,
           copiedBackground: null,
           isDirty: false,
+          printOptions: printOptions ?? { ...DEFAULT_OPTIONS },
+          quantity: quantity ?? DEFAULT_QUANTITY,
         });
         useHistoryStore.getState().clearHistory();
         const firstSlot = recalculated.find((f) => f.id === 1)?.pages[0]?.slots[0];
@@ -1483,6 +1501,8 @@ export const useCatalogStore = create<Store>()(
           globalSettings: normalizedGlobal,
           tempProductPool: incoming.tempProductPool ?? [],
           isDirty: false,
+          printOptions: incoming.printOptions ?? { ...DEFAULT_OPTIONS },
+          quantity: incoming.quantity ?? DEFAULT_QUANTITY,
         } as Store;
       },
     },
