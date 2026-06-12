@@ -21,6 +21,8 @@ interface MediaPickerModalProps {
   onConfirm: (items: PickedImage[]) => void;
   // "Ürün Resimleri" sekmesinde bu SKU'ya zaten atanmış görseller gizlenir (manager'da listeli).
   excludeSku?: string;
+  // Seçilebilecek azami görsel (kalan kota). Verilmezse sınırsız (başka bağlamlarda reusable).
+  remainingSlots?: number;
 }
 
 type Source = 'media' | 'product';
@@ -42,7 +44,7 @@ interface PickerItem {
   fileName: string | null;
 }
 
-export function MediaPickerModal({ isOpen, onClose, onConfirm, excludeSku }: MediaPickerModalProps) {
+export function MediaPickerModal({ isOpen, onClose, onConfirm, excludeSku, remainingSlots = Infinity }: MediaPickerModalProps) {
   const [source, setSource] = useState<Source>('media');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
@@ -120,11 +122,19 @@ export function MediaPickerModal({ isOpen, onClose, onConfirm, excludeSku }: Med
   const countFor = (key: TypeFilter) =>
     key === 'all' ? filteredMedia.length : filteredMedia.filter((a) => a.type === key).length;
 
+  const limited = Number.isFinite(remainingSlots);
+  // Kota dolduğunda yeni seçim engellenir; seçili olanlar geri alınabilir.
+  const capReached = selected.size >= remainingSlots;
+
   const toggle = (item: PickerItem) => {
     setSelected((prev) => {
       const next = new Map(prev);
-      if (next.has(item.selectionKey)) next.delete(item.selectionKey);
-      else next.set(item.selectionKey, { imageKey: item.imageKey, fileName: item.fileName });
+      if (next.has(item.selectionKey)) {
+        next.delete(item.selectionKey);
+      } else {
+        if (next.size >= remainingSlots) return prev; // kota dolu — ekleme yok
+        next.set(item.selectionKey, { imageKey: item.imageKey, fileName: item.fileName });
+      }
       return next;
     });
   };
@@ -233,16 +243,18 @@ export function MediaPickerModal({ isOpen, onClose, onConfirm, excludeSku }: Med
                 <div className="grid grid-cols-3 lg:grid-cols-4 gap-3">
                   {items.map((item) => {
                     const isSelected = selected.has(item.selectionKey);
+                    const tileDisabled = !isSelected && capReached;
                     return (
                       <button
                         key={item.selectionKey}
                         type="button"
                         onClick={() => toggle(item)}
+                        disabled={tileDisabled}
                         className={`group relative aspect-square rounded-radius-lg overflow-hidden border transition-colors ${
                           isSelected
                             ? 'border-border-strong bg-surface-subtle'
                             : 'border-border-default bg-surface-panel hover:border-border-strong'
-                        }`}
+                        } ${tileDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
                         <img
                           src={toAbsoluteUrl(item.imageKey)}
@@ -270,9 +282,22 @@ export function MediaPickerModal({ isOpen, onClose, onConfirm, excludeSku }: Med
 
         {/* Footer */}
         <div className="px-6 py-4 border-t border-border-default flex justify-between items-center gap-3 shrink-0">
-          <span className="text-body-sm text-text-secondary">
-            {selected.size > 0 ? `${selected.size} görsel seçildi` : 'Görsel seçin'}
-          </span>
+          <div className="flex flex-col">
+            <span className="text-body-sm text-text-secondary">
+              {limited
+                ? `${selected.size} / ${remainingSlots} seçildi`
+                : selected.size > 0
+                  ? `${selected.size} görsel seçildi`
+                  : 'Görsel seçin'}
+            </span>
+            {limited && capReached && (
+              <span className="text-body-xs text-text-muted">
+                {remainingSlots > 0
+                  ? `En fazla ${remainingSlots} görsel ekleyebilirsiniz`
+                  : 'Bu ürün görsel kotası dolu'}
+              </span>
+            )}
+          </div>
           <div className="flex items-center gap-3">
             <Button variant="secondary" size="md" onClick={onClose}>
               İptal

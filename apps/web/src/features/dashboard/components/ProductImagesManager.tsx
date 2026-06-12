@@ -19,6 +19,8 @@ interface ProductImagesManagerProps {
 }
 
 const ACCEPT = 'image/jpeg,image/png,image/webp';
+// backend MAX_IMAGES_PER_SKU ile senkron tutulmalı.
+const MAX_IMAGES_PER_SKU = 10;
 
 export function ProductImagesManager({ sku, onChange }: ProductImagesManagerProps) {
   const [images, setImages] = useState<ProductImage[]>([]);
@@ -27,6 +29,9 @@ export function ProductImagesManager({ sku, onChange }: ProductImagesManagerProp
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const remaining = MAX_IMAGES_PER_SKU - images.length;
+  const atLimit = remaining <= 0;
 
   const fetchImages = async () => {
     setIsLoading(true);
@@ -54,10 +59,19 @@ export function ProductImagesManager({ sku, onChange }: ProductImagesManagerProp
   // Bilgisayardan yükleme: her dosyayı /upload ile yükle, sonra product-images kaydı oluştur.
   // sortOrder gönderilmez → backend mevcut max + 1 atar (tek-kaynak sıralama).
   const handleFiles = async (fileList: FileList | File[]) => {
-    const files = Array.from(fileList).filter((f) => /^image\/(jpeg|png|webp)$/.test(f.type));
+    let files = Array.from(fileList).filter((f) => /^image\/(jpeg|png|webp)$/.test(f.type));
     if (files.length === 0) {
       toast.error('Sadece JPEG, PNG veya WebP dosyaları yüklenebilir');
       return;
+    }
+    // Kota ön-kontrolü (backend 409 yine güvenlik ağı). Kalanı aşan dosyalar kırpılır.
+    if (remaining <= 0) {
+      toast.error(`Bu ürün maksimum ${MAX_IMAGES_PER_SKU} görsele ulaştı`);
+      return;
+    }
+    if (files.length > remaining) {
+      files = files.slice(0, remaining);
+      toast.error(`Limit nedeniyle yalnızca ${remaining} görsel eklendi (SKU başına en fazla ${MAX_IMAGES_PER_SKU})`);
     }
     setIsUploading(true);
     let added = 0;
@@ -77,7 +91,7 @@ export function ProductImagesManager({ sku, onChange }: ProductImagesManagerProp
         }
       }
       if (added > 0) toast.success(`${added} görsel eklendi`);
-      if (limitHit) toast.error('SKU başına en fazla 10 resim eklenebilir');
+      if (limitHit) toast.error(`SKU başına en fazla ${MAX_IMAGES_PER_SKU} resim eklenebilir`);
       if (added > 0) await notifyChanged();
     } finally {
       setIsUploading(false);
@@ -111,7 +125,7 @@ export function ProductImagesManager({ sku, onChange }: ProductImagesManagerProp
         }
       }
       if (added > 0) toast.success(`${added} görsel eklendi`);
-      if (limitHit) toast.error('SKU başına en fazla 10 resim eklenebilir');
+      if (limitHit) toast.error(`SKU başına en fazla ${MAX_IMAGES_PER_SKU} resim eklenebilir`);
       if (added > 0) await notifyChanged();
     } finally {
       setIsUploading(false);
@@ -134,14 +148,17 @@ export function ProductImagesManager({ sku, onChange }: ProductImagesManagerProp
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <label className="block text-label-md text-text-primary">Ürün Görselleri</label>
+        <label className="block text-label-md text-text-primary">
+          Ürün Görselleri{' '}
+          <span className="text-text-muted tabular-nums">({images.length}/{MAX_IMAGES_PER_SKU})</span>
+        </label>
         <div className="flex items-center gap-2">
           <Button
             variant="secondary"
             size="sm"
             leftIcon={<UploadCloud size={14} />}
             onClick={() => inputRef.current?.click()}
-            disabled={isUploading}
+            disabled={isUploading || atLimit}
           >
             Bilgisayardan Yükle
           </Button>
@@ -150,12 +167,18 @@ export function ProductImagesManager({ sku, onChange }: ProductImagesManagerProp
             size="sm"
             leftIcon={<Library size={14} />}
             onClick={() => setIsPickerOpen(true)}
-            disabled={isUploading}
+            disabled={isUploading || atLimit}
           >
             Kütüphaneden Seç
           </Button>
         </div>
       </div>
+
+      {atLimit && (
+        <p className="text-body-xs text-text-muted">
+          Bu ürün maksimum {MAX_IMAGES_PER_SKU} görsele ulaştı. Yeni görsel eklemek için önce bir görsel silin.
+        </p>
+      )}
 
       <input
         ref={inputRef}
@@ -233,6 +256,7 @@ export function ProductImagesManager({ sku, onChange }: ProductImagesManagerProp
         onClose={() => setIsPickerOpen(false)}
         onConfirm={handlePicked}
         excludeSku={sku}
+        remainingSlots={remaining}
       />
     </div>
   );

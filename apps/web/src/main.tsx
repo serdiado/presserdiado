@@ -15,7 +15,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <ThemeInjector />
       <App />
-      <Toaster position="top-right" />
+      {/* zIndex modal'ların (z-99999) üstünde olmalı, yoksa toast modal arkasında kalır. */}
+      <Toaster position="top-right" containerStyle={{ zIndex: 100001 }} />
     </BrowserRouter>
   </React.StrictMode>,
 );
