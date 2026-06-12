@@ -17,8 +17,11 @@ import { ComingSoon } from '@/features/dashboard/pages/ComingSoon';
 import StudioPage from '@/features/studio/StudioPage';
 import NewStudioWizard from '@/features/wizard/NewStudioWizard';
 import PrintView from '@/features/print-view/PrintView';
+import AdminLayout from '@/features/admin/AdminLayout';
+import AdminDashboardPage from '@/features/admin/dashboard/AdminDashboardPage';
 import AdminThemePage from '@/features/admin/theme/AdminThemePage';
 import AdminOrdersPage from '@/features/admin/orders/AdminOrdersPage';
+import AdminPlaceholder from '@/features/admin/AdminPlaceholder';
 import Layout from '@/features/auth/Layout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -73,22 +76,22 @@ export default function App() {
         }
       />
       <Route path="/print-view" element={<PrintView />} />
+      {/* Tüm /admin/* rotaları TEK guard (AdminRoute) + tek layout (AdminLayout) altında.
+          Guard layout seviyesinde olduğundan alt rotaların HEPSİ (dashboard, orders,
+          theme, yakinda) admin değilse engellenir — theme dahil. */}
       <Route
-        path="/admin/theme"
+        path="/admin"
         element={
           <AdminRoute>
-            <AdminThemePage />
+            <AdminLayout />
           </AdminRoute>
         }
-      />
-      <Route
-        path="/admin/orders"
-        element={
-          <AdminRoute>
-            <AdminOrdersPage />
-          </AdminRoute>
-        }
-      />
+      >
+        <Route index element={<AdminDashboardPage />} />
+        <Route path="orders" element={<AdminOrdersPage />} />
+        <Route path="theme" element={<AdminThemePage />} />
+        <Route path="yakinda" element={<AdminPlaceholder />} />
+      </Route>
       <Route
         path="/new"
         element={

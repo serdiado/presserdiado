@@ -227,7 +227,7 @@ export default function AdminThemePage() {
   const modeLabel = activeMode === 'light' ? 'Light' : 'Dark';
 
   return (
-    <main className="min-h-screen bg-surface-app text-text-primary" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div className="min-h-full bg-surface-app text-text-primary" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <ThemeInjector tokens={activeTokens} />
       <div
         className="mx-auto flex max-w-7xl flex-col gap-6 px-6 py-6 transition-[margin-right] duration-300"
@@ -486,7 +486,7 @@ export default function AdminThemePage() {
           <ChevronLeft size={16} />
         </button>
       )}
-    </main>
+    </div>
   );
 }
 
