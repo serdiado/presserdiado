@@ -4,7 +4,7 @@
 // çağıranın işidir (tek-kaynak).
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { X, Check, ImageOff, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { X, Check, ImageOff, Loader2, AlertCircle, RefreshCw, Search } from 'lucide-react';
 import api from '@/lib/api';
 import { toAbsoluteUrl } from '@/lib/upload';
 import { Button } from '@/components/ui/Button';
@@ -49,6 +49,8 @@ export function MediaPickerModal({ isOpen, onClose, onConfirm, excludeSku }: Med
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // fileName araması — her iki havuzda da geçerli, sekme değişiminde korunur.
+  const [query, setQuery] = useState('');
   // selectionKey → seçilen görsel
   const [selected, setSelected] = useState<Map<string, PickedImage>>(new Map());
 
@@ -74,39 +76,49 @@ export function MediaPickerModal({ isOpen, onClose, onConfirm, excludeSku }: Med
       setSelected(new Map());
       setSource('media');
       setTypeFilter('all');
+      setQuery('');
       fetchData();
     }
   }, [isOpen]);
 
-  // Medya havuzu — tip filtresiyle.
+  // Medya havuzu — fileName aramasıyla. Tip filtresi grid'de ayrıca uygulanır.
+  const filteredMedia = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return mediaAssets;
+    return mediaAssets.filter((a) => (a.fileName ?? '').toLowerCase().includes(q));
+  }, [mediaAssets, query]);
+
   const mediaItems = useMemo<PickerItem[]>(() => {
-    const filtered = typeFilter === 'all' ? mediaAssets : mediaAssets.filter((a) => a.type === typeFilter);
+    const filtered = typeFilter === 'all' ? filteredMedia : filteredMedia.filter((a) => a.type === typeFilter);
     return filtered.map((a) => ({
       selectionKey: `media:${a.id}`,
       imageKey: a.imageKey,
       fileName: a.fileName ?? null,
     }));
-  }, [mediaAssets, typeFilter]);
+  }, [filteredMedia, typeFilter]);
 
-  // Ürün resmi havuzu — bu SKU'ya atanmışlar hariç, imageKey'e göre tekilleştirilmiş.
+  // Ürün resmi havuzu — fileName araması + bu SKU'ya atanmışlar hariç, imageKey'e göre tekilleştirilmiş.
   const productItems = useMemo<PickerItem[]>(() => {
+    const q = query.trim().toLowerCase();
     const seen = new Set<string>();
     const items: PickerItem[] = [];
     for (const img of productImages) {
       if (excludeSku && img.sku === excludeSku) continue;
+      if (q && !(img.fileName ?? '').toLowerCase().includes(q)) continue;
       if (seen.has(img.imageKey)) continue;
       seen.add(img.imageKey);
       items.push({ selectionKey: `pi:${img.id}`, imageKey: img.imageKey, fileName: img.fileName ?? null });
     }
     return items;
-  }, [productImages, excludeSku]);
+  }, [productImages, excludeSku, query]);
 
   const items = source === 'media' ? mediaItems : productItems;
 
   if (!isOpen) return null;
 
+  // Sayım — arama aktifken eşleşen sonuçları, boş sorguda havuz toplamını yansıtır.
   const countFor = (key: TypeFilter) =>
-    key === 'all' ? mediaAssets.length : mediaAssets.filter((a) => a.type === key).length;
+    key === 'all' ? filteredMedia.length : filteredMedia.filter((a) => a.type === key).length;
 
   const toggle = (item: PickerItem) => {
     setSelected((prev) => {
@@ -136,8 +148,9 @@ export function MediaPickerModal({ isOpen, onClose, onConfirm, excludeSku }: Med
     </button>
   );
 
-  const emptyHint =
-    source === 'media'
+  const emptyHint = query.trim()
+    ? 'Aramayla eşleşen görsel yok.'
+    : source === 'media'
       ? 'Medya kütüphanenizde henüz görsel yok. Önce Medya sayfasından görsel yükleyin.'
       : 'Başka ürünlere atanmış görsel yok.';
 
@@ -155,10 +168,22 @@ export function MediaPickerModal({ isOpen, onClose, onConfirm, excludeSku }: Med
           </button>
         </div>
 
-        {/* Kaynak sekmeleri */}
-        <div className="flex items-center gap-2 px-6 pt-4 shrink-0">
-          {sourceTab('media', 'Medya', mediaAssets.length)}
-          {sourceTab('product', 'Ürün Resimleri', productItems.length)}
+        {/* Kaynak sekmeleri + arama */}
+        <div className="flex items-center justify-between gap-3 px-6 pt-4 shrink-0">
+          <div className="flex items-center gap-2">
+            {sourceTab('media', 'Medya', filteredMedia.length)}
+            {sourceTab('product', 'Ürün Resimleri', productItems.length)}
+          </div>
+          <div className="relative w-56">
+            <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
+            <input
+              type="text"
+              placeholder="Dosya adıyla ara..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full h-8 pl-8 pr-3 rounded-radius-md border border-border-default hover:border-border-strong bg-surface-panel text-body-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-border-strong"
+            />
+          </div>
         </div>
 
         {/* Body */}
