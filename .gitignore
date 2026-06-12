@@ -44,5 +44,8 @@ matbaapro_yedek.zip
 # Local planning notes
 docs/TODO.md
 
+# Yönetici paneli tasarım referansı (lokalde + Claude Design'da; repoda gerek yok)
+docs/yonetici-paneli/
+
 # Claude Code local settings (machine-specific)
 .claude/settings.local.json
