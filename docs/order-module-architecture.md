@@ -2,7 +2,7 @@
 > Presserdiado / MatbaaPro — Sipariş Akışı, Baskı Özellikleri, Fiyatlandırma, PDF Dondurma, Operatör/Admin
 > Tüm SeniorDev, ArtDirector, StudioCanvas, SecurityAuth komutlarında bu belge referans alınır.
 > İlgili belge: `product-module-architecture.md` (ürün havuzu / medya)
-> Son güncelleme: Mimari karar aşaması — implementasyon başlamadı.
+> Son güncelleme: S1-S6 tamamlandı, commit'li. S7 (admin panel) sırada.
 
 ---
 
@@ -155,7 +155,7 @@ INDEX (productTypeId, category, isActive)
 ```
 **Kritik kararlar:**
 - `category` ENUM ile seçenek türleri ayrışır; admin her kategoriye ekleme yapar.
-- `affectsDesign`: ebat/kırım gibi tasarımı bozan seçeneklerde `TRUE`. Stüdyoda bunlar değiştirilirken `ConfirmModal` uyarısı tetiklenir (bkz. Özellik Aktarımı bölümü). Tek kaynaktan kontrol — UI'da hardcode değil.
+- `affectsDesign`: ebat/kırım gibi tasarımı bozan seçeneklerde `TRUE`. S5'te bu seçenekler stüdyoda **salt-okunur/kilitli** yapıldı — `wizardSelection.paperSize`/`foldType`'tan türetilir, selektörde `disabled` + kilit ikonuyla gösterilir (değiştirme + relayout yok). `affectsDesign` katalogdan okunur (UI'da hardcode değil) — tek kaynak.
 - `metadata` JSON: ebadın gerçek ölçüsü, kağıdın açıklaması vb. esnek alan.
 
 #### Tablo 5: `pricing_rules` (fiyat kuralları)
@@ -235,10 +235,9 @@ Tek kaynak. (Daha önceki "proje adı tek-kaynak refactor" ile aynı felsefe —
 
 **Karar:** Baskı özellikleri **taslak/proje ile birlikte** taşınır. Web sitesi seçimi yapıp bir taslak oluşturur, stüdyo açılırken bu veriyi okur ve "Sipariş Ver" anında kalem olarak dondurur.
 
-**Tasarımı etkileyen değişim (kritik):** Ebat/kırım değişimi tasarımı bozar (hücre düzeni, sayfa yapısı). Hangi seçeneğin tasarımı bozduğu **UI'da hardcode edilmez** — `print_options.affectsDesign` alanından okunur (tek kaynak). `affectsDesign = TRUE` olan bir seçenek değiştirilmek istendiğinde:
-> `ConfirmModal` uyarısı: "Bu değişiklik mevcut yerleşimi etkileyecek, devam edilsin mi?" (mevcut `isDirty` + `ConfirmModal` pattern'i)
+**Adet (quantity):** Sihirbazda seçilen adet de aynı yolla taşınır (`StudioCanvasData.catalog.quantity`): stüdyoya aktarılır, kullanıcı stüdyoda değiştirebilir, sipariş anında dondurulur. Adet bilgisi olmayan eski projeler için `DEFAULT_QUANTITY` guard'ı devreye girer.
 
-Onaylanınca hem kanvas yeniden düzenlenir hem bağlı sipariş özellikleri güncellenir.
+**Tasarımı etkileyen değişim (kritik):** Ebat/kırım değişimi tasarımı bozar (hücre düzeni, sayfa yapısı). Hangi seçeneğin tasarımı bozduğu **UI'da hardcode edilmez** — `print_options.affectsDesign` alanından okunur (tek kaynak). S5'te `affectsDesign = TRUE` olan seçenekler (ebat/kırım) stüdyoda **kilitli** tutulur: `PrintOptionsSelector`'da `disabled` + kilit ikonu, değerler `wizardSelection`'dan türetilir. Değiştirme akışı ve relayout S5 kapsamında **yok** (sonraki epic). Diğer seçenekler serbest düzenlenir.
 
 ---
 
@@ -322,7 +321,7 @@ S7                  (operatör tarafı — gerçek veriyle entegre)
 ## Güvenlik Notları (SecurityAuth)
 
 - Her sipariş endpoint'inde `userId` sahiplik kontrolü (IDOR). `WHERE userId = :userId`.
-- **Fiyat backend'de yeniden hesaplanır** — frontend'den gelen tutara güvenilmez.
+- **Fiyat backend'de yeniden hesaplanır** — frontend'den gelen tutara güvenilmez. S5'te tek fiyat kaynağı netleşti: yerel `pricing.config.json` + `PriceCalculator.tsx` **emekliye ayrıldı (silindi)**; fiyat yalnızca `POST /pricing/quote`'tan gelir, frontend'de fiyat hesabı yoktur.
 - Operatör/admin endpoint'leri ayrı yetki seviyesi ister (normal kullanıcı erişemez). Admin route baştan korumalı.
 - `orderNumber` tahmin edilebilir olmamalı veya erişim sadece sahibine/admine açık olmalı (sıralı no + sahiplik kontrolü yeterli).
 - MinIO objeleri pilotda erişim kontrollü; signed URL pilot sonrası.
@@ -332,7 +331,7 @@ S7                  (operatör tarafı — gerçek veriyle entegre)
 
 ## Açık Kararlar (implementasyon öncesi netleşecek)
 
-- **Stüdyoda özellik düzenleme sınırı:** ✅ ÇÖZÜLDÜ — `print_options.affectsDesign` tek kaynak. `TRUE` olanlar (ebat/kırım) değiştirilirken `ConfirmModal` uyarısı, diğerleri serbest düzenlenir.
+- **Stüdyoda özellik düzenleme sınırı:** ✅ ÇÖZÜLDÜ — `print_options.affectsDesign` tek kaynak. S5'te `TRUE` olanlar (ebat/kırım) stüdyoda **kilitli/değiştirilemez** (wizard seçiminden türetilir, `disabled` + kilit ikonu); S5'te relayout yok. Diğer seçenekler serbest düzenlenir.
 - **`orderNumber` formatı:** `PR-YYYY-NNNNN` mi, başka şema mı? Sıra kaynağı (DB sequence / sayaç tablosu)?
 - **Taslak sipariş (draft):** ✅ ÇÖZÜLDÜ — Seçenek B. Web'de seçilen baskı özellikleri **proje meta'sında** (`project.printOptions` JSON) taşınır. `draft` order OLUŞMAZ. Sipariş yalnızca "Sipariş Ver" anında `orders` + `order_items` olarak doğar ve özellikler o anda dondurulur. Gerekçe: yarım siparişlerin `orders` tablosunu kirletmemesi + mevcut proje-kaydetme altyapısına (`useProjectSave`) oturması. Not: `orders.status` ENUM'ındaki `draft` değeri ileride (sepet/ödeme epic'i) kullanılmak üzere şemada kalır, pilotta üretilmez.
 - **KDV ve indirim kaynağı:** `pricing_rules.taxRate` ve `quantityTiers` pilotda sabit; admin yönetimi sonra.
