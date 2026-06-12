@@ -40,5 +40,9 @@ apps/web/public/images/products/
 
 # Backups
 matbaapro_yedek.zip
+
+# Local planning notes
+docs/TODO.md
+
 # Claude Code local settings (machine-specific)
 .claude/settings.local.json
