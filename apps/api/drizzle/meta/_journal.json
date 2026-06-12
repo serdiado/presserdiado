@@ -43,6 +43,13 @@
       "when": 1781184556835,
       "tag": "0005_order_module",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1781271349249,
+      "tag": "0006_red_sersi",
+      "breakpoints": true
     }
   ]
 }

@@ -17,6 +17,10 @@ import { billingRoutes } from './modules/billing/billing.routes.js';
 import { pricingRoutes } from './modules/pricing/pricing.routes.js';
 import { printCatalogRoutes } from './modules/print-catalog/print-catalog.routes.js';
 import { orderRoutes } from './modules/orders/order.routes.js';
+import { adminRoutes } from './modules/admin/admin.routes.js';
+import { db } from './db/index.js';
+import { users } from './db/schema/index.js';
+import { eq } from 'drizzle-orm';
 import { AppError } from './lib/errors.js';
 import { ZodError } from 'zod';
 
@@ -55,6 +59,18 @@ app.decorate('authenticate', async function (request: any, reply: any) {
   }
 });
 
+// Admin yetki decorator — authenticate'ten SONRA çalışmalı (request.user.id gerekir).
+// Rol her istekte DB'den okunur (JWT'ye gömülmez → bayatlamaz, anlık iptal mümkün).
+app.decorate('authorizeAdmin', async function (request: any, reply: any) {
+  const row = await db.query.users.findFirst({
+    where: eq(users.id, request.user.id),
+    columns: { role: true },
+  });
+  if (row?.role !== 'admin') {
+    return reply.status(403).send({ error: 'Forbidden' });
+  }
+});
+
 // Error handler
 app.setErrorHandler((error, request, reply) => {
   if (error instanceof AppError) {
@@ -87,6 +103,7 @@ await app.register(
     await api.register(pricingRoutes);
     await api.register(printCatalogRoutes);
     await api.register(orderRoutes);
+    await api.register(adminRoutes);
   },
   { prefix: '/api/v1' },
 );

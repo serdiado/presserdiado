@@ -52,7 +52,7 @@ export const authService = {
 
     const user = await db.query.users.findFirst({
       where: eq(users.id, id),
-      columns: { id: true, email: true, companyName: true, createdAt: true },
+      columns: { id: true, email: true, companyName: true, role: true, createdAt: true },
     });
     if (!user) throw new Error('Insert failed');
 
@@ -86,6 +86,7 @@ export const authService = {
         id: user.id,
         email: user.email,
         companyName: user.companyName,
+        role: user.role,
         createdAt: user.createdAt,
       },
     };
@@ -114,6 +115,7 @@ export const authService = {
         id: true,
         email: true,
         companyName: true,
+        role: true,
         defaultPrintPrefs: true,
         createdAt: true,
         updatedAt: true,

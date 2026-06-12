@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/auth.store';
+import api from '@/lib/api';
 import LoginPage from '@/features/auth/LoginPage';
 import RegisterPage from '@/features/auth/RegisterPage';
 import { DashboardLayout } from '@/features/dashboard/DashboardLayout';
@@ -16,6 +18,7 @@ import StudioPage from '@/features/studio/StudioPage';
 import NewStudioWizard from '@/features/wizard/NewStudioWizard';
 import PrintView from '@/features/print-view/PrintView';
 import AdminThemePage from '@/features/admin/theme/AdminThemePage';
+import AdminOrdersPage from '@/features/admin/orders/AdminOrdersPage';
 import Layout from '@/features/auth/Layout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -30,7 +33,27 @@ function GuestRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Admin alanı koruması — token YOKsa login'e, admin DEĞİLse dashboard'a yönlendirir.
+// Güvenlik backend authorizeAdmin guard'ında; bu yalnızca UX/erişim gating'i.
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const token = useAuthStore((s) => s.accessToken);
+  const role = useAuthStore((s) => s.user?.role);
+  if (!token) return <Navigate to="/login" replace />;
+  if (role !== 'admin') return <Navigate to="/dashboard" replace />;
+  return <>{children}</>;
+}
+
 export default function App() {
+  // Açılışta token varsa /auth/me ile store.user'ı (role dahil) tazele.
+  // Eski oturumlarda role yoktu; promote sonrası logout/login gerekmeden admin açılır.
+  useEffect(() => {
+    if (!useAuthStore.getState().accessToken) return;
+    api
+      .get('/auth/me')
+      .then((r) => useAuthStore.getState().setUser(r.data))
+      .catch(() => {});
+  }, []);
+
   return (
     <Routes>
       <Route
@@ -50,7 +73,22 @@ export default function App() {
         }
       />
       <Route path="/print-view" element={<PrintView />} />
-      <Route path="/admin/theme" element={<AdminThemePage />} />
+      <Route
+        path="/admin/theme"
+        element={
+          <AdminRoute>
+            <AdminThemePage />
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/orders"
+        element={
+          <AdminRoute>
+            <AdminOrdersPage />
+          </AdminRoute>
+        }
+      />
       <Route
         path="/new"
         element={

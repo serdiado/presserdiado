@@ -5,6 +5,7 @@ interface User {
   id: string;
   email: string;
   companyName: string | null;
+  role?: 'user' | 'admin';
 }
 
 interface AuthState {
@@ -12,6 +13,7 @@ interface AuthState {
   refreshToken: string | null;
   user: User | null;
   setTokens: (accessToken: string, refreshToken: string) => void;
+  setUser: (user: User) => void;
   login: (accessToken: string, refreshToken: string, user: User) => void;
   logout: () => void;
 }
@@ -23,6 +25,7 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       user: null,
       setTokens: (accessToken, refreshToken) => set({ accessToken, refreshToken }),
+      setUser: (user) => set({ user }),
       login: (accessToken, refreshToken, user) => set({ accessToken, refreshToken, user }),
       logout: () => set({ accessToken: null, refreshToken: null, user: null }),
     }),

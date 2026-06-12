@@ -32,3 +32,12 @@ export async function putObject(
     'Content-Type': contentType,
   });
 }
+
+// Object'i stream olarak döndürür (örn. PDF indirme). key DAİMA sunucu tarafı
+// kaynaktan (DB) gelmeli — kullanıcı girdisi key'e konkat edilmez (path traversal).
+export async function getObject(
+  bucket: string,
+  key: string,
+): Promise<NodeJS.ReadableStream> {
+  return storageClient.getObject(bucket, key);
+}
