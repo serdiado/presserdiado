@@ -181,7 +181,6 @@ INDEX (productTypeId, isActive)
 - Fiyat kuralı, seçenek kombinasyonuna göre eşleşir. Boş (NULL) alan "bu kritere bakma" demek → admin geniş veya dar kural yazabilir.
 - Pilotda **seed veriyle** doldurulur (birkaç broşür kombinasyonu). Fiyat hesabı çalışır.
 - Fiyatlandırma servisi bu tabloyu okur; hesap mantığı **tek yerde** (paylaşılan katman). Backend'de yeniden hesaplanır — frontend tutarına güvenilmez.
-- **`setupFee` pilotda hep 0 (karar):** Aracı kurum modeli + dijital baskı → kalıp/hazırlık ücreti yok. `setupFee` kolonu ileride (ofset baskı / hazırlık ücretli ürünler) kullanılmak üzere şemada kalır, ama pilot seed'inde tüm kurallarda `0`. (Not: en spesifik kural kazandığından, setupFee'yi yalnızca catch-all'a koymak boyut belirten siparişlerde gölgelenir; bu yüzden pilotda hepsi 0.)
 
 #### Pilot / Admin sınırı (kritik)
 - Pilotda bu üç tablo (`product_types`, `print_options`, `pricing_rules`) **seed veriyle** doldurulur. Sipariş akışı bu seed üzerinden uçtan uca çalışır.
@@ -245,10 +244,23 @@ Onaylanınca hem kanvas yeniden düzenlenir hem bağlı sipariş özellikleri g�
 
 ## PDF Dondurma
 
-- **Üretim:** Backend render (Puppeteer/Playwright). `html2canvas-pro` thumbnail için kalır; baskı PDF'i için **kullanılmaz** (raster, CMYK yok, baskı kalitesi tutmaz).
-- **Pilot:** Yüksek-DPI **RGB** PDF. Vektör metin, tutarlı çıktı.
-- **CMYK pilota girmez.** Doğru CMYK (ICC profil, rich black, bleed, overprint) ayrı boru hattı (Ghostscript + preflight) — sonraki epic.
-- **Dondurma zamanı:** Sipariş oluşturma anında PDF üretilir, MinIO'ya yazılır, `productionPdfKey` kaydedilir. Sonradan tasarım değişse bile sipariş PDF'i sabit.
+> ⚠️ **S4 keşfi:** Stüdyoda zaten çalışan bir export altyapısı var. Üst bar → "Dışa Aktar" (`DownloadMenu.tsx`) → `POST /export` → backend `exportCatalog` (`export.service.ts`) → Puppeteer `/print-view` (`PrintView.tsx`, UI'siz, mm-tabanlı) render → `page.pdf()` → `pdf-lib` ile forma birleştirme → blob olarak kullanıcıya iner. **S4 bunu sıfırdan kurmaz; mevcut altyapıyı yeniden kullanır.**
+
+- **Üretim:** Mevcut `exportCatalog` backend render'ı kullanılır (Puppeteer + `/print-view` + pdf-lib). `html2canvas-pro` bu zincirde değil (sadece thumbnail).
+- **Renk uzayı — RGB (doğrulandı):** Kod incelendi; mevcut zincirde CMYK dönüşümü YOK (ne ICC, ne Ghostscript, ne PDF/X). Chromium `page.pdf()` çıktısı RGB. (Not: Illustrator/Acrobat'ta "CMYK" görünmesi, araçların SWOP simülasyonu/gösterim modundan kaynaklanıyordu — dosya gerçekte RGB.) Pilot RGB ile ilerler.
+- **CMYK ayrı epic:** Gerçek CMYK (ICC profil, rich black, bleed, overprint, PDF/X) ileride `export.service.ts`'e eklenecek bir preflight/dönüşüm adımı (Ghostscript). Dondurma mekanizmasını değiştirmez — sadece üretilen PDF'in renk uzayını. RGB→CMYK geçişi izole bir iyileştirme.
+- **300 DPI notu:** Mevcut PDF yolu `deviceScaleFactor: 2`; PNG/JPEG yolu `3.125` (300/96). PDF için net 300 DPI garantisi CMYK epic'iyle birlikte ele alınacak.
+
+### Dondurma servisi tetikten AYRI (kritik karar)
+PDF dondurma, bir tetik anına sabitlenmez — **çağrılabilir bağımsız servis** olarak kurulur:
+- `freezeOrderPdf(orderId)`: siparişin verisinden PDF üretir (`exportCatalog`), MinIO'ya yazar, `productionPdfKey`'i günceller. İdempotent olmalı (tekrar çağrılırsa üzerine yazar/atlar).
+- **Pilotta tetik:** Sipariş oluşturma akışı (`createOrder` sonrası) bu servisi çağırır — çünkü pilotda ödeme yok.
+- **İleride tetik taşınabilir:** Ödeme onayı (`paymentStatus='paid'`) veya operatör "İş Emrini Üret" butonu (S7 admin). Servis aynı kalır, yalnızca *çağıran yer* değişir. Gerekçe: ödemeyen sipariş için boşuna PDF üretip MinIO'da yer kaplamamak.
+- Bu, "zemini doğru kur, tetiği sonra taşı" felsefesi: mekanizma bir kez yazılır, tetikleme noktası esnek kalır.
+
+### Storage
+- Dondurulan PDF MinIO'ya yazılır (bkz. Storage düzeni: `presserdiado-orders` bucket, `{userId}/{orderId}/production.pdf`).
+- DB'ye object key (`productionPdfKey`) yazılır; indirme anında signed URL. Pilotta basit erişim, signed URL sonrası.
 
 ---
 
@@ -290,7 +302,7 @@ Onaylanınca hem kanvas yeniden düzenlenir hem bağlı sipariş özellikleri g�
 | **S1** | DB: `orders`, `order_items`, `product_types`, `print_options`, `pricing_rules` migration + Drizzle schema | SeniorDev — **Opus** | — |
 | **S2** | Katalog seed (broşür + ebat/kağıt/renk seçenekleri + fiyat kuralları) + Pricing servisi + fiyat hesap (backend doğrulamalı) | SeniorDev — **Opus** | S1 |
 | **S3** | Sipariş oluşturma API (`POST /orders`) + fatura snapshot + sahiplik kontrolü | SeniorDev — **Opus** | S1, S2 |
-| **S4** | PDF dondurma (Puppeteer RGB → MinIO) + `productionPdfKey` | SeniorDev — **Opus** | S3 |
+| **S4** | PDF dondurma: `freezeOrderPdf(orderId)` servisi (mevcut `exportCatalog`'u yeniden kullanır → MinIO → `productionPdfKey`). Pilotta `createOrder` sonrası çağrılır. RGB. | SeniorDev — **Opus** | S3 |
 | **S5** | `PrintOptionsSelector` ortak bileşeni (katalogtan beslenir) + stüdyo "Sipariş Ver" entegrasyonu + `affectsDesign` uyarısı | ArtDirector + SeniorDev | S2, S3 |
 | **S6** | Web sitesi (basit): kayıt/giriş ekranı (mevcut auth) + broşür seçim (`PrintOptionsSelector`) + özellik → stüdyoya aktarım | ArtDirector + SeniorDev | S2, S5 |
 | **S7** | Admin panel iskeleti (korumalı) + aktif basit sipariş listesi (indir + durum) | ArtDirector + SeniorDev | S3, S4 |
