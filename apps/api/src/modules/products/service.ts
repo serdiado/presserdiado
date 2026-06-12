@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { eq, and, desc, like, ne, inArray, sql } from 'drizzle-orm';
+import { eq, and, desc, like, ne, inArray, sql, getTableColumns } from 'drizzle-orm';
 import { db } from '../../db/index.js';
 import { products, productImages } from '../../db/schema/index.js';
 import { NotFoundError, ConflictError } from '../../lib/errors.js';
@@ -33,9 +33,19 @@ export const productsService = {
 
     const where = and(...conditions);
 
+    // Her ürünün birincil resmi (en düşük sortOrder, eşitlikte en eski). Korelasyon
+    // kolonları (products.user_id / products.sku) literal yazılmalı: ham sql`` içine
+    // ${products.sku} interpolasyonu tablo-qualifiye edilmeden basılır ve alt-sorguda
+    // pi.sku'ya çözülür -> korelasyon kopar, herkese aynı resim döner. Bkz. listWithImages.
+    const primaryImage = sql<string | null>`(
+      SELECT pi.image_key FROM product_images pi
+      WHERE pi.user_id = products.user_id AND pi.sku = products.sku
+      ORDER BY pi.sort_order ASC, pi.created_at ASC LIMIT 1
+    )`;
+
     // Pagination is disabled for now, returning all matches
     const data = await db
-      .select()
+      .select({ ...getTableColumns(products), primaryImage })
       .from(products)
       .where(where)
       .orderBy(desc(products.createdAt));

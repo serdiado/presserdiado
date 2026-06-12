@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { eq, and, asc, count, inArray } from 'drizzle-orm';
+import { eq, and, asc, count, inArray, sql } from 'drizzle-orm';
 import { db } from '../../db/index.js';
 import { productImages } from '../../db/schema/index.js';
 import { NotFoundError, ConflictError } from '../../lib/errors.js';
@@ -35,7 +35,10 @@ export const productImagesService = {
   },
 
   async create(userId: string, input: CreateProductImageInput) {
-    // SKU atanmışsa, bu kullanıcıda o SKU için resim limitini aşmadığını doğrula.
+    let sortOrder = input.sortOrder;
+
+    // SKU atanmışsa: limit kontrolü + sortOrder verilmemişse otomatik (mevcut max + 1).
+    // Bu, assignToProduct ile aynı sıralama mantığıdır; sortOrder hesabı tek yerde toplanır.
     if (input.sku) {
       const [row] = await db
         .select({ n: count() })
@@ -43,6 +46,13 @@ export const productImagesService = {
         .where(and(eq(productImages.userId, userId), eq(productImages.sku, input.sku)));
       if ((row?.n ?? 0) >= MAX_IMAGES_PER_SKU) {
         throw new ConflictError(`Bu SKU için maksimum ${MAX_IMAGES_PER_SKU} resim yüklenebilir`);
+      }
+      if (sortOrder === undefined) {
+        const [maxRow] = await db
+          .select({ maxSortOrder: sql<number | null>`max(${productImages.sortOrder})` })
+          .from(productImages)
+          .where(and(eq(productImages.userId, userId), eq(productImages.sku, input.sku)));
+        sortOrder = (maxRow?.maxSortOrder ?? 0) + 1;
       }
     }
 
@@ -53,7 +63,7 @@ export const productImagesService = {
       sku: input.sku ?? null,
       imageKey: input.imageKey,
       fileName: input.fileName ?? null,
-      sortOrder: input.sortOrder ?? 1,
+      sortOrder: sortOrder ?? 1,
       isTransparent: input.isTransparent ?? false,
     });
 

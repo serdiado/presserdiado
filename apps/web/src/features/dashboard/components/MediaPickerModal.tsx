@@ -1,0 +1,263 @@
+// Görsel seçici — iki havuzdan seçim: Medya Kütüphanesi (media-assets) ve Ürün Resimleri
+// (product-images). Çoklu seçim destekli, yeniden kullanılabilir. Atama/yükleme mantığı
+// içermez; seçilen görselleri { imageKey, fileName } olarak onConfirm ile döndürür — kopyalama
+// çağıranın işidir (tek-kaynak).
+
+import React, { useEffect, useMemo, useState } from 'react';
+import { X, Check, ImageOff, Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import api from '@/lib/api';
+import { toAbsoluteUrl } from '@/lib/upload';
+import { Button } from '@/components/ui/Button';
+import type { MediaAsset, MediaAssetType, ProductImage } from '../types';
+
+export interface PickedImage {
+  imageKey: string;
+  fileName: string | null;
+}
+
+interface MediaPickerModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (items: PickedImage[]) => void;
+  // "Ürün Resimleri" sekmesinde bu SKU'ya zaten atanmış görseller gizlenir (manager'da listeli).
+  excludeSku?: string;
+}
+
+type Source = 'media' | 'product';
+type TypeFilter = 'all' | MediaAssetType;
+
+const TYPE_TABS: { key: TypeFilter; label: string }[] = [
+  { key: 'all', label: 'Tümü' },
+  { key: 'logo', label: 'Logo' },
+  { key: 'background', label: 'Arka Plan' },
+  { key: 'shape', label: 'Şekil' },
+  { key: 'other', label: 'Diğer' },
+];
+
+// Grid'de gösterilen normalize öğe. selectionKey kaynak-önekli (media: / pi:) — sekmeler arası
+// seçim korunur ve iki tablodaki aynı imageKey çakışmaz.
+interface PickerItem {
+  selectionKey: string;
+  imageKey: string;
+  fileName: string | null;
+}
+
+export function MediaPickerModal({ isOpen, onClose, onConfirm, excludeSku }: MediaPickerModalProps) {
+  const [source, setSource] = useState<Source>('media');
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
+  const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
+  const [productImages, setProductImages] = useState<ProductImage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  // selectionKey → seçilen görsel
+  const [selected, setSelected] = useState<Map<string, PickedImage>>(new Map());
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    setError(null);
+    const [mediaRes, productRes] = await Promise.allSettled([
+      api.get<MediaAsset[]>('/media-assets'),
+      api.get<ProductImage[]>('/product-images'),
+    ]);
+    if (mediaRes.status === 'fulfilled') setMediaAssets(mediaRes.value.data ?? []);
+    if (productRes.status === 'fulfilled') setProductImages(productRes.value.data ?? []);
+    // Yalnızca iki havuz da çekilemediyse hata göster; biri gelirse kullanıcı yine seçebilsin.
+    if (mediaRes.status === 'rejected' && productRes.status === 'rejected') {
+      console.error('Görsel havuzları alınamadı', mediaRes.reason, productRes.reason);
+      setError('Görseller yüklenemedi');
+    }
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelected(new Map());
+      setSource('media');
+      setTypeFilter('all');
+      fetchData();
+    }
+  }, [isOpen]);
+
+  // Medya havuzu — tip filtresiyle.
+  const mediaItems = useMemo<PickerItem[]>(() => {
+    const filtered = typeFilter === 'all' ? mediaAssets : mediaAssets.filter((a) => a.type === typeFilter);
+    return filtered.map((a) => ({
+      selectionKey: `media:${a.id}`,
+      imageKey: a.imageKey,
+      fileName: a.fileName ?? null,
+    }));
+  }, [mediaAssets, typeFilter]);
+
+  // Ürün resmi havuzu — bu SKU'ya atanmışlar hariç, imageKey'e göre tekilleştirilmiş.
+  const productItems = useMemo<PickerItem[]>(() => {
+    const seen = new Set<string>();
+    const items: PickerItem[] = [];
+    for (const img of productImages) {
+      if (excludeSku && img.sku === excludeSku) continue;
+      if (seen.has(img.imageKey)) continue;
+      seen.add(img.imageKey);
+      items.push({ selectionKey: `pi:${img.id}`, imageKey: img.imageKey, fileName: img.fileName ?? null });
+    }
+    return items;
+  }, [productImages, excludeSku]);
+
+  const items = source === 'media' ? mediaItems : productItems;
+
+  if (!isOpen) return null;
+
+  const countFor = (key: TypeFilter) =>
+    key === 'all' ? mediaAssets.length : mediaAssets.filter((a) => a.type === key).length;
+
+  const toggle = (item: PickerItem) => {
+    setSelected((prev) => {
+      const next = new Map(prev);
+      if (next.has(item.selectionKey)) next.delete(item.selectionKey);
+      else next.set(item.selectionKey, { imageKey: item.imageKey, fileName: item.fileName });
+      return next;
+    });
+  };
+
+  const handleConfirm = () => {
+    if (selected.size === 0) return;
+    onConfirm([...selected.values()]);
+  };
+
+  const sourceTab = (key: Source, label: string, count: number) => (
+    <button
+      type="button"
+      onClick={() => setSource(key)}
+      className={`h-8 px-3 rounded-radius-md text-body-sm transition-colors ${
+        source === key
+          ? 'bg-surface-subtle text-text-primary border border-border-strong'
+          : 'text-text-secondary border border-transparent hover:bg-surface-subtle'
+      }`}
+    >
+      {label} ({count})
+    </button>
+  );
+
+  const emptyHint =
+    source === 'media'
+      ? 'Medya kütüphanenizde henüz görsel yok. Önce Medya sayfasından görsel yükleyin.'
+      : 'Başka ürünlere atanmış görsel yok.';
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-99999 animate-fade-in">
+      <div className="bg-surface-panel border border-border-default rounded-radius-xl w-full max-w-3xl shadow-drop-lg animate-in fade-in zoom-in-95 duration-150 relative max-h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border-default shrink-0">
+          <h2 className="text-heading-xl text-text-primary">Görsel Seç</h2>
+          <button
+            onClick={onClose}
+            className="text-text-secondary hover:text-text-primary transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Kaynak sekmeleri */}
+        <div className="flex items-center gap-2 px-6 pt-4 shrink-0">
+          {sourceTab('media', 'Medya', mediaAssets.length)}
+          {sourceTab('product', 'Ürün Resimleri', productItems.length)}
+        </div>
+
+        {/* Body */}
+        <div className="overflow-y-auto flex-1 p-6 pt-4">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-16 text-text-muted">
+              <Loader2 size={24} className="animate-spin" />
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center py-16">
+              <AlertCircle size={40} className="text-danger mb-3" />
+              <p className="text-body-md text-text-secondary mb-4">{error}</p>
+              <Button variant="secondary" size="md" onClick={fetchData} leftIcon={<RefreshCw size={16} />}>
+                Tekrar Dene
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Tip filtreleri — sadece Medya sekmesinde */}
+              {source === 'media' && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  {TYPE_TABS.map((tab) => (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() => setTypeFilter(tab.key)}
+                      className={`h-8 px-3 rounded-radius-md text-body-sm transition-colors ${
+                        typeFilter === tab.key
+                          ? 'bg-surface-subtle text-text-primary border border-border-strong'
+                          : 'text-text-secondary border border-transparent hover:bg-surface-subtle'
+                      }`}
+                    >
+                      {tab.label} ({countFor(tab.key)})
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {items.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="w-14 h-14 rounded-full bg-surface-subtle flex items-center justify-center text-text-muted mb-3">
+                    <ImageOff size={28} strokeWidth={1.5} />
+                  </div>
+                  <p className="text-body-md text-text-secondary max-w-sm">{emptyHint}</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-3 lg:grid-cols-4 gap-3">
+                  {items.map((item) => {
+                    const isSelected = selected.has(item.selectionKey);
+                    return (
+                      <button
+                        key={item.selectionKey}
+                        type="button"
+                        onClick={() => toggle(item)}
+                        className={`group relative aspect-square rounded-radius-lg overflow-hidden border transition-colors ${
+                          isSelected
+                            ? 'border-border-strong bg-surface-subtle'
+                            : 'border-border-default bg-surface-panel hover:border-border-strong'
+                        }`}
+                      >
+                        <img
+                          src={toAbsoluteUrl(item.imageKey)}
+                          alt={item.fileName ?? 'Görsel'}
+                          loading="lazy"
+                          className="w-full h-full object-contain bg-surface-subtle"
+                        />
+                        <span
+                          className={`absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center border transition-colors ${
+                            isSelected
+                              ? 'bg-primary text-white border-primary'
+                              : 'bg-surface-panel/90 border-border-default text-transparent group-hover:border-border-strong'
+                          }`}
+                        >
+                          <Check size={12} strokeWidth={3} />
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 border-t border-border-default flex justify-between items-center gap-3 shrink-0">
+          <span className="text-body-sm text-text-secondary">
+            {selected.size > 0 ? `${selected.size} görsel seçildi` : 'Görsel seçin'}
+          </span>
+          <div className="flex items-center gap-3">
+            <Button variant="secondary" size="md" onClick={onClose}>
+              İptal
+            </Button>
+            <Button variant="primary" size="md" onClick={handleConfirm} disabled={selected.size === 0}>
+              Seç ({selected.size})
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

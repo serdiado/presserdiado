@@ -1,12 +1,35 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Plus, Search, Edit2, Trash2, PackageSearch, AlertCircle, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, PackageSearch, AlertCircle, RefreshCw, FileSpreadsheet, ImageOff } from 'lucide-react';
 import api from '@/lib/api';
+import { toAbsoluteUrl } from '@/lib/upload';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { ProductFormModal } from '../components/ProductFormModal';
 import { ExcelImportModal } from '../components/ExcelImportModal';
 import type { Product } from '../types';
+
+// Ürün satırı için küçük resim. Resim yoksa veya yüklenemezse nötr placeholder gösterir.
+// Hata durumunu React state ile yönetir (DOM'a doğrudan müdahale yok).
+function ProductThumbnail({ src, alt }: { src?: string | null; alt: string }) {
+  const [errored, setErrored] = useState(false);
+  const showImage = src && !errored;
+  return (
+    <div className="w-12 h-12 shrink-0 rounded border border-border-default bg-white flex items-center justify-center overflow-hidden">
+      {showImage ? (
+        <img
+          src={toAbsoluteUrl(src)}
+          alt={alt}
+          loading="lazy"
+          className="w-full h-full object-contain"
+          onError={() => setErrored(true)}
+        />
+      ) : (
+        <ImageOff size={18} className="text-text-muted" strokeWidth={1.5} />
+      )}
+    </div>
+  );
+}
 
 export function UrunListelerim() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -271,6 +294,7 @@ export function UrunListelerim() {
                       checked={selected}
                       onChange={() => toggleSelect(product.id)}
                     />
+                    <ProductThumbnail src={product.primaryImage} alt={product.name} />
                     <div className="w-24 shrink-0">
                       <span className="font-mono text-body-xs text-text-muted bg-slate-50 px-2 py-1 rounded">
                         {product.sku}

@@ -6,7 +6,8 @@ const createProductImageSchema = z.object({
   sku: z.string().min(1).max(100).optional(),
   imageKey: z.string().min(1).max(500),
   fileName: z.string().max(255).optional(),
-  sortOrder: z.number().int().min(1).default(1),
+  // Verilmezse servis, SKU'nun mevcut en yüksek sortOrder'ının +1'ini otomatik atar.
+  sortOrder: z.number().int().min(1).optional(),
   isTransparent: z.boolean().default(false),
 });
 

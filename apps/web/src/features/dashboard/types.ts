@@ -82,6 +82,7 @@ export interface Product {
   category?: string | null;
   unit?: string | null;
   description?: string | null;
+  primaryImage?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }

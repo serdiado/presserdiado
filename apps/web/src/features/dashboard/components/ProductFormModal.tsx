@@ -4,6 +4,7 @@ import axios from 'axios';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
+import { ProductImagesManager } from './ProductImagesManager';
 import type { Product } from '../types';
 
 interface ProductFormModalProps {
@@ -207,6 +208,20 @@ export function ProductFormModal({ isOpen, onClose, product, onSave }: ProductFo
                   onChange={(e) => setDescription(e.target.value)}
                   className="w-full p-3 border border-border-default hover:border-border-strong rounded-radius-md text-body-md text-text-primary bg-surface-panel focus:outline-none focus:ring-2 focus:ring-border-strong resize-none"
                 />
+              </div>
+
+              {/* Ürün görselleri — yalnızca düzenleme modunda (resimler kalıcı SKU'ya bağlı). */}
+              <div className="pt-2 border-t border-border-default">
+                {product ? (
+                  <ProductImagesManager sku={product.sku} />
+                ) : (
+                  <div className="rounded-radius-md border border-dashed border-border-default bg-surface-subtle px-4 py-3">
+                    <p className="text-body-xs text-text-secondary">
+                      Görsel eklemek için önce ürünü kaydedin, ardından düzenleyerek görsel
+                      ekleyebilirsiniz.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
