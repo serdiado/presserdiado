@@ -129,6 +129,27 @@ export interface CatalogSettings {
   footer: FooterSettings;
 }
 
+// === Hazır şablon (preset) ===
+
+/** Şablonun "boş banner alanı" işareti — sayfa içi sıralı slot indeksiyle konumlanır. */
+export interface StudioPresetBannerArea {
+  pageNumber: number;
+  /** Sayfanın taze slot dizisindeki 0-bazlı indeks (export ↔ apply aynı semantik). */
+  slotIndex: number;
+  colSpan?: number;
+  rowSpan?: number;
+}
+
+/** Tek tıkla uygulanan hazır şablon: stil (defaultGrid + footer dahil) + boş banner alanları. */
+export interface StudioPreset {
+  id: string;
+  name: string;
+  description?: string;
+  thumbnail?: string;
+  settings: DeepPartial<CatalogSettings>;
+  bannerAreas?: StudioPresetBannerArea[];
+}
+
 // === Product / temp pool ===
 
 export interface ProductInfo {

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useCatalogStore, useHistoryStore, useLayerStore } from '@/stores/studio';
 import { serializeProjectFile, deserializeProjectFile } from '../lib/projectSerializer';
+import { exportPresetFromState } from '../presets/studioPresets';
 
 export function ProjectMenu() {
   const [open, setOpen] = useState(false);
@@ -51,6 +52,20 @@ export function ProjectMenu() {
     useHistoryStore.getState().clearHistory();
     toast.success('Katalog çoğaltıldı (yeni proje)');
     setOpen(false);
+  };
+
+  const handleExportPreset = async () => {
+    try {
+      const preset = exportPresetFromState();
+      const json = JSON.stringify(preset, null, 2);
+      console.log('[Preset Export]\n' + json);
+      await navigator.clipboard.writeText(json);
+      toast.success('Preset JSON panoya kopyalandı (konsola da yazıldı)');
+      setOpen(false);
+    } catch (err) {
+      console.error(err);
+      toast.error('Preset kopyalanamadı — konsoldan alabilirsiniz');
+    }
   };
 
   const handleLoadFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -106,6 +121,20 @@ export function ProjectMenu() {
               Mevcut tasarımı yeni projeye klonla (havuzu sıfırlar)
             </div>
           </button>
+          {import.meta.env.DEV && (
+            <>
+              <div className="my-1 border-t border-border-default" />
+              <button
+                onClick={handleExportPreset}
+                className="w-full text-left px-3 py-2 hover:bg-surface-subtle rounded text-xs"
+              >
+                <div className="font-bold text-text-secondary">Preset Kopyala (dev)</div>
+                <div className="text-[10px] text-text-muted">
+                  Mevcut tasarımı StudioPreset JSON olarak panoya kopyala
+                </div>
+              </button>
+            </>
+          )}
           <input
             ref={fileRef}
             type="file"

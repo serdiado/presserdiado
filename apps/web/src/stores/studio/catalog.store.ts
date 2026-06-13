@@ -13,6 +13,8 @@ import type {
   StudioFooterCell,
   StudioForma,
   StudioSlot,
+  StudioPreset,
+  StudioPresetBannerArea,
   TempPoolProduct,
   FooterSettings,
 } from '@matbaapro/shared';
@@ -35,6 +37,76 @@ import type { PrintOptionsValue } from '../../features/print-order/types';
 
 type FooterScope = number | 'global';
 type GridScope = 'global' | number;
+
+/**
+ * Preset banner alanlarını taze slot dizisine işler: anchor slot 'free' olur,
+ * span > 1 ise kapsanan hücreler merge konvansiyonuyla gizlenir.
+ */
+function applyBannerAreas(
+  formas: StudioForma[],
+  areas: StudioPresetBannerArea[] | undefined,
+  cols: number,
+): void {
+  if (!areas?.length) return;
+  const allPages = formas.flatMap((f) => f.pages);
+  for (const area of areas) {
+    const page = allPages.find((p) => p.pageNumber === area.pageNumber);
+    const anchor = page?.slots[area.slotIndex];
+    if (!page || !anchor) continue;
+    const colSpan = Math.max(1, area.colSpan ?? 1);
+    const rowSpan = Math.max(1, area.rowSpan ?? 1);
+    anchor.role = 'free';
+    anchor.colSpan = colSpan;
+    anchor.rowSpan = rowSpan;
+    anchor.product = null;
+    if (colSpan === 1 && rowSpan === 1) continue;
+    const row = Math.floor(area.slotIndex / cols);
+    const col = area.slotIndex % cols;
+    for (let ir = 0; ir < rowSpan; ir++) {
+      for (let ic = 0; ic < colSpan; ic++) {
+        if (ir === 0 && ic === 0) continue;
+        const covered = page.slots[(row + ir) * cols + (col + ic)];
+        if (covered) {
+          covered.hidden = true;
+          covered.mergedInto = anchor.id;
+          covered.product = null;
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Görünür ürün slotlarını kanonik sırada döndürür: sayfalar pageNumber artan,
+ * her sayfada slot dizisi sırası, yalnız !hidden && role==='product'.
+ * Bu sıra recalculateLayout'un globalNumber atamasıyla birebir aynıdır (= ekrandaki 1,2,3).
+ */
+function productSlotsInOrder(formas: StudioForma[]): StudioSlot[] {
+  const out: StudioSlot[] = [];
+  const pages = formas.flatMap((f) => f.pages).sort((a, b) => a.pageNumber - b.pageNumber);
+  for (const page of pages) {
+    for (const slot of page.slots) {
+      if (!slot.hidden && slot.role === 'product') out.push(slot);
+    }
+  }
+  return out;
+}
+
+/**
+ * Tasarıma sığmayan (overflow) ürünleri bekleme havuzuna ekler: mevcut havuzu
+ * korur, yeni ürünleri sku-dedup ile başa (unshift) koyar. Tek-kaynak overflow kuralı.
+ */
+function appendOverflowToTempPool(
+  tempPool: TempPoolProduct[],
+  overflow: ProductInfo[],
+): TempPoolProduct[] {
+  let result = [...tempPool];
+  for (const product of overflow) {
+    if (product.sku) result = result.filter((p) => p.sku !== product.sku);
+    result.unshift({ ...product });
+  }
+  return result;
+}
 
 interface CatalogState {
   _hasHydrated: boolean;
@@ -116,9 +188,14 @@ interface CatalogActions {
   ) => { success: boolean; error?: string };
   unmergeFooterCellStore: (scope: FooterScope, cellId: string) => void;
 
+  // Hazır şablon (preset)
+  applyPreset: (preset: StudioPreset) => void;
+
   // Product pool
   setProductPool: (products: ProductInfo[]) => void;
   autoFillSlots: (skuImageMap?: Record<string, string>) => void;
+  /** Saf doldurma — saveState çağırmaz; applyPreset + autoFillSlots ortak kullanır. */
+  _fillSlotsFromPool: (skuImageMap?: Record<string, string>) => void;
   clearProducts: () => void;
   resetCatalog: () => void;
   swapSlotContents: (
@@ -297,6 +374,46 @@ export const useCatalogStore = create<Store>()(
         if (firstSlot) {
           useUIStore.getState().toggleSlotSelection(firstSlot.id, false);
         }
+      },
+      applyPreset: (preset) => {
+        useHistoryStore.getState().saveState(); // TEK saveState → tek undo adımı
+        const { formas, tempProductPool } = get();
+
+        // 1) Mevcut yerleşimi kanonik (globalNumber) sırada çıkar — Excel POS DEĞİL
+        const ordered = productSlotsInOrder(formas)
+          .map((s) => s.product)
+          .filter((p): p is ProductInfo => !!p);
+
+        // 2) Stil: replace → varsayılan + şablon override'ları
+        const newSettings = deepMerge(
+          clone(initialGlobalSettings) as unknown as Record<string, unknown>,
+          (preset.settings ?? {}) as unknown as Record<string, unknown>,
+        ) as unknown as CatalogSettings;
+        const grid = newSettings.defaultGrid ?? { rows: 4, cols: 4 };
+
+        // 3) Slotları yeni gride göre TAZE kur + banner alanları — productPool'a DOKUNMA
+        const next = clone(formas);
+        for (const f of next) {
+          for (const p of f.pages) {
+            p.gridSettings = undefined; // genel ızgaraya dön
+            p.slots = createPageSlots(p.pageNumber, grid.rows * grid.cols);
+          }
+        }
+        applyBannerAreas(next, preset.bannerAreas, grid.cols);
+
+        // 4) Listeyi yeni ürün slotlarına SIRAYLA dağıt; artan → overflow
+        const targets = productSlotsInOrder(next);
+        for (let i = 0; i < targets.length && i < ordered.length; i++) {
+          targets[i].product = ordered[i];
+        }
+        const overflow = ordered.slice(targets.length);
+
+        set({
+          globalSettings: newSettings,
+          formas: recalculateLayout(next, grid),
+          tempProductPool: appendOverflowToTempPool(tempProductPool, overflow),
+          // productPool'a DOKUNULMADI (Excel master listesi)
+        });
       },
       startFreshCatalog: (tmpl, printOptions, quantity) => {
         const formas = buildFormasForTemplate(tmpl);
@@ -529,8 +646,12 @@ export const useCatalogStore = create<Store>()(
       setProductPool: (products) => set({ productPool: products }),
 
       autoFillSlots: (skuImageMap) => {
-        const { formas, productPool, globalSettings } = get();
         useHistoryStore.getState().saveState();
+        get()._fillSlotsFromPool(skuImageMap);
+      },
+
+      _fillSlotsFromPool: (skuImageMap) => {
+        const { formas, productPool, globalSettings, tempProductPool } = get();
 
         const next = clone(formas);
         const valid: StudioSlot[] = [];
@@ -543,6 +664,8 @@ export const useCatalogStore = create<Store>()(
         }
         for (const s of valid) s.product = null;
 
+        const placedSkus = new Set<string>();
+        const overflow: ProductInfo[] = []; // POS slot sayısını aşan → bekleme havuzu
         for (const product of productPool) {
           let posValue = 0;
           if (product.raw && typeof product.raw === 'object') {
@@ -556,18 +679,29 @@ export const useCatalogStore = create<Store>()(
               posValue = m ? parseInt(m[0], 10) : 0;
             }
           }
+          // Öncelik: Excel RESIM > DB birincil resim > boş. DB değerleri panelde
+          // zaten toAbsoluteUrl ile mutlak. /images/products fallback'i kaldırıldı.
+          const excelImage =
+            product.image && product.image.trim() ? product.image.trim() : undefined;
+          const dbImage = product.sku ? skuImageMap?.[product.sku] : undefined;
+          const withImage = { ...product, image: excelImage ?? dbImage };
+
           if (posValue > 0 && posValue <= valid.length) {
-            // Öncelik: Excel RESIM > DB birincil resim > boş. DB değerleri panelde
-            // zaten toAbsoluteUrl ile mutlak. /images/products fallback'i kaldırıldı.
-            const excelImage =
-              product.image && product.image.trim() ? product.image.trim() : undefined;
-            const dbImage = product.sku ? skuImageMap?.[product.sku] : undefined;
-            valid[posValue - 1].product = { ...product, image: excelImage ?? dbImage };
-            if (product.sku) get().removeFromTempPool(product.sku);
+            valid[posValue - 1].product = withImage;
+            if (product.sku) placedSkus.add(product.sku);
+          } else if (posValue > valid.length) {
+            // Tek-kaynak overflow kuralı: sığmayan ürün sessizce kaybolmaz.
+            overflow.push(withImage);
           }
+          // posValue === 0 (POS'suz) → mevcut davranış: yerleştirilmez, havuza eklenmez.
         }
 
-        set({ formas: recalculateLayout(next, globalSettings.defaultGrid) });
+        // Yerleştirilenleri havuzdan düş, overflow'u havuza ekle (tek set, saveState yok).
+        const baseTemp = tempProductPool.filter((p) => !p.sku || !placedSkus.has(p.sku));
+        set({
+          formas: recalculateLayout(next, globalSettings.defaultGrid),
+          tempProductPool: appendOverflowToTempPool(baseTemp, overflow),
+        });
       },
 
       clearProducts: () => {
