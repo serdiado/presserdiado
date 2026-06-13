@@ -5,7 +5,7 @@ import { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home, FileText, LayoutTemplate, List, Palette,
-  Package, Folder, Users, CreditCard, Settings,
+  Package, Users, CreditCard, Settings,
   HelpCircle, Bell, Search, Plus, LogOut,
   LibraryBig, ChevronDown, ChevronUp,
 } from 'lucide-react';
@@ -77,7 +77,6 @@ export function DashboardShell({
       <DashboardTopBar user={user} onLogout={onLogout} />
       <div className="flex flex-1 overflow-hidden">
         <DashboardSideNav
-          user={user}
           usage={usage}
           onNewDesign={onNewDesign}
         />
@@ -124,6 +123,13 @@ function DashboardTopBar({
 
       {/* Sağ alan */}
       <div className="ml-auto flex items-center gap-3">
+        <Link
+          to="/"
+          className="inline-flex h-8 items-center gap-1.5 rounded-radius-md px-3 text-body-md text-text-secondary hover:bg-surface-subtle hover:text-text-primary transition-colors"
+        >
+          Vitrin
+        </Link>
+
         {/* Bildirimler */}
         <button
           className="relative h-9 w-9 grid place-items-center rounded-md
@@ -167,11 +173,9 @@ function DashboardTopBar({
 
 // ─── SideNav ───────────────────────────────────────────────────────────────────
 function DashboardSideNav({
-  user,
   usage,
   onNewDesign,
 }: {
-  user: User;
   usage?: UsageStat;
   onNewDesign?: () => void;
 }) {

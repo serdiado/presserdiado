@@ -1,7 +1,7 @@
 // Stüdyo öncesi seçim sihirbazı — tamamen wizard.config.json'a göre render edilir.
 
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import { buildTemplateFromWizard } from './buildTemplate';
 import rawConfig from './wizard.config.json';
@@ -27,6 +27,22 @@ const config = rawConfig as unknown as WizardConfig;
 
 // Sihirbaz kategorisi → katalog productTypeKey. Pilotta yalnızca broşür aktif; diğerleri katalogda yok.
 const CATEGORY_PRODUCT_TYPE: Record<string, string> = { brochure: 'brochure' };
+
+// Vitrin "Online Tasarla" ile route state üzerinden gelen efemer seçim tohumu.
+// Kullanıcı tarafından manipüle edilebilir → tüm okumalar undefined-safe + geçersiz
+// değer config default'a düşer (defensive; bozuk değer yalnız kendini etkiler).
+interface WizardSeed {
+  category?: string;
+  printOptions?: PrintOptionsValue;
+  quantity?: number;
+}
+
+function readWizardSeed(state: unknown): WizardSeed | undefined {
+  if (!state || typeof state !== 'object') return undefined;
+  const seed = (state as { wizardSeed?: unknown }).wizardSeed;
+  if (!seed || typeof seed !== 'object') return undefined;
+  return seed as WizardSeed;
+}
 
 function SvgWrap({ children }: { children: React.ReactNode }) {
   return <svg viewBox="0 0 96 96" className="w-14 h-12" fill="none">{children}</svg>;
@@ -239,8 +255,31 @@ export default function NewStudioWizard() {
   const _hasHydrated = useCatalogStore((s) => s._hasHydrated);
 
   const activeTemplate = useCatalogStore((s) => s.activeTemplate);
-  
+
+  // Vitrinden gelen efemer seçim (route state). activeTemplate'ten ÖNCE gelir.
+  const location = useLocation();
+  const wizardSeed = readWizardSeed(location.state);
+  const isValidPaper = (id?: string) => config.steps.paperSize.options.some((p) => p.id === id);
+  const isValidFold = (id?: string) => config.steps.foldType.options.some((f) => f.id === id);
+  const isValidCategory = (id?: string) =>
+    config.steps.category.options.some((c) => c.id === id);
+
   const [sel, setSel] = useState<WizardSelection>(() => {
+    // 1) Vitrin tohumu — en yüksek öncelik. Geçersiz size/fold/category config default'a düşer.
+    if (wizardSeed) {
+      return {
+        category: (isValidCategory(wizardSeed.category)
+          ? wizardSeed.category
+          : config.steps.category.default) as WizardSelection['category'],
+        mode: config.steps.mode.default as WizardSelection['mode'], // vitrin mode tutmaz → Adım 3'te seçilir
+        paperSize: (isValidPaper(wizardSeed.printOptions?.size)
+          ? wizardSeed.printOptions!.size
+          : config.steps.paperSize.default) as WizardSelection['paperSize'],
+        foldType: (isValidFold(wizardSeed.printOptions?.fold)
+          ? wizardSeed.printOptions!.fold
+          : config.steps.foldType.default) as WizardSelection['foldType'],
+      };
+    }
     if (activeTemplate?.wizardSelection) {
       return activeTemplate.wizardSelection as unknown as WizardSelection;
     }
@@ -269,8 +308,16 @@ export default function NewStudioWizard() {
   const [foldOtherOpen, setFoldOtherOpen] = useState(false);
 
   // S6: baskı özellikleri + adet — Adım 2'de seçilir, startFreshCatalog ile stüdyoya taşınır.
-  const [printOptions, setPrintOptions] = useState<PrintOptionsValue>(DEFAULT_OPTIONS);
-  const [quantity, setQuantity] = useState<number>(DEFAULT_QUANTITY);
+  // Vitrin tohumu varsa ön-doldurulur (DEFAULT_OPTIONS ile merge → eksik alanlar geçerli kalır).
+  const [printOptions, setPrintOptions] = useState<PrintOptionsValue>(() =>
+    wizardSeed?.printOptions && typeof wizardSeed.printOptions === 'object'
+      ? { ...DEFAULT_OPTIONS, ...wizardSeed.printOptions }
+      : DEFAULT_OPTIONS,
+  );
+  const [quantity, setQuantity] = useState<number>(() => {
+    const q = wizardSeed?.quantity;
+    return typeof q === 'number' && Number.isFinite(q) && q >= 1 ? Math.floor(q) : DEFAULT_QUANTITY;
+  });
 
   const set = <K extends keyof WizardSelection>(k: K, v: WizardSelection[K]) =>
     setSel((p) => ({ ...p, [k]: v }));

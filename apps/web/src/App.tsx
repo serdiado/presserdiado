@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '@/stores/auth.store';
+import { safeNext } from '@/features/auth/safeNext';
 import api from '@/lib/api';
 import LoginPage from '@/features/auth/LoginPage';
 import RegisterPage from '@/features/auth/RegisterPage';
@@ -22,7 +23,7 @@ import AdminDashboardPage from '@/features/admin/dashboard/AdminDashboardPage';
 import AdminThemePage from '@/features/admin/theme/AdminThemePage';
 import AdminOrdersPage from '@/features/admin/orders/AdminOrdersPage';
 import AdminPlaceholder from '@/features/admin/AdminPlaceholder';
-import Layout from '@/features/auth/Layout';
+import StorefrontPage from '@/features/storefront/StorefrontPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => !!s.accessToken);
@@ -30,9 +31,13 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// Misafir rotaları (login/register). Zaten girişliyse next'e (varsa, güvenli) yoksa
+// /dashboard'a yönlendirir. next'i burada onurlandırmak login()/store güncellemesi
+// ile oluşan declaratif yönlendirme yarışını çözer (LoginPage'in navigate'ini ezmesin).
 function GuestRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => !!s.accessToken);
-  if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+  const [params] = useSearchParams();
+  if (isAuthenticated) return <Navigate to={safeNext(params.get('next'))} replace />;
   return <>{children}</>;
 }
 
@@ -133,16 +138,9 @@ export default function App() {
         <Route path="fatura" element={<FaturaBilgileriPage />} />
         <Route path="coming-soon" element={<ComingSoon />} />
       </Route>
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <Layout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to="/dashboard" replace />} />
-      </Route>
+      {/* Public broşür vitrini — giriş kapısı. Guard YOK; giriş yapmış kullanıcı da görür
+          (otomatik /dashboard'a atılmaz). Dashboard /dashboard'da, korumalı kalır. */}
+      <Route path="/" element={<StorefrontPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

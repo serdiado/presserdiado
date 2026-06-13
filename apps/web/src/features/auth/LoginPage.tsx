@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '@/stores/auth.store';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
+import { safeNext } from './safeNext';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -10,6 +11,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const login = useAuthStore((s) => s.login);
   const navigate = useNavigate();
+  const [params] = useSearchParams();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -17,7 +19,7 @@ export default function LoginPage() {
     try {
       const { data } = await api.post('/auth/login', { email, password });
       login(data.accessToken, data.refreshToken, data.user);
-      navigate('/dashboard');
+      navigate(safeNext(params.get('next')));
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Giriş yapılamadı');
     } finally {
@@ -73,7 +75,10 @@ export default function LoginPage() {
 
         <p className="mt-6 text-center text-sm text-gray-500">
           Hesabınız yok mu?{' '}
-          <Link to="/register" className="text-red-600 font-medium hover:underline">
+          <Link
+            to={`/register${params.get('next') ? `?next=${encodeURIComponent(params.get('next')!)}` : ''}`}
+            className="text-red-600 font-medium hover:underline"
+          >
             Kayıt Ol
           </Link>
         </p>

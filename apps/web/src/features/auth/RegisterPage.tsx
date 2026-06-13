@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '@/stores/auth.store';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
+import { safeNext } from './safeNext';
 
 export default function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -11,6 +12,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const login = useAuthStore((s) => s.login);
   const navigate = useNavigate();
+  const [params] = useSearchParams();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -22,7 +24,7 @@ export default function RegisterPage() {
         companyName: companyName || undefined,
       });
       login(data.accessToken, data.refreshToken, data.user);
-      navigate('/dashboard');
+      navigate(safeNext(params.get('next')));
       toast.success('Hesabınız oluşturuldu!');
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Kayıt oluşturulamadı');
@@ -94,7 +96,10 @@ export default function RegisterPage() {
 
         <p className="mt-6 text-center text-sm text-gray-500">
           Zaten hesabınız var mı?{' '}
-          <Link to="/login" className="text-red-600 font-medium hover:underline">
+          <Link
+            to={`/login${params.get('next') ? `?next=${encodeURIComponent(params.get('next')!)}` : ''}`}
+            className="text-red-600 font-medium hover:underline"
+          >
             Giriş Yap
           </Link>
         </p>
