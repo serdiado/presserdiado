@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useCatalogStore, useHistoryStore, useUIStore } from '@/stores/studio';
 import { ThemeToggle } from '../../../components/ThemeToggle';
 import { Undo2, Redo2, Home, Sparkles, Save, Copy, Trash2, RotateCcw, ChevronDown, Cloud, Eye } from 'lucide-react';
@@ -8,6 +9,7 @@ import { StudioOrderButton } from '../../print-order/StudioOrderButton';
 import { ConfirmDialog, ConfirmModal } from '@/components/ui';
 import { ZoomWidget } from './ZoomWidget';
 import { useProjectSave } from '../hooks/useProjectSave';
+import { exportPresetFromState } from '../presets/studioPresets';
 
 function EditableTitle() {
   const projectName = useCatalogStore((s) => s.projectName);
@@ -170,6 +172,20 @@ export function TopBar() {
     setPreviewMode(true);
   };
 
+  const handleExportPreset = async () => {
+    try {
+      const preset = exportPresetFromState();
+      const json = JSON.stringify(preset, null, 2);
+      console.log('[Preset Export]\n' + json);
+      await navigator.clipboard.writeText(json);
+      toast.success('Preset JSON panoya kopyalandı (konsola da yazıldı)');
+      setFileMenuOpen(false);
+    } catch (err) {
+      console.error(err);
+      toast.error('Preset kopyalanamadı — konsoldan alabilirsiniz');
+    }
+  };
+
   return (
     <div className="h-14 bg-surface-panel border-b border-border-default flex items-center justify-between px-4 shrink-0 shadow-drop-sm relative z-1001">
       {/* Sol Grup */}
@@ -263,6 +279,20 @@ export function TopBar() {
                 <RotateCcw size={16} className="text-danger shrink-0" />
                 <span>Tasarımı Sıfırla</span>
               </button>
+
+              {import.meta.env.DEV && (
+                <>
+                  <hr className="border-border-default my-1" />
+
+                  <button
+                    onClick={() => void handleExportPreset()}
+                    className="w-full text-left px-3 py-2.5 hover:bg-surface-subtle rounded-radius-md text-body-md font-medium text-text-secondary hover:text-text-primary transition-all flex items-center gap-2.5 cursor-pointer"
+                  >
+                    <Copy size={16} className="shrink-0" />
+                    <span>Preset Kopyala (dev)</span>
+                  </button>
+                </>
+              )}
             </div>
           )}
         </div>
