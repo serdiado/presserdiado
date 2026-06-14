@@ -999,9 +999,7 @@ function TextMode({
   const getActivePages = useCatalogStore((s) => s.getActivePages);
   const setGlobalSettings = useCatalogStore((s) => s.setGlobalSettings);
   const updateSlotCustomSettings = useCatalogStore((s) => s.updateSlotCustomSettings);
-  const updateGlobalSettings = useCatalogStore((s) => s.updateGlobalSettings);
   const setSidebarState = useUIStore((s) => s.setSidebarState);
-  const selection = useUIStore((s) => s.selection);
   void formas;
 
   const slot = getActivePages()
@@ -1023,26 +1021,116 @@ function TextMode({
 
   const isName = element === 'name';
   const nameSettings = (isCustom && cs?.nameSettings ? cs.nameSettings : globalSettings.nameSettings) as TextElementSettings;
-  const priceSettings = (isCustom && cs?.priceSettings ? cs.priceSettings : globalSettings.priceSettings) as TextElementSettings;
 
-  const elementSettings = isName ? nameSettings : priceSettings;
-
-  const updateElementSettings = (partial: Partial<TextElementSettings>) => {
-    if (isName) {
-      updateSlotCustomSettings({
-        nameSettings: {
-          ...nameSettings,
-          ...partial,
-        },
-      });
+  const updateSettings = (patch: DeepPartial<CatalogSettings>) => {
+    if (isCustom) {
+      updateSlotCustomSettings(patch);
     } else {
-      updateSlotCustomSettings({
-        priceSettings: {
-          ...priceSettings,
-          ...partial,
-        },
-      });
+      setGlobalSettings(patch);
     }
+  };
+
+  const updateNameSettings = (partial: Partial<TextElementSettings>) => {
+    updateSettings({
+      nameSettings: {
+        ...nameSettings,
+        ...partial,
+      },
+    });
+  };
+
+  const nameBgValue = {
+    type: 'solid' as const,
+    color: nameSettings.bgColor || '#ffffff',
+    opacity: nameSettings.bgOpacity ?? 100,
+  };
+  const nameBorderValue = {
+    c: nameSettings.borderColor || '#cbd5e1',
+    o: nameSettings.borderOpacity ?? 100,
+  };
+  const nameRadiusValue: BorderRadiusData = {
+    tl: nameSettings.borderRadius ?? 0,
+    tr: nameSettings.borderRadius ?? 0,
+    bl: nameSettings.borderRadius ?? 0,
+    br: nameSettings.borderRadius ?? 0,
+    linked: true,
+  };
+
+  const bgValue: ColorValue = isName ? nameBgValue : settings.colors.priceBg;
+  const borderValue = isName ? nameBorderValue : settings.colors.priceBorder;
+  const borderWidth = isName ? (nameSettings.borderWidth ?? 0) : settings.priceBorderWidth;
+  const radiusValue = isName ? nameRadiusValue : settings.radiuses.price;
+
+  const bgTriggerStyle: React.CSSProperties = isName
+    ? {
+        backgroundColor: nameBgValue.color,
+        border: '1px solid rgba(0,0,0,0.15)',
+        borderRadius: '4px',
+        opacity: nameBgValue.opacity / 100,
+      }
+    : {
+        ...colorValueBackground(settings.colors.priceBg),
+        border: '1px solid rgba(0,0,0,0.15)',
+        borderRadius: '4px',
+      };
+
+  const updateBackground = (value: ColorValue) => {
+    if (isName) {
+      if (value.type !== 'solid') return;
+      updateNameSettings({
+        bgColor: value.color,
+        bgOpacity: value.opacity,
+      });
+      return;
+    }
+
+    updateSettings({
+      colors: {
+        ...settings.colors,
+        priceBg: value,
+      },
+    });
+  };
+
+  const updateBorderColor = (value: ColorValue) => {
+    if (value.type !== 'solid') return;
+    if (isName) {
+      updateNameSettings({
+        borderColor: value.color,
+        borderOpacity: value.opacity,
+      });
+      return;
+    }
+
+    updateSettings({
+      colors: {
+        ...settings.colors,
+        priceBorder: { c: value.color, o: value.opacity },
+      },
+    });
+  };
+
+  const updateBorderWidth = (value: number) => {
+    if (isName) {
+      updateNameSettings({ borderWidth: value });
+      return;
+    }
+
+    updateSettings({ priceBorderWidth: value });
+  };
+
+  const updateRadius = (value: BorderRadiusData) => {
+    if (isName) {
+      updateNameSettings({ borderRadius: value.tl });
+      return;
+    }
+
+    updateSettings({
+      radiuses: {
+        ...settings.radiuses,
+        price: value,
+      },
+    });
   };
 
   const fontKey = element === 'price' ? 'price' : 'productName';
@@ -1050,11 +1138,7 @@ function TextMode({
 
   const updateFont = (next: TypographyData) => {
     const patch = { fonts: { ...settings.fonts, [fontKey]: next } } as DeepPartial<CatalogSettings>;
-    if (slot.isCustom) {
-      updateSlotCustomSettings(patch);
-    } else {
-      setGlobalSettings(patch);
-    }
+    updateSettings(patch);
   };
 
   const btnCls = 'h-9 px-3 inline-flex items-center gap-1.5 rounded-md text-xs font-medium whitespace-nowrap hover:bg-border-default transition-colors';
@@ -1125,37 +1209,25 @@ function TextMode({
       <Divider />
 
       {/* Zemin */}
-      <div className={!isCustom ? 'pointer-events-none opacity-40' : ''}>
+      <div>
         <ColorOpacityPicker
-          solidOnly
+          solidOnly={isName}
           trigger={
             <>
               <div
                 className="w-3.5 h-3.5 rounded-sm shrink-0"
-                style={{
-                  backgroundColor: elementSettings.bgColor || '#ffffff',
-                  border: '1px solid rgba(0,0,0,0.15)',
-                  borderRadius: '4px',
-                  opacity: (elementSettings.bgOpacity ?? 100) / 100,
-                }}
+                style={bgTriggerStyle}
               />
               <span>Zemin</span>
             </>
           }
-          value={{ type: 'solid', color: elementSettings.bgColor || '#ffffff', opacity: elementSettings.bgOpacity ?? 100 }}
-          onChange={(v) => {
-            if (v.type === 'solid') {
-              updateElementSettings({
-                bgColor: v.color,
-                bgOpacity: v.opacity,
-              });
-            }
-          }}
+          value={bgValue}
+          onChange={updateBackground}
         />
       </div>
 
       {/* Çerçeve */}
-      <div className={!isCustom ? 'pointer-events-none opacity-40' : ''}>
+      <div>
         <ColorOpacityPicker
           solidOnly
           type="border"
@@ -1165,47 +1237,26 @@ function TextMode({
                 className="w-3.5 h-3.5 rounded-sm shrink-0"
                 style={{
                   backgroundColor: 'transparent',
-                  border: `2px solid ${elementSettings.borderColor || '#cbd5e1'}`,
+                  border: `2px solid ${colorOpacityToCss(borderValue)}`,
                   borderRadius: '4px',
-                  opacity: (elementSettings.borderOpacity ?? 100) / 100,
                 }}
               />
               <span>Çerçeve</span>
             </>
           }
-          value={{ type: 'solid', color: elementSettings.borderColor || '#cbd5e1', opacity: elementSettings.borderOpacity ?? 100 }}
-          thickness={elementSettings.borderWidth ?? 0}
-          onChange={(v) => {
-            if (v.type !== 'solid') return;
-            updateElementSettings({
-              borderColor: v.color,
-              borderOpacity: v.opacity,
-            });
-          }}
-          onThicknessChange={(v) => {
-            updateElementSettings({
-              borderWidth: v,
-            });
-          }}
+          value={{ type: 'solid', color: borderValue.c, opacity: borderValue.o }}
+          thickness={borderWidth}
+          onChange={updateBorderColor}
+          onThicknessChange={updateBorderWidth}
         />
       </div>
 
       {/* Köşe */}
-      <div className={!isCustom ? 'pointer-events-none opacity-40' : ''}>
+      <div>
         <Popover trigger={<><CornerRadiusIcon size={16} />Köşe</>} width="w-72">
           <BorderRadiusPicker
-            value={{
-              tl: elementSettings.borderRadius ?? 0,
-              tr: elementSettings.borderRadius ?? 0,
-              bl: elementSettings.borderRadius ?? 0,
-              br: elementSettings.borderRadius ?? 0,
-              linked: true
-            }}
-            onChange={(val) => {
-              updateElementSettings({
-                borderRadius: val.tl,
-              });
-            }}
+            value={radiusValue}
+            onChange={updateRadius}
           />
         </Popover>
       </div>
@@ -1215,7 +1266,6 @@ function TextMode({
       {/* 11 — Ayarlar */}
       <button
         onClick={() => {
-          const isName = selection.textElementType === 'name';
           const section = slot.isCustom
             ? (isName ? 'custom-product-info' : 'custom-price')
             : (isName ? 'general-product-info' : 'general-price');
