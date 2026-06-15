@@ -427,6 +427,12 @@ web-only `BannerModuleData|PizzaModuleData`'ya bağlandığı için; shared'a ko
   null+toast. Buton `TopBar.tsx` "Dosya" menüsünde "Preset Kopyala (dev)" deseniyle
   (DEV gate, JSON→clipboard+console, toast). typecheck + lint temiz. Canlı: Test A
   round-trip, Test B içerik-doğruluğu (alan-alan), Test C Marka Bandı yol doğrulaması.
+  **Round-trip bug bulundu + düzeltildi:** export'lanan banner cell'leri 4 alanı
+  (`imageMode/imagePosX/imagePosY/imageScale`) taşımıyordu çünkü `bannerInit` onları
+  hiç üretmiyor; `BannerCellData` ise zorunlu istiyordu → tipli yapıştırmada ts2739.
+  Kök: tip aşırı-katı (BannerSection zaten `?? 0/100`, `=== 'free'/'cover'` ile
+  opsiyonel okuyor). Fix: 4 alan `types.ts`'te opsiyonel (`?`). Export değil tip
+  yanlıştı; `bannerInit`/render/strip'e dokunulmadı.
 - **Aşama 6** — Export aracıyla ~3 banner + ~3 özel + ~3 ürün-sunuş üret + regresyon.
 
 ### Bilinen sınır / ertelenmiş iş — eski modül-drop yolu temizliği

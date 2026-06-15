@@ -25,10 +25,13 @@ export interface BannerCellData {
   bgColor: ColorValue;
   border: BorderData;
   image: string | null;
-  imageMode: 'contain' | 'cover' | 'free';
-  imagePosX: number;
-  imagePosY: number;
-  imageScale: number;
+  // Opsiyonel: set edilmişse korunur (tasarım kararı), edilmemişse BannerSection
+  // render'da default'a düşer ('contain', pos 0/0, scale 100) — bannerInit bunları
+  // üretmiyor, BannerSection zaten savunmalı okuyor (?? 0/100, === 'free'/'cover').
+  imageMode?: 'contain' | 'cover' | 'free';
+  imagePosX?: number;
+  imagePosY?: number;
+  imageScale?: number;
 }
 
 export interface BannerModuleData {
