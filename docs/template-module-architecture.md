@@ -425,22 +425,46 @@ web-only `BannerModuleData|PizzaModuleData`'ya bağlandığı için; shared'a ko
   (`stripTransientSettings` ne fazla ne eksik kırpsın).
 - **Aşama 6** — Export aracıyla ~3 banner + ~3 özel + ~3 ürün-sunuş üret + regresyon.
 
-### Bilinen sınır / ertelenmiş iş — undo coalesce (force'suz ayrık işlemler)
+### Bilinen sınır / ertelenmiş iş — eski modül-drop yolu temizliği
 
-Aşama 4 canlı testinde çıktı. **Şimdi çözülmüyor; bilinçli ertelendi** (sunum sonrası).
+Aşama 4 canlı testinde çıktı. **Şimdi çözülmüyor; bilinçli ertelendi** (sunum sonrası,
+KOD DEĞİŞİKLİĞİ YOK). İki bug da **ESKİ modül-drop yollarında** — bizim Aşama 1-4
+`applyStudioModule` yolu (studioModuleId → "Hazır Tasarımlar") TEMİZ, etkilenmez.
+Onlara Aşama 1-4'te dokunulmadı.
 
-- **Belirti:** Ayrık (discrete) drop/tip işlemleri 800ms içinde art arda yapılınca
-  undo'da birleşiyor — tek Ctrl+Z ikisini birden geri alıyor. Canlı görülen:
-  "Marka Bandı" (banner kütüphane drop) ve "Tablo Alanı" (`newModuleType` boş tip
-  drop) başka bir işlemle hızlı birleşince. Muhtemel diğerleri: `setSlotProduct`,
-  `clearSlot`, `swapSlotContents`, `mergeSelected` — hepsi force'suz `saveState`.
-- **Kök sebep:** `history.store.ts` 800ms cooldown. Aşama 4'te **yalnız
-  `applyStudioModule` force'landı** (`saveState(true)`); diğer ayrık işlemler
-  force'suz kaldı → birbirleriyle (ve forced olmayan komşularıyla) coalesce ediyor.
-- **Çözüm yönü (gelecek iş):** Ayrık işlemleri sistematik force'lamak — geniş (b)
-  audit: ~10+ `saveState` çağrı yerini denetle, **ayrık** olanları `saveState(true)`
-  yap, **sürekli** slider/picker aksiyonlarını force'suz bırak (coalesce orada
-  DOĞRU davranış). Tek tip işlem için tek-undo invariant'ı korunmalı.
+**Hangi yol "eski":** `newModuleType` drop — "Boş Modüller" panelindeki "Tablo Alanı"
+kartı ([Slot.tsx](../apps/web/src/features/studio/canvas/Slot.tsx) `handleDrop`,
+`toggleSlotRole('free')` + `setSlotModule`). Bizim yol (`studioModuleId` →
+`applyStudioModule`) bu daldan ÖNCE, `saveState(true)` + hedef = drop `slot.id`.
+
+**Bulgu 1 — undo birleşmesi (yalnız cooldown DEĞİL).**
+- *Belirti:* `newModuleType` drop'u 800ms'den FAZLA bekledikten sonra da bir önceki
+  işlemle tek Ctrl+Z'ye yapışabiliyor → salt cooldown teşhisi bu yol için EKSİK.
+- *Kök sebep (kod incelemesi):* `newModuleType` dalı `saveState`'i tutarsız yazıyor.
+  `toggleSlotRole` yalnız `selectedSlotIds` doluysa `saveState` çağırır
+  (catalog.store.ts:1145-1146); `setSlotModule` `saveState`'i **rol-check'inden ÖNCE**
+  çağırır ama drop hedefi `free` değilse erken döner (:1185) → ya boş/yanlış snapshot
+  ya hiç snapshot. Cooldown bunun üstüne binince ayrı adım yazılmıyor.
+- *Not (doğrulanacak):* Canlı testte "Marka Bandı" da listelendi; ama o
+  `applyStudioModule` (saveState(true)) yolundan gider — beklenen: ETKİLENMEZ. Marka
+  Bandı gerçekten birleşiyorsa AYRI bir sorun, ayrıca incelenmeli.
+
+**Bulgu 2 — drop hedefi yanlış slot.**
+- *Belirti:* Bir slot SEÇİLİYKEN "Tablo Alanı"nı BAŞKA slota bırakınca modül bırakılan
+  yere değil yanlış yere gidiyor.
+- *Kök sebep (kod incelemesi):* `toggleSlotRole` hedefi `useUIStore.selectedSlotIds`'ten
+  alır (catalog.store.ts:1144,1149), drop'un `slot.id`'sinden DEĞİL → SEÇİLİ slot free'ye
+  çevrilir. `setSlotModule(…, slot.id, …)` doğru hedefe gider ama o slot hâlâ `product`
+  olduğundan erken döner (:1185) → modül hiç yerleşmez; görünür etki seçili slotta olur.
+- *Beklenen:* Modül hangi slota bırakıldıysa O slota (drop `slot.id`). Bizim
+  `applyStudioModule` zaten böyle (drop `slot.id`).
+
+**Çözüm yönü (gelecek iş — "eski modül-drop yolu temizliği"):**
+- Bulgu 1: ayrık işlemleri sistematik force'lamak (geniş (b) audit: ~10+ `saveState`
+  çağrı yerini denetle, ayrıkları `saveState(true)`, sürekli slider/picker'ları
+  force'suz bırak) + `setSlotModule`'ün saveState'ini rol-check'ten SONRAya almak.
+- Bulgu 2: `newModuleType` drop yolunu hedefi `slot.id`'den alacak şekilde düzeltmek
+  (seçimden bağımsız), `applyStudioModule` desenine hizalamak.
 - **Risk/öncelik:** DÜŞÜK — sunum sonrası. Normal-hız kullanımda nadir; **veri kaybı
-  yok** (yalnız undo granülaritesi). Aşama 4'ün dar fix'i (forced apply + force dalı
-  saat-kirletmezliği) bug'ı module-library akışında çözdü; bu, kalan genel sınır.
+  yok**. (Bulgu 2 sunumda kafa karıştırıcı olabilir ama yalnız eski "Boş Modüller"
+  yolunda; "Hazır Tasarımlar" şovu temiz.)
