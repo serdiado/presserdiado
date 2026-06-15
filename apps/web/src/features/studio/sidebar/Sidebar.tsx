@@ -5,7 +5,9 @@ import { GlobalGridSettings } from '../panels/GlobalGridSettings';
 import { CellPanel } from '../panels/CellPanel';
 import { BackgroundSettings } from '../panels/BackgroundSettings';
 import { ProductManagement } from '../panels/ProductManagement';
-import { LayoutTemplate, Grid3X3, Layers, ChevronDown, Bookmark, Table2, Frame, PanelBottom, Square } from 'lucide-react';
+import { LayoutTemplate, Grid3X3, Layers, ChevronDown, Bookmark, Table2, Frame, PanelBottom, Square, Sparkles } from 'lucide-react';
+import { listStudioModules } from '../modules';
+import type { StudioModule } from '../modules';
 
 type NewPanel = 'products' | 'design' | 'grid' | 'modules' | 'cell' | 'price' | 'template';
 
@@ -306,13 +308,35 @@ function ModuleCard({
   );
 }
 
+/** Kütüphane örneği kartı (TİP değil ÖRNEK): sürüklenince studioModuleId taşır. */
+function LibraryModuleCard({ module }: { module: StudioModule }) {
+  const icon = module.slotRole === 'free' ? <Table2 size={16} /> : <Square size={16} />;
+  return (
+    <div
+      draggable
+      onDragStart={(e) => e.dataTransfer.setData('studioModuleId', module.id)}
+      className="flex flex-col gap-2 p-3 border border-border-default rounded-radius-md bg-surface-subtle hover:bg-surface-app hover:border-border-strong transition-colors select-none cursor-grab active:cursor-grabbing"
+    >
+      <div className="flex items-center gap-2 text-text-primary">
+        {icon}
+        <span className="text-label-md">{module.name}</span>
+      </div>
+      {module.description && (
+        <p className="text-[10px] text-text-muted leading-relaxed">{module.description}</p>
+      )}
+    </div>
+  );
+}
+
 function ModulesPanel() {
   const [readyOpen, setReadyOpen] = useState(true);
+  const [designsOpen, setDesignsOpen] = useState(true);
   const [mineOpen, setMineOpen] = useState(false);
+  const studioModules = listStudioModules();
 
   return (
     <div className="flex flex-col w-full gap-2">
-      {/* Hazır modüller */}
+      {/* Boş modüller (tipler) — newModuleType ile boş zemin sürükleme. Davranış DEĞİŞMEZ. */}
       <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel shadow-drop-sm">
         <button
           onClick={() => setReadyOpen((v) => !v)}
@@ -320,7 +344,7 @@ function ModulesPanel() {
         >
           <div className={`flex items-center gap-2 transition-colors ${readyOpen ? 'text-text-primary' : 'text-text-secondary'}`}>
             <Layers size={18} />
-            <span className="text-heading-md text-text-primary">Hazır Modüller</span>
+            <span className="text-heading-md text-text-primary">Boş Modüller</span>
           </div>
           <ChevronDown
             size={16}
@@ -355,6 +379,36 @@ function ModulesPanel() {
               moduleType="footer-area"
               draggable={false}
             />
+          </div>
+        </div>
+      </div>
+
+      {/* Hazır tasarımlar (kütüphane örnekleri) — studioModuleId ile dolu modül sürükleme. */}
+      <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel shadow-drop-sm">
+        <button
+          onClick={() => setDesignsOpen((v) => !v)}
+          className="flex items-center justify-between px-3 py-2.5 bg-surface-subtle hover:bg-surface-subtle transition-colors"
+        >
+          <div className={`flex items-center gap-2 transition-colors ${designsOpen ? 'text-text-primary' : 'text-text-secondary'}`}>
+            <Sparkles size={18} />
+            <span className="text-heading-md text-text-primary">Hazır Tasarımlar</span>
+          </div>
+          <ChevronDown
+            size={16}
+            className={`transition-all duration-300 ${designsOpen ? 'rotate-180 text-text-primary' : 'text-text-secondary'}`}
+          />
+        </button>
+        <div
+          className={`transition-all duration-300 ease-in-out overflow-hidden ${
+            designsOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+          }`}
+        >
+          <div className="px-3 py-3.5 border-t border-border-default bg-surface-panel flex flex-col gap-2">
+            {studioModules.length === 0 ? (
+              <p className="text-[10px] text-text-muted">Henüz hazır tasarım yok.</p>
+            ) : (
+              studioModules.map((m) => <LibraryModuleCard key={m.id} module={m} />)
+            )}
           </div>
         </div>
       </div>

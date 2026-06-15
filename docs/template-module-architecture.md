@@ -403,8 +403,13 @@ web-only `BannerModuleData|PizzaModuleData`'ya bağlandığı için; shared'a ko
   dosyadan import (barrel değil — modules/index→BannerSection→store döngüsünü kırar).
   typecheck temiz, eklenen kod lint temiz. **Canlı tek-undo testi:** kullanıcıyla
   ekranda doğrulanacak (konsoldan id ver → dolu insin → Ctrl+Z TEK adım).
-- **Aşama 3** — "Hazır Tasarımlar" UI bölümü (`listStudioModules` ile); banner
-  örneği sürükle → free slota dolu klonlanır. "Boş Modüller" kartları korunur.
+- **Aşama 3 ✅ kod** — `Sidebar.tsx` `ModulesPanel`: "Hazır Modüller" → "Boş
+  Modüller" relabel (ModuleCard/newModuleType davranışı değişmedi); YENİ "Hazır
+  Tasarımlar" bölümü `listStudioModules()` ile beslenir, `LibraryModuleCard`
+  → `setData('studioModuleId', m.id)`. `studioModules.ts`'e 1 banner tohum
+  (`module-banner-marka`, FreeStudioModule, 1×2 dolu). "Modüllerim"/`free-design`/
+  `footer-area` hayaletlerine dokunulmadı. typecheck + lint temiz. **Canlı test:**
+  banner kartı sürükle → dolu banner; "Boş Modüller" hâlâ boş ekliyor; tek Ctrl+Z.
 - **Aşama 4** — Ürün-sunuş kolu (minimal placeholder ile doğrula). **Kritik test:**
   ürün resmi/ad/fiyat bağı KOPMUYOR. Gerçek içerik Aşama 5 export'undan sonra.
 - **Aşama 5** — Dev "Modül Kopyala" (`exportModuleFromState`, ProjectMenu).
