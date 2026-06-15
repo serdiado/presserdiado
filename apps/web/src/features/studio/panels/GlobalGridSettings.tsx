@@ -34,10 +34,8 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 export function GlobalGridSettings() {
   const globalSettings = useCatalogStore((s) => s.globalSettings);
   const updateGridSettings = useCatalogStore((s) => s.updateGridSettings);
-  const applyGridChanges = useCatalogStore((s) => s.applyGridChanges);
   const formas = useCatalogStore((s) => s.formas);
   const activeFormaId = useCatalogStore((s) => s.activeFormaId);
-  const applyPageGridChange = useCatalogStore((s) => s.applyPageGridChange);
   const revertToGlobalGrid = useCatalogStore((s) => s.revertToGlobalGrid);
 
   const [selectedPage, setSelectedPage] = useState<number | null>(null);
@@ -56,17 +54,6 @@ export function GlobalGridSettings() {
 
   const customPageCount =
     activeForma?.pages.filter((p) => !!p.gridSettings).length ?? 0;
-
-  const handleApplyGlobal = () => {
-    if (
-      window.confirm(
-        'DİKKAT: Tüm sayfalardaki birleştirmeler/serbest alanlar sıfırlanacak ve ürünler yeniden dizilecek. Onaylıyor musunuz?',
-      )
-    ) {
-      applyGridChanges();
-      setSelectedPage(null);
-    }
-  };
 
   return (
     <div className="space-y-3">
@@ -123,14 +110,8 @@ export function GlobalGridSettings() {
               />
             </div>
           </div>
-          <button
-            onClick={handleApplyGlobal}
-            className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-sm font-medium rounded-lg transition-colors"
-          >
-            Genel Izgarayı Uygula
-          </button>
           <p className="text-[11px] font-normal text-text-muted leading-relaxed">
-            Özel ayarı olmayan sayfalara uygulanır.
+            Değişiklik anında uygulanır; özel ızgarası olmayan sayfaları etkiler.
           </p>
         </div>
       </div>
@@ -226,12 +207,6 @@ export function GlobalGridSettings() {
                   />
                 </div>
               </div>
-              <button
-                onClick={() => applyPageGridChange(selectedPage)}
-                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                Sayfaya Uygula
-              </button>
               <button
                 onClick={() => {
                   revertToGlobalGrid(selectedPage);

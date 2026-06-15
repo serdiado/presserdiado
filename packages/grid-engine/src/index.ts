@@ -7,6 +7,7 @@ import {
 } from '@matbaapro/shared';
 
 export * from './layout.js';
+export * from './reconcile.js';
 
 export interface GridConfig {
   cols: number;

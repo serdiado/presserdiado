@@ -19,7 +19,7 @@ import type {
   FooterSettings,
 } from '@matbaapro/shared';
 import { availableTemplates, Template1, STUDIO_STORE_NAME, STUDIO_STORE_VERSION } from '@matbaapro/shared';
-import { recalculateLayout } from '@matbaapro/grid-engine';
+import { applyUnmerge, recalculateLayout, reconcileGrid } from '@matbaapro/grid-engine';
 import {
   buildFormasForTemplate,
   clone,
@@ -252,8 +252,6 @@ interface CatalogActions {
 
   // Grid management
   updateGridSettings: (scope: GridScope, settings: { rows: number; cols: number; gap?: number }) => void;
-  applyGridChanges: () => void;
-  applyPageGridChange: (pageNumber: number) => void;
   revertToGlobalGrid: (pageNumber: number) => void;
 
   // Temp pool
@@ -879,14 +877,9 @@ export const useCatalogStore = create<Store>()(
         const pageIdx = pages.findIndex((p) => p.pageNumber === pageNumber);
         if (pageIdx < 0) return;
         const page = pages[pageIdx];
+        // Anchor-içerik kuralı TEK-KAYNAK: reconcileGrid ile aynı helper.
         const newSlots = [...page.slots];
-        const survivorIdx = newSlots.findIndex((s) => s.id === slotId);
-        newSlots[survivorIdx] = { ...newSlots[survivorIdx], colSpan: 1, rowSpan: 1 };
-        newSlots.forEach((s, i) => {
-          if (s.mergedInto === slotId) {
-            newSlots[i] = { ...s, hidden: false, mergedInto: null, product: null };
-          }
-        });
+        applyUnmerge(newSlots, slotId);
         const newPages = [...pages];
         newPages[pageIdx] = { ...page, slots: newSlots };
         const newFormas = formas.map((f) =>
@@ -1227,72 +1220,34 @@ export const useCatalogStore = create<Store>()(
       updateGridSettings: (scope, settings) => {
         const rows = Math.max(1, Math.min(10, settings.rows));
         const cols = Math.max(1, Math.min(10, settings.cols));
-        const gap = settings.gap !== undefined ? Math.max(0, Math.min(20, settings.gap)) : undefined;
-        const next = {
-          rows,
-          cols,
-          ...(gap !== undefined && { gap }),
-        };
-        const target = rows * cols;
+        // Gap artık grid ayarına KOPYALANMIYOR — tek kanonik gridGap (globalSettings.gridGap).
+        // Özel sayfa da gridGap'i kullanır; page.gridSettings yalnız {rows, cols} taşır.
+        // (Eski bug: gap defaultGrid'den page.gridSettings'e kopyalanınca özel sayfa
+        // global slider'ı dinlemiyordu — kopukluk burada çözülür.)
+        const next = { rows, cols };
 
-        const occupiedArea = (page: CatalogPage) =>
-          page.slots
-            .filter((s) => !s.hidden)
-            .reduce((sum, s) => sum + s.colSpan * s.rowSpan, 0);
-
-        // Eksikse bos 1x1 slot append et; fazlaysa yalniz arkadaki tamamen bos
-        // 1x1 slot'lari traş et (icerikli/birlestirilmiş olanlara dokunma).
-        const reconcilePage = (page: CatalogPage) => {
-          // Grow
-          let occupied = occupiedArea(page);
-          if (occupied < target) {
-            const missing = target - occupied;
-            const startIdx = page.slots.length + 1;
-            for (let i = 0; i < missing; i++) {
-              page.slots.push({
-                id: `page-${page.pageNumber}-slot-${startIdx + i}`,
-                colSpan: 1,
-                rowSpan: 1,
-                product: null,
-                hidden: false,
-                mergedInto: null,
-                isCustom: false,
-                role: 'product',
-              });
-            }
-            return;
-          }
-          // Shrink — sadece tamamen bos trailing slot'lari at
-          while (occupiedArea(page) > target && page.slots.length > 0) {
-            const last = page.slots[page.slots.length - 1];
-            const isExpendable =
-              !last.hidden &&
-              !last.mergedInto &&
-              !last.product &&
-              !last.moduleData &&
-              !last.isCustom &&
-              (last.role ?? 'product') === 'product' &&
-              last.colSpan === 1 &&
-              last.rowSpan === 1;
-            if (!isExpendable) break;
-            page.slots.pop();
-            occupied = occupiedArea(page);
-          }
-        };
-
+        // Tek atomik grid-değiştirme yolu: merkezi reconcileGrid çekirdeği. Sığmayan
+        // ürünler tek-kaynak overflow kuralıyla bekleme havuzuna, modül/birleşik
+        // slotlar unmerge ile çözülür (içerik kaybolmaz). Anlık + tek undo adımı.
+        useHistoryStore.getState().saveState();
         const formas = clone(get().formas);
+        const overflow: ProductInfo[] = [];
 
         if (scope === 'global') {
-          // Global default grid degisti — explicit gridSettings'i olmayan
-          // tum sayfalari hedefe gore tamamla.
+          // Global default grid degisti — explicit gridSettings'i olmayan tum
+          // sayfalari hedefe uyumla.
           for (const f of formas) {
             for (const p of f.pages) {
-              if (!p.gridSettings) reconcilePage(p);
+              if (p.gridSettings) continue;
+              const res = reconcileGrid(p.slots, { rows, cols }, p.pageNumber);
+              p.slots = res.slots;
+              overflow.push(...res.overflowProducts);
             }
           }
           set((state) => ({
             globalSettings: { ...state.globalSettings, defaultGrid: next },
             formas: recalculateLayout(formas, next),
+            tempProductPool: appendOverflowToTempPool(state.tempProductPool, overflow),
           }));
           return;
         }
@@ -1300,55 +1255,34 @@ export const useCatalogStore = create<Store>()(
         const page = formas.flatMap((f) => f.pages).find((p) => p.pageNumber === scope);
         if (!page) return;
         page.gridSettings = next;
-        reconcilePage(page);
+        const res = reconcileGrid(page.slots, { rows, cols }, page.pageNumber);
+        page.slots = res.slots;
+        overflow.push(...res.overflowProducts);
         const defaultGrid = get().globalSettings.defaultGrid ?? { rows: 4, cols: 4 };
-        set({ formas: recalculateLayout(formas, defaultGrid) });
+        set((state) => ({
+          formas: recalculateLayout(formas, defaultGrid),
+          tempProductPool: appendOverflowToTempPool(state.tempProductPool, overflow),
+        }));
       },
-      applyGridChanges: () => {
-        const { formas, globalSettings } = get();
-        useHistoryStore.getState().saveState();
-        const next = clone(formas);
-        for (const f of next) {
-          for (const p of f.pages) {
-            const grid = p.gridSettings ?? globalSettings.defaultGrid ?? { rows: 4, cols: 4 };
-            const newCount = grid.rows * grid.cols;
-            const saved = p.slots.filter((s) => s.product || s.role === 'free' || s.isCustom);
-            const fresh = createPageSlots(p.pageNumber, newCount);
-            for (let i = 0; i < fresh.length && i < saved.length; i++) {
-              fresh[i].product = saved[i].product;
-              fresh[i].role = saved[i].role;
-              fresh[i].moduleData = saved[i].moduleData;
-              fresh[i].moduleType = saved[i].moduleType;
-              fresh[i].isCustom = saved[i].isCustom;
-              fresh[i].customSettings = saved[i].customSettings;
-              fresh[i].imageSettings = saved[i].imageSettings;
-            }
-            p.slots = fresh;
-          }
-        }
-        set({ formas: recalculateLayout(next, globalSettings.defaultGrid) });
-      },
-      applyPageGridChange: (pageNumber) => {
-        const { formas, globalSettings } = get();
-        useHistoryStore.getState().saveState();
-        const next = clone(formas);
-        for (const f of next) {
-          const page = f.pages.find((p) => p.pageNumber === pageNumber);
-          if (!page) continue;
-          const grid = page.gridSettings ?? globalSettings.defaultGrid ?? { rows: 4, cols: 4 };
-          page.slots = createPageSlots(page.pageNumber, grid.rows * grid.cols);
-        }
-        set({ formas: recalculateLayout(next, globalSettings.defaultGrid) });
-      },
+      // Özel sayfayı genel ızgaraya döndür: gridSettings'i kaldır + global gride
+      // reconcile et (yıkıcı reset/setTimeout hack'i YOK — tek atomik çekirdek).
       revertToGlobalGrid: (pageNumber) => {
-        const { formas } = get();
         useHistoryStore.getState().saveState();
-        const next = clone(formas);
-        const page = next.flatMap((f) => f.pages).find((p) => p.pageNumber === pageNumber);
+        const formas = clone(get().formas);
+        const page = formas.flatMap((f) => f.pages).find((p) => p.pageNumber === pageNumber);
         if (!page) return;
+        const globalGrid = get().globalSettings.defaultGrid ?? { rows: 4, cols: 4 };
         page.gridSettings = undefined;
-        set({ formas: next });
-        setTimeout(() => get().applyPageGridChange(pageNumber), 50);
+        const res = reconcileGrid(
+          page.slots,
+          { rows: globalGrid.rows, cols: globalGrid.cols },
+          page.pageNumber,
+        );
+        page.slots = res.slots;
+        set((state) => ({
+          formas: recalculateLayout(formas, globalGrid),
+          tempProductPool: appendOverflowToTempPool(state.tempProductPool, res.overflowProducts),
+        }));
       },
 
       // === Temp pool ===

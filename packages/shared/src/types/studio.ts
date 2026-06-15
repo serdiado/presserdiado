@@ -92,8 +92,8 @@ export interface BadgeConfig {
 // === Catalog (page-level) settings ===
 
 export interface CatalogSettings {
-  defaultGrid: { rows: number; cols: number; gap?: number };
-  gridGap: number; // mm
+  defaultGrid: { rows: number; cols: number };
+  gridGap: number; // mm — tek kanonik hücre boşluğu (genel + özel sayfa ortak)
   borderWidth: number;
   priceBorderWidth: number;
   pricePosition: 'left' | 'center' | 'right';
@@ -223,6 +223,8 @@ export interface CatalogPage {
   headerData?: PageHeaderData;
   footerMode: PageFooterMode;
   customFooter: FooterSettings | null;
+  // gap? = REZERVE: şu an yazılmaz/okunmaz (tek kanonik gridGap kullanılır); ileride
+  // sayfa-özel gap UI'ı için mimari kapı açık kalsın diye tipte tutuluyor.
   gridSettings?: { rows: number; cols: number; gap?: number };
   background?: {
     type: 'color' | 'image';

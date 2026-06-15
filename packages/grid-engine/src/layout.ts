@@ -34,9 +34,15 @@ export function recalculateLayout(
   for (const forma of next) {
     for (const page of forma.pages) {
       const totalCols = page.gridSettings?.cols ?? defaultGrid.cols;
+      const totalRows = page.gridSettings?.rows ?? defaultGrid.rows;
       const occupied: boolean[][] = [];
       let cursorRow = 0;
       let cursorCol = 0;
+
+      // Üst sınır guard'ı: hiçbir girdi sonsuz döngüye sokamaz. Görünür alan
+      // tek sütuna dizilse bile bu kadar satır her zaman yeter; bol tampon bırak.
+      const visibleCount = page.slots.filter((s) => !s.hidden).length;
+      const maxRows = Math.max(totalRows, visibleCount) + totalCols + 1;
 
       for (const slot of page.slots) {
         if (slot.hidden) {
@@ -45,11 +51,18 @@ export function recalculateLayout(
           continue;
         }
 
+        // Savunma-clamp (teknik güvenlik, kullanıcı politikasından bağımsız, hep
+        // açık): yerleşim span'i grid'i ASLA aşamaz → canFit başarısız kalamaz →
+        // sonsuz döngü matematiksel olarak imkânsız. Geometri politikası (unmerge/
+        // overflow) reconcileGrid'in işi; burada yalnız yerleşim güvenliği.
+        const colSpan = Math.min(Math.max(1, slot.colSpan), totalCols);
+        const rowSpan = Math.max(1, slot.rowSpan);
+
         let placed = false;
         let placedRow = cursorRow;
         let placedCol = cursorCol;
 
-        while (!placed) {
+        while (!placed && cursorRow < maxRows) {
           if (!occupied[cursorRow]) occupied[cursorRow] = [];
 
           if (!occupied[cursorRow][cursorCol]) {
@@ -57,18 +70,12 @@ export function recalculateLayout(
               occupied,
               cursorRow,
               cursorCol,
-              slot.colSpan,
-              slot.rowSpan,
+              colSpan,
+              rowSpan,
               totalCols,
             );
             if (fits) {
-              markOccupied(
-                occupied,
-                cursorRow,
-                cursorCol,
-                slot.colSpan,
-                slot.rowSpan,
-              );
+              markOccupied(occupied, cursorRow, cursorCol, colSpan, rowSpan);
               placedRow = cursorRow;
               placedCol = cursorCol;
               placed = true;
@@ -84,6 +91,8 @@ export function recalculateLayout(
           }
         }
 
+        // Guard tetiklenirse (clamp sayesinde normalde olmaz) son denenen konuma
+        // düşülür — sessiz takılma yerine güvenli geri-dönüş.
         slot.gridPosition = {
           colStart: placedCol + 1,
           rowStart: placedRow + 1,
