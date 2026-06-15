@@ -420,9 +420,13 @@ web-only `BannerModuleData|PizzaModuleData`'ya bağlandığı için; shared'a ko
   `saveState(true)`. 4 senaryo geçti: tek apply=1 undo, clear+apply=2 undo, kaydırma
   ötelenmiyor, slider coalesce korundu. Latent force'suz↔force'suz coalesce (hızlı
   ürün+ürün) bilinçli KAPSAM DIŞI (ayrı iş). Gerçek ürün-sunuş içeriği Aşama 5/6.
-- **Aşama 5** — Dev "Modül Kopyala" (`exportModuleFromState`, ProjectMenu).
-  **Asıl test:** round-trip — export JSON'ı geri yapıştır + sürükle → birebir aynı
-  (`stripTransientSettings` ne fazla ne eksik kırpsın).
+- **Aşama 5 ✅ kod** — Dev "Modül Kopyala": `exportModuleFromState()` AYRI dosyada
+  (`modules/exportStudioModule.ts` — studioModules.ts store'a import edilemez, döngü;
+  bu leaf dosya yalnız TopBar'dan çağrılır). Seçili slot rolüne göre `FreeStudioModule`
+  (moduleData) / `ProductStudioModule` (customSettings, `stripTransientSettings`'li) /
+  null+toast. Buton `TopBar.tsx` "Dosya" menüsünde "Preset Kopyala (dev)" deseniyle
+  (DEV gate, JSON→clipboard+console, toast). typecheck + lint temiz. Canlı: Test A
+  round-trip, Test B içerik-doğruluğu (alan-alan), Test C Marka Bandı yol doğrulaması.
 - **Aşama 6** — Export aracıyla ~3 banner + ~3 özel + ~3 ürün-sunuş üret + regresyon.
 
 ### Bilinen sınır / ertelenmiş iş — eski modül-drop yolu temizliği

@@ -10,6 +10,7 @@ import { ConfirmDialog, ConfirmModal } from '@/components/ui';
 import { ZoomWidget } from './ZoomWidget';
 import { useProjectSave } from '../hooks/useProjectSave';
 import { exportPresetFromState } from '../presets/studioPresets';
+import { exportModuleFromState } from '../modules/exportStudioModule';
 
 function EditableTitle() {
   const projectName = useCatalogStore((s) => s.projectName);
@@ -186,6 +187,24 @@ export function TopBar() {
     }
   };
 
+  const handleExportModule = async () => {
+    try {
+      const module = exportModuleFromState();
+      if (!module) {
+        toast.error('Geçersiz seçim — banner (serbest) ya da özel-ayarlı ürün slotu seçin');
+        return;
+      }
+      const json = JSON.stringify(module, null, 2);
+      console.log('[Module Export]\n' + json);
+      await navigator.clipboard.writeText(json);
+      toast.success('Modül JSON panoya kopyalandı (konsola da yazıldı)');
+      setFileMenuOpen(false);
+    } catch (err) {
+      console.error(err);
+      toast.error('Modül kopyalanamadı — konsoldan alabilirsiniz');
+    }
+  };
+
   return (
     <div className="h-14 bg-surface-panel border-b border-border-default flex items-center justify-between px-4 shrink-0 shadow-drop-sm relative z-1001">
       {/* Sol Grup */}
@@ -290,6 +309,14 @@ export function TopBar() {
                   >
                     <Copy size={16} className="shrink-0" />
                     <span>Preset Kopyala (dev)</span>
+                  </button>
+
+                  <button
+                    onClick={() => void handleExportModule()}
+                    className="w-full text-left px-3 py-2.5 hover:bg-surface-subtle rounded-radius-md text-body-md font-medium text-text-secondary hover:text-text-primary transition-all flex items-center gap-2.5 cursor-pointer"
+                  >
+                    <Copy size={16} className="shrink-0" />
+                    <span>Modül Kopyala (dev)</span>
                   </button>
                 </>
               )}
