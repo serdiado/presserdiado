@@ -661,6 +661,13 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsOver(false);
+    // EN ÖNCE — kütüphane örneği (free veya product slota inebilir). Diğer tüm
+    // anahtarlardan ve role==='free' check'inden ÖNCE; koşulsuz return.
+    const studioModuleId = e.dataTransfer.getData('studioModuleId');
+    if (studioModuleId) {
+      useCatalogStore.getState().applyStudioModule(pageNumber, slot.id, studioModuleId);
+      return;
+    }
     const newModuleType = e.dataTransfer.getData('newModuleType');
     if (newModuleType) {
       if (slot.role !== 'free') useCatalogStore.getState().toggleSlotRole('free');

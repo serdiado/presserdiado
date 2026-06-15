@@ -397,8 +397,12 @@ web-only `BannerModuleData|PizzaModuleData`'ya bağlandığı için; shared'a ko
 - **Aşama 1 ✅** — `StudioModule` union (`modules/types.ts`) + `studioModules.ts`
   (`listStudioModules()` + 1 product tohum) + barrel export. Bağlanmadı.
   typecheck + lint temiz.
-- **Aşama 2 ⏳** — `applyStudioModule` action (iki kol + guard, tek saveState) +
-  `Slot.tsx` `studioModuleId` drop branch (en başta). **Kritik test:** tek-undo.
+- **Aşama 2 ✅ kod** — `applyStudioModule` action (iki kol + guard saveState'ten
+  ÖNCE, tek saveState, inline mutasyon) + `Slot.tsx` `studioModuleId` drop branch
+  (handleDrop EN BAŞINDA, koşulsuz return). `listStudioModules` store'a DOĞRUDAN
+  dosyadan import (barrel değil — modules/index→BannerSection→store döngüsünü kırar).
+  typecheck temiz, eklenen kod lint temiz. **Canlı tek-undo testi:** kullanıcıyla
+  ekranda doğrulanacak (konsoldan id ver → dolu insin → Ctrl+Z TEK adım).
 - **Aşama 3** — "Hazır Tasarımlar" UI bölümü (`listStudioModules` ile); banner
   örneği sürükle → free slota dolu klonlanır. "Boş Modüller" kartları korunur.
 - **Aşama 4** — Ürün-sunuş kolu (minimal placeholder ile doğrula). **Kritik test:**

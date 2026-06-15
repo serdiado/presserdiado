@@ -29,6 +29,9 @@ import {
   initialGlobalSettings,
 } from './defaults';
 import { ModuleRegistry } from './module-registry';
+// Doğrudan dosyadan (barrel DEĞİL): modules/index → BannerSection → store döngüsünü
+// kırmak için. studioModules.ts yalnız ./types (saf tip) import eder, döngü yok.
+import { listStudioModules } from '../../features/studio/modules/studioModules';
 import { useHistoryStore } from './history.store';
 import { useUIStore } from './ui.store';
 import { foldNameMap } from '../../features/wizard/buildTemplate';
@@ -249,6 +252,8 @@ interface CatalogActions {
     slotId: string,
     updates: Record<string, unknown> | null,
   ) => void;
+  /** Kütüphane örneğini (studioModules) slota uygular: free→moduleData klonu, product→customSettings. */
+  applyStudioModule: (pageNumber: number, slotId: string, moduleId: string) => void;
 
   // Grid management
   updateGridSettings: (scope: GridScope, settings: { rows: number; cols: number; gap?: number }) => void;
@@ -1214,6 +1219,40 @@ export const useCatalogStore = create<Store>()(
               : p,
           ),
         );
+      },
+      applyStudioModule: (pageNumber, slotId, moduleId) => {
+        const { getActivePages, setActivePages } = get();
+        const module = listStudioModules().find((m) => m.id === moduleId);
+        if (!module) return;
+        // Slot var mı? (clone'dan ÖNCE okuyup erken çık — gereksiz saveState olmasın)
+        const target = getActivePages()
+          .find((p) => p.pageNumber === pageNumber)
+          ?.slots.find((s) => s.id === slotId);
+        if (!target) return;
+        // Runtime guard (saveState'ten ÖNCE): bozuk/eksik örneği reddet. Discriminated
+        // union zaten daraltıyor; bu, elle eklenen geçersiz JSON'a karşı ikinci ağ.
+        if (module.slotRole === 'product' && !module.customSettings) return;
+        if (module.slotRole === 'free' && !module.moduleData) return;
+
+        useHistoryStore.getState().saveState(); // tek undo adımı
+        const pages = clone(getActivePages());
+        const slot = pages
+          .find((p) => p.pageNumber === pageNumber)
+          ?.slots.find((s) => s.id === slotId);
+        if (!slot) return;
+
+        if (module.slotRole === 'free') {
+          // Dolu slota drop: içerik KOŞULSUZ ezilir (bilinçli karar; Ctrl+Z kurtarır).
+          slot.role = 'free';
+          slot.product = null; // free slot ürün taşımaz
+          slot.moduleType = module.type;
+          slot.moduleData = clone(module.moduleData); // dolu içerik klonlanır (referans paylaşımı yok)
+        } else {
+          // Ürün-sunuş: ÜRÜN BAĞLI KALIR (role/product değişmez), yalnız özel stil eklenir.
+          slot.isCustom = true;
+          slot.customSettings = clone(module.customSettings);
+        }
+        setActivePages(pages);
       },
 
       // === Grid management ===
