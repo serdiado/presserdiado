@@ -1234,7 +1234,7 @@ export const useCatalogStore = create<Store>()(
         if (module.slotRole === 'product' && !module.customSettings) return;
         if (module.slotRole === 'free' && !module.moduleData) return;
 
-        useHistoryStore.getState().saveState(); // tek undo adımı
+        useHistoryStore.getState().saveState(true); // ayrık işlem — cooldown'a takılma, saati ilerletme
         const pages = clone(getActivePages());
         const slot = pages
           .find((p) => p.pageNumber === pageNumber)

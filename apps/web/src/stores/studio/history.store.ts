@@ -52,7 +52,10 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
     set({
       past: [...past.slice(-MAX_HISTORY), snapshot],
       future: [],
-      lastSavedTime: now,
+      // Yalnız force'suz (sürekli) save'ler cooldown saatini ilerletir. Forced ayrık
+      // işlemler coalesce penceresini KİRLETMEZ → art arda yapılan farklı ayrık işlemler
+      // (ör. modül uygula + ürün sürükle) ayrı undo adımı kalır.
+      ...(force ? {} : { lastSavedTime: now }),
     });
   },
 

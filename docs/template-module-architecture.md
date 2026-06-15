@@ -410,9 +410,37 @@ web-only `BannerModuleData|PizzaModuleData`'ya bağlandığı için; shared'a ko
   (`module-banner-marka`, FreeStudioModule, 1×2 dolu). "Modüllerim"/`free-design`/
   `footer-area` hayaletlerine dokunulmadı. typecheck + lint temiz. **Canlı test:**
   banner kartı sürükle → dolu banner; "Boş Modüller" hâlâ boş ekliyor; tek Ctrl+Z.
-- **Aşama 4** — Ürün-sunuş kolu (minimal placeholder ile doğrula). **Kritik test:**
-  ürün resmi/ad/fiyat bağı KOPMUYOR. Gerçek içerik Aşama 5 export'undan sonra.
+- **Aşama 4 ✅ kod** — Ürün-sunuş kolu (minimal placeholder ile doğrulandı): product
+  slota sürükle → sarı zemin, ürün resmi/ad/fiyat BAĞLI kalır; role/product değişmez.
+  **Bonus bug yakalandı + düzeltildi:** art arda iki ayrık işlem (clear + apply) tek
+  undo adımına çöküyordu. Kök sebep — `history.store.ts` `saveState` 800ms zaman-
+  cooldown'ı ikinci saveState'i düşürüyordu (force dalı dahil `lastSavedTime`'ı
+  KOŞULSUZ güncelliyordu). Dar fix: (1) `lastSavedTime` yalnız force'suz dalda ilerler
+  (forced ayrık işlemler coalesce penceresini kirletmez), (2) `applyStudioModule` →
+  `saveState(true)`. 4 senaryo geçti: tek apply=1 undo, clear+apply=2 undo, kaydırma
+  ötelenmiyor, slider coalesce korundu. Latent force'suz↔force'suz coalesce (hızlı
+  ürün+ürün) bilinçli KAPSAM DIŞI (ayrı iş). Gerçek ürün-sunuş içeriği Aşama 5/6.
 - **Aşama 5** — Dev "Modül Kopyala" (`exportModuleFromState`, ProjectMenu).
   **Asıl test:** round-trip — export JSON'ı geri yapıştır + sürükle → birebir aynı
   (`stripTransientSettings` ne fazla ne eksik kırpsın).
 - **Aşama 6** — Export aracıyla ~3 banner + ~3 özel + ~3 ürün-sunuş üret + regresyon.
+
+### Bilinen sınır / ertelenmiş iş — undo coalesce (force'suz ayrık işlemler)
+
+Aşama 4 canlı testinde çıktı. **Şimdi çözülmüyor; bilinçli ertelendi** (sunum sonrası).
+
+- **Belirti:** Ayrık (discrete) drop/tip işlemleri 800ms içinde art arda yapılınca
+  undo'da birleşiyor — tek Ctrl+Z ikisini birden geri alıyor. Canlı görülen:
+  "Marka Bandı" (banner kütüphane drop) ve "Tablo Alanı" (`newModuleType` boş tip
+  drop) başka bir işlemle hızlı birleşince. Muhtemel diğerleri: `setSlotProduct`,
+  `clearSlot`, `swapSlotContents`, `mergeSelected` — hepsi force'suz `saveState`.
+- **Kök sebep:** `history.store.ts` 800ms cooldown. Aşama 4'te **yalnız
+  `applyStudioModule` force'landı** (`saveState(true)`); diğer ayrık işlemler
+  force'suz kaldı → birbirleriyle (ve forced olmayan komşularıyla) coalesce ediyor.
+- **Çözüm yönü (gelecek iş):** Ayrık işlemleri sistematik force'lamak — geniş (b)
+  audit: ~10+ `saveState` çağrı yerini denetle, **ayrık** olanları `saveState(true)`
+  yap, **sürekli** slider/picker aksiyonlarını force'suz bırak (coalesce orada
+  DOĞRU davranış). Tek tip işlem için tek-undo invariant'ı korunmalı.
+- **Risk/öncelik:** DÜŞÜK — sunum sonrası. Normal-hız kullanımda nadir; **veri kaybı
+  yok** (yalnız undo granülaritesi). Aşama 4'ün dar fix'i (forced apply + force dalı
+  saat-kirletmezliği) bug'ı module-library akışında çözdü; bu, kalan genel sınır.
