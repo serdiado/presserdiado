@@ -3,8 +3,11 @@
 import type {
   BorderData,
   BorderRadiusData,
+  CatalogSettings,
   ColorOpacity,
   ColorValue,
+  DeepPartial,
+  ModuleType,
   ShadowData,
   SpacingData,
   TypographyData,
@@ -81,3 +84,43 @@ export interface PizzaModuleData {
 }
 
 export type AnyModuleData = BannerModuleData | PizzaModuleData;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// StudioModule — kütüphanedeki hazır modül ÖRNEĞİ (TİP değil).
+//
+// TİP ≠ ÖRNEK: ModuleRegistry (module-registry.ts) yetenek/tipi ("boş banner")
+// tutar; StudioModule tipe referans veren DOLU içeriktir ("Kırmızı Kampanya
+// Banner'ı"). Presetlerin (StudioPreset) kardeşi — ama shared'da DEĞİL web'de:
+// moduleData, web-only BannerModuleData|PizzaModuleData'ya bağlandığı için.
+//
+// Payload slotRole'a göre TİP SEVİYESİNDE ayrışır (discriminated union):
+//   free    → moduleData (ZORUNLU), customSettings YASAK
+//   product → customSettings (ZORUNLU), moduleData YASAK
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Ortak kimlik alanları. */
+interface StudioModuleBase {
+  id: string;
+  name: string;
+  description?: string;
+  thumbnail?: string;
+  source: 'system';
+}
+
+/** free slot modülü: ModuleRegistry tipine (banner/pizza) referans + dolu içerik. */
+export interface FreeStudioModule extends StudioModuleBase {
+  slotRole: 'free';
+  type: NonNullable<ModuleType>;
+  moduleData: AnyModuleData;
+  customSettings?: never;
+}
+
+/** ürün-sunuş modülü: product slotta, mevcut isCustom/customSettings katmanı üstüne. */
+export interface ProductStudioModule extends StudioModuleBase {
+  slotRole: 'product';
+  type: 'product-presentation';
+  customSettings: DeepPartial<CatalogSettings>;
+  moduleData?: never;
+}
+
+export type StudioModule = FreeStudioModule | ProductStudioModule;

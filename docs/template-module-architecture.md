@@ -239,3 +239,171 @@ gerçek tasarım esnekliğini gösteriyor — "neden ben"in kalbi. Yatırımcıy
 Yani modül kütüphanesi artık "sunum sonrası ertelenen" değil, **şimdi yapılacak ana
 iş.** Footer ise hafif kalacak. Belge, hatalar + keşif geldikçe modül-kütüphanesi
 teknik tasarımıyla güncellenecek.
+
+---
+
+## MODÜL SİSTEMİ — kesinleşen kapsam (15.06.2026, keşif + kullanıcı kararları sonrası)
+
+Grid refactor bitti (commit'li). Cline keşfi modül sisteminin mevcut durumunu çıkardı:
+çalışan bir çekirdek var ama etrafında yarım bırakılmış dağınık parçalar (tutarsız).
+Aşağıdaki kapsam, kavramsal karmaşayı çözüp sunum için minimal/tutarlı bir kütüphane kurar.
+
+### Keşfin ortaya koyduğu karmaşa
+"Modül" kelimesi 3 farklı şeyi kastediyordu, karışmış:
+1. **Modül TİPİ/factory** (`ModuleRegistry.banner/pizza`) — "ne tür, boş zemini ne" (yetenek)
+2. **Proje-içi instance** (slottaki `moduleData`) — "bu slotta duran banner" (örnek)
+3. **Yarım kütüphane altyapısı** — localStorage helper + DB tablosu + drop alıcısı + boş "Modüllerim" UI, hiçbiri bağlı değil ("ileride lazım" diye kurulmuş, yarım kalmış)
+
+### Yaklaşım: "tutarlı yeniden kurma" (sil-baştan değil, revizyon değil)
+Grid'deki desenin aynısı: çalışan çekirdeği KORU, dağınık yarım parçaları TEMİZLE/görmezden gel,
+üstüne TUTARLI kütüphane katmanı kur.
+- **Koru:** `role:'free' + moduleType + moduleData`, render branch'leri, banner editor, drag-drop alıcısı (çalışıyor).
+- **Görmezden gel (sunum sonrası):** localStorage `userModules.ts`, DB `user_modules` tablosu, `newUserModuleData` drop alıcısı, boş "Modüllerim" UI. DOKUNMA, "tamamlamaya" çalışma.
+
+### Belkemiği kavram: TİP ≠ ÖRNEK
+- **`ModuleRegistry`** = TİPLER (banner, ürün-sunuş). "Boş zemin", yetenek tanımı. AYRI kalır.
+- **Kütüphane** (`studioModules.ts`) = ÖRNEKLER. Rengi/logosu/yazısı dolu hazır tasarımlar.
+- Bir kütüphane örneği: `{ id, name, type, moduleData (dolu içerik), source }` — tipe referans + dolu data.
+- KRİTİK: `ModuleRegistry`'yi doğrudan kütüphaneye büyütme → tip ile örnek karışır (keşif madde 10 uyarısı).
+- Kullanıcı kütüphaneden örneği slota sürükler → dolu içerik KLONLANIR → kendi logosunu/yazısını değiştirir.
+
+### İki slot-içi modül tipi (footer ayrı)
+1. **Banner/tablo modülü:** `role:'free'` slotta, serbest içerik (Excel-gibi hücreli). Zaten var.
+2. **Ürün-sunuş modülü:** `role:'product'` slotta — VERİ BAĞLANTISI KORUNUR. "Var olan slot yapısının
+   tasarlanmış hali" (çoklu resim/fiyat, açıklama vb). YENİ KATMAN YOK — mevcut özel-ayarlı-slot
+   (`isCustom`/`customSettings`) + ürün-veri mekanizmasını kullanır. Tip tanımı "hangi slot rolünde
+   yaşar" bilgisini taşımalı (banner→free, ürün-sunuş→product).
+3. **Footer:** AYRI yapı (sayfa-tabanlı, `globalSettings.footer`/`page.customFooter`). Kütüphane DIŞI,
+   düşük öncelik, dokunulmuyor.
+
+### Kapsam kararları (kullanıcı onayı 15.06.2026)
+- **Sistem modülleri: kod-içi** (`studioModules.ts`, presetler gibi, dev export aracıyla). Admin paneli
+  SONRA (ileri vade, ters değil — aynı veri, kaynak değişir).
+- **Kullanıcı modülü kaydetme: KAPSAM DIŞI** (sunum sonrası). Dolayısıyla **DB + API + localStorage
+  ŞİMDİ YOK.** (B+C tutarlılığı: kullanıcı kaydetmeyecekse saklama altyapısı gereksiz. DB/API gerçek
+  kullanıcı-modülü epic'inde, o zaman DB ile — localStorage değil.)
+- **Hedef:** kütüphanede hazır dolu tasarımlar — en az 3 banner + 3 özel alan/liste + 3 ürün-sunuş.
+  Kullanıcı slota sürükler → dolu gelir → sadece kendi logosunu/yazısını değiştirir.
+- **Yeni modül tipi (serbest resim+yazı "mini Canva") şimdilik gerek yok** — ileride kolayca eklenir.
+
+### Sıralı plan (önerilen — Opus tasarım/plan yapacak, sonra aşamalı uygula)
+1. **Kütüphane veri modeli:** `StudioModule` contract (`{id, name, type, moduleData, source:'system'}`),
+   `studioModules.ts` (kod-içi sistem modülleri), `listStudioModules()`. Tip ≠ örnek ayrımı netleşir.
+2. **"Modüller" UI (sağ panel):** kütüphaneyi listele (sistem modülleri), kart → slota sürükle.
+   Mevcut drag-drop alıcısını kullan; örnek slota düşünce dolu `moduleData` klonlanır.
+3. **Ürün-sunuş modülü tipi:** `role:'product'` + veri-bağlı + özel sunuş. Mevcut özel-slot mekanizması üstüne.
+4. **Dev export aracı:** mevcut slottaki modülü `studioModules.ts` formatında dışa aktar ("Modül Kopyala"
+   benzeri, preset export gibi).
+5. **Hazır tasarımları üret:** dev araçla 3+3+3 dolu modül tasarla, `studioModules.ts`'e koy.
+6. **(Tema entegrasyonu — ayrı/sonra):** tema preset'i hangi slota hangi modül ID'si referansı taşısın
+   (geniş preset). Bu, modül kütüphanesi kurulduktan SONRA.
+
+---
+
+## MODÜL KÜTÜPHANESİ — KARARLAR (15.06.2026, kullanıcıyla netleşti)
+
+Grid refactor bitti (commit'li). Şimdi modül kütüphanesi. Keşif (Cline) mevcut
+durumu çıkardı: çalışan bir çekirdek (`role:'free'+moduleType+moduleData`, render
+branch'leri, banner editor, drag-drop alıcısı) VAR; ama etrafında YARIM bırakılmış
+dağınık parçalar var (localStorage helper bağlı değil, DB tablosu API'siz, drop
+alıcısı göndereni yok, "Modüllerim" UI boş, `free-design` hayaleti). Bunlar "ileride
+lazım olur" diye atılmış temelsiz iskeleler — tutarlı tasarımdan gelmiyor.
+
+### Yaklaşım: "tutarlı yeniden kurma" (sil-baştan DEĞİL, revizyon DEĞİL)
+Grid'deki desenin aynısı: çalışan çekirdeği KORU, dağınık yarım parçaları
+TEMİZLE/görmezden gel, üstüne TUTARLI kütüphane katmanı kur. Çekirdek sağlam
+(atma); dağınığın üstüne yama yapma (tutarlı mimariyle bağla).
+
+### Belkemiği kavram: TİP ≠ ÖRNEK (en kritik ayrım)
+Keşfin yakaladığı tehlike: `ModuleRegistry`'yi doğrudan "kütüphane"ye büyütmek
+kavramları karıştırır. İkisi AYRI kalır:
+- **Modül TİPİ** (`ModuleRegistry`: banner, ürün-sunuş) = "boş zemin" / yetenek
+  tanımı. "Banner ne yapabilir, varsayılan boş datası ne." Mevcut yapı.
+- **Modül ÖRNEĞİ/PRESET'i** (kütüphane = `studioModules.ts`) = "hazır dolu tasarım"
+  (renk/logo/yazı/çerçeve dolu). Kütüphanede TİP değil ÖRNEK durur ("Kırmızı
+  Kampanya Banner'ı", boş "banner" değil).
+- Bir örnek = `{ id, name, type, moduleData(dolu), source }`; tipe referans verir +
+  dolu içerik taşır. Kullanıcı örneği slota koyunca dolu hali klonlanır, sadece
+  kendi logosunu/yazısını değiştirir.
+
+### İki slot-içi modül tipi (footer AYRI)
+- **Banner/tablo modülü** (#2): `role:'free'` slotta yaşar, ürün verisi YOK, serbest
+  hücreli tasarım. Mevcut `moduleData.type='banner'`.
+- **Ürün-sunuş modülü** (#1): `role:'product'` KALIR, ürün verisi BAĞLI kalır
+  (resim/ad/fiyat kopmaz), ama sunuş yapısı özelleşir (çoklu resim/fiyat, açıklama).
+  YENİ KATMAN DEĞİL: mevcut "özel ayarlı slot" (`isCustom`+`customSettings`)
+  mekanizması + ürün verisi üstüne "farklı sunuş şablonu." Kullanıcı kararı: yeni
+  ayar sistematiği/katman İSTEMİYOR — en basit/kestirme yol. Genel ayar tema ile
+  gelir; özel slot = "var olan slot yapısının tasarlanmış hali."
+- Modül tipi tanımına "hangi slot rolünde yaşar" (`free` vs `product`) bilgisi girer.
+- **Footer**: sayfa-tabanlı, slot değil, kütüphane DIŞI. Ortak contract'a zorlanmaz
+  (banner'a benzetmek ters yama olur — grid'deki ilkeyle aynı). Düşük öncelik.
+
+### Kapsam — SADECE kod-içi sistem modülleri (sunum için)
+- **Sistem modülleri:** Kod-içi `studioModules.ts` (presetler gibi), dev export
+  aracıyla. Sen tasarlarsın → kod çıkarırsın → dosyaya koyarsın. Admin'e ileride
+  geçişe ters değil (aynı veri yapısı, kaynak kod→DB değişir).
+- **KAPSAM DIŞI (sunum sonrası):** Kullanıcı modülü kaydetme, DB, API, localStorage.
+  Kullanıcı kaydetmeyeceğine göre saklama altyapısı (DB/API) GEREKMEZ. "İleride
+  lazım" diye şimdi kurmak = bu dağınıklığı yaratan zihniyet; aynı tuzağa düşme.
+  Gerçek kullanıcı-kaydetme epic'inde DB ile (localStorage değil) tutarlı kurulur.
+- **Dağınık yarım parçalara DOKUNMA:** localStorage helper (`userModules.ts`),
+  mevcut `user_modules` DB tablosu, `Slot.tsx` `newUserModuleData` drop alıcısı,
+  boş "Modüllerim" UI. Şimdilik görmezden gel; sunum sonrası tutarlı bağlanır.
+
+### Sunum hedefi (somut)
+Kütüphanede hazır, dolu tasarımlar: ~3 banner + ~3 özel alan (liste vb.) + ~3
+ürün-sunuş tasarımı + ~3 tam tema. "Tema seç + modül yerleştir → 2 tıkta dolu
+broşür" şovu. Yeni modül tipi tasarımına şimdilik gerek yok (banner + ürün-sunuş
+yeter); ileride kolay eklenir.
+
+### Sıradaki adım: mimari tasarım (Opus, keşif sonrası)
+Bu kararlarla Opus'a tasarım/plan yaptır: TİP≠ÖRNEK contract'ı (`StudioModule`
+shared tipi, `source:'system'`, tipe referans), `studioModules.ts` + listeleme,
+kütüphane UI (sağ panel "Hazır Modüller" — gerçek sistem modüllerini göstersin),
+slota klonlama (örnek → slot instance, dolu data kopyalanır), dev export aracı.
+Aşamalı + her aşama test (grid disiplini). Act'e geçmeden plan onayı.
+
+---
+
+## MODÜL KÜTÜPHANESİ — ONAYLI PLAN + UYGULAMA DURUMU (15.06.2026)
+
+Opus tasarımı + kullanıcı review'ı (2 tur) sonrası onaylandı. Tam plan:
+`~/.claude/plans/salt-okuma-tasar-m-act-e-piped-avalanche.md`.
+
+### Contract — `StudioModule` (discriminated union)
+**Konum:** `apps/web/src/features/studio/modules/types.ts` (shared DEĞİL — `moduleData`
+web-only `BannerModuleData|PizzaModuleData`'ya bağlandığı için; shared'a koymak ya
+`unknown`'a düşürür ya da çekirdek tiplerini taşımayı gerektirir). Payload
+`slotRole`'a göre **tip seviyesinde** ayrışır:
+- `FreeStudioModule`: `slotRole:'free'`, `type:NonNullable<ModuleType>`,
+  `moduleData:AnyModuleData` (ZORUNLU), `customSettings?:never`.
+- `ProductStudioModule`: `slotRole:'product'`, `type:'product-presentation'`,
+  `customSettings:DeepPartial<CatalogSettings>` (ZORUNLU), `moduleData?:never`.
+- Ortak: `StudioModuleBase` (`id,name,description?,thumbnail?,source:'system'`).
+- `ModuleType` (`'banner'|'pizza'|null`) KİRLENMEZ; `product-presentation` yalnız
+  union'da. Ürün-sunuş YENİ KATMAN değil — mevcut `isCustom`/`customSettings` üstüne.
+
+### Davranış kararları (review)
+- **Dolu slota drop:** free kolu içeriği KOŞULSUZ ezer — bilinçli karar, onay yok
+  (sunum akışı), undo tek adımda kurtarır.
+- **Runtime guard:** product'ta `!customSettings` / free'de `!moduleData` → erken
+  return (`saveState`'ten ÖNCE). Union ile çift güvence.
+- **Drop branch:** `studioModuleId` `handleDrop`'un EN BAŞINDA, koşulsuz `return`
+  (diğer key'ler/role-check öncesi). Tek undo: `applyStudioModule` inline mutasyon
+  (`toggleSlotRole`/`setSlotModule` çağırmaz — ikisi de saveState'li).
+
+### Aşamalar
+- **Aşama 1 ✅** — `StudioModule` union (`modules/types.ts`) + `studioModules.ts`
+  (`listStudioModules()` + 1 product tohum) + barrel export. Bağlanmadı.
+  typecheck + lint temiz.
+- **Aşama 2 ⏳** — `applyStudioModule` action (iki kol + guard, tek saveState) +
+  `Slot.tsx` `studioModuleId` drop branch (en başta). **Kritik test:** tek-undo.
+- **Aşama 3** — "Hazır Tasarımlar" UI bölümü (`listStudioModules` ile); banner
+  örneği sürükle → free slota dolu klonlanır. "Boş Modüller" kartları korunur.
+- **Aşama 4** — Ürün-sunuş kolu (minimal placeholder ile doğrula). **Kritik test:**
+  ürün resmi/ad/fiyat bağı KOPMUYOR. Gerçek içerik Aşama 5 export'undan sonra.
+- **Aşama 5** — Dev "Modül Kopyala" (`exportModuleFromState`, ProjectMenu).
+  **Asıl test:** round-trip — export JSON'ı geri yapıştır + sürükle → birebir aynı
+  (`stripTransientSettings` ne fazla ne eksik kırpsın).
+- **Aşama 6** — Export aracıyla ~3 banner + ~3 özel + ~3 ürün-sunuş üret + regresyon.

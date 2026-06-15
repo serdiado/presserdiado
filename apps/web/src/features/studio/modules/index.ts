@@ -2,4 +2,13 @@ export { BannerSection } from './BannerSection';
 export { BannerSettingsPanel } from './BannerSettingsPanel';
 export { PizzaSection } from './PizzaSection';
 export { PizzaSettingsPanel } from './PizzaSettingsPanel';
-export type { BannerCellData, BannerModuleData, PizzaModuleData, AnyModuleData } from './types';
+export type {
+  BannerCellData,
+  BannerModuleData,
+  PizzaModuleData,
+  AnyModuleData,
+  StudioModule,
+  FreeStudioModule,
+  ProductStudioModule,
+} from './types';
+export { listStudioModules } from './studioModules';
