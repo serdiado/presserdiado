@@ -30,7 +30,7 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
       if (t.closest(`[data-footer-page="${pageNumber}"]`)) return;
       if (t.closest('#studio-sidebar')) return;
       if (t.closest('#contextual-bar')) return;
-      if (t.closest('[data-color-picker-popup]')) return;
+      if (t.closest('[data-color-picker-popup], [data-image-picker-popup]')) return;
       setIsEditing(false);
       setEditingCellId(null);
     };

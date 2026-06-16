@@ -1,14 +1,14 @@
 // Compact 4-mode contextual bar. Faithful to reference behaviour, simplified UI.
 
 import { useEffect, useRef, useState } from 'react';
-import { AlignCenter, AlignLeft, AlignRight, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, AlignVerticalJustifyStart, Check, Clipboard, Copy, CopyPlus, Image, Move, PackageOpen, Palette, Settings, Square, Trash2, Upload, ZoomIn, Pencil, Table2, Tag, Box, Combine, Slice, Frame, ChevronDown, PanelBottom, ClipboardPaste, Layers, Ruler as RulerIcon, Shapes, ShoppingBag } from 'lucide-react';
+import { AlignCenter, AlignLeft, AlignRight, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, AlignVerticalJustifyStart, Check, Clipboard, Copy, CopyPlus, Image, Move, PackageOpen, Palette, Settings, Square, Trash2, ZoomIn, Pencil, Table2, Tag, Box, Combine, Slice, Frame, ChevronDown, PanelBottom, ClipboardPaste, Layers, Ruler as RulerIcon, Shapes, ShoppingBag } from 'lucide-react';
 import { SegmentedControl } from '@/components/ui';
 import type { CatalogSettings, ColorValue, DeepPartial, TypographyData, BorderRadiusData, BadgeConfig, BadgeShape, BadgePosition, TextElementSettings } from '@matbaapro/shared';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
-import api from '@/lib/api';
 import {
   ColorOpacityPicker,
   BorderRadiusPicker,
+  ImagePickerPopover,
 } from '../pickers';
 import { deepMerge, colorValueBackground, colorOpacityToCss } from '../util/style';
 import { CornerRadiusIcon } from '@/components/icons/CornerRadiusIcon';
@@ -65,7 +65,7 @@ function Popover({
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
       const target = e.target as Element;
-      if (target.closest('[data-color-picker-popup]')) return;
+      if (target.closest('[data-color-picker-popup], [data-image-picker-popup]')) return;
       if (ref.current && !ref.current.contains(target)) setOpen(false);
     };
     document.addEventListener('mousedown', onClick);
@@ -760,7 +760,7 @@ function BadgeMode() {
 
       const isBadge = target.closest('[data-badge-drag="true"]');
       const isContextualBar = target.closest('#contextual-bar');
-      const isColorPicker = target.closest('[data-color-picker-popup]');
+      const isColorPicker = target.closest('[data-color-picker-popup], [data-image-picker-popup]');
 
       if (!isBadge && !isContextualBar && !isColorPicker) {
         setActiveBadgeMoveSlotId(null);
@@ -1281,6 +1281,16 @@ function TextMode({
 }
 
 type ImageSizeType = 'fit' | 'fill' | 'stretch' | 'tile';
+type ImagePositionType =
+  | 'top-left'
+  | 'top-center'
+  | 'top-right'
+  | 'middle-left'
+  | 'center'
+  | 'middle-right'
+  | 'bottom-left'
+  | 'bottom-center'
+  | 'bottom-right';
 
 function BackgroundMode({ pageNumber }: { pageNumber: number }) {
   const formas = useCatalogStore((s) => s.formas);
@@ -1297,8 +1307,8 @@ function BackgroundMode({ pageNumber }: { pageNumber: number }) {
   const [colorValue, setColorValue] = useState<ColorValue>(DEFAULT_COLOR);
   const [imageUrl, setImageUrl] = useState('');
   const [imageSize, setImageSize] = useState<ImageSizeType>('fill');
+  const [imagePosition, setImagePosition] = useState<ImagePositionType>('center');
   const [imageOpacity, setImageOpacity] = useState(100);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const bg = currentPage?.background;
@@ -1307,48 +1317,21 @@ function BackgroundMode({ pageNumber }: { pageNumber: number }) {
       setColorValue(DEFAULT_COLOR);
       setImageUrl('');
       setImageSize('fill');
+      setImagePosition('center');
       setImageOpacity(100);
       return;
     }
     setBgType(bg.type);
+    // Replace semantiği: Görsel zemine geçildiğinde colorValue korunur; sadece gerçek
+    // renk background'ı geldiğinde güncellenir. Böylece "Kaldır" eski renge döner.
     if (bg.value) setColorValue(bg.value);
     setImageUrl(bg.imageUrl ?? '');
     setImageSize(bg.imageSize ?? 'fill');
+    setImagePosition(bg.imagePosition ?? 'center');
     setImageOpacity(bg.imageOpacity ?? 100);
   }, [pageNumber]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const { data } = await api.post<{ url: string }>('/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-      setImageUrl(data.url);
-      setBgType('image');
-      updatePagesBackground([pageNumber], {
-        type: 'image',
-        imageUrl: data.url,
-        imageSize,
-        imageOpacity,
-      });
-    } finally {
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  };
-
   const currentBg = currentPage?.background;
-
-  const handleImageButtonClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const isImageMode = bgType === 'image';
-  const activeOpacity = bgType === 'color' 
-    ? (colorValue.type === 'solid' ? colorValue.opacity : 100) 
-    : imageOpacity;
 
   return (
     <>
@@ -1379,78 +1362,51 @@ function BackgroundMode({ pageNumber }: { pageNumber: number }) {
       />
 
       {/* 2. GÖRSEL BUTONU */}
-      <button
-        onClick={handleImageButtonClick}
+      <ImagePickerPopover
         className={`h-9 px-3 flex items-center gap-1.5 rounded text-xs cursor-pointer ${
           bgType === 'image' ? 'bg-surface-subtle text-text-primary font-medium' : 'text-text-secondary hover:bg-border-default'
         }`}
-      >
-        <Image size={16} />
-        Görsel
-      </button>
-
-      <Divider />
-
-      {/* 3. HİZALAMA BUTONLARI (Sığdır, Doldur, Uzat, Döşe) */}
-      {(
-        [
-          { value: 'fit', label: 'Sığdır' },
-          { value: 'fill', label: 'Doldur' },
-          { value: 'stretch', label: 'Uzat' },
-          { value: 'tile', label: 'Döşe' },
-        ] as { value: ImageSizeType; label: string }[]
-      ).map(({ value, label }) => (
-        <button
-          key={value}
-          disabled={!isImageMode}
-          onClick={() => {
-            setImageSize(value);
-            updatePagesBackground([pageNumber], { type: 'image', imageUrl: imageUrl || undefined, imageSize: value, imageOpacity });
-          }}
-          className={`h-9 px-3 rounded text-xs transition-all ${
-            !isImageMode
-              ? 'opacity-40 pointer-events-none text-text-secondary'
-              : imageSize === value
-              ? 'bg-surface-subtle text-text-primary font-medium'
-              : 'text-text-secondary hover:bg-border-default'
-          }`}
-        >
-          {label}
-        </button>
-      ))}
-
-      <Divider />
-
-      {/* 4. SAYDAMLIK SLIDER (Her zaman aktif, moduna göre değeri kontrol eder) */}
-      <span className="text-xs text-text-secondary shrink-0">Saydamlık</span>
-      <input
-        type="range"
-        min={0}
-        max={100}
-        value={activeOpacity}
-        onChange={(e) => {
-          const v = parseInt(e.target.value, 10);
-          if (bgType === 'color') {
-            if (colorValue.type === 'solid') {
-              const nextColor = { ...colorValue, opacity: v };
-              setColorValue(nextColor);
-              updatePagesBackground([pageNumber], { type: 'color', value: nextColor });
-            } else {
-              const nextColor = {
-                ...colorValue,
-                stops: colorValue.stops.map((s) => ({ ...s, opacity: v })),
-              };
-              setColorValue(nextColor);
-              updatePagesBackground([pageNumber], { type: 'color', value: nextColor });
-            }
-          } else {
-            setImageOpacity(v);
-            updatePagesBackground([pageNumber], { type: 'image', imageUrl: imageUrl || undefined, imageSize, imageOpacity: v });
-          }
+        trigger={<><Image size={16} /><span>Görsel</span></>}
+        imageUrl={imageUrl}
+        imageSize={imageSize}
+        imagePosition={imagePosition}
+        imageOpacity={imageOpacity}
+        onImageSelected={(payload) => {
+          setBgType('image');
+          setImageUrl(payload.imageUrl);
+          setImageSize(payload.imageSize);
+          setImagePosition(payload.imagePosition);
+          setImageOpacity(payload.imageOpacity);
+          updatePagesBackground([pageNumber], {
+            type: 'image',
+            imageUrl: payload.imageUrl,
+            imageSize: payload.imageSize,
+            imagePosition: payload.imagePosition,
+            imageOpacity: payload.imageOpacity,
+          });
         }}
-        className="w-24 studio-slider"
+        onSettingsChange={(patch) => {
+          const nextImageSize = patch.imageSize ?? imageSize;
+          const nextImagePosition = patch.imagePosition ?? imagePosition;
+          const nextImageOpacity = patch.imageOpacity ?? imageOpacity;
+          setImageSize(nextImageSize);
+          setImagePosition(nextImagePosition);
+          setImageOpacity(nextImageOpacity);
+          if (!imageUrl) return;
+          updatePagesBackground([pageNumber], {
+            type: 'image',
+            imageUrl,
+            imageSize: nextImageSize,
+            imagePosition: nextImagePosition,
+            imageOpacity: nextImageOpacity,
+          });
+        }}
+        onImageCleared={() => {
+          setBgType('color');
+          setImageUrl('');
+          updatePagesBackground([pageNumber], { type: 'color', value: colorValue });
+        }}
       />
-      <span className="text-xs text-text-secondary tabular-nums shrink-0">%{activeOpacity}</span>
 
       <Divider />
 
@@ -1472,14 +1428,6 @@ function BackgroundMode({ pageNumber }: { pageNumber: number }) {
         <Settings size={16} />
         Ayarlar
       </button>
-
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleFileSelect}
-      />
     </>
   );
 }

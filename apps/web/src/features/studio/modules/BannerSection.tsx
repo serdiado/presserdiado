@@ -61,7 +61,7 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
       if (slotEl && slotEl.contains(t)) return;
       if (t.closest('#contextual-bar')) return;
       if (t.closest('#studio-sidebar')) return;
-      if (t.closest('[data-color-picker-popup]')) return;
+      if (t.closest('[data-color-picker-popup], [data-image-picker-popup]')) return;
       setEditingContent(null);
       setSelection({ type: 'slot', ids: [slotId] });
       setEditingCellId(null);

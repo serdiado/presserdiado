@@ -3,23 +3,19 @@
 // TODO: Upload endpoint S3/MinIO'ya taşınacak (şu an lokal disk)
 // TODO: Desen kütüphanesi (hazır tekstür ve desenler)
 
-import { useEffect, useRef, useState } from 'react';
-import { Image, Info, Palette, Upload } from 'lucide-react';
-import type { CatalogPage, ColorValue } from '@matbaapro/shared';
+import { useEffect, useState } from 'react';
+import { Image, Info, Palette } from 'lucide-react';
+import type { ColorValue } from '@matbaapro/shared';
 import { useCatalogStore, useLayerStore, useUIStore } from '@/stores/studio';
-import api from '@/lib/api';
-import { ColorOpacityPicker } from '../pickers';
+import { ColorOpacityPicker, ImagePickerPopover } from '../pickers';
 import { Slider } from '@/components/ui/Slider';
 
 type BgType = 'color' | 'image';
-type ImageTab = 'pattern' | 'image';
 type ImageSizeType = 'fit' | 'fill' | 'stretch' | 'tile';
 type ImagePositionType =
   | 'top-left' | 'top-center' | 'top-right'
   | 'middle-left' | 'center' | 'middle-right'
   | 'bottom-left' | 'bottom-center' | 'bottom-right';
-
-type PageBackground = NonNullable<CatalogPage['background']>;
 
 const DEFAULT_VALUE: ColorValue = { type: 'solid', color: '#ffffff', opacity: 100 };
 
@@ -81,17 +77,16 @@ export function BackgroundSettings() {
   const [bgType, setBgType] = useState<BgType>('color');
   const [colorValue, setColorValue] = useState<ColorValue>(DEFAULT_VALUE);
   const [imageUrl, setImageUrl] = useState('');
-  const [imageTab, setImageTab] = useState<ImageTab>('image');
   const [imageSize, setImageSize] = useState<ImageSizeType>('fill');
   const [imagePosition, setImagePosition] = useState<ImagePositionType>('center');
   const [imageOpacity, setImageOpacity] = useState(100);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const firstSelectedPage = activePages.find((p) => selectedBackgroundPageIds.includes(p.pageNumber));
   const firstBgType = firstSelectedPage?.background?.type;
   const firstBgImageUrl = firstSelectedPage?.background?.imageUrl;
+  const firstBgImageSize = firstSelectedPage?.background?.imageSize;
+  const firstBgImagePosition = firstSelectedPage?.background?.imagePosition;
+  const firstBgImageOpacity = firstSelectedPage?.background?.imageOpacity;
 
   useEffect(() => {
     const firstPage = activePages.find((p) => selectedBackgroundPageIds.includes(p.pageNumber));
@@ -106,27 +101,28 @@ export function BackgroundSettings() {
       return;
     }
     setBgType(bg.type);
+    // Replace semantiği: Görsel zemine geçildiğinde colorValue korunur; sadece gerçek
+    // renk background'ı geldiğinde güncellenir. Böylece "Kaldır" eski renge döner.
     if (bg.value) setColorValue(bg.value);
     setImageUrl(bg.imageUrl ?? '');
     setImageSize(bg.imageSize ?? 'fill');
     setImagePosition(bg.imagePosition ?? 'center');
     setImageOpacity(bg.imageOpacity ?? 100);
-  }, [selectedBackgroundPageIds, firstBgType, firstBgImageUrl]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [
+    selectedBackgroundPageIds,
+    firstBgType,
+    firstBgImageUrl,
+    firstBgImageSize,
+    firstBgImagePosition,
+    firstBgImageOpacity,
+  ]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const noPages = selectedBackgroundPageIds.length === 0;
 
-  const applyType = (type: BgType) => {
-    setBgType(type);
+  const applyColorType = () => {
+    setBgType('color');
     if (noPages) return;
-    const bg: PageBackground = { type };
-    if (type === 'color') bg.value = colorValue;
-    if (type === 'image') {
-      bg.imageUrl = imageUrl || undefined;
-      bg.imageSize = imageSize;
-      bg.imagePosition = imagePosition;
-      bg.imageOpacity = imageOpacity;
-    }
-    updatePagesBackground(selectedBackgroundPageIds, bg);
+    updatePagesBackground(selectedBackgroundPageIds, { type: 'color', value: colorValue });
   };
 
   const applyColor = (v: ColorValue) => {
@@ -138,58 +134,48 @@ export function BackgroundSettings() {
   const applyImageSettings = (
     patch: Partial<{ imageSize: ImageSizeType; imagePosition: ImagePositionType; imageOpacity: number }>,
   ) => {
-    if (noPages) return;
+    const nextImageSize = patch.imageSize ?? imageSize;
+    const nextImagePosition = patch.imagePosition ?? imagePosition;
+    const nextImageOpacity = patch.imageOpacity ?? imageOpacity;
+    setImageSize(nextImageSize);
+    setImagePosition(nextImagePosition);
+    setImageOpacity(nextImageOpacity);
+    if (noPages || !imageUrl) return;
     updatePagesBackground(selectedBackgroundPageIds, {
       type: 'image',
-      imageUrl: imageUrl || undefined,
-      imageSize: patch.imageSize ?? imageSize,
-      imagePosition: patch.imagePosition ?? imagePosition,
-      imageOpacity: patch.imageOpacity ?? imageOpacity,
+      imageUrl,
+      imageSize: nextImageSize,
+      imagePosition: nextImagePosition,
+      imageOpacity: nextImageOpacity,
     });
   };
 
-  const clearImage = () => {
+  const applyImageSelected = (payload: {
+    imageUrl: string;
+    imageSize: ImageSizeType;
+    imagePosition: ImagePositionType;
+    imageOpacity: number;
+  }) => {
+    setBgType('image');
+    setImageUrl(payload.imageUrl);
+    setImageSize(payload.imageSize);
+    setImagePosition(payload.imagePosition);
+    setImageOpacity(payload.imageOpacity);
+    if (noPages) return;
+    updatePagesBackground(selectedBackgroundPageIds, {
+      type: 'image',
+      imageUrl: payload.imageUrl,
+      imageSize: payload.imageSize,
+      imagePosition: payload.imagePosition,
+      imageOpacity: payload.imageOpacity,
+    });
+  };
+
+  const clearImageToColor = () => {
+    setBgType('color');
     setImageUrl('');
     if (noPages) return;
-    updatePagesBackground(selectedBackgroundPageIds, {
-      type: 'image',
-      imageUrl: undefined,
-      imageSize,
-      imagePosition,
-      imageOpacity,
-    });
-  };
-
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    setUploadError(false);
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const { data } = await api.post<{ url: string; size: number; mimeType: string }>(
-        '/upload',
-        formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } },
-      );
-      console.log('[upload] data.url:', data.url);
-      setImageUrl(data.url);
-      if (!noPages) {
-        updatePagesBackground(selectedBackgroundPageIds, {
-          type: 'image',
-          imageUrl: data.url,
-          imageSize,
-          imagePosition,
-          imageOpacity,
-        });
-      }
-    } catch {
-      setUploadError(true);
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+    updatePagesBackground(selectedBackgroundPageIds, { type: 'color', value: colorValue });
   };
 
   return (
@@ -401,36 +387,54 @@ export function BackgroundSettings() {
 
           {/* Tür seçici */}
           <div className="grid grid-cols-2 gap-2">
-            {(
-              [
-                { type: 'color', label: 'Renk', Icon: Palette },
-                { type: 'image', label: 'Görsel', Icon: Image },
-              ] as { type: BgType; label: string; Icon: typeof Palette }[]
-            ).map(({ type, label, Icon }) => {
-              const active = bgType === type;
-              return (
-                <button
-                  key={type}
-                  onClick={() => applyType(type)}
-                  disabled={noPages}
-                  className={`flex flex-col items-center justify-center gap-2 py-4 rounded-xl border cursor-pointer transition-colors ${
-                    active
-                      ? 'border-2 border-[#1e293b] bg-surface-subtle'
-                      : 'border border-border-default bg-white hover:border-slate-300 hover:bg-surface-subtle'
-                  } ${noPages ? 'opacity-40 cursor-not-allowed' : ''}`}
-                >
-                  <Icon
+            <button
+              onClick={applyColorType}
+              disabled={noPages}
+              className={`flex flex-col items-center justify-center gap-2 py-4 rounded-xl border cursor-pointer transition-colors ${
+                bgType === 'color'
+                  ? 'border-2 border-[#1e293b] bg-surface-subtle'
+                  : 'border border-border-default bg-white hover:border-slate-300 hover:bg-surface-subtle'
+              } ${noPages ? 'opacity-40 cursor-not-allowed' : ''}`}
+            >
+              <Palette
+                size={20}
+                className={bgType === 'color' ? 'text-text-primary' : 'text-text-secondary'}
+              />
+              <span
+                className={`text-xs ${bgType === 'color' ? 'font-medium text-text-primary' : 'font-medium text-text-secondary'}`}
+              >
+                Renk
+              </span>
+            </button>
+
+            <ImagePickerPopover
+              disabled={noPages}
+              className={`flex flex-col items-center justify-center gap-2 py-4 rounded-xl border cursor-pointer transition-colors ${
+                bgType === 'image'
+                  ? 'border-2 border-[#1e293b] bg-surface-subtle'
+                  : 'border border-border-default bg-white hover:border-slate-300 hover:bg-surface-subtle'
+              } ${noPages ? 'opacity-40 cursor-not-allowed' : ''}`}
+              trigger={
+                <>
+                  <Image
                     size={20}
-                    className={active ? 'text-text-primary' : 'text-text-secondary'}
+                    className={bgType === 'image' ? 'text-text-primary' : 'text-text-secondary'}
                   />
                   <span
-                    className={`text-xs ${active ? 'font-medium text-text-primary' : 'font-medium text-text-secondary'}`}
+                    className={`text-xs ${bgType === 'image' ? 'font-medium text-text-primary' : 'font-medium text-text-secondary'}`}
                   >
-                    {label}
+                    Görsel
                   </span>
-                </button>
-              );
-            })}
+                </>
+              }
+              imageUrl={imageUrl}
+              imageSize={imageSize}
+              imagePosition={imagePosition}
+              imageOpacity={imageOpacity}
+              onImageSelected={applyImageSelected}
+              onSettingsChange={applyImageSettings}
+              onImageCleared={clearImageToColor}
+            />
           </div>
 
           {/* ── Renk (düz veya geçişli) ── */}
@@ -451,212 +455,6 @@ export function BackgroundSettings() {
                       }, ${colorValue.stops.length} durak)`}
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* ── Görsel ── */}
-          {bgType === 'image' && !noPages && (
-            <div className="space-y-3">
-
-              {/* Tab bar */}
-              <div className="flex border-b border-slate-100">
-                {(['image', 'pattern'] as ImageTab[]).map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setImageTab(t)}
-                    className={`px-3 py-1.5 text-sm transition-colors ${
-                      imageTab === t
-                        ? 'border-b-2 border-blue-600 text-text-primary font-medium -mb-px'
-                        : 'text-text-muted hover:text-text-secondary font-medium'
-                    }`}
-                  >
-                    {t === 'image' ? 'Resim' : 'Desen'}
-                  </button>
-                ))}
-              </div>
-
-              {/* Desen sekmesi */}
-              {imageTab === 'pattern' && (
-                <div
-                  className="bg-surface-subtle rounded-lg p-4 text-center text-xs text-text-muted italic"
-                  title="Yakında: Hazır desen ve tekstür kütüphanesi eklenecek."
-                >
-                  Desen kütüphanesi geliştirme aşamasında.
-                </div>
-              )}
-
-              {/* Resim sekmesi */}
-              {imageTab === 'image' && (
-                <div className="space-y-3">
-
-                  {/* hidden file input */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".png,.jpg,.jpeg,.webp,.gif,.svg"
-                    className="hidden"
-                    onChange={handleFileSelect}
-                  />
-
-                  {/* Upload area or preview */}
-                  {!imageUrl ? (
-                    <div
-                      onClick={() => !uploading && fileInputRef.current?.click()}
-                      className="border-2 border-dashed border-border-default rounded-xl p-6 text-center cursor-pointer hover:border-slate-400 hover:bg-surface-subtle transition-colors"
-                    >
-                      {uploading ? (
-                        <div className="flex flex-col items-center gap-2">
-                          <svg
-                            className="w-5 h-5 text-text-muted animate-spin"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                          >
-                            <circle
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="3"
-                              strokeDasharray="60"
-                              strokeDashoffset="20"
-                            />
-                          </svg>
-                          <span className="text-xs text-text-secondary">Yükleniyor...</span>
-                        </div>
-                      ) : (
-                        <>
-                          <Upload size={20} className="mx-auto mb-2 text-text-muted" />
-                          <p className="text-xs text-text-secondary">Görsel yüklemek için tıklayın</p>
-                          <p className="text-[11px] font-normal text-text-muted leading-relaxed mt-1">
-                            PNG, JPG, WEBP, SVG — maks. 20MB
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="relative">
-                        <img
-                          src={imageUrl}
-                          alt="Arka plan görseli"
-                          className="w-full h-24 object-cover rounded-lg border border-border-default"
-                          onError={() => console.warn('[bg-preview] Görsel yüklenemedi:', imageUrl)}
-                        />
-                        <button
-                          onClick={clearImage}
-                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-white/90 border border-border-default text-text-secondary hover:text-red-600 hover:border-red-400 flex items-center justify-center text-xs font-medium shadow-sm"
-                          title="Görseli kaldır"
-                        >
-                          ×
-                        </button>
-                      </div>
-                      <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="w-full py-1.5 text-xs font-medium rounded-lg border border-border-default bg-white hover:bg-surface-subtle text-text-secondary transition-colors"
-                      >
-                        Değiştir
-                      </button>
-                    </div>
-                  )}
-
-                  {uploadError && (
-                    <p className="text-red-500 text-xs">Yükleme başarısız, tekrar deneyin.</p>
-                  )}
-
-                  {/* Settings — shown only when an image is loaded */}
-                  {imageUrl && (
-                    <>
-                      {/* Boyutlandırma */}
-                      <div className="space-y-1.5">
-                        <span className="text-[11px] font-medium text-text-secondary tracking-normal">
-                          Boyutlandırma
-                        </span>
-                        <div className="grid grid-cols-4 gap-1">
-                          {(
-                            [
-                              { value: 'fit', label: 'Sığdır' },
-                              { value: 'fill', label: 'Doldur' },
-                              { value: 'stretch', label: 'Uzat' },
-                              { value: 'tile', label: 'Döşe' },
-                            ] as { value: ImageSizeType; label: string }[]
-                          ).map(({ value, label }) => (
-                            <button
-                              key={value}
-                              onClick={() => {
-                                setImageSize(value);
-                                applyImageSettings({ imageSize: value });
-                              }}
-                              className={`py-1.5 rounded text-[11px] transition-colors ${
-                                imageSize === value
-                                  ? 'border-2 border-[#1e293b] bg-surface-subtle text-text-primary font-medium'
-                                  : 'border border-border-default bg-white text-text-secondary hover:bg-surface-subtle'
-                              }`}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Konum grid'i */}
-                      <div className="space-y-1.5">
-                        <span className="text-[11px] font-medium text-text-secondary tracking-normal">
-                          Konum
-                        </span>
-                        <div className="grid grid-cols-3 gap-1 w-24 mx-auto">
-                          {(
-                            [
-                              'top-left', 'top-center', 'top-right',
-                              'middle-left', 'center', 'middle-right',
-                              'bottom-left', 'bottom-center', 'bottom-right',
-                            ] as ImagePositionType[]
-                          ).map((pos) => (
-                            <button
-                              key={pos}
-                              onClick={() => {
-                                setImagePosition(pos);
-                                applyImageSettings({ imagePosition: pos });
-                              }}
-                              className={`w-6 h-6 rounded transition-colors ${
-                                imagePosition === pos
-                                  ? 'bg-[#1e293b] border border-[#1e293b]'
-                                  : 'border border-border-default hover:border-slate-400'
-                              }`}
-                              title={pos}
-                            />
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Saydamlık */}
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-medium text-text-secondary tracking-normal">
-                            Saydamlık
-                          </span>
-                          <span className="text-xs text-text-primary font-medium">
-                            %{imageOpacity}
-                          </span>
-                        </div>
-                        <input
-                          type="range"
-                          min={0}
-                          max={100}
-                          value={imageOpacity}
-                          onChange={(e) => {
-                            const v = parseInt(e.target.value, 10);
-                            setImageOpacity(v);
-                            applyImageSettings({ imageOpacity: v });
-                          }}
-                          className="w-full studio-slider"
-                        />
-                      </div>
-                    </>
-                  )}
-
-                </div>
-              )}
-
             </div>
           )}
 
