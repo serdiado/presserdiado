@@ -670,7 +670,8 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
     }
     const newModuleType = e.dataTransfer.getData('newModuleType');
     if (newModuleType) {
-      if (slot.role !== 'free') useCatalogStore.getState().toggleSlotRole('free');
+      // Rol dönüşümü + modül atama + tek forced saveState'i setSlotModule yapar
+      // (slot.id hedefli; selectedSlotIds DEĞİL — Bug 2). toggleSlotRole çağrılmaz.
       useCatalogStore
         .getState()
         .setSlotModule(pageNumber, slot.id, newModuleType as 'banner' | 'pizza');

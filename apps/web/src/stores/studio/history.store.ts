@@ -111,5 +111,7 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
     });
   },
 
-  clearHistory: () => set({ past: [], future: [] }),
+  // lastSavedTime de sıfırlanır: history temizlendikten (load/yeni proje/applyTemplate/reset)
+  // sonraki İLK saveState her zaman yazsın — bayat cooldown bir sonraki belgeye sızmasın.
+  clearHistory: () => set({ past: [], future: [], lastSavedTime: 0 }),
 }));

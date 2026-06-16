@@ -91,12 +91,10 @@ function Popover({
 function AddModuleDropdown({
   slot,
   pageNumber,
-  toggleSlotRole,
   setSlotModule,
 }: {
   slot: any;
   pageNumber: number;
-  toggleSlotRole: (role: 'product' | 'free') => void;
   setSlotModule: (pageNumber: number, slotId: string, moduleType: any) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -115,9 +113,7 @@ function AddModuleDropdown({
   const btnCls = 'h-9 px-3 inline-flex items-center gap-1.5 rounded-md text-xs font-medium whitespace-nowrap hover:bg-border-default transition-colors disabled:opacity-30';
 
   const handleSelect = (moduleType: string) => {
-    if (slot.role !== 'free') {
-      toggleSlotRole('free');
-    }
+    // Rol dönüşümünü setSlotModule kendisi yapar (tek forced saveState) — toggleSlotRole çağrılmaz.
     setSlotModule(pageNumber, slot.id, moduleType);
     setOpen(false);
   };
@@ -468,7 +464,6 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
       <AddModuleDropdown
         slot={slot}
         pageNumber={pageNumber}
-        toggleSlotRole={toggleSlotRole}
         setSlotModule={setSlotModule}
       />
 
@@ -1916,7 +1911,7 @@ function FreeSlotMode({ slot, pageNumber, slotIds }: FreeSlotProps) {
         <Divider />
         <button
           onClick={() => {
-            if (slot.role !== 'free') toggleSlotRole('free');
+            // Rol dönüşümünü setSlotModule kendisi yapar (tek forced saveState) — toggleSlotRole çağrılmaz.
             useCatalogStore.getState().setSlotModule(pageNumber, slot.id, 'banner');
           }}
           className={btnCls}
@@ -2106,7 +2101,7 @@ function FreeSlotMode({ slot, pageNumber, slotIds }: FreeSlotProps) {
           Ürün Hücresi Yap
         </button>
         <button
-          onClick={() => updateSlotModuleData(pageNumber, slot.id, null)}
+          onClick={() => updateSlotModuleData(pageNumber, slot.id, null, 'discrete')}
           className={`${btnCls} text-danger hover:bg-red-50`}
         >
           <Trash2 size={16} />

@@ -132,6 +132,23 @@ function appendOverflowToTempPool(
   return result;
 }
 
+/**
+ * Serbest hücre (free) görünümü için customSettings üretir: globalSettings klonlanır,
+ * hücre arkaplanı/kenarlığı/gölgesi/boşluğu/yarıçapı sıfırlanır (şeffaf görünüm).
+ * TEK-KAYNAK: hem toggleSlotRole('free') hem setSlotModule (Tablo Alanı drop'u) bunu kullanır
+ * → "Serbest Alan Yap" ile drop'un görünümü birebir özdeş kalır, drift olmaz.
+ */
+function buildFreeCellSettings(globalSettings: CatalogSettings): CatalogSettings {
+  const cs = clone(globalSettings) as CatalogSettings;
+  cs.spacings.cell = { t: 0, r: 0, b: 0, l: 0, linked: true };
+  cs.borderWidth = 0;
+  cs.colors.cellBg = { type: 'solid', color: '#ffffff', opacity: 0 };
+  cs.colors.cellBorder = { c: cs.colors.cellBorder.c, o: 0 };
+  cs.shadows.cell.active = false;
+  cs.radiuses.cell = { tl: 0, tr: 0, bl: 0, br: 0, linked: true };
+  return cs;
+}
+
 interface CatalogState {
   _hasHydrated: boolean;
   projectId: string | null;
@@ -272,6 +289,7 @@ interface CatalogActions {
     pageNumber: number,
     slotId: string,
     updates: Record<string, unknown> | null,
+    history?: 'discrete' | 'none',
   ) => void;
   /** Kütüphane örneğini (studioModules) slota uygular: free→moduleData klonu, product→customSettings. */
   applyStudioModule: (pageNumber: number, slotId: string, moduleId: string) => void;
@@ -1176,14 +1194,7 @@ export const useCatalogStore = create<Store>()(
               if (role === 'free') {
                 s.product = null;
                 s.isCustom = true;
-                const cs = clone(globalSettings) as CatalogSettings;
-                cs.spacings.cell = { t: 0, r: 0, b: 0, l: 0, linked: true };
-                cs.borderWidth = 0;
-                cs.colors.cellBg = { type: 'solid', color: '#ffffff', opacity: 0 };
-                cs.colors.cellBorder = { c: cs.colors.cellBorder.c, o: 0 };
-                cs.shadows.cell.active = false;
-                cs.radiuses.cell = { tl: 0, tr: 0, bl: 0, br: 0, linked: true };
-                s.customSettings = cs;
+                s.customSettings = buildFreeCellSettings(globalSettings);
               } else {
                 s.moduleData = null;
                 s.moduleType = null;
@@ -1203,22 +1214,45 @@ export const useCatalogStore = create<Store>()(
         set({ formas: recalculateLayout(newFormas, globalSettings.defaultGrid) });
       },
       setSlotModule: (pageNumber, slotId, moduleType) => {
-        const { getActivePages, setActivePages } = get();
-        useHistoryStore.getState().saveState();
+        const { getActivePages, globalSettings, activeFormaId, formas } = get();
+        // clone'dan ÖNCE hedef slotu oku; yoksa saveState'siz erken çık (gereksiz snapshot olmasın).
+        const target = getActivePages()
+          .find((p) => p.pageNumber === pageNumber)
+          ?.slots.find((s) => s.id === slotId);
+        if (!target) return;
+
+        useHistoryStore.getState().saveState(true); // ayrık işlem — cooldown'a takılma, saati ilerletme
         const pages = clone(getActivePages());
-        const page = pages.find((p) => p.pageNumber === pageNumber);
-        if (!page) return;
-        const slot = page.slots.find((s) => s.id === slotId);
-        if (!slot || slot.role !== 'free') return;
+        const slot = pages
+          .find((p) => p.pageNumber === pageNumber)
+          ?.slots.find((s) => s.id === slotId);
+        if (!slot) return;
+
+        // Rol dönüşümü drop'un GERÇEK slot.id'si üstünde yapılır (selectedSlotIds DEĞİL) — Bug 2.
+        // toggleSlotRole('free') ile birebir aynı görünüm (buildFreeCellSettings tek-kaynak).
+        if (slot.role !== 'free') {
+          slot.role = 'free';
+          slot.product = null;
+          slot.isCustom = true;
+          slot.customSettings = buildFreeCellSettings(globalSettings);
+        }
         slot.moduleType = moduleType;
         slot.moduleData =
           moduleType && ModuleRegistry[moduleType]
             ? ModuleRegistry[moduleType].initialData()
             : null;
-        setActivePages(pages);
+
+        // recalculateLayout ile bitir — ürün→free dönüşümünde globalNumber renumber korunur
+        // (toggleSlotRole'ün eski davranışı; setActivePages recalc yapmazdı).
+        const newFormas = formas.map((f) => (f.id === activeFormaId ? { ...f, pages } : f));
+        set({ formas: recalculateLayout(newFormas, globalSettings.defaultGrid) });
       },
-      updateSlotModuleData: (pageNumber, slotId, updates) => {
+      updateSlotModuleData: (pageNumber, slotId, updates, history = 'none') => {
         const { getActivePages, setActivePages } = get();
+        // 'discrete' (ör. "Modülü Kaldır") → ayrık forced snapshot; modül kaldırma kendi undo
+        // adımı olur (applyStudioModule ile aynı konvansiyon). Default 'none' = saveState yok →
+        // sürekli edit/drop yolları (banner metin/stil, pizza, Slot.tsx drop null) korunur; Y2 ertelenmiş kalır.
+        if (history === 'discrete') useHistoryStore.getState().saveState(true);
         setActivePages(
           getActivePages().map((p) =>
             p.pageNumber === pageNumber
