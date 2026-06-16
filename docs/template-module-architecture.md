@@ -433,6 +433,12 @@ web-only `BannerModuleData|PizzaModuleData`'ya bağlandığı için; shared'a ko
   Kök: tip aşırı-katı (BannerSection zaten `?? 0/100`, `=== 'free'/'cover'` ile
   opsiyonel okuyor). Fix: 4 alan `types.ts`'te opsiyonel (`?`). Export değil tip
   yanlıştı; `bannerInit`/render/strip'e dokunulmadı.
+  **Test C bug bulundu + düzeltildi (çift-undo):** banner varken tek Ctrl+Z iki işlemi
+  geri alıyordu. Kök sebep `applyStudioModule`/saveState DEĞİL (onlar sağlam) —
+  `BannerSection` kendi global `keydown→undo` listener'ı ekliyordu; app-level TopBar
+  handler'ıyla çakışıp her Ctrl+Z'de `undo()` İKİ KEZ çalışıyordu (mount-bazlı, banner
+  durduğu sürece). Fix: BannerSection'daki redundant listener kaldırıldı (TopBar
+  Ctrl+Z'yi zaten karşılıyor). Hücre-düzenleme davranışı korundu; redo dalı zaten yoktu.
 - **Aşama 6** — Export aracıyla ~3 banner + ~3 özel + ~3 ürün-sunuş üret + regresyon.
 
 ### Bilinen sınır / ertelenmiş iş — eski modül-drop yolu temizliği

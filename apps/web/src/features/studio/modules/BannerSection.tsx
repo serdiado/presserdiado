@@ -13,7 +13,6 @@ interface LassoRect { startX: number; startY: number; currentX: number; currentY
 
 export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
   const updateSlotModuleData = useCatalogStore((s) => s.updateSlotModuleData);
-  const undo = useCatalogStore((s) => s.undo);
   const selection = useUIStore((s) => s.selection);
   const toggleElementSelection = useUIStore((s) => s.toggleElementSelection);
   const setSelection = useUIStore((s) => s.setSelection);
@@ -71,15 +70,10 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, [isEditingModule, slotId, setEditingContent, setSelection]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !editingCellId) {
-        undo();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [undo, editingCellId]);
+  // Not: Banner'a özel global Ctrl+Z→undo listener'ı KALDIRILDI. App-level TopBar
+  // handler'ı (window keydown) Ctrl+Z'yi zaten karşılıyor; buradaki ikinci listener
+  // mount başına çift-undo yapıyordu (banner varken her Ctrl+Z iki snapshot pop).
+  // Hücre düzenleme Ctrl+Z davranışı TopBar handler'ında aynen kalır.
 
   const updateCell = (cellId: string, patch: Partial<BannerCellData>) => {
     const newCells = cells.map((c) => (c.id === cellId ? { ...c, ...patch } : c));
