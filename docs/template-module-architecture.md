@@ -457,9 +457,27 @@ web-only `BannerModuleData|PizzaModuleData`'ya bağlandığı için; shared'a ko
   (`module-banner-marka`, `module-ornek-vurgu`) Serdiado örnekleri gelince
   değerlendirilecek (muhtemelen 9'dan ikisi olur).
 
-> **Gelecek epic (Aşama 6 SONRASI, bu aşamada KOD YOK):** "Serbest Tasarım Alanı" —
-> slot-içi Canva tarzı, hareketli resim/yazı kutucukları olan modül tipi. Ayrı epic.
-> İşlevini şimdilik Tablo Alanı (banner) karşılıyor; bu aşamaya sızdırılmıyor.
+> **Gelecek epic'ler (Aşama 6 SONRASI, bu aşamada KOD YOK):**
+> - **Serbest Tasarım Alanı** — slot-içi Canva tarzı, hareketli resim/yazı
+>   kutucukları olan modül tipi. Ayrı epic. İşlevini şimdilik Tablo Alanı
+>   (banner) karşılıyor; bu aşamaya sızdırılmıyor.
+> - **Birleşik Resim Seçici** — `ImagePickerPopover` şu an yalnızca
+>   sayfa/kanvas zemini (`CatalogPage.background`) için kullanılıyor. Modül-içi
+>   hücre resmi (`BannerCellData` — `imageMode` / `imagePosX` / `imagePosY` /
+>   `imageScale`), ürün-sunuş modülleri ve diğer resim ekleme alanları hâlâ
+>   kendi eski upload yollarını kullanıyor. Hedef: tüm resim ekleme alanlarını
+>   tek `ImagePickerPopover` deneyimine taşımak. Başlamadan önce kapsam (hangi
+>   alanlar) ve veri modeli farkları (sayfa background vs modül cell data)
+>   çıkarılmalı.
+> - **Katmanlı Zemin / Gradient-Opacity** — `CatalogPage.background.type` şu
+>   an discriminated union (`'color' | 'image'`); renk ve resim aynı anda
+>   compose edilmiyor, resim eklenince renk replace ediliyor. `imageOpacity`
+>   kanvas üstünde tek skaler, alttaki renge karışmıyor. Gradient-opacity
+>   (resmin bir kenardan şeffaflaşıp alttaki renge geçişi) için şema
+>   genişletilmeli (`type` union'ı `colorLayer` + `imageLayer` gibi ayrı
+>   alanlara bölünmeli), renderer iki katmanı compose edecek şekilde
+>   değiştirilmeli, opacity tek skaler yerine gradient-config'e çevrilmeli.
+>   Geniş kapsamlı, ayrı epic.
 
 ### Bilinen sınır / ertelenmiş iş — eski modül-drop yolu temizliği
 
@@ -467,6 +485,19 @@ Aşama 4 canlı testinde çıktı. **Şimdi çözülmüyor; bilinçli ertelendi*
 KOD DEĞİŞİKLİĞİ YOK). İki bug da **ESKİ modül-drop yollarında** — bizim Aşama 1-4
 `applyStudioModule` yolu (studioModuleId → "Hazır Tasarımlar") TEMİZ, etkilenmez.
 Onlara Aşama 1-4'te dokunulmadı.
+
+Ek kayıt — mevcut mimarinin bilinçli bırakılan iki sınırı:
+
+- **Resim seçici parçalı yapı:** `ImagePickerPopover` yalnız sayfa/kanvas zemini
+  (`CatalogPage.background`) için bağlı. Banner hücre resimleri
+  (`BannerCellData.imageMode` / `imagePosX` / `imagePosY` / `imageScale`),
+  ürün-sunuş modülleri ve diğer resim girişleri ayrı/eski upload akışlarında.
+  Tek deneyim için yukarıdaki **Birleşik Resim Seçici** epic'i gerekir.
+- **Zemin compositing sınırı:** `CatalogPage.background.type` şu an
+  `'color' | 'image'` union'ı. Renk + resim aynı anda compose edilmiyor;
+  resim gelince renk replace oluyor ve `imageOpacity` yalnız tek skaler olarak
+  uygulanıyor. Gradient-opacity ve alttaki renge karışım için yukarıdaki
+  **Katmanlı Zemin / Gradient-Opacity** epic'i gerekir.
 
 **Hangi yol "eski":** `newModuleType` drop — "Boş Modüller" panelindeki "Tablo Alanı"
 kartı ([Slot.tsx](../apps/web/src/features/studio/canvas/Slot.tsx) `handleDrop`,
