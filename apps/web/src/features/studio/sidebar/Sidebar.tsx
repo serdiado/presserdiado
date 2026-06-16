@@ -89,7 +89,7 @@ export function Sidebar({ preview = false }: { preview?: boolean }) {
       </div>
 
       {/* İÇERİK ALANI */}
-      <div className="flex-1 overflow-auto p-5 bg-surface-panel">
+      <div className="flex-1 min-h-0 overflow-y-auto p-5 bg-surface-panel">
         {activeTab === 'products' && (preview ? <PreviewProductsPanel /> : <ProductManagement />)}
         {activeTab === 'design' && (preview ? <PreviewDesignPanel /> : <DesignPanel />)}
         {activeTab === 'grid' && (preview ? <PreviewGridPanel /> : <CellPanel />)}
@@ -400,7 +400,7 @@ function ModulesPanel() {
         </button>
         <div
           className={`transition-all duration-300 ease-in-out overflow-hidden ${
-            designsOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+            designsOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
           }`}
         >
           <div className="px-3 py-3.5 border-t border-border-default bg-surface-panel flex flex-col gap-2">
