@@ -479,14 +479,9 @@ web-only `BannerModuleData|PizzaModuleData`'ya bağlandığı için; shared'a ko
 >   değiştirilmeli, opacity tek skaler yerine gradient-config'e çevrilmeli.
 >   Geniş kapsamlı, ayrı epic.
 
-### Bilinen sınır / ertelenmiş iş — eski modül-drop yolu temizliği
+### Bilinen mimari sınırlar — resim seçici ve zemin compositing
 
-Aşama 4 canlı testinde çıktı. **Şimdi çözülmüyor; bilinçli ertelendi** (sunum sonrası,
-KOD DEĞİŞİKLİĞİ YOK). İki bug da **ESKİ modül-drop yollarında** — bizim Aşama 1-4
-`applyStudioModule` yolu (studioModuleId → "Hazır Tasarımlar") TEMİZ, etkilenmez.
-Onlara Aşama 1-4'te dokunulmadı.
-
-Ek kayıt — mevcut mimarinin bilinçli bırakılan iki sınırı:
+Mevcut mimarinin bilinçli bırakılan iki sınırı:
 
 - **Resim seçici parçalı yapı:** `ImagePickerPopover` yalnız sayfa/kanvas zemini
   (`CatalogPage.background`) için bağlı. Banner hücre resimleri
@@ -499,45 +494,12 @@ Ek kayıt — mevcut mimarinin bilinçli bırakılan iki sınırı:
   uygulanıyor. Gradient-opacity ve alttaki renge karışım için yukarıdaki
   **Katmanlı Zemin / Gradient-Opacity** epic'i gerekir.
 
-**Hangi yol "eski":** `newModuleType` drop — "Boş Modüller" panelindeki "Tablo Alanı"
-kartı ([Slot.tsx](../apps/web/src/features/studio/canvas/Slot.tsx) `handleDrop`,
-`toggleSlotRole('free')` + `setSlotModule`). Bizim yol (`studioModuleId` →
-`applyStudioModule`) bu daldan ÖNCE, `saveState(true)` + hedef = drop `slot.id`.
-
-**Bulgu 1 — undo birleşmesi (yalnız cooldown DEĞİL).**
-- *Belirti:* `newModuleType` drop'u 800ms'den FAZLA bekledikten sonra da bir önceki
-  işlemle tek Ctrl+Z'ye yapışabiliyor → salt cooldown teşhisi bu yol için EKSİK.
-- *Kök sebep (kod incelemesi):* `newModuleType` dalı `saveState`'i tutarsız yazıyor.
-  `toggleSlotRole` yalnız `selectedSlotIds` doluysa `saveState` çağırır
-  (catalog.store.ts:1145-1146); `setSlotModule` `saveState`'i **rol-check'inden ÖNCE**
-  çağırır ama drop hedefi `free` değilse erken döner (:1185) → ya boş/yanlış snapshot
-  ya hiç snapshot. Cooldown bunun üstüne binince ayrı adım yazılmıyor.
-- *Not (doğrulanacak):* Canlı testte "Marka Bandı" da listelendi; ama o
-  `applyStudioModule` (saveState(true)) yolundan gider — beklenen: ETKİLENMEZ. Marka
-  Bandı gerçekten birleşiyorsa AYRI bir sorun, ayrıca incelenmeli.
-
-**Bulgu 2 — drop hedefi yanlış slot.**
-- *Belirti:* Bir slot SEÇİLİYKEN "Tablo Alanı"nı BAŞKA slota bırakınca modül bırakılan
-  yere değil yanlış yere gidiyor.
-- *Kök sebep (kod incelemesi):* `toggleSlotRole` hedefi `useUIStore.selectedSlotIds`'ten
-  alır (catalog.store.ts:1144,1149), drop'un `slot.id`'sinden DEĞİL → SEÇİLİ slot free'ye
-  çevrilir. `setSlotModule(…, slot.id, …)` doğru hedefe gider ama o slot hâlâ `product`
-  olduğundan erken döner (:1185) → modül hiç yerleşmez; görünür etki seçili slotta olur.
-- *Beklenen:* Modül hangi slota bırakıldıysa O slota (drop `slot.id`). Bizim
-  `applyStudioModule` zaten böyle (drop `slot.id`).
-
-**Çözüm yönü (gelecek iş — "eski modül-drop yolu temizliği"):**
-- Bulgu 1: ayrık işlemleri sistematik force'lamak (geniş (b) audit: ~10+ `saveState`
-  çağrı yerini denetle, ayrıkları `saveState(true)`, sürekli slider/picker'ları
-  force'suz bırak) + `setSlotModule`'ün saveState'ini rol-check'ten SONRAya almak.
-- Bulgu 2: `newModuleType` drop yolunu hedefi `slot.id`'den alacak şekilde düzeltmek
-  (seçimden bağımsız), `applyStudioModule` desenine hizalamak.
-- **Risk/öncelik:** DÜŞÜK — sunum sonrası. Normal-hız kullanımda nadir; **veri kaybı
-  yok**. (Bulgu 2 sunumda kafa karıştırıcı olabilir ama yalnız eski "Boş Modüller"
-  yolunda; "Hazır Tasarımlar" şovu temiz.)
-
-**Bulgu 3 — banner edit-modu undo (Y2, ertelendi):** hücre-içi Ctrl+Z native text-undo
-ile doğru (Y1 düzeltti), ama hücreler-arası geçişte ikinci Ctrl+Z modülü siliyor (focus
-değişince hücrenin native undo geçmişi sıfırlanır; app-undo'da tek gerçek adım modül-ekleme).
-Kök: banner metni `saveState` yazmıyor (granular app-undo yok). Çözüm: Y2 (`updateSlotModuleData`
-→ `saveState`), riskli/geniş, ileri iş. Veri kaybı yok (redo kurtarıyor).
+**Modül-drop yolları (artık hizalı):** İki giriş noktası var — (1) `newModuleType` drop
+("Boş Modüller" panelindeki "Tablo Alanı" / Serbest Hücre kartı) ve (2) `studioModuleId` →
+`applyStudioModule` ("Hazır Tasarımlar" modülleri); ikisi de [Slot.tsx](../apps/web/src/features/studio/canvas/Slot.tsx)
+`handleDrop`'tan geçer. Tarihçe: `newModuleType` yolu eskiden `toggleSlotRole('free')` +
+`setSlotModule` ile ayrı/tutarsız çalışıyordu; düzeltmeyle bu daldan `toggleSlotRole('free')`
+kaldırıldı — artık yalnız `setSlotModule` çağrılıyor ve rol dönüşümünü + `slot.id` hedeflemeyi
++ `saveState(true)` (forced) işini kendi içinde yapıyor. `applyStudioModule` zaten bu deseni
+kullanıyordu. Sonuç: her iki yol da AYNI desene hizalı (forced `saveState` + drop `slot.id`
+hedefi); tek fark giriş noktasıdır.
