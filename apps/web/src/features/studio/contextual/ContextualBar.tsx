@@ -209,7 +209,7 @@ export function ContextualBar() {
   if (!hasValidSelection) return null;
 
   return (
-    <div className="inline-flex justify-center bg-surface-panel shadow-drop-md rounded-b-lg border-b border-x border-border-default overflow-visible shrink-0 z-50 mb-2 transition-all duration-150 visible opacity-100">
+    <div className="absolute top-0 left-1/2 -translate-x-1/2 inline-flex justify-center bg-surface-panel shadow-drop-md rounded-b-lg border-b border-x border-border-default overflow-visible z-1000 transition-all duration-150 visible opacity-100">
       <div
         id="contextual-bar"
         className="h-12 px-3 flex items-center gap-1 text-xs text-text-secondary bg-surface-panel rounded-b-lg"
