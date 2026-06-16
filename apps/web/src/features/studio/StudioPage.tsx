@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react';
 import { TopBar } from './topbar/TopBar';
@@ -26,6 +26,7 @@ export default function StudioPage() {
   const selection = useUIStore((s) => s.selection);
   const isSidebarOpen = useUIStore((s) => s.isSidebarOpen);
   const setSidebarOpen = useUIStore((s) => s.setSidebarOpen);
+  const setActiveFlyout = useUIStore((s) => s.setActiveFlyout);
 
   const formas = useCatalogStore((s) => s.formas);
   const activeFormaId = useCatalogStore((s) => s.activeFormaId);
@@ -36,8 +37,56 @@ export default function StudioPage() {
 
   const [isDownloading, setIsDownloading] = useState(false);
   const [isHydratingFromServer, setIsHydratingFromServer] = useState(false);
+  const leftSidebarRef = useRef<HTMLDivElement | null>(null);
+  const isDraggingRef = useRef(false);
+  const dragResetTimeoutRef = useRef<number | null>(null);
 
   const activeIndex = formas.findIndex((f) => f.id === activeFormaId);
+
+  useEffect(() => {
+    const clearDragResetTimeout = () => {
+      if (dragResetTimeoutRef.current === null) return;
+      window.clearTimeout(dragResetTimeoutRef.current);
+      dragResetTimeoutRef.current = null;
+    };
+
+    const markDragging = () => {
+      clearDragResetTimeout();
+      isDraggingRef.current = true;
+    };
+
+    const markDragFinished = () => {
+      clearDragResetTimeout();
+      dragResetTimeoutRef.current = window.setTimeout(() => {
+        isDraggingRef.current = false;
+        dragResetTimeoutRef.current = null;
+      }, 150);
+    };
+
+    const handleOutsideClick = (event: MouseEvent) => {
+      const activeFlyout = useUIStore.getState().activeFlyout;
+      if (!activeFlyout || isDraggingRef.current) return;
+
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (leftSidebarRef.current?.contains(target)) return;
+
+      setActiveFlyout(null);
+    };
+
+    document.addEventListener('click', handleOutsideClick, true);
+    document.addEventListener('dragstart', markDragging, true);
+    document.addEventListener('dragend', markDragFinished, true);
+    document.addEventListener('drop', markDragFinished, true);
+
+    return () => {
+      clearDragResetTimeout();
+      document.removeEventListener('click', handleOutsideClick, true);
+      document.removeEventListener('dragstart', markDragging, true);
+      document.removeEventListener('dragend', markDragFinished, true);
+      document.removeEventListener('drop', markDragFinished, true);
+    };
+  }, [setActiveFlyout]);
 
   const handlePrevForma = () => {
     if (formas.length <= 1) return;
@@ -201,6 +250,7 @@ export default function StudioPage() {
         {!isPreviewMode && (
           <div 
             id="studio-left-sidebar" 
+            ref={leftSidebarRef}
             className="h-full shrink-0 flex relative z-1000"
             style={{ width: '80px' }}
           >
