@@ -115,10 +115,23 @@ export function exportPresetFromState(): StudioPreset {
         })),
     );
 
+  // Sayfa zeminleri — pageNumber bazlı, seyrek (yalnız background tanımlı sayfalar).
+  // background OLDUĞU GİBİ taşınır (value/imageUrl/imageSize/imagePosition/imageOpacity/
+  // overlay dahil); stripTransientSettings BURADA uygulanmaz (o yalnız globalSettings'in
+  // hücre-görsel edit alanları için). Referans kopuşu: dönen preset TopBar'da
+  // JSON.stringify ile panoya yazılıyor (handleExportPreset) → canlı sayfayla obje bağı
+  // kopuyor, ekstra clone gerekmez. (Apply tarafında serileştirme yok → orada clone zorunlu.)
+  const pageBackgrounds = formas
+    .flatMap((f) => f.pages)
+    .flatMap((p) =>
+      p.background ? [{ pageNumber: p.pageNumber, background: p.background }] : [],
+    );
+
   return {
     id: `preset-${Date.now()}`,
     name: 'Yeni Şablon',
     settings,
     ...(bannerAreas.length ? { bannerAreas } : {}),
+    ...(pageBackgrounds.length ? { pageBackgrounds } : {}),
   };
 }

@@ -15,6 +15,7 @@ import type {
   StudioSlot,
   StudioPreset,
   StudioPresetBannerArea,
+  StudioPresetPageBackground,
   TempPoolProduct,
   FooterSettings,
 } from '@matbaapro/shared';
@@ -76,6 +77,26 @@ function applyBannerAreas(
         }
       }
     }
+  }
+}
+
+/**
+ * Preset sayfa zeminlerini taze formalara işler: pageNumber ile eşleşen sayfaya
+ * background KOPYALANIR (clone — tema↔broşür referans bağı olmasın; preset objesi ile
+ * broşür sayfası referans paylaşmaz). Eşleşme yoksa girdi sessizce atlanır; preset
+ * karşılığı OLMAYAN sayfanın mevcut zemini KORUNUR (silinmez). pageBackgrounds yok/boşsa
+ * erken döner → eski presetler eski davranışı korur (geri uyum).
+ */
+function applyPageBackgrounds(
+  formas: StudioForma[],
+  pageBackgrounds: StudioPresetPageBackground[] | undefined,
+): void {
+  if (!pageBackgrounds?.length) return;
+  const allPages = formas.flatMap((f) => f.pages);
+  for (const entry of pageBackgrounds) {
+    const page = allPages.find((p) => p.pageNumber === entry.pageNumber);
+    if (!page) continue;
+    page.background = clone(entry.background);
   }
 }
 
@@ -403,6 +424,7 @@ export const useCatalogStore = create<Store>()(
           }
         }
         applyBannerAreas(next, preset.bannerAreas, grid.cols);
+        applyPageBackgrounds(next, preset.pageBackgrounds);
 
         // 4) Listeyi yeni ürün slotlarına SIRAYLA dağıt; artan → overflow
         const targets = productSlotsInOrder(next);

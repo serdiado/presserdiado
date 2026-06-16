@@ -140,6 +140,17 @@ export interface StudioPresetBannerArea {
   rowSpan?: number;
 }
 
+/**
+ * Şablonun taşıdığı sayfa zemini — pageNumber bazlı, seyrek (yalnız zemini olan
+ * sayfalar diziye girer). background tipi mevcut CatalogPage şemasından türetilir
+ * (yeniden tanımlanmaz). pageNumber bu projede forma-bağımsız global ve sıralı →
+ * export ↔ apply aynı semantik (bannerAreas ile tutarlı).
+ */
+export interface StudioPresetPageBackground {
+  pageNumber: number;
+  background: NonNullable<CatalogPage['background']>;
+}
+
 /** Tek tıkla uygulanan hazır şablon: stil (defaultGrid + footer dahil) + boş banner alanları. */
 export interface StudioPreset {
   id: string;
@@ -148,6 +159,7 @@ export interface StudioPreset {
   thumbnail?: string;
   settings: DeepPartial<CatalogSettings>;
   bannerAreas?: StudioPresetBannerArea[];
+  pageBackgrounds?: StudioPresetPageBackground[];
 }
 
 // === Product / temp pool ===
