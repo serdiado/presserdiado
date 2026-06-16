@@ -492,3 +492,9 @@ kartı ([Slot.tsx](../apps/web/src/features/studio/canvas/Slot.tsx) `handleDrop`
 - **Risk/öncelik:** DÜŞÜK — sunum sonrası. Normal-hız kullanımda nadir; **veri kaybı
   yok**. (Bulgu 2 sunumda kafa karıştırıcı olabilir ama yalnız eski "Boş Modüller"
   yolunda; "Hazır Tasarımlar" şovu temiz.)
+
+**Bulgu 3 — banner edit-modu undo (Y2, ertelendi):** hücre-içi Ctrl+Z native text-undo
+ile doğru (Y1 düzeltti), ama hücreler-arası geçişte ikinci Ctrl+Z modülü siliyor (focus
+değişince hücrenin native undo geçmişi sıfırlanır; app-undo'da tek gerçek adım modül-ekleme).
+Kök: banner metni `saveState` yazmıyor (granular app-undo yok). Çözüm: Y2 (`updateSlotModuleData`
+→ `saveState`), riskli/geniş, ileri iş. Veri kaybı yok (redo kurtarıyor).
