@@ -180,7 +180,10 @@ function Hero() {
               <div className="ml-3 text-[10px] font-mono text-slate-500">presserdiado/studio/yeni-katalog</div>
             </div>
             <div className="bg-stone-200 p-5">
-              <div className="bg-white shadow-md aspect-[16/11] relative" style={{ outline: '1px solid #ef4444', outlineOffset: 6 }}>
+              <div
+                className="bg-white shadow-md aspect-16/11 relative"
+                style={{ outline: '1px solid #ef4444', outlineOffset: 6 }}
+              >
                 <div className="grid grid-cols-8 gap-1 p-1.5 h-full">
                   {Array.from({ length: 32 }).map((_, i) => (
                     <div key={i} className="bg-slate-50 border border-slate-200 rounded-sm flex flex-col p-1">
@@ -196,7 +199,7 @@ function Hero() {
               </div>
             </div>
           </div>
-          <div className="absolute -left-6 top-8 bg-white border border-slate-200 rounded-lg shadow-sm p-3 max-w-[180px] hidden lg:block">
+          <div className="absolute -left-6 top-8 bg-white border border-slate-200 rounded-lg shadow-sm p-3 max-w-45 hidden lg:block">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded bg-emerald-100 text-emerald-700 grid place-items-center">{ICONS.check}</div>
               <div>

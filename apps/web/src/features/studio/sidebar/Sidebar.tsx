@@ -400,7 +400,7 @@ function ModulesPanel() {
         </button>
         <div
           className={`transition-all duration-300 ease-in-out overflow-hidden ${
-            designsOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+            designsOpen ? 'max-h-500 opacity-100' : 'max-h-0 opacity-0'
           }`}
         >
           <div className="px-3 py-3.5 border-t border-border-default bg-surface-panel flex flex-col gap-2">
