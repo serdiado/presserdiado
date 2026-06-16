@@ -94,6 +94,12 @@ export function TopBar() {
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        // Metin alanı (contentEditable / input / textarea) odaktayken native text-undo'ya
+        // izin ver — app-undo işlemi/modülü silmesin (ör. banner hücresi metin düzenlemesi).
+        const el = document.activeElement as HTMLElement | null;
+        if (el && (el.isContentEditable || el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
+          return;
+        }
         e.preventDefault();
         if (e.shiftKey) redo();
         else undo();

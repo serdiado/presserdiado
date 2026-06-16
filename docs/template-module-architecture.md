@@ -439,6 +439,14 @@ web-only `BannerModuleData|PizzaModuleData`'ya bağlandığı için; shared'a ko
   handler'ıyla çakışıp her Ctrl+Z'de `undo()` İKİ KEZ çalışıyordu (mount-bazlı, banner
   durduğu sürece). Fix: BannerSection'daki redundant listener kaldırıldı (TopBar
   Ctrl+Z'yi zaten karşılıyor). Hücre-düzenleme davranışı korundu; redo dalı zaten yoktu.
+  **Senaryo 4 (Y1) — edit-modu Ctrl+Z (önceden var olan eksik, bizim regresyon DEĞİL):**
+  banner hücresi metin düzenlerken Ctrl+Z tüm modülü siliyordu. Üç bağımsız eksiğin
+  birleşimi: TopBar handler edit-context bilmiyordu (`preventDefault`+blind undo),
+  banner metni saveState yazmıyor (geçmişe girmiyor), çift-undo zaten kapatılmıştı.
+  Fix (Y1, tek dosya TopBar.tsx): keydown handler'a metin-alanı guard'ı —
+  `document.activeElement` contentEditable/input/textarea ise erken çık (native
+  text-undo'ya bırak, app-undo çağırma). Edit-dışı davranış değişmedi. Y2 (banner
+  metnini saveState'e bağlamak) bilinçli ertelendi (updateSlotModuleData geniş kullanım).
 - **Aşama 6** — Export aracıyla ~3 banner + ~3 özel + ~3 ürün-sunuş üret + regresyon.
 
 ### Bilinen sınır / ertelenmiş iş — eski modül-drop yolu temizliği
