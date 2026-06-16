@@ -447,7 +447,19 @@ web-only `BannerModuleData|PizzaModuleData`'ya bağlandığı için; shared'a ko
   `document.activeElement` contentEditable/input/textarea ise erken çık (native
   text-undo'ya bırak, app-undo çağırma). Edit-dışı davranış değişmedi. Y2 (banner
   metnini saveState'e bağlamak) bilinçli ertelendi (updateSlotModuleData geniş kullanım).
-- **Aşama 6** — Export aracıyla ~3 banner + ~3 özel + ~3 ürün-sunuş üret + regresyon.
+- **Aşama 6 (kapsam netleşti)** — Serdiado dev aracıyla tasarlayıp export edecek; toplam
+  **9 örnek**: **6 × FreeStudioModule `type:'banner'`** (Tablo Alanı tasarımları — marka
+  bandı, kampanya bandı, duyuru kutusu vb. farklı içerikli banner'lar, AYRI tip değil)
+  + **3 × ProductStudioModule `type:'product-presentation'`** (ürün-sunuş tasarımları).
+  Yeni tip/kol YOK (mevcut free + product). Yapıştırma protokolü: anlamlı `id`
+  (`module-banner-kampanya` gibi, timestamp değil), Türkçe `name`+`description`, MODULES'a
+  ekle, typecheck, "Hazır Tasarımlar"da render + round-trip doğrula. Mevcut tohumlar
+  (`module-banner-marka`, `module-ornek-vurgu`) Serdiado örnekleri gelince
+  değerlendirilecek (muhtemelen 9'dan ikisi olur).
+
+> **Gelecek epic (Aşama 6 SONRASI, bu aşamada KOD YOK):** "Serbest Tasarım Alanı" —
+> slot-içi Canva tarzı, hareketli resim/yazı kutucukları olan modül tipi. Ayrı epic.
+> İşlevini şimdilik Tablo Alanı (banner) karşılıyor; bu aşamaya sızdırılmıyor.
 
 ### Bilinen sınır / ertelenmiş iş — eski modül-drop yolu temizliği
 
