@@ -2,7 +2,7 @@
 > Presserdiado / MatbaaPro — Sipariş Akışı, Baskı Özellikleri, Fiyatlandırma, PDF Dondurma, Operatör/Admin
 > Tüm SeniorDev, ArtDirector, StudioCanvas, SecurityAuth komutlarında bu belge referans alınır.
 > İlgili belge: `product-module-architecture.md` (ürün havuzu / medya)
-> Son güncelleme: S1-S6 tamamlandı, commit'li. S7 (admin panel) sırada.
+> Bu belge mimari kararları tanımlar; uygulama durumu / proje planlaması burada tutulmaz.
 
 ---
 
@@ -10,17 +10,17 @@
 
 Sipariş başlangıçta **stüdyo içi bir buton** olarak tasarlanmıştı (Fiyat Detayları paneli → "Sipariş Ver"). Bu yanlış: gerçek web-to-print akışında sipariş, stüdyodan bağımsız bir süreçtir ve birden fazla giriş kapısı vardır.
 
-| Giriş Kapısı | Akış | Pilot |
-|---|---|---|
-| Web sitesi → ürün/özellik seç → stüdyo (özellikler önceden seçili) → tasarla → sipariş | Ana akış | ✅ Pilotta |
-| Web sitesi → ürün/özellik seç → hazır dosya yükle (stüdyosuz) | Alternatif akış | 🔲 Pilot sonrası (şema hazır) |
-| Stüdyo içinden doğrudan sipariş | Yardımcı | ✅ Pilotta (ortak katmanı çağırır) |
+| Giriş Kapısı | Akış |
+|---|---|
+| Web sitesi → ürün/özellik seç → stüdyo (özellikler önceden seçili) → tasarla → sipariş | Ana akış |
+| Web sitesi → ürün/özellik seç → hazır dosya yükle (stüdyosuz) | Alternatif akış (şema hazır) |
+| Stüdyo içinden doğrudan sipariş | Yardımcı (ortak katmanı çağırır) |
 
 **Temel ilke:** Baskı özellikleri + fiyatlandırma + sipariş oluşturma = **stüdyodan bağımsız paylaşılan katman.** Stüdyodaki buton bu katmanı *tetikler*, mantığı içinde tutmaz. Üç giriş kapısı da aynı fiyatlandırma servisini ve aynı sipariş API'sini çağırır.
 
 ---
 
-## Pilot Kapsamı (Uçtan Uca İskelet)
+## Sipariş Akışı (Uçtan Uca İskelet)
 
 ```
 Web sitesi (basit) → üye kayıt/giriş → broşür seç + baskı özellikleri
@@ -34,19 +34,19 @@ PDF dondur (Puppeteer RGB → MinIO)
 Admin/operatör listesi → PDF indir + durum yönetimi
 ```
 
-Bu pilot, mimarinin bel kemiğini tek geçişte test eder: auth, ürün seçimi, özellik aktarımı, sipariş, PDF dondurma, operatör tarafı.
+Mimarinin bel kemiği: auth, ürün seçimi, özellik aktarımı, sipariş, PDF dondurma, operatör tarafı.
 
 ---
 
 ## Mevcut Hazır Altyapı (sıfırdan kurulmayacak)
 
-| Modül | Durum | Not |
-|---|---|---|
-| Auth | ✅ HAZIR | `register`, `login`, `refresh`, `me` — JWT, `app.authenticate`. Web tarafında sadece **ekran** eklenecek. |
-| Billing | ✅ HAZIR | `user_billing_profiles` — sipariş fatura profiline bağlanır. |
-| Products | ✅ HAZIR | Ürün havuzu — sipariş kalemleri buradan beslenir. |
-| Media | ✅ HAZIR | Logo/arka plan/şekil. |
-| MinIO | ✅ AYAKTA | docker-compose'da kurulu. Dondurulmuş PDF buraya yazılır. |
+| Modül | Not |
+|---|---|
+| Auth | `register`, `login`, `refresh`, `me` — JWT, `app.authenticate`. |
+| Billing | `user_billing_profiles` — sipariş fatura profiline bağlanır. |
+| Products | Ürün havuzu — sipariş kalemleri buradan beslenir. |
+| Media | Logo/arka plan/şekil. |
+| MinIO | docker-compose'da kurulu. Dondurulmuş PDF buraya yazılır. |
 
 ---
 
@@ -78,6 +78,8 @@ INDEX (status)
 **Kritik kararlar:**
 - `status` (üretim) ile `paymentStatus` (ödeme) **ayrı alan** — asla aynı enum'a gömülmez. Sepet+ödeme geldiğinde dağılmaması için.
 - `billingSnapshot` JSON: fatura profili sonradan değişebilir/silinebilir; sipariş anındaki bilgi dondurulur (yasal/üretimsel kanıt). `billingProfileId` sadece referans/iz için tutulur.
+- `orderNumber` üretimi: format `PR-YYYY-NNNNN` (yıl + 5 haneli sıfır-pad sıra). Sayaç **yıllık sıfırlanır** — o yılın `PR-YYYY-%` kayıtlarının max'ı +1, yılın ilk siparişinde 1. Eşzamanlılık: numara üretimi transaction içinde, yılın son numarası `SELECT … FOR UPDATE` ile kilitlenir; `order_number` UNIQUE ihlalinde sınırlı **retry** (max'ı yeniden okuyup yeni numara hesaplar). Sabit-genişlikli sıfır-pad olduğundan sözlüksel sıralama = sayısal sıralama.
+- Taslak (`draft`) sipariş **oluşturulmaz.** Sipariş yalnızca "Sipariş Ver" anında `orders` + `order_items` olarak doğar; özellikler o anda dondurulur. Sipariş öncesinde web'de seçilen baskı özellikleri ayrı bir `draft` kaydı yerine projenin `canvasData.catalog.printOptions` alanında taşınır (yarım siparişler `orders` tablosunu kirletmez). `status` ENUM'undaki `draft` değeri ileride (sepet/ödeme epic'i) için şemada durur, pilotta üretilmez.
 
 ### Tablo 2: `order_items` (sipariş kalemleri)
 ```sql
@@ -135,7 +137,7 @@ değişiklik studio'yu kırar. Katalog rolü mevcut kolonlarla karşılanır:
 
 **Kritik kararlar:**
 - Tek-kaynak ilkesi: ikinci bir ürün-tipi tablosu yaratılmaz. Studio + katalog aynı tabloyu paylaşır.
-- Belgeden tek sapma: kolon adları `slug`/`active` (belgede `key`/`isActive` deniyordu). Gerekçe: studio'yu bozmamak. Sonraki parçalar (S2 seed, S5 selector) `slug`/`active` adlarını kullanır.
+- Belgeden tek sapma: kolon adları `slug`/`active` (belgede `key`/`isActive` deniyordu). Gerekçe: studio'yu bozmamak. Seed ve seçim bileşeni `slug`/`active` adlarını kullanır.
 - Pilotda: `brochure` slug'lı kayıt aktif. Katalog/etiket/kartvizit `active=false`.
 
 #### Tablo 4: `print_options` (seçenek katalogu)
@@ -155,7 +157,7 @@ INDEX (productTypeId, category, isActive)
 ```
 **Kritik kararlar:**
 - `category` ENUM ile seçenek türleri ayrışır; admin her kategoriye ekleme yapar.
-- `affectsDesign`: ebat/kırım gibi tasarımı bozan seçeneklerde `TRUE`. S5'te bu seçenekler stüdyoda **salt-okunur/kilitli** yapıldı — `wizardSelection.paperSize`/`foldType`'tan türetilir, selektörde `disabled` + kilit ikonuyla gösterilir (değiştirme + relayout yok). `affectsDesign` katalogdan okunur (UI'da hardcode değil) — tek kaynak.
+- `affectsDesign`: ebat/kırım gibi tasarımı bozan seçeneklerde `TRUE`. Bu seçenekler stüdyoda **salt-okunur/kilitli**: değerler aktif tasarımdan (wizard seçimi) türetilir, seçim bileşeninde `disabled` + kilit ikonuyla gösterilir (stüdyoda değiştirme/relayout yok). `affectsDesign` katalogdan okunur (UI'da hardcode değil) — tek kaynak.
 - `metadata` JSON: ebadın gerçek ölçüsü, kağıdın açıklaması vb. esnek alan.
 
 #### Tablo 5: `pricing_rules` (fiyat kuralları)
@@ -181,11 +183,11 @@ INDEX (productTypeId, isActive)
 - Fiyat kuralı, seçenek kombinasyonuna göre eşleşir. Boş (NULL) alan "bu kritere bakma" demek → admin geniş veya dar kural yazabilir.
 - Pilotda **seed veriyle** doldurulur (birkaç broşür kombinasyonu). Fiyat hesabı çalışır.
 - Fiyatlandırma servisi bu tabloyu okur; hesap mantığı **tek yerde** (paylaşılan katman). Backend'de yeniden hesaplanır — frontend tutarına güvenilmez.
+- **Platform aracı kurum modeli + dijital baskı → kalıp/hazırlık ücreti yok (`setupFee = 0`).** Şema esnek `setupFee` kolonunu korur (ileride ücret gerekirse), seed kararı 0'dır.
 
-#### Pilot / Admin sınırı (kritik)
-- Pilotda bu üç tablo (`product_types`, `print_options`, `pricing_rules`) **seed veriyle** doldurulur. Sipariş akışı bu seed üzerinden uçtan uca çalışır.
-- **Admin yönetim UI'si (katalog + fiyat CRUD) ayrı epic.** Şema baştan tam kurulduğu için admin geldiğinde sadece CRUD ekranı eklenir — şema değişmez.
-- Bu, "zemini doğru kur, parça parça aktive et" felsefesi: tablolar tam, seed ile başlar, admin yönetimi sonra.
+#### Katalog / Admin sınırı
+- Bu üç tablo (`product_types`, `print_options`, `pricing_rules`) tek kaynaktır; veri seed veya admin CRUD ile girilebilir, şema aynı kalır.
+- **Katalog + fiyat yönetimi (admin CRUD) ayrı bir katmandır.** Şema baştan tam kurulduğu için yönetim UI'si eklendiğinde sadece CRUD ekranı gelir — tablolar değişmez.
 
 ### Storage düzeni (MinIO)
 ```
@@ -200,7 +202,7 @@ bucket: presserdiado-orders
 
 ## Paylaşılan Katman: Baskı Özellikleri + Fiyatlandırma
 
-Stüdyodan bağımsız modül. Katalog tablolarından beslenir, üç çağıran (pilotda 2 aktif):
+Stüdyodan bağımsız modül. Katalog tablolarından beslenir, üç çağıran kullanır:
 
 ```
    Katalog (admin yönetir): product_types · print_options · pricing_rules
@@ -213,12 +215,12 @@ Stüdyodan bağımsız modül. Katalog tablolarından beslenir, üç çağıran 
 └─────────────────────────────────────────────┘
         ▲              ▲                ▲
    Web sitesi      Stüdyo buton    Dosya yükleme
-   (✅ pilot)      (✅ pilot)      (🔲 sonra)
 ```
 
 - Seçenekler **katalogtan** okunur (hardcode değil). Admin ekler/çıkarır, üç çağıran da otomatik görür.
 - Fiyat hesap fonksiyonu **tek yerde** yaşar. Frontend anlık gösterim + backend doğrulama aynı kuralı kullanır.
 - **Güvenlik:** Fiyat backend'de yeniden hesaplanır ve doğrulanır. Frontend'den gelen tutara asla güvenilmez (sipariş oluştururken `pricing_rules`'tan tekrar hesapla, uyuşmazsa reddet).
+- **Integer-cent aritmetiği:** Tüm fiyat hesabı kuruş (integer cent) üzerinden yapılır; para asla float ile tutulmaz. Dönüşüm ve yuvarlama tek noktada (`toCents`/`fromCents`) — finansal doğruluk kararı.
 
 ---
 
@@ -237,13 +239,13 @@ Tek kaynak. (Daha önceki "proje adı tek-kaynak refactor" ile aynı felsefe —
 
 **Adet (quantity):** Sihirbazda seçilen adet de aynı yolla taşınır (`StudioCanvasData.catalog.quantity`): stüdyoya aktarılır, kullanıcı stüdyoda değiştirebilir, sipariş anında dondurulur. Adet bilgisi olmayan eski projeler için `DEFAULT_QUANTITY` guard'ı devreye girer.
 
-**Tasarımı etkileyen değişim (kritik):** Ebat/kırım değişimi tasarımı bozar (hücre düzeni, sayfa yapısı). Hangi seçeneğin tasarımı bozduğu **UI'da hardcode edilmez** — `print_options.affectsDesign` alanından okunur (tek kaynak). S5'te `affectsDesign = TRUE` olan seçenekler (ebat/kırım) stüdyoda **kilitli** tutulur: `PrintOptionsSelector`'da `disabled` + kilit ikonu, değerler `wizardSelection`'dan türetilir. Değiştirme akışı ve relayout S5 kapsamında **yok** (sonraki epic). Diğer seçenekler serbest düzenlenir.
+**Tasarımı etkileyen değişim (kritik):** Ebat/kırım değişimi tasarımı bozar (hücre düzeni, sayfa yapısı). Hangi seçeneğin tasarımı bozduğu **UI'da hardcode edilmez** — `print_options.affectsDesign` alanından okunur (tek kaynak). `affectsDesign = TRUE` olan seçenekler (ebat/kırım) stüdyoda **kilitli** tutulur: `PrintOptionsSelector`'da `disabled` + kilit ikonu, değerler `wizardSelection`'dan türetilir. Stüdyoda değiştirme akışı ve relayout **yok** (sonraki epic). Diğer seçenekler serbest düzenlenir.
 
 ---
 
 ## PDF Dondurma
 
-> ⚠️ **S4 keşfi:** Stüdyoda zaten çalışan bir export altyapısı var. Üst bar → "Dışa Aktar" (`DownloadMenu.tsx`) → `POST /export` → backend `exportCatalog` (`export.service.ts`) → Puppeteer `/print-view` (`PrintView.tsx`, UI'siz, mm-tabanlı) render → `page.pdf()` → `pdf-lib` ile forma birleştirme → blob olarak kullanıcıya iner. **S4 bunu sıfırdan kurmaz; mevcut altyapıyı yeniden kullanır.**
+> Sipariş PDF'i, stüdyodaki mevcut export altyapısını yeniden kullanır (sıfırdan render kurulmaz): Üst bar → "Dışa Aktar" (`DownloadMenu.tsx`) → `POST /export` → backend `exportCatalog` (`export.service.ts`) → Puppeteer `/print-view` (`PrintView.tsx`, UI'siz, mm-tabanlı) render → `page.pdf()` → `pdf-lib` ile forma birleştirme. Dondurma servisi aynı zinciri çağırır.
 
 - **Üretim:** Mevcut `exportCatalog` backend render'ı kullanılır (Puppeteer + `/print-view` + pdf-lib). `html2canvas-pro` bu zincirde değil (sadece thumbnail).
 - **Renk uzayı — RGB (doğrulandı):** Kod incelendi; mevcut zincirde CMYK dönüşümü YOK (ne ICC, ne Ghostscript, ne PDF/X). Chromium `page.pdf()` çıktısı RGB. (Not: Illustrator/Acrobat'ta "CMYK" görünmesi, araçların SWOP simülasyonu/gösterim modundan kaynaklanıyordu — dosya gerçekte RGB.) Pilot RGB ile ilerler.
@@ -253,8 +255,8 @@ Tek kaynak. (Daha önceki "proje adı tek-kaynak refactor" ile aynı felsefe —
 ### Dondurma servisi tetikten AYRI (kritik karar)
 PDF dondurma, bir tetik anına sabitlenmez — **çağrılabilir bağımsız servis** olarak kurulur:
 - `freezeOrderPdf(orderId)`: siparişin verisinden PDF üretir (`exportCatalog`), MinIO'ya yazar, `productionPdfKey`'i günceller. İdempotent olmalı (tekrar çağrılırsa üzerine yazar/atlar).
-- **Pilotta tetik:** Sipariş oluşturma akışı (`createOrder` sonrası) bu servisi çağırır — çünkü pilotda ödeme yok.
-- **İleride tetik taşınabilir:** Ödeme onayı (`paymentStatus='paid'`) veya operatör "İş Emrini Üret" butonu (S7 admin). Servis aynı kalır, yalnızca *çağıran yer* değişir. Gerekçe: ödemeyen sipariş için boşuna PDF üretip MinIO'da yer kaplamamak.
+- **Mevcut tetik:** Sipariş oluşturma akışı (`createOrder` sonrası) bu servisi çağırır — ödeme akışı henüz devrede değil.
+- **Tetik taşınabilir:** Ödeme onayı (`paymentStatus='paid'`) veya operatör "İş Emrini Üret" butonu. Servis aynı kalır, yalnızca *çağıran yer* değişir. Gerekçe: ödemeyen sipariş için boşuna PDF üretip MinIO'da yer kaplamamak.
 - Bu, "zemini doğru kur, tetiği sonra taşı" felsefesi: mekanizma bir kez yazılır, tetikleme noktası esnek kalır.
 
 ### Storage
@@ -268,60 +270,18 @@ PDF dondurma, bir tetik anına sabitlenmez — **çağrılabilir bağımsız ser
 **Karar:** Tam admin paneli **şimdi kurulmaz** (roller, yetkiler, üretim akışı, denetim = ayrı büyük epic). Bunun yerine kullanıcı panelindeki pattern tekrarlanır: **görsel iskelet tam kurulur, bölümler parça parça aktive edilir.**
 
 - Admin route + layout (sidebar, **gerçek korumalı erişim**) → tam kurulur.
-- Menü: Siparişler (✅ aktif), Üretim / Kullanıcılar / Fiyatlandırma / Raporlar (🔲 placeholder).
-- **Siparişler** → basit liste aktif: sipariş no, kullanıcı, durum, tutar, PDF indir, durum değiştir.
+- Menü kademeli aktive edilir: bazı modüller gerçek çalışır, geri kalanı görsel placeholder olarak durur (kullanıcı panelindeki desenle aynı).
+- Sipariş yönetimi basit liste olarak çalışır: sipariş no, kullanıcı, durum, tutar, PDF indir, durum değiştir.
 - Claude Design ile iskelet tasarlanabilir (kullanıcı paneli gibi), entegrasyon en sona.
 
 **Güvenlik:** Erişim kontrolü placeholder OLAMAZ. Admin route'u baştan gerçekten korumalı (rol/yetki kontrolü), iskelet pasif olsa bile. Aksi halde güvenlik açığı placeholder olarak kalır.
 
 ---
 
-## Onaylanmış UI Referansları (Claude Design)
-
-> Claude Design tarafından, mevcut proje kodları (token sistemi) bilinerek üretilmiş tasarımlar. Token kurallarına uygun (primary sadece CTA, nötr renkler). Kod çıktısı **entegrasyon anında** (S6/S7) ilgili ajana verilecek; şu an referans olarak kayıt altında.
-
-### Referans 1 → Web Sitesi (S6)
-**"UI Kit · Web-to-Print Sitesi"** — Marketing & sipariş sayfası.
-- İçerik: hero ("Tarayıcıda tasarla, 48 saatte kapına gelsin"), ürün grid, canlı fiyat konfigüratörü önizlemesi, "1. Ürün Seçimi → Ne basacaksınız?" akışı (Broşür / Katalog / Etiket / Kartvizit kartları).
-- Nav: Ürünler, Fiyat Hesapla, Nasıl Çalışır, Şablonlar, Kurumsal, Giriş Yap, **Sipariş Ver** (CTA).
-- **Pilot aktivasyonu:** Yalnızca **Broşür** aktif. Katalog/Etiket/Kartvizit görsel olarak durur ama katalogtan `isActive=false` gelir (placeholder). Tasarım vizyonu tam, aktivasyon kademeli.
-
-### Referans 2 → Yönetici Paneli (S7)
-**"UI Kit · Yönetici Paneli"** — koyu sol nav + kontrol paneli + sipariş listesi + detay drawer + üretim kanban.
-- İçerik: sol nav (Kontrol Paneli, Siparişler, Üretim, Baskı İşleri, Baskı Kontrolü, Kargo, Ürünler, Fiyatlandırma, Şablonlar, Müşteriler, Faturalar, Raporlar, Ekip/Yetkiler, Sistem Ayarları), sipariş listesi tablosu, sipariş detay drawer'ı (zaman çizelgesi, "İş Emrini Üret", "Baskı Kontrolü", "Müşteriye Mesaj", "Sipariş İptal Et").
-- **Pilot aktivasyonu (KRİTİK):** Bu tasarım tam admin vizyonudur — hepsini canlandırmak ayrı büyük epic. Pilotda **görsel iskelet tam** kurulur ama yalnızca şunlar **gerçekten çalışır:** Siparişler listesi, durum değiştir, PDF indir, sipariş detay görüntüleme. Üretim kanban, Baskı Kontrolü, Kargo, "İş Emrini Üret", Fiyatlandırma yönetimi, Müşteriler vb. → görsel placeholder, pasif. (Kullanıcı panelindeki kademeli aktivasyon pattern'i.)
-- **Uyarı:** Tasarımın zenginliği tuzak; hepsini aktive etmeye çalışmak pilotu aylara yayar. İskeleti kur, sipariş listesini aktive et, gerisi sonraki epic'ler.
-
----
-
-## Uygulama Parçaları (önerilen sıra)
-
-| Parça | İş | Ajan | Bağımlılık |
-|---|---|---|---|
-| **S1** | DB: `orders`, `order_items`, `product_types`, `print_options`, `pricing_rules` migration + Drizzle schema | SeniorDev — **Opus** | — |
-| **S2** | Katalog seed (broşür + ebat/kağıt/renk seçenekleri + fiyat kuralları) + Pricing servisi + fiyat hesap (backend doğrulamalı) | SeniorDev — **Opus** | S1 |
-| **S3** | Sipariş oluşturma API (`POST /orders`) + fatura snapshot + sahiplik kontrolü | SeniorDev — **Opus** | S1, S2 |
-| **S4** | PDF dondurma: `freezeOrderPdf(orderId)` servisi (mevcut `exportCatalog`'u yeniden kullanır → MinIO → `productionPdfKey`). Pilotta `createOrder` sonrası çağrılır. RGB. | SeniorDev — **Opus** | S3 |
-| **S5** | `PrintOptionsSelector` ortak bileşeni (katalogtan beslenir) + stüdyo "Sipariş Ver" entegrasyonu + `affectsDesign` uyarısı | ArtDirector + SeniorDev | S2, S3 |
-| **S6** | Web sitesi (basit): kayıt/giriş ekranı (mevcut auth) + broşür seçim (`PrintOptionsSelector`) + özellik → stüdyoya aktarım | ArtDirector + SeniorDev | S2, S5 |
-| **S7** | Admin panel iskeleti (korumalı) + aktif basit sipariş listesi (indir + durum) | ArtDirector + SeniorDev | S3, S4 |
-
-### Önerilen öncelik
-```
-S1 → S2 → S3 → S4   (backend bel kemiği — sipariş gerçekten oluşur ve PDF donar)
-        ↓
-S5 → S6             (giriş kapıları — stüdyo + web)
-        ↓
-S7                  (operatör tarafı — gerçek veriyle entegre)
-```
-> Admin paneli **en son** entegre edilir: arkasındaki veri/API hazır olunca gerçek veriyle çalışır. Tasarım (Claude Design) paralel hazırlanabilir, entegrasyon sona kalır.
-
----
-
 ## Güvenlik Notları (SecurityAuth)
 
 - Her sipariş endpoint'inde `userId` sahiplik kontrolü (IDOR). `WHERE userId = :userId`.
-- **Fiyat backend'de yeniden hesaplanır** — frontend'den gelen tutara güvenilmez. S5'te tek fiyat kaynağı netleşti: yerel `pricing.config.json` + `PriceCalculator.tsx` **emekliye ayrıldı (silindi)**; fiyat yalnızca `POST /pricing/quote`'tan gelir, frontend'de fiyat hesabı yoktur.
+- **Fiyat backend'de yeniden hesaplanır** — frontend'den gelen tutara güvenilmez. Tek fiyat kaynağı `POST /pricing/quote`'tur; frontend'de fiyat hesabı yoktur (yerel fiyat hesaplayıcı bulunmaz).
 - Operatör/admin endpoint'leri ayrı yetki seviyesi ister (normal kullanıcı erişemez). Admin route baştan korumalı.
 - `orderNumber` tahmin edilebilir olmamalı veya erişim sadece sahibine/admine açık olmalı (sıralı no + sahiplik kontrolü yeterli).
 - MinIO objeleri pilotda erişim kontrollü; signed URL pilot sonrası.
@@ -331,19 +291,7 @@ S7                  (operatör tarafı — gerçek veriyle entegre)
 
 ## Açık Kararlar (implementasyon öncesi netleşecek)
 
-- **Stüdyoda özellik düzenleme sınırı:** ✅ ÇÖZÜLDÜ — `print_options.affectsDesign` tek kaynak. S5'te `TRUE` olanlar (ebat/kırım) stüdyoda **kilitli/değiştirilemez** (wizard seçiminden türetilir, `disabled` + kilit ikonu); S5'te relayout yok. Diğer seçenekler serbest düzenlenir.
-- **`orderNumber` formatı:** `PR-YYYY-NNNNN` mi, başka şema mı? Sıra kaynağı (DB sequence / sayaç tablosu)?
-- **Taslak sipariş (draft):** ✅ ÇÖZÜLDÜ — Seçenek B. Web'de seçilen baskı özellikleri **proje meta'sında** (`project.printOptions` JSON) taşınır. `draft` order OLUŞMAZ. Sipariş yalnızca "Sipariş Ver" anında `orders` + `order_items` olarak doğar ve özellikler o anda dondurulur. Gerekçe: yarım siparişlerin `orders` tablosunu kirletmemesi + mevcut proje-kaydetme altyapısına (`useProjectSave`) oturması. Not: `orders.status` ENUM'ındaki `draft` değeri ileride (sepet/ödeme epic'i) kullanılmak üzere şemada kalır, pilotta üretilmez.
 - **KDV ve indirim kaynağı:** `pricing_rules.taxRate` ve `quantityTiers` pilotda sabit; admin yönetimi sonra.
-- **Logout / şifre sıfırlama:** Auth'ta yok. Logout = frontend token temizleme (pilotta yeterli). Şifre sıfırlama sonraya.
+- **Logout / şifre sıfırlama:** Auth'ta yok. Logout = frontend token temizleme. Şifre sıfırlama sonraya.
 - **CMYK boru hattı:** Ghostscript + ICC + preflight — sipariş modülünden sonra ayrı epic.
-- **Hazır dosya yükleyerek sipariş:** `order_items.itemType='uploaded_file'` şemada hazır; UI pilot sonrası.
-
----
-
-## S1 Notu — Mevcut Şemayla Uyumlama (uygulama sırasında keşfedildi)
-
-Belge yazılırken DB'nin mevcut hali tam görünmüyordu. S1 implementasyonunda grep ile iki çakışma bulundu ve çözüldü:
-
-1. **`orders` (eski tablo):** Eski tek-kalemli tasarım (printConfig, commissionRate, printerId...) hiçbir serviste kullanılmıyordu → belgedeki yeni yapıyla **değiştirildi**. Eski `printerId` FK migration'da düşürüldü.
-2. **`product_types` (studio tablosu):** Studio'ya bağlı, projects + system_templates FK veriyor → **yıkıcı değiştirme yapılmadı.** Mevcut tablo katalog olarak yeniden kullanıldı (bkz. Tablo 3). Belgeden sapma: `slug`=key, `active`=isActive. Studio'yu bozmamak için.
+- **Hazır dosya yükleyerek sipariş:** `order_items.itemType='uploaded_file'` şemada hazır; UI sonra.
