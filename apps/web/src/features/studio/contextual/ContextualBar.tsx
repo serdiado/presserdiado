@@ -158,7 +158,13 @@ export function ContextualBar() {
   const selection = useUIStore((s) => s.selection);
   const selectedSlotIds = useUIStore((s) => s.selectedSlotIds);
   const selectedTextElement = useUIStore((s) => s.selectedTextElement);
+  const editingContent = useUIStore((s) => s.editingContent);
   const getActivePages = useCatalogStore((s) => s.getActivePages);
+
+  // İzolasyon (free modül) bağlamı — editingContent⟺isoSession (eşleşme). Aktifse Hızlı Bar
+  // YALNIZ "modül izole" kolunu gösterir (mevcut arkaplan/slot/footer kollarının kardeşi).
+  const isModuleIsolated =
+    !!editingContent && (editingContent.contentType === 'banner' || editingContent.contentType === 'pizza');
 
   let hasValidSelection = false;
 
@@ -202,7 +208,7 @@ export function ContextualBar() {
     }
   }
 
-  if (!hasValidSelection) return null;
+  if (!hasValidSelection && !isModuleIsolated) return null;
 
   return (
     <div className="absolute top-0 left-1/2 -translate-x-1/2 inline-flex justify-center bg-surface-panel shadow-drop-md rounded-b-lg border-b border-x border-border-default overflow-visible z-1000 transition-all duration-150 visible opacity-100">
@@ -210,22 +216,49 @@ export function ContextualBar() {
         id="contextual-bar"
         className="h-12 px-3 flex items-center gap-1 text-xs text-text-secondary bg-surface-panel rounded-b-lg"
       >
-        {selection.type === 'slot' && <SlotMode slotIds={selectedSlotIds} />}
-        {selection.type === 'bannerCell' && <BannerCellMode />}
-        {selection.type === 'textElement' && selectedTextElement && (
-          selectedTextElement.elementType === 'badge' ? (
-            <BadgeMode />
-          ) : (
-            <TextMode
-              slotId={selectedTextElement.slotId}
-              element={selectedTextElement.elementType}
-            />
-          )
-        )}
-        {selection.type === 'footerCell' && selection.ids[0] === '__footer__' && <FooterContainerMode />}
-        {selection.type === 'footerCell' && selection.ids[0] !== '__footer__' && selection.ids.length > 0 && <FooterCellMode />}
-        {selection.type === 'pageBackground' && (
-          <BackgroundMode pageNumber={Number(selection.ids[0])} />
+        {isModuleIsolated ? (
+          // Modül izole bağlamı — TEK kol. Çerçeve + "Bitti" (exitIsolation). Banner için hücre
+          // araçları (BannerCellMode; modül ayarları "Ayarlar"→sağ panel) altında akar; pizza için
+          // yalnız çerçeve (pizza ayarları sağ panelde). Panel UI'ı taşınmaz/kopyalanmaz (I7).
+          <>
+            <span className="font-semibold text-text-primary px-2 flex items-center gap-1.5">
+              <Pencil size={16} className="text-text-secondary" />
+              {editingContent?.contentType === 'pizza' ? 'Pizza Menüsü' : 'Tablo Alanı'} düzenleniyor
+            </span>
+            <button
+              onClick={() => useUIStore.getState().exitIsolation()}
+              className="h-9 px-3 inline-flex items-center gap-1.5 rounded-md text-xs font-semibold whitespace-nowrap bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+            >
+              <Check size={16} />
+              Bitti
+            </button>
+            {selection.type === 'bannerCell' && (
+              <>
+                <Divider />
+                <BannerCellMode />
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            {selection.type === 'slot' && <SlotMode slotIds={selectedSlotIds} />}
+            {selection.type === 'bannerCell' && <BannerCellMode />}
+            {selection.type === 'textElement' && selectedTextElement && (
+              selectedTextElement.elementType === 'badge' ? (
+                <BadgeMode />
+              ) : (
+                <TextMode
+                  slotId={selectedTextElement.slotId}
+                  element={selectedTextElement.elementType}
+                />
+              )
+            )}
+            {selection.type === 'footerCell' && selection.ids[0] === '__footer__' && <FooterContainerMode />}
+            {selection.type === 'footerCell' && selection.ids[0] !== '__footer__' && selection.ids.length > 0 && <FooterCellMode />}
+            {selection.type === 'pageBackground' && (
+              <BackgroundMode pageNumber={Number(selection.ids[0])} />
+            )}
+          </>
         )}
       </div>
     </div>
