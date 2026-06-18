@@ -1,6 +1,9 @@
 // Unified selection + UI state for the studio.
 
 import { create } from 'zustand';
+import type { StudioSlot } from '@matbaapro/shared';
+import { isIsolatableModule } from './defaults';
+import { useHistoryStore } from './history.store';
 
 export type SelectionType =
   | 'none'
@@ -79,6 +82,10 @@ interface UIState {
   setEditingContent: (
     content: { slotId: string; contentType: 'product' | 'banner' | 'pizza' } | null,
   ) => void;
+  // İzolasyon (free modül = banner/pizza). Tek kaynak = editingContent; ayrı alan YOK.
+  // enter: farklı slot izoleyse ÖNCE exit (commit) → iki-izole penceresi yok.
+  enterIsolation: (slot: StudioSlot) => void;
+  exitIsolation: () => void;
   clearSelectionAndSelectPage: (pageNumber: number) => void;
   setForegroundOpacity: (v: number) => void;
   setSelectedBackgroundPageIds: (ids: number[]) => void;
@@ -218,6 +225,27 @@ export const useUIStore = create<UIState>((set, get) => ({
   setContextualBarFormaId: (id) => set({ contextualBarFormaId: id }),
   setContextualBarSelectedPages: (pages) => set({ contextualBarSelectedPages: pages }),
   setEditingContent: (content) => set({ editingContent: content }),
+
+  // İzolasyona gir: yüklemi doğrula → farklı modül izoleyse önce çık (commit) → yerel oturum başlat
+  // (GİRİŞTE global saveState YOK) → editingContent'i free-modül koluna kur. moduleData CANLI yazılır.
+  // İzolasyon ⟺ isoSession var; bu yüzden anahtarlama isoSession'a göre (product editingContent'e dokunmaz).
+  enterIsolation: (slot) => {
+    if (!isIsolatableModule(slot)) return;
+    const hist = useHistoryStore.getState();
+    if (hist.isoSession?.slotId === slot.id) return; // zaten bu modül izole — baseline'ı sıfırlama
+    if (hist.isoSession) get().exitIsolation(); // farklı modül izole → önce commit
+    hist.beginIsolation(slot.id);
+    set({ editingContent: { slotId: slot.id, contentType: slot.moduleType as 'banner' | 'pizza' } });
+  },
+
+  // İzolasyondan çık: izolasyon yoksa no-op (product editing'e dokunma). Varsa ÖNCE commit
+  // (yapısal kıyas → değişmişse global +1), SONRA editingContent temizle.
+  exitIsolation: () => {
+    const hist = useHistoryStore.getState();
+    if (!hist.isoSession) return;
+    hist.commitIsolation();
+    set({ editingContent: null });
+  },
   setForegroundOpacity: (v) => set({ foregroundOpacity: Math.max(0, Math.min(100, v)) }),
   setSelectedBackgroundPageIds: (ids) => set({ selectedBackgroundPageIds: ids }),
   setBackgroundMerged: (merged) => set({ backgroundMerged: merged }),

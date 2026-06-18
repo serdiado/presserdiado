@@ -1249,10 +1249,18 @@ export const useCatalogStore = create<Store>()(
       },
       updateSlotModuleData: (pageNumber, slotId, updates, history = 'none') => {
         const { getActivePages, setActivePages } = get();
-        // 'discrete' (ör. "Modülü Kaldır") → ayrık forced snapshot; modül kaldırma kendi undo
-        // adımı olur (applyStudioModule ile aynı konvansiyon). Default 'none' = saveState yok →
-        // sürekli edit/drop yolları (banner metin/stil, pizza, Slot.tsx drop null) korunur; Y2 ertelenmiş kalır.
-        if (history === 'discrete') useHistoryStore.getState().saveState(true);
+        // §6 TEK yönlendirme noktası. Tüm modül-data yazıcıları buradan geçer.
+        // İzolasyon penceresi (bu slot için aktif oturum): global history'ye DOKUNMA (I1);
+        // bunun yerine PRE-edit moduleData'yı yerel yığına it (coalesce'lı). enterIsolation
+        // editingContent(banner|pizza) ile isoSession'ı ATOMİK kurduğu için bu kapı eşdeğer.
+        // İzolasyon dışında davranış bugünküyle BİREBİR aynı: 'discrete' → forced snapshot,
+        // 'none' → snapshot yok.
+        const hist = useHistoryStore.getState();
+        if (hist.isoSession && hist.isoSession.slotId === slotId) {
+          hist.pushIsolationSnapshot();
+        } else if (history === 'discrete') {
+          hist.saveState(true);
+        }
         setActivePages(
           getActivePages().map((p) =>
             p.pageNumber === pageNumber

@@ -214,3 +214,38 @@ export function deepMerge<A extends Record<string, unknown>, B extends Record<st
   }
   return output as A & B;
 }
+
+// Yapısal derin eşitlik — anahtar SIRASINDAN bağımsız (deepMerge yeniden sıralayabilir).
+// JSON.stringify KULLANMAZ (sıra/undefined tuzakları yok). İzolasyon çıkışında baseline↔final
+// kıyasının TEK otoritesi (bkz. module-isolation: değişiklikle çıkış +1, değişiksiz +0).
+export function deepEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return false;
+  const aArr = Array.isArray(a);
+  const bArr = Array.isArray(b);
+  if (aArr !== bArr) return false;
+  if (aArr && bArr) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      if (!deepEqual(a[i], b[i])) return false;
+    }
+    return true;
+  }
+  const ao = a as Record<string, unknown>;
+  const bo = b as Record<string, unknown>;
+  const ak = Object.keys(ao);
+  const bk = Object.keys(bo);
+  if (ak.length !== bk.length) return false;
+  for (const k of ak) {
+    if (!Object.prototype.hasOwnProperty.call(bo, k)) return false;
+    if (!deepEqual(ao[k], bo[k])) return false;
+  }
+  return true;
+}
+
+// İzolasyon aktivasyon yüklemi (TEK karar noktası). Yalnız free/ürün-harici, modülü DOLU slot.
+// StudioSlotRole = 'product' | 'free' (custom/global YOK — onlar eski SlotRole). moduleType
+// 'banner'|'pizza' (ikisi de free aile). Gelecekteki her free moduleType bunu otomatik devralır.
+export function isIsolatableModule(slot: StudioSlot): boolean {
+  return slot.role === 'free' && slot.moduleType != null && slot.moduleData != null;
+}
