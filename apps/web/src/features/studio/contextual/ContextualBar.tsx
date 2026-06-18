@@ -1978,7 +1978,7 @@ function FreeSlotMode({ slot, pageNumber, slotIds }: FreeSlotProps) {
 
     const handleEditModule = () => {
       const firstCellId = moduleData.cells?.[0]?.id;
-      useUIStore.getState().setEditingContent({ slotId: slot.id, contentType: 'banner' });
+      useUIStore.getState().enterIsolation(slot);
       if (firstCellId) {
         useUIStore.getState().toggleElementSelection('bannerCell', firstCellId, false, slot.id);
       }

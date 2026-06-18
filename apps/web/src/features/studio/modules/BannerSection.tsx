@@ -17,7 +17,6 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
   const toggleElementSelection = useUIStore((s) => s.toggleElementSelection);
   const setSelection = useUIStore((s) => s.setSelection);
   const editingContent = useUIStore((s) => s.editingContent);
-  const setEditingContent = useUIStore((s) => s.setEditingContent);
 
   const isEditingModule =
     editingContent?.slotId === slotId && editingContent?.contentType === 'banner';
@@ -52,23 +51,9 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, [editingCellId]);
 
-  // Modül düzenleme modundan çıkış: slot dışına tıklandığında
-  useEffect(() => {
-    if (!isEditingModule) return;
-    const onClickOutside = (e: MouseEvent) => {
-      const t = e.target as HTMLElement;
-      const slotEl = document.getElementById(`slot-${slotId}`);
-      if (slotEl && slotEl.contains(t)) return;
-      if (t.closest('#contextual-bar')) return;
-      if (t.closest('#studio-sidebar')) return;
-      if (t.closest('[data-color-picker-popup], [data-image-picker-popup]')) return;
-      setEditingContent(null);
-      setSelection({ type: 'slot', ids: [slotId] });
-      setEditingCellId(null);
-    };
-    document.addEventListener('mousedown', onClickOutside);
-    return () => document.removeEventListener('mousedown', onClickOutside);
-  }, [isEditingModule, slotId, setEditingContent, setSelection]);
+  // Modülden çıkış (dış-tıklama → commit) artık TEK YERDE: Canvas'taki izolasyon çıkış
+  // gating'i (capture mousedown, isoSession kapısı). Banner'a özel ikinci listener KALDIRILDI
+  // — krom↔undo ayrışmasını ve çift-handler'ı önler (eşleşme değişmezi).
 
   // Not: Banner'a özel global Ctrl+Z→undo listener'ı KALDIRILDI. App-level TopBar
   // handler'ı (window keydown) Ctrl+Z'yi zaten karşılıyor; buradaki ikinci listener

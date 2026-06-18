@@ -3,7 +3,7 @@ import { Pencil, Move } from 'lucide-react';
 import type { BadgeConfig, CatalogSettings, StudioSlot } from '@matbaapro/shared';
 import { DragHandle } from './DragHandle';
 import { createProductDragImage } from '../utils/dragImage';
-import { useCatalogStore, useUIStore } from '@/stores/studio';
+import { useCatalogStore, useHistoryStore, useUIStore } from '@/stores/studio';
 import {
   BannerSection,
   PizzaSection,
@@ -272,6 +272,11 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
   const setSelectedTextElement = useUIStore((s) => s.setSelectedTextElement);
   const editingContent = useUIStore((s) => s.editingContent);
   const setEditingContent = useUIStore((s) => s.setEditingContent);
+  const enterIsolation = useUIStore((s) => s.enterIsolation);
+  const isoSession = useHistoryStore((s) => s.isoSession);
+  // İzolasyon krom (tek isoSession kapısı): bu modül izoleyken normal; diğer her şey soluk (dim).
+  const isThisIsolated = isoSession?.slotId === slot.id;
+  const isDimmedByIsolation = !!isoSession && !isThisIsolated;
   const activeBadgeMoveSlotId = useUIStore((s) => s.activeBadgeMoveSlotId);
   const userScale = useUIStore((s) => s.userScale);
   const isPreviewMode = useUIStore((s) => s.isPreviewMode);
@@ -661,6 +666,9 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsOver(false);
+    // İzolasyon aktifken drop/apply doğrudan moduleData setState'i yapar (yönlendirmeyi atlar) →
+    // ÖNCE commit-exit et ki düzenleme oturumu tek atomik adım kalsın, drop ayrı adım olsun.
+    if (useHistoryStore.getState().isoSession) useUIStore.getState().exitIsolation();
     // EN ÖNCE — kütüphane örneği (free veya product slota inebilir). Diğer tüm
     // anahtarlardan ve role==='free' check'inden ÖNCE; koşulsuz return.
     const studioModuleId = e.dataTransfer.getData('studioModuleId');
@@ -782,9 +790,14 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
         if (isPreviewMode) return;
         e.stopPropagation();
         if (slot.role === 'free' && slot.moduleData) {
-          const md = slot.moduleData as { type?: string };
-          if (md.type === 'pizza')
-            setEditingContent({ slotId: slot.id, contentType: 'pizza' });
+          // Banner VE pizza tek giriş yolu — enterIsolation yüklemi doğrular, baseline kurar,
+          // editingContent'i moduleType koluna alır (banner artık çift-tıkla GİRİLİR). Product değişmez.
+          enterIsolation(slot);
+          const md = slot.moduleData as { type?: string; cells?: { id: string }[] };
+          if (md.type === 'banner') {
+            const firstCellId = md.cells?.[0]?.id;
+            if (firstCellId) toggleElementSelection('bannerCell', firstCellId, false, slot.id);
+          }
         } else if (slot.role === 'product') {
           setEditingContent({ slotId: slot.id, contentType: 'product' });
         }
@@ -848,6 +861,8 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
         outlineOffset: isSelected ? '2px' : undefined,
         padding: slot.role === 'free' ? undefined : paddingStyle(finalSettings.spacings.cell),
         ...freeStyles,
+        // İzolasyon dim'i: izole modül dışındaki her slot soluklaşır (Illustrator deseni).
+        ...(isDimmedByIsolation ? { opacity: 0.35 } : {}),
       }}
     >
       {!isPreviewMode && (
@@ -909,7 +924,7 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
                     onClick={(e) => {
                       e.stopPropagation();
                       const firstCellId = (slot.moduleData as BannerModuleData)?.cells?.[0]?.id;
-                      setEditingContent({ slotId: slot.id, contentType: 'banner' });
+                      enterIsolation(slot);
                       if (firstCellId) {
                         toggleElementSelection('bannerCell', firstCellId, false, slot.id);
                       }

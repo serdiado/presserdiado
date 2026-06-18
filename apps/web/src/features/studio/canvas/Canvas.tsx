@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ZOOM_MAX, ZOOM_MIN, Template1 } from '@matbaapro/shared';
-import { useCatalogStore, useUIStore } from '@/stores/studio';
+import { useCatalogStore, useHistoryStore, useUIStore } from '@/stores/studio';
 import { Page } from './Page';
 import { LayerStack } from './LayerStack';
 import { MM_TO_PX } from '../util/style';
@@ -18,6 +18,27 @@ export function Canvas() {
   const pan = useUIStore((s) => s.pan);
   const setUserZoom = useUIStore((s) => s.setUserZoom);
   const isPreviewMode = useUIStore((s) => s.isPreviewMode);
+  const isoSlotId = useHistoryStore((s) => s.isoSession?.slotId ?? null);
+  const exitIsolation = useUIStore((s) => s.exitIsolation);
+
+  // İzolasyon çıkış gating'i — TEK YER (banner + pizza). Modül DIŞINA mousedown → çıkış (commit).
+  // İstisnalar modül paneli/krom: modülü düzenlemeye devam ettiğin yüzeyler çıkış tetiklemez.
+  // capture=true: seçim/diğer mousedown handler'larından ÖNCE çalış → guard isoSession'sız görür.
+  useEffect(() => {
+    if (!isoSlotId) return;
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (!t) return;
+      if (t.closest(`#slot-${isoSlotId}`)) return; // modül içi
+      if (t.closest('#contextual-bar')) return; // Hızlı Bar (modül paneli)
+      if (t.closest('#studio-sidebar')) return; // sağ panel (modül paneli)
+      if (t.closest('#context-menu-container')) return; // sağ-tık menüsü
+      if (t.closest('[data-color-picker-popup], [data-image-picker-popup]')) return; // picker pop-up
+      exitIsolation();
+    };
+    document.addEventListener('mousedown', onDown, true);
+    return () => document.removeEventListener('mousedown', onDown, true);
+  }, [isoSlotId, exitIsolation]);
 
   const activeForma = formas.find((f) => f.id === activeFormaId) || formas[0];
   const pages = activeForma?.pages ?? [];

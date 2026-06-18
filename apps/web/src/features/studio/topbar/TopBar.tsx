@@ -93,9 +93,31 @@ export function TopBar() {
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
-        // Metin alanı (contentEditable / input / textarea) odaktayken native text-undo'ya
-        // izin ver — app-undo işlemi/modülü silmesin (ör. banner hücresi metin düzenlemesi).
+      const hist = useHistoryStore.getState();
+      const iso = hist.isoSession;
+
+      // İzolasyonda Esc → çıkış (commit).
+      if (iso && e.key === 'Escape') {
+        e.preventDefault();
+        useUIStore.getState().exitIsolation();
+        return;
+      }
+
+      const isUndoKey = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z';
+      const isRedoKey = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y';
+
+      // İzolasyonda Ctrl+Z/Ctrl+Shift+Z/Ctrl+Y TAMAMEN bizim: native contentEditable undo'sunu
+      // bastırmak için contentEditable erken-return'ünden ÖNCE preventDefault + yerel yığına
+      // yönlendir → modül silinmez, metin yerel olarak geri alınır (I3, eşleşme: isoSession kapısı).
+      if (iso && (isUndoKey || isRedoKey)) {
+        e.preventDefault();
+        if (isRedoKey || (isUndoKey && e.shiftKey)) hist.isolationRedo();
+        else hist.isolationUndo();
+        return;
+      }
+
+      if (isUndoKey) {
+        // İzolasyon DIŞI: metin alanı odaktayken native text-undo'ya izin ver (mevcut davranış).
         const el = document.activeElement as HTMLElement | null;
         if (el && (el.isContentEditable || el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
           return;

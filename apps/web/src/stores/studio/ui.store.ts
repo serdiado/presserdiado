@@ -102,6 +102,15 @@ const initialSidebar: SidebarState = {
   activeSubTab: null,
 };
 
+// İzolasyonda seçim YALNIZ izole modülün içinde kalabilir (I6). İzin: temizleme (none) veya
+// hedef slotun bir hücresi/eleman. slot/page/footer/background gibi modül-DIŞI seçim reddedilir.
+const isSelectionWithinModule = (sel: SelectionState, slotId: string): boolean => {
+  if (sel.type === 'none' || sel.ids.length === 0) return true;
+  return (
+    (sel.type === 'bannerCell' || sel.type === 'textElement') && sel.parentId === slotId
+  );
+};
+
 export const useUIStore = create<UIState>((set, get) => ({
   isZoomed: false,
   isTempPoolOpen: false,
@@ -135,6 +144,9 @@ export const useUIStore = create<UIState>((set, get) => ({
   setSelection: (updates) =>
     set((state) => {
       const next: SelectionState = { ...state.selection, ...updates };
+      // İzolasyon scope guard (I6): modül dışına seçim yazma.
+      const iso = useHistoryStore.getState().isoSession;
+      if (iso && !isSelectionWithinModule(next, iso.slotId)) return state;
       return {
         selection: next,
         selectedSlotIds: next.type === 'slot' ? next.ids : [],
@@ -148,6 +160,14 @@ export const useUIStore = create<UIState>((set, get) => ({
 
   toggleElementSelection: (type, id, isMulti, parentId = null) =>
     set((state) => {
+      // İzolasyon scope guard (I6): yalnız izole modülün hücresi/eleman seçilebilir.
+      const iso = useHistoryStore.getState().isoSession;
+      if (
+        iso &&
+        !((type === 'bannerCell' || type === 'textElement') && parentId === iso.slotId)
+      ) {
+        return state;
+      }
       let ids: string[] = [];
       if (state.selection.type !== type || state.selection.parentId !== parentId) {
         ids = [id];
