@@ -36,7 +36,7 @@ Web-tabanlı katalog & matbaa tasarım stüdyosu. Süpermarket katalogları, bro
 **Özellikler:**
 - 📐 Stüdyo öncesi sihirbaz (ürün tipi / mod / kağıt / kırım yapısı)
 - 🎨 InDesign benzeri DOM-tabanlı tasarım editörü
-- ▦ Hücre yapılı + serbest alan, modüller (Banner, Pizza)
+- ▦ Hücre yapılı + serbest alan, modül (Tablo Alanı)
 - 📊 Excel'den ürün içe aktarma + POS otomatik yerleşim
 - 💰 Anlık fiyat hesabı (adet, kağıt, renk, kaplama, cilt — JSON config)
 - 📤 PDF/PNG/JPEG export (Puppeteer, 300 DPI, çok-formalı PDF)

@@ -16,7 +16,7 @@ export interface HistorySnapshot {
 }
 
 // === Modül İzolasyon oturumu (geçici, oturum-scoped) ===
-// editingContent(banner|pizza) ile ATOMİK yaşar (enter/exit, ui.store). null = izolasyon yok.
+// editingContent(banner) ile ATOMİK yaşar (enter/exit, ui.store). null = izolasyon yok.
 // Global past/future'a DOKUNMAZ; yalnız çıkışta (değişmişse) baselineSnapshot global'e +1 gider.
 interface IsoSession {
   slotId: string;

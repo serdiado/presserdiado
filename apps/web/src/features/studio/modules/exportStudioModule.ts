@@ -13,7 +13,7 @@ import type { AnyModuleData, StudioModule } from './types';
 
 /**
  * Seçili slotu StudioModule'e çevirir. Rolüne göre dallanır:
- *  - role==='free' + moduleData → FreeStudioModule (banner/pizza içeriği)
+ *  - role==='free' + moduleData → FreeStudioModule (banner içeriği)
  *  - isCustom + customSettings → ProductStudioModule (özel slot stili)
  *  - aksi halde null (geçersiz seçim — çağıran toast gösterir).
  * Ürün/havuz/içerik (product) DAHİL EDİLMEZ — yalnız modül tanımı.

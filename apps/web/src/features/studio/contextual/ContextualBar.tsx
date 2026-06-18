@@ -164,7 +164,7 @@ export function ContextualBar() {
   // İzolasyon (free modül) bağlamı — editingContent⟺isoSession (eşleşme). Aktifse Hızlı Bar
   // YALNIZ "modül izole" kolunu gösterir (mevcut arkaplan/slot/footer kollarının kardeşi).
   const isModuleIsolated =
-    !!editingContent && (editingContent.contentType === 'banner' || editingContent.contentType === 'pizza');
+    !!editingContent && editingContent.contentType === 'banner';
 
   let hasValidSelection = false;
 
@@ -217,13 +217,12 @@ export function ContextualBar() {
         className="h-12 px-3 flex items-center gap-1 text-xs text-text-secondary bg-surface-panel rounded-b-lg"
       >
         {isModuleIsolated ? (
-          // Modül izole bağlamı — TEK kol. Çerçeve + "Bitti" (exitIsolation). Banner için hücre
-          // araçları (BannerCellMode; modül ayarları "Ayarlar"→sağ panel) altında akar; pizza için
-          // yalnız çerçeve (pizza ayarları sağ panelde). Panel UI'ı taşınmaz/kopyalanmaz (I7).
+          // Modül izole bağlamı — TEK kol. Çerçeve + "Bitti" (exitIsolation). Banner hücre araçları
+          // (BannerCellMode; modül ayarları "Ayarlar"→sağ panel) altında akar. Panel UI'ı taşınmaz (I7).
           <>
             <span className="font-semibold text-text-primary px-2 flex items-center gap-1.5">
               <Pencil size={16} className="text-text-secondary" />
-              {editingContent?.contentType === 'pizza' ? 'Pizza Menüsü' : 'Tablo Alanı'} düzenleniyor
+              Tablo Alanı düzenleniyor
             </span>
             <button
               onClick={() => useUIStore.getState().exitIsolation()}

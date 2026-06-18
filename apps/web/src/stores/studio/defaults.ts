@@ -245,7 +245,7 @@ export function deepEqual(a: unknown, b: unknown): boolean {
 
 // İzolasyon aktivasyon yüklemi (TEK karar noktası). Yalnız free/ürün-harici, modülü DOLU slot.
 // StudioSlotRole = 'product' | 'free' (custom/global YOK — onlar eski SlotRole). moduleType
-// 'banner'|'pizza' (ikisi de free aile). Gelecekteki her free moduleType bunu otomatik devralır.
+// 'banner' (tek free modül). Gelecekteki her free moduleType bunu otomatik devralır.
 export function isIsolatableModule(slot: StudioSlot): boolean {
   return slot.role === 'free' && slot.moduleType != null && slot.moduleData != null;
 }

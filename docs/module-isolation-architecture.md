@@ -19,7 +19,7 @@
 
 ## 1. Problem ve kök neden
 
-Free modüller (banner/Tablo Alanı, pizza, gelecekteki serbest-tasarım alanı) hücre-ızgara
+Free modüller (banner/Tablo Alanı, gelecekteki serbest-tasarım alanı) hücre-ızgara
 stüdyosunun *içinde* yaşar ama ondan **başka bir düzenleme domainidir**: kendi nesne modeli,
 kendi etkileşimleri, kendi geri-al ihtiyacı var. Tek bir global undo yığınının hem kaba
 sayfa-düzenini hem ince modül-içi düzenlemeyi taşıması bütün karışıklığın kaynağı.
@@ -47,7 +47,7 @@ function isIsolatableModule(slot: StudioSlot): boolean {
 }
 ```
 
-- `moduleType` runtime'da `'banner' | 'pizza'` — ikisi de free aile. Gelecekteki her free
+- `moduleType` runtime'da `'banner'` (tek free modül). Gelecekteki her free
   `moduleType` bu yüklemi sağladığı için izolasyonu **otomatik** devralır (kategori bazlı, tip bazlı
   değil).
 - **`FreeStudioModule` / `ProductStudioModule` slot ayırt edici DEĞİLDİR.** Bunlar kütüphane-örneği
@@ -64,10 +64,10 @@ alandan türetilir:
 
 ```ts
 // ui.store — MEVCUT alan, izolasyonun ihtiyacını zaten karşılıyor
-editingContent: { slotId: string; contentType: 'product' | 'banner' | 'pizza' } | null;
+editingContent: { slotId: string; contentType: 'product' | 'banner' } | null;
 ```
 
-**"İzolasyon modu" = `editingContent != null && editingContent.contentType ∈ {banner, pizza}`.**
+**"İzolasyon modu" = `editingContent != null && editingContent.contentType === 'banner'`.**
 Yeni alan eklemiyoruz: `slotId` yeterli (yönlendirme `slotId`'e bakar; `pageNumber`'ı çağıran
 geçirir; baseline/commit tüm `formas`'ı snapshot'lar). Notun ilk taslağındaki "sıfırdan yeni tek
 kaynak" çerçevesi gerçeğe uymuyordu — `editingContent` zaten tek meşru alan; yasaklanan dağınık
@@ -79,7 +79,7 @@ verir; asıl metin düzenleme ayrı local `editingText` + `updateSlotProduct` (g
 İzolasyon product'a "yalnız yerel-undo" eklemiyor; **dim + gating + seçim-scope + klavye-sahiplenme
 + yerel-undo'nun hepsini** ekliyor — ve bunların hiçbiri product'ta yok.
 
-Bu yüzden mutlak kural: **izolasyon davranışlarının HEPSİ `contentType ∈ {banner, pizza}` ile katı
+Bu yüzden mutlak kural: **izolasyon davranışlarının HEPSİ `contentType === 'banner'` ile katı
 kapılanır; `'product'` kolu bugünkü hafif davranışıyla AYNEN korunur.** Aksi halde product
 düzenlemeye dim/gating sızar = regresyon.
 
@@ -105,7 +105,7 @@ eklenmeli). `enterIsolation(slot, pageNumber)`:
 3. **Tam baseline** yakala: `entryBaseline = clone(formas / tempPool / globalSettings / ...)`
    (mevcut `HistorySnapshot` şekli), yerel katmanda tut.
 4. **Girişte `saveState` ÇAĞIRMA** (yoksa boş-oturum bile global'e +1 yazar → I2 ihlali).
-5. `editingContent`'i banner/pizza koluna set et.
+5. `editingContent`'i banner koluna set et.
 6. Yerel history'yi başlat.
 
 ### Düzenleme
@@ -136,7 +136,7 @@ otorite olmalı**. `JSON.stringify` KULLANMA (`clone`/`deepMerge` anahtar sıras
 - İzolasyon oturumu boyunca yaşayan **geçici** snapshot yığını + işaretçi (`editingContent === null`
   iken yok).
 - Snapshot içeriği: **`structuredClone(moduleData)`** — modül şeklinden **bağımsız**, opak blob.
-  Banner/pizza/serbest-tasarım ayrımı YAPMAZ. Yeniden-kullanılabilirlik buradan gelir.
+  Banner/serbest-tasarım ayrımı YAPMAZ. Yeniden-kullanılabilirlik buradan gelir.
 - Snapshot her anlamlı **commit'te** alınır (coalesce, tuş-başına DEĞİL): metin commit'i, yapısal
   değişiklik, renk/stil uygula. Global `saveState`'in 800ms coalesce mantığının yerel ikizi.
 - Yerel undo en geriye **baseline'a kadar** gider, ötesine değil → modül asla silinemez (I3).
@@ -168,8 +168,8 @@ hiç koşmaması (native-vs-local değil).
 ## 6. Mevcut `history` mode altyapısıyla entegrasyon (paralel sistem KURMA)
 
 Yönlendirme **`updateSlotModuleData` İÇİNDE** yapılır (ince sarmalayıcı DEĞİL). Doğrulandı: tüm
-modül-data yazıcıları (`CellPanel`, `BannerSettingsPanel`, `PizzaSettingsPanel`, `ContextualBar`,
-`BannerSection.updateCell`, `PizzaSection`) zaten bu aksiyondan geçiyor; tek noktada çözüm hepsini
+modül-data yazıcıları (`CellPanel`, `BannerSettingsPanel`, `ContextualBar`,
+`BannerSection.updateCell`) zaten bu aksiyondan geçiyor; tek noktada çözüm hepsini
 kapsar. `catalog.store` zaten `useUIStore`/`useHistoryStore` import ediyor → yeni bağ yok.
 
 ```ts
@@ -188,7 +188,7 @@ updateSlotModuleData: (pageNumber, slotId, updates, history = 'none') => {
 ```
 
 **Kapı neden `isoSession`, `editingContent` değil:** ikisi shipped kodda eşdeğerdir — `editingContent`'in
-free kolu (`banner`/`pizza`) ile `isoSession`, `enterIsolation`/`exitIsolation` tarafından **atomik**
+free kolu (`banner`) ile `isoSession`, `enterIsolation`/`exitIsolation` tarafından **atomik**
 set/clear edilir (§3 "eşleşme" değişmezi; ADIM B regresyonunda doğrulandı). Ama mekanizma
 `isoSession`'dır: yerel snapshot/undo'nun sahibi odur ve yalnız `enterIsolation` onu kurar — böylece
 izolasyon-dışı `setEditingContent` yolları yönlendirmeyi sızdırmaz.
@@ -200,16 +200,13 @@ izolasyon-dışı `setEditingContent` yolları yönlendirmeyi sızdırmaz.
 
 ## 7. Input gating & seçim daraltma
 
-İzolasyondayken (banner/pizza kolu):
+İzolasyondayken (banner kolu):
 - Modül DIŞINDAKİ pointer/seçim olayları **bloklanır**; modülden uzağa tıklama "çıkış" (commit)
   tetikler.
 - **Seçim guard'ı setter'ların İÇİNE konur** (çağrı sitelerine değil): `setSelection` /
   `toggleElementSelection`, hedef izole modülün dışındaysa (`parentId !== editingContent.slotId`)
   `bannerCell`/`textElement` seçimini reddeder; slot/page/background seçimini yok sayar. Mevcut
   panellerin değişmeden çalışması buna bağlı (I6/I7).
-- **Pizza nüansı:** pizza hücreleri selection KULLANMAZ — `PizzaSection` iç hücreyi component-local
-  edit state ile düzenler. Seçim-scope guard'ı banner için anlamlı; pizza için **input-gating
-  (modül-dışı pointer bloğu + dim) yeterlidir**.
 - Sayfa-mutasyonu kısayolları (slot sil, ızgara değiştir, forma gezinme) izolasyonda önce çıkışı
   (commit) tetikler ya da bastırılır.
 - **Dış-tıklama→çıkış gating'i TEK YERDE (Canvas, capture-faz `mousedown`) ve ALLOWLIST ile** —
@@ -223,7 +220,7 @@ izolasyon-dışı `setEditingContent` yolları yönlendirmeyi sızdırmaz.
 
 ## 8. Paneller & Hızlı Bar — yeniden kullanım, MİGRASYON YOK
 
-- Sağ panel (`CellPanel` / `BannerSettingsPanel` / `PizzaSettingsPanel`) bugün `selection`'ı
+- Sağ panel (`CellPanel` / `BannerSettingsPanel`) bugün `selection`'ı
   hedefliyor. Seçim izole modüle daraltıldığı için paneller **olduğu gibi** modülü düzenler.
   **Hiçbir ayar menüsü taşınmaz/çoğaltılmaz.**
 - Panel yazımları da §6 yönlendirmesine tabidir (izolasyonda yerel, global sabit).
@@ -237,7 +234,7 @@ izolasyon-dışı `setEditingContent` yolları yönlendirmeyi sızdırmaz.
 
 ## 9. Tek renderer ilkesi (zaten gerçek)
 
-`Slot`, free slotta `slot.moduleData.type`'a göre `BannerSection` / `PizzaSection` render ediyor;
+`Slot`, free slotta `slot.moduleData.type`'a göre `BannerSection` render ediyor;
 normal ve izolasyon modunda **aynı** bileşen. İkinci render yolu YASAK. İzolasyon yalnız bu
 renderer'ın etrafına düzenleme tutamaçları + dim overlay ekler. Yerinde düzenleme olduğu için
 gerçek ölçü/WYSIWYG zaten bedava.
@@ -252,7 +249,7 @@ gerçek ölçü/WYSIWYG zaten bedava.
 - **I4.** Çıkıştan sonra global Ctrl+Z tüm oturumu **tek adımda** geri alır; **ardından global
   redo düzenlenmiş hale geri döndürür** (commit normal history girişidir, özel-kılıf yok).
 - **I5.** Tek renderer: modül izolasyona girip-çıkarken görsel olarak **birebir aynı** (drift yok).
-- **I6.** Seçim izole modülün dışına ASLA çıkamaz (banner). Pizza modül-dışı pointer ile korunur.
+- **I6.** Seçim izole modülün dışına ASLA çıkamaz.
 - **I7.** Mevcut paneller değişmeden çalışır; hiçbir panel UI'ı kopyalanmaz/taşınmaz.
 - **I8.** Yalnız `role === 'free' && moduleType != null && moduleData != null` slotlar izolasyona
   girer; product hücreleri ve ürün-sunuş modülleri ASLA girmez.
@@ -302,13 +299,13 @@ Bu temel oturduktan SONRA, her biri ayrı görev olarak, aynı opak `moduleData`
 - `apps/web/src/features/studio/topbar/TopBar.tsx` — Ctrl+Z/Ctrl+Y handler'ında izolasyon kontrolü;
   izolasyonda `preventDefault` + **odaktaki contentEditable'ı `blur()` ile flush** + `isolationUndo/Redo`;
   `Esc` → exit (commit). İkinci listener EKLENMEDİ.
-- `apps/web/src/features/studio/modules/BannerSection.tsx` + `PizzaSection.tsx` — render/edit
+- `apps/web/src/features/studio/modules/BannerSection.tsx` — render/edit
   kapıları `editingContent`'in free-modül kolundan türetilir; ikinci Ctrl+Z listener geri getirilmedi.
   Banner metin katmanı: `dangerouslySetInnerHTML` **kaldırıldı** → imperatif ref re-sync; dış-tık
   listener'ı hücre-değişiminde DOM metnini doğrudan commit eder (§5).
 - `apps/web/src/features/studio/contextual/ContextualBar.tsx` — "modül izole" bağlamı (izolasyonda
   tek-kol: "<modül> düzenleniyor" + **"Bitti"** → `exitIsolation`).
-- `CellPanel.tsx` / `BannerSettingsPanel.tsx` / `PizzaSettingsPanel.tsx` — DEĞİŞMEZ (yalnız
+- `CellPanel.tsx` / `BannerSettingsPanel.tsx` — DEĞİŞMEZ (yalnız
   seçim-scope üzerinden çalıştığı teyit edilir).
 
 > **Uygulama notu:** Bu mimari sözleşmedir; imzalar/fonksiyon adları doğrulanmış kod referanslarıyla

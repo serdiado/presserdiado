@@ -45,47 +45,6 @@ const bannerInit = () => ({
   })),
 });
 
-const pizzaInit = () => ({
-  type: 'pizza',
-  title: 'PIZZA-MENU',
-  prices: Array(19).fill(''),
-  colors: {
-    bg: { type: 'solid', color: '#ffffff', opacity: 100 },
-    border: { c: '#1e293b', o: 100 },
-    tableBg: { type: 'solid', color: '#ffffff', opacity: 100 },
-    tableTitleBg: { type: 'solid', color: '#1e293b', opacity: 100 },
-    cellBg: { type: 'solid', color: '#f1f5f9', opacity: 100 },
-    cellPriceBg: { type: 'solid', color: '#ffffff', opacity: 100 },
-    tableLine: { c: '#cbd5e1', o: 100 },
-    imgBg: { type: 'solid', color: '#f8fafc', opacity: 100 },
-    imgBorder: { c: '#94a3b8', o: 100 },
-  },
-  fonts: {
-    title: { fontFamily: 'Inter', fontWeight: '900', fontSize: 18, lineHeight: 1.2, letterSpacing: 0, textAlign: 'center', textTransform: 'uppercase', textDecoration: 'none', color: '#0f172a', opacity: 100, verticalAlign: 'middle', decimalScale: 100 },
-    tableTitle: { fontFamily: 'Inter', fontWeight: '700', fontSize: 11, lineHeight: 1.2, letterSpacing: 0, textAlign: 'center', textTransform: 'uppercase', textDecoration: 'none', color: '#ffffff', opacity: 100, verticalAlign: 'middle', decimalScale: 100 },
-    sizes: { fontFamily: 'Inter', fontWeight: '700', fontSize: 10, lineHeight: 1.2, letterSpacing: 0, textAlign: 'center', textTransform: 'none', textDecoration: 'none', color: '#000000', opacity: 100, verticalAlign: 'middle', decimalScale: 100 },
-    prices: { fontFamily: 'Inter', fontWeight: '900', fontSize: 12, lineHeight: 1.2, letterSpacing: 0, textAlign: 'center', textTransform: 'none', textDecoration: 'none', color: '#dc2626', opacity: 100, verticalAlign: 'middle', decimalScale: 100 },
-  },
-  radiuses: {
-    container: { tl: 8, tr: 8, bl: 8, br: 8, linked: true },
-    table: { tl: 4, tr: 4, bl: 4, br: 4, linked: true },
-    image: { tl: 4, tr: 4, bl: 4, br: 4, linked: true },
-  },
-  spacings: {
-    container: { t: 16, r: 16, b: 16, l: 16, linked: true },
-    tableTitle: { t: 6, r: 8, b: 6, l: 8, linked: false },
-    cell: { t: 0, r: 0, b: 0, l: 0, linked: true },
-  },
-  shadows: {
-    container: { x: 0, y: 4, blur: 10, spread: -1, color: '#000000', opacity: 5, active: true },
-    table: { x: 0, y: 4, blur: 6, spread: -1, color: '#000000', opacity: 10, active: false },
-    image: { x: 0, y: 4, blur: 6, spread: -1, color: '#000000', opacity: 10, active: false },
-    cell: { x: 0, y: 4, blur: 6, spread: -1, color: '#000000', opacity: 10, active: false },
-  },
-  tableLineWidth: 2,
-});
-
 export const ModuleRegistry: Record<NonNullable<ModuleType>, ModuleConfig> = {
   banner: { id: 'banner', label: 'Tablo Alanı', initialData: bannerInit },
-  pizza: { id: 'pizza', label: 'Pizza Menusu', initialData: pizzaInit },
 };

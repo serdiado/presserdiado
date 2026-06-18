@@ -196,7 +196,7 @@ export interface StudioSlotGridPosition {
   rowStart: number;
 }
 
-export type ModuleType = 'banner' | 'pizza' | null;
+export type ModuleType = 'banner' | null;
 
 export interface StudioSlot {
   id: string;

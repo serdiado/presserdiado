@@ -51,7 +51,7 @@ interface UIState {
   sidebarState: SidebarState;
   contextualBarFormaId: string | null;
   contextualBarSelectedPages: number[];
-  editingContent: { slotId: string; contentType: 'product' | 'banner' | 'pizza' } | null;
+  editingContent: { slotId: string; contentType: 'product' | 'banner' } | null;
   isPreviewMode: boolean;
 
   setPreviewMode: (open: boolean) => void;
@@ -80,9 +80,9 @@ interface UIState {
   setContextualBarFormaId: (id: string | null) => void;
   setContextualBarSelectedPages: (pages: number[]) => void;
   setEditingContent: (
-    content: { slotId: string; contentType: 'product' | 'banner' | 'pizza' } | null,
+    content: { slotId: string; contentType: 'product' | 'banner' } | null,
   ) => void;
-  // İzolasyon (free modül = banner/pizza). Tek kaynak = editingContent; ayrı alan YOK.
+  // İzolasyon (free modül = banner). Tek kaynak = editingContent; ayrı alan YOK.
   // enter: farklı slot izoleyse ÖNCE exit (commit) → iki-izole penceresi yok.
   enterIsolation: (slot: StudioSlot) => void;
   exitIsolation: () => void;
@@ -255,7 +255,7 @@ export const useUIStore = create<UIState>((set, get) => ({
     if (hist.isoSession?.slotId === slot.id) return; // zaten bu modül izole — baseline'ı sıfırlama
     if (hist.isoSession) get().exitIsolation(); // farklı modül izole → önce commit
     hist.beginIsolation(slot.id);
-    set({ editingContent: { slotId: slot.id, contentType: slot.moduleType as 'banner' | 'pizza' } });
+    set({ editingContent: { slotId: slot.id, contentType: 'banner' } });
   },
 
   // İzolasyondan çık: izolasyon yoksa no-op (product editing'e dokunma). Varsa ÖNCE commit

@@ -21,7 +21,7 @@ export function Canvas() {
   const isoSlotId = useHistoryStore((s) => s.isoSession?.slotId ?? null);
   const exitIsolation = useUIStore((s) => s.exitIsolation);
 
-  // İzolasyon çıkış gating'i — TEK YER (banner + pizza). ALLOWLIST (tek pozitif koşul):
+  // İzolasyon çıkış gating'i — TEK YER (free modül). ALLOWLIST (tek pozitif koşul):
   // çıkış YALNIZ kanvas çalışma yüzeyine ama izole modül DIŞINA tıkta. Tüm krom (sol IconSidebar,
   // üst bar, zoom, sağ panel, Hızlı Bar, picker→body portal, sağ-tık menüsü) #studio-canvas-root
   // DIŞINDA olduğu için hiçbiri çıkış tetiklemez. capture=true: seçim/diğer handler'lardan ÖNCE.

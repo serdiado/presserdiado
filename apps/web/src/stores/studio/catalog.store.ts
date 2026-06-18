@@ -1252,7 +1252,7 @@ export const useCatalogStore = create<Store>()(
         // §6 TEK yönlendirme noktası. Tüm modül-data yazıcıları buradan geçer.
         // İzolasyon penceresi (bu slot için aktif oturum): global history'ye DOKUNMA (I1);
         // bunun yerine PRE-edit moduleData'yı yerel yığına it (coalesce'lı). enterIsolation
-        // editingContent(banner|pizza) ile isoSession'ı ATOMİK kurduğu için bu kapı eşdeğer.
+        // editingContent(banner) ile isoSession'ı ATOMİK kurduğu için bu kapı eşdeğer.
         // İzolasyon dışında davranış bugünküyle BİREBİR aynı: 'discrete' → forced snapshot,
         // 'none' → snapshot yok.
         const hist = useHistoryStore.getState();
@@ -1708,15 +1708,6 @@ function migrateModuleData(md: unknown): unknown {
         return { ...c, bgColor: migrateColorValue(c.bgColor) };
       }),
     };
-  }
-  if (data.type === 'pizza' && data.colors && typeof data.colors === 'object') {
-    const colors = data.colors as Record<string, unknown>;
-    const bgKeys = ['bg', 'tableBg', 'tableTitleBg', 'cellBg', 'cellPriceBg', 'imgBg'];
-    const nextColors: Record<string, unknown> = { ...colors };
-    for (const k of bgKeys) {
-      if (k in colors) nextColors[k] = migrateColorValue(colors[k]);
-    }
-    return { ...data, colors: nextColors };
   }
   return md;
 }

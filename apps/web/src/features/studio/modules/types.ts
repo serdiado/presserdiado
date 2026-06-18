@@ -4,7 +4,6 @@ import type {
   BorderData,
   BorderRadiusData,
   CatalogSettings,
-  ColorOpacity,
   ColorValue,
   DeepPartial,
   ModuleType,
@@ -45,48 +44,7 @@ export interface BannerModuleData {
   shadow: ShadowData;
 }
 
-export interface PizzaModuleData {
-  type: 'pizza';
-  title: string;
-  prices: string[];
-  imageUrl?: string;
-  colors: {
-    bg: ColorValue;
-    border: ColorOpacity;
-    tableBg: ColorValue;
-    tableTitleBg: ColorValue;
-    cellBg: ColorValue;
-    cellPriceBg: ColorValue;
-    tableLine: ColorOpacity;
-    imgBg: ColorValue;
-    imgBorder: ColorOpacity;
-  };
-  fonts: {
-    title: TypographyData;
-    tableTitle: TypographyData;
-    sizes: TypographyData;
-    prices: TypographyData;
-  };
-  radiuses: {
-    container: BorderRadiusData;
-    table: BorderRadiusData;
-    image: BorderRadiusData;
-  };
-  spacings: {
-    container: SpacingData;
-    tableTitle: SpacingData;
-    cell: SpacingData;
-  };
-  shadows: {
-    container: ShadowData;
-    table: ShadowData;
-    image: ShadowData;
-    cell: ShadowData;
-  };
-  tableLineWidth: number;
-}
-
-export type AnyModuleData = BannerModuleData | PizzaModuleData;
+export type AnyModuleData = BannerModuleData;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // StudioModule — kütüphanedeki hazır modül ÖRNEĞİ (TİP değil).
@@ -94,7 +52,7 @@ export type AnyModuleData = BannerModuleData | PizzaModuleData;
 // TİP ≠ ÖRNEK: ModuleRegistry (module-registry.ts) yetenek/tipi ("boş banner")
 // tutar; StudioModule tipe referans veren DOLU içeriktir ("Kırmızı Kampanya
 // Banner'ı"). Presetlerin (StudioPreset) kardeşi — ama shared'da DEĞİL web'de:
-// moduleData, web-only BannerModuleData|PizzaModuleData'ya bağlandığı için.
+// moduleData, web-only BannerModuleData'ya bağlandığı için.
 //
 // Payload slotRole'a göre TİP SEVİYESİNDE ayrışır (discriminated union):
 //   free    → moduleData (ZORUNLU), customSettings YASAK
@@ -110,7 +68,7 @@ interface StudioModuleBase {
   source: 'system';
 }
 
-/** free slot modülü: ModuleRegistry tipine (banner/pizza) referans + dolu içerik. */
+/** free slot modülü: ModuleRegistry tipine (banner) referans + dolu içerik. */
 export interface FreeStudioModule extends StudioModuleBase {
   slotRole: 'free';
   type: NonNullable<ModuleType>;

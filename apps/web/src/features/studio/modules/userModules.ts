@@ -1,5 +1,5 @@
 // LocalStorage destekli kullanıcı modülü kalıcılığı.
-// Kullanıcı bir Banner/Pizza modülünü adlandırarak kaydeder; Modül sekmesinde
+// Kullanıcı bir Banner modülünü adlandırarak kaydeder; Modül sekmesinde
 // "Kullanıcı modülleri" altında listelenir, sürükle-bırak ile yerleştirilir.
 
 import type { AnyModuleData } from './types';
@@ -7,7 +7,7 @@ import type { AnyModuleData } from './types';
 export interface UserModule {
   id: string;
   name: string;
-  type: 'banner' | 'pizza';
+  type: 'banner';
   data: AnyModuleData;
   createdAt: string;
 }

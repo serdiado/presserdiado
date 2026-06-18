@@ -81,7 +81,7 @@ Banner ve footer ortak `StudioModule` soyutlamasına oturmaz; ayrı ele alınır
 ## Modül Kütüphanesi
 
 ### Belkemiği kavram: TİP ≠ ÖRNEK
-- **Modül TİPİ** (`ModuleRegistry`: banner, pizza) = "boş zemin" / yetenek tanımı
+- **Modül TİPİ** (`ModuleRegistry`: banner) = "boş zemin" / yetenek tanımı
   ("banner ne yapabilir, varsayılan boş datası ne"). Mevcut yapı, AYRI kalır.
 - **Modül ÖRNEĞİ** (kütüphane = `studioModules.ts`) = "hazır dolu tasarım"
   (renk/logo/yazı dolu). Kütüphanede TİP değil ÖRNEK durur ("Kırmızı Kampanya
@@ -109,7 +109,7 @@ Banner ve footer ortak `StudioModule` soyutlamasına oturmaz; ayrı ele alınır
 
 ### Contract — `StudioModule` (discriminated union)
 **Konum:** `apps/web/src/features/studio/modules/types.ts` (shared DEĞİL — `moduleData`
-web-only `BannerModuleData|PizzaModuleData`'ya bağlandığı için; shared'a koymak ya
+web-only `BannerModuleData`'ya bağlandığı için; shared'a koymak ya
 `unknown`'a düşürür ya da çekirdek tiplerini taşımayı gerektirir). Payload
 `slotRole`'a göre **tip seviyesinde** ayrışır:
 - `FreeStudioModule`: `slotRole:'free'`, `type:NonNullable<ModuleType>`,
@@ -117,7 +117,7 @@ web-only `BannerModuleData|PizzaModuleData`'ya bağlandığı için; shared'a ko
 - `ProductStudioModule`: `slotRole:'product'`, `type:'product-presentation'`,
   `customSettings:DeepPartial<CatalogSettings>` (ZORUNLU), `moduleData?:never`.
 - Ortak: `StudioModuleBase` (`id,name,description?,thumbnail?,source:'system'`).
-- `ModuleType` (`'banner'|'pizza'|null`) KİRLENMEZ; `product-presentation` yalnız
+- `ModuleType` (`'banner'|null`) KİRLENMEZ; `product-presentation` yalnız
   union'da. Ürün-sunuş YENİ KATMAN değil — mevcut `isCustom`/`customSettings` üstüne.
 
 ### Davranış kararları

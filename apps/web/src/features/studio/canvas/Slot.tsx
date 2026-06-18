@@ -6,9 +6,7 @@ import { createProductDragImage } from '../utils/dragImage';
 import { useCatalogStore, useHistoryStore, useUIStore } from '@/stores/studio';
 import {
   BannerSection,
-  PizzaSection,
   type BannerModuleData,
-  type PizzaModuleData,
 } from '../modules';
 import {
   colorOpacityToCss,
@@ -682,13 +680,13 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
       // (slot.id hedefli; selectedSlotIds DEĞİL — Bug 2). toggleSlotRole çağrılmaz.
       useCatalogStore
         .getState()
-        .setSlotModule(pageNumber, slot.id, newModuleType as 'banner' | 'pizza');
+        .setSlotModule(pageNumber, slot.id, newModuleType as 'banner');
       return;
     }
     // User module: store'da kayıtlı modül datasını doğrudan slot'a koy.
     const userModuleRaw = e.dataTransfer.getData('newUserModuleData');
     if (userModuleRaw) {
-      const data = JSON.parse(userModuleRaw) as { type: 'banner' | 'pizza' };
+      const data = JSON.parse(userModuleRaw) as { type: 'banner' };
       if (slot.role !== 'free') useCatalogStore.getState().toggleSlotRole('free');
       useCatalogStore.getState().updateSlotModuleData(pageNumber, slot.id, null);
       // Önce moduleType'ı set et (initial data'yı yüklemeden), sonra data'yı override et.
@@ -790,8 +788,8 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
         if (isPreviewMode) return;
         e.stopPropagation();
         if (slot.role === 'free' && slot.moduleData) {
-          // Banner VE pizza tek giriş yolu — enterIsolation yüklemi doğrular, baseline kurar,
-          // editingContent'i moduleType koluna alır (banner artık çift-tıkla GİRİLİR). Product değişmez.
+          // Free modül tek giriş yolu — enterIsolation yüklemi doğrular, baseline kurar,
+          // editingContent'i banner koluna alır (banner çift-tıkla GİRİLİR). Product değişmez.
           enterIsolation(slot);
           const md = slot.moduleData as { type?: string; cells?: { id: string }[] };
           if (md.type === 'banner') {
@@ -893,12 +891,6 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
                 {(slot.moduleData as { type?: string })?.type === 'banner' ? (
                   <BannerSection
                     instanceData={slot.moduleData as BannerModuleData}
-                    slotId={slot.id}
-                    pageNumber={pageNumber}
-                  />
-                ) : (slot.moduleData as { type?: string })?.type === 'pizza' ? (
-                  <PizzaSection
-                    instanceData={slot.moduleData as PizzaModuleData}
                     slotId={slot.id}
                     pageNumber={pageNumber}
                   />
