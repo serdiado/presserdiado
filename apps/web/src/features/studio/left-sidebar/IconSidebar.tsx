@@ -1,9 +1,8 @@
 import { useState, type DragEvent } from 'react';
-import { Package, LayoutTemplate, FolderOpen, Wand2, ImageIcon, LayoutGrid, PenTool } from 'lucide-react';
+import { Package, FolderOpen, Wand2, ImageIcon, LayoutGrid, PenTool } from 'lucide-react';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 
 const FLYOUT_ID = 'temp-pool';
-const FORMAS_FLYOUT_ID = 'formas';
 const PROJELER_FLYOUT_ID = 'projeler';
 const TEMALAR_FLYOUT_ID = 'temalar';
 const MEDYA_FLYOUT_ID = 'medya';
@@ -81,23 +80,6 @@ export function IconSidebar() {
 
       {/* İnce ayraç */}
       <div className="mx-3 border-t border-border-default" />
-
-      {/* Formalar */}
-      <button
-        type="button"
-        title="Formalar"
-        onClick={() => toggleFlyout(FORMAS_FLYOUT_ID)}
-        className={`w-full flex flex-col items-center justify-center gap-1.5 py-3 px-1 transition-colors cursor-pointer ${
-          activeFlyout === FORMAS_FLYOUT_ID
-            ? 'bg-surface-subtle text-text-primary'
-            : 'text-text-secondary hover:bg-surface-subtle hover:text-text-primary'
-        }`}
-      >
-        <div className="relative">
-          <LayoutTemplate size={22} strokeWidth={1.5} />
-        </div>
-        <span className="text-icon-label">Formalar</span>
-      </button>
 
       {/* Projeler */}
       <button

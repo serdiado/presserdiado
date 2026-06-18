@@ -4,10 +4,10 @@ import { ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react';
 import { TopBar } from './topbar/TopBar';
 import { ContextualBar } from './contextual/ContextualBar';
 import { Canvas } from './canvas/Canvas';
+import { FormaIndicatorChip } from './canvas/FormaIndicatorChip';
 import { Sidebar } from './sidebar/Sidebar';
 import { IconSidebar } from './left-sidebar/IconSidebar';
 import { FlyoutPanel } from './left-sidebar/FlyoutPanel';
-import { FormasFlyoutPanel } from './left-sidebar/FormasFlyoutPanel';
 import { ProjelerFlyoutPanel } from './left-sidebar/ProjelerFlyoutPanel';
 import { TemalarFlyoutPanel } from './left-sidebar/TemalarFlyoutPanel';
 import { PlaceholderFlyout } from './left-sidebar/PlaceholderFlyout';
@@ -262,7 +262,6 @@ export default function StudioPage() {
             <TemalarFlyoutPanel />
             <PlaceholderFlyout flyoutId="medya" title="Medya" description="Yüklediğiniz görseller ve logolar burada listelenecek." />
             <PlaceholderFlyout flyoutId="moduller" title="Modüller" description="Hazır içerik bloklarını buradan sürükleyip bırakabileceksiniz." />
-            <FormasFlyoutPanel />
           </div>
         )}
 
@@ -271,6 +270,9 @@ export default function StudioPage() {
           <div className="flex-1 w-full relative min-h-0">
             <Canvas />
           </div>
+
+          {/* Aktif forma göstergesi — alt-orta sabit chrome (kanvas-bağımsız) */}
+          {!isPreviewMode && <FormaIndicatorChip />}
 
           {/* ← Düzenlemeye Dön butonu */}
           {isPreviewMode && (
