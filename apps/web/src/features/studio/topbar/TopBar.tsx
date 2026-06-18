@@ -106,10 +106,13 @@ export function TopBar() {
       const isUndoKey = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z';
       const isRedoKey = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y';
 
-      // İzolasyonda Ctrl+Z/Ctrl+Shift+Z/Ctrl+Y TAMAMEN bizim: native contentEditable undo'sunu
-      // bastırmak için contentEditable erken-return'ünden ÖNCE preventDefault + yerel yığına
-      // yönlendir → modül silinmez, metin yerel olarak geri alınır (I3, eşleşme: isoSession kapısı).
+      // İzolasyonda Ctrl+Z/Ctrl+Shift+Z/Ctrl+Y TAMAMEN bizim. Undo'dan ÖNCE bekleyen contentEditable
+      // metnini flush et (blur→onBlur→updateCell→snapshot), sonra yerel yığında geri al →
+      // deterministik bütün-hücre undo'su. (Empirik: native blur, odaklanılamayan <div>'e tıkta
+      // ateşlenmez; sorun native-vs-local değil, commit'in hiç koşmamasıydı.)
       if (iso && (isUndoKey || isRedoKey)) {
+        const el = document.activeElement as HTMLElement | null;
+        if (el && el.isContentEditable) el.blur();
         e.preventDefault();
         if (isRedoKey || (isUndoKey && e.shiftKey)) hist.isolationRedo();
         else hist.isolationUndo();

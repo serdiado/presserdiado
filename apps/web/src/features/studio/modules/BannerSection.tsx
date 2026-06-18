@@ -39,17 +39,32 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
     origPosY: number;
   } | null>(null);
 
+  const updateCell = (cellId: string, patch: Partial<BannerCellData>) => {
+    const newCells = cells.map((c) => (c.id === cellId ? { ...c, ...patch } : c));
+    updateSlotModuleData(pageNumber, slotId, { cells: newCells });
+  };
+
   useEffect(() => {
     const onClickOutside = (e: MouseEvent) => {
       if (!editingCellId) return;
       const t = e.target as HTMLElement;
       if (t.closest(`#banner-${editingCellId}`)) return;
       if (t.closest('#contextual-bar')) return;
+      // Hücreden ayrılırken metni COMMIT et: native blur, odaklanılamayan <div>'e (yan hücre/kanvas)
+      // tıkta ATEŞLENMEZ → onBlur kaçar. DOM'u doğrudan okuyup yazıyoruz (senaryo ii kök-nedeni).
+      const ce = document
+        .getElementById(`banner-${editingCellId}`)
+        ?.querySelector('[contenteditable]') as HTMLElement | null;
+      if (ce) {
+        const html = ce.innerHTML;
+        const c = cells.find((x) => x.id === editingCellId);
+        if (c && html !== c.text) updateCell(editingCellId, { text: html });
+      }
       setEditingCellId(null);
     };
     document.addEventListener('mousedown', onClickOutside);
     return () => document.removeEventListener('mousedown', onClickOutside);
-  }, [editingCellId]);
+  }, [editingCellId, cells, updateCell]);
 
   // Modülden çıkış (dış-tıklama → commit) artık TEK YERDE: Canvas'taki izolasyon çıkış
   // gating'i (capture mousedown, isoSession kapısı). Banner'a özel ikinci listener KALDIRILDI
@@ -59,11 +74,6 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
   // handler'ı (window keydown) Ctrl+Z'yi zaten karşılıyor; buradaki ikinci listener
   // mount başına çift-undo yapıyordu (banner varken her Ctrl+Z iki snapshot pop).
   // Hücre düzenleme Ctrl+Z davranışı TopBar handler'ında aynen kalır.
-
-  const updateCell = (cellId: string, patch: Partial<BannerCellData>) => {
-    const newCells = cells.map((c) => (c.id === cellId ? { ...c, ...patch } : c));
-    updateSlotModuleData(pageNumber, slotId, { cells: newCells });
-  };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isEditingModule) return;
@@ -303,19 +313,29 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
               contentEditable={isEdit}
               suppressContentEditableWarning
               ref={(el) => {
-                if (isEdit && el && document.activeElement !== el) {
-                  el.focus();
-                  const sel = window.getSelection();
-                  const range = document.createRange();
-                  range.selectNodeContents(el);
-                  range.collapse(false);
-                  sel?.removeAllRanges();
-                  sel?.addRange(range);
+                if (!el) return;
+                if (isEdit) {
+                  if (document.activeElement !== el) {
+                    el.focus();
+                    const sel = window.getSelection();
+                    const range = document.createRange();
+                    range.selectNodeContents(el);
+                    range.collapse(false);
+                    sel?.removeAllRanges();
+                    sel?.addRange(range);
+                  }
+                } else if (el.innerHTML !== (cell.text || '')) {
+                  // Aktif düzenlenmiyorsa DOM'u store'dan ZORLA senkronla. dangerouslySetInnerHTML'in
+                  // React __html diff'i, aynı-tick flush+undo batch'lenince DOM'u güncellemiyordu
+                  // (kullanıcı yazınca DOM React'in bildiği __html'den ayrışıyor). İmperatif sync bunu
+                  // kapatır: undo/redo/reseed sonrası hücre store metnini yansıtır.
+                  el.innerHTML = cell.text || '';
                 }
               }}
               onBlur={(e) => {
                 if (e.currentTarget.innerHTML !== cell.text)
                   updateCell(cell.id, { text: e.currentTarget.innerHTML });
+                setEditingCellId(null);
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Escape') setEditingCellId(null);
@@ -335,7 +355,6 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
                 textAlign: f.textAlign,
                 whiteSpace: 'pre-wrap',
               }}
-              dangerouslySetInnerHTML={{ __html: cell.text || '' }}
             />
           </div>
         );

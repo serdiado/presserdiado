@@ -21,20 +21,18 @@ export function Canvas() {
   const isoSlotId = useHistoryStore((s) => s.isoSession?.slotId ?? null);
   const exitIsolation = useUIStore((s) => s.exitIsolation);
 
-  // İzolasyon çıkış gating'i — TEK YER (banner + pizza). Modül DIŞINA mousedown → çıkış (commit).
-  // İstisnalar modül paneli/krom: modülü düzenlemeye devam ettiğin yüzeyler çıkış tetiklemez.
-  // capture=true: seçim/diğer mousedown handler'larından ÖNCE çalış → guard isoSession'sız görür.
+  // İzolasyon çıkış gating'i — TEK YER (banner + pizza). ALLOWLIST (tek pozitif koşul):
+  // çıkış YALNIZ kanvas çalışma yüzeyine ama izole modül DIŞINA tıkta. Tüm krom (sol IconSidebar,
+  // üst bar, zoom, sağ panel, Hızlı Bar, picker→body portal, sağ-tık menüsü) #studio-canvas-root
+  // DIŞINDA olduğu için hiçbiri çıkış tetiklemez. capture=true: seçim/diğer handler'lardan ÖNCE.
   useEffect(() => {
     if (!isoSlotId) return;
     const onDown = (e: MouseEvent) => {
       const t = e.target as HTMLElement | null;
       if (!t) return;
-      if (t.closest(`#slot-${isoSlotId}`)) return; // modül içi
-      if (t.closest('#contextual-bar')) return; // Hızlı Bar (modül paneli)
-      if (t.closest('#studio-sidebar')) return; // sağ panel (modül paneli)
-      if (t.closest('#context-menu-container')) return; // sağ-tık menüsü
-      if (t.closest('[data-color-picker-popup], [data-image-picker-popup]')) return; // picker pop-up
-      exitIsolation();
+      if (!t.closest('#studio-canvas-root')) return; // krom → çıkarMA
+      if (t.closest(`#slot-${isoSlotId}`)) return; // izole modül içi → kal
+      exitIsolation(); // kanvas yüzeyi ama modül dışı → çıkış (commit)
     };
     document.addEventListener('mousedown', onDown, true);
     return () => document.removeEventListener('mousedown', onDown, true);

@@ -263,6 +263,12 @@ export const useUIStore = create<UIState>((set, get) => ({
   exitIsolation: () => {
     const hist = useHistoryStore.getState();
     if (!hist.isoSession) return;
+    // Bekleyen contentEditable metnini commit'ten ÖNCE flush et. Native blur, odaklanılamayan
+    // (<div>) öğelere tıklamada ATEŞLENMEZ → metin store'a hiç ulaşmaz; programatik blur()
+    // güvenilir biçimde onBlur→updateCell tetikler. isoSession HÂLÂ aktifken koşar → snapshot +
+    // canlı yazım, sonra commitIsolation metni içerir (global +1). (Empirik: PROBE).
+    const ae = (typeof document !== 'undefined' ? document.activeElement : null) as HTMLElement | null;
+    if (ae && ae.isContentEditable) ae.blur();
     hist.commitIsolation();
     set({ editingContent: null });
   },
