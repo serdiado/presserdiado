@@ -15,10 +15,12 @@ import { CornerRadiusIcon } from '@/components/icons/CornerRadiusIcon';
 import {
   getActiveSession,
   setActiveRange,
-  applyRunColor,
   sanitizeRichText,
   isRangeWithinElement,
+  type RunValue,
 } from '../modules/richText';
+import { TextStyleSection } from './TextStyleSection';
+import type { TextSettingCtx, TextSettingDef } from '../textSettings/types';
 
 const DEFAULT_COLOR: ColorValue = { type: 'solid', color: '#ffffff', opacity: 100 };
 
@@ -2327,6 +2329,57 @@ function BannerCellMode() {
     updateSlotModuleData(pageNumber, slotId!, { cells });
   };
 
+  // Metin ayarı uygula (çağıran sınırı): run dalı → motor DOM mutate + restore-range → sanitize +
+  // store + tarayıcı seçimi geri yükle; cell dalı → typography patch. Tüm kontroller (renk dahil) tek
+  // yol → tek Ctrl+Z. registry.apply saf; commit BURADA. (Eski renk-özel onChange'in genelleştirmesi.)
+  const applyTextSetting = (def: TextSettingDef, value: RunValue) => {
+    const sess = getActiveSession();
+    const ce =
+      sess && sess.slotId === slotId
+        ? (document
+            .getElementById(`banner-${sess.cellId}`)
+            ?.querySelector('[contenteditable]') as HTMLElement | null)
+        : null;
+    // Canlı uzlaşma (fold #2): bayat singleton'ı ele — yalnız hem YAKALANMIŞ hem CANLI seçim
+    // non-collapsed + bu hücre içindeyken run-dalı (guard editörü blur etmediğinden picker açıkken de geçerli).
+    const live = window.getSelection();
+    const liveRange = live && live.rangeCount > 0 ? live.getRangeAt(0) : null;
+    const inCell = !!(
+      sess &&
+      ce &&
+      !sess.range.collapsed &&
+      isRangeWithinElement(sess.range, ce) &&
+      liveRange &&
+      !liveRange.collapsed &&
+      isRangeWithinElement(liveRange, ce)
+    );
+    const ctx: TextSettingCtx = {
+      surface: 'module',
+      slotId: slotId!,
+      cellId: inCell ? sess!.cellId : selectedCellIds[0] ?? '',
+      cellEl: inCell ? ce! : undefined,
+      range: inCell ? sess!.range : undefined,
+      font: firstCell.font,
+    };
+    const res = def.apply(ctx, value);
+    if (res instanceof Range) {
+      // RUN: motor DOM'u sardı → sanitize edip store'a yaz, seçimi yeni run'a geri kur.
+      const html = sanitizeRichText(ce!.innerHTML);
+      const cells = moduleData.cells.map((c: any) =>
+        c.id === ctx.cellId ? { ...c, text: html } : c,
+      );
+      updateSlotModuleData(pageNumber, slotId!, { cells });
+      setActiveRange(slotId!, ctx.cellId, res);
+      ce!.focus();
+      const selApi = window.getSelection();
+      selApi?.removeAllRanges();
+      selApi?.addRange(res);
+    } else {
+      // CELL: typography patch (bugünkü cell-level davranış).
+      updateCells({ font: { ...firstCell.font, ...res } });
+    }
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -2491,67 +2544,18 @@ function BannerCellMode() {
 
           <Divider />
 
-          {/* Yazı Tipi Ailesi, Boyutu ve Kalınlığı */}
-          <select
-            value={firstCell.font.fontFamily || 'Inter'}
-            onChange={(e) => updateCells({ font: { ...firstCell.font, fontFamily: e.target.value } })}
-            className="text-xs border border-border-default rounded-md px-2 py-1.5 bg-surface-panel"
-          >
-            {['Inter', 'Roboto', 'Arial', 'Oswald', 'Helvetica', 'Georgia'].map((f) => (
-              <option key={f} value={f}>{f}</option>
-            ))}
-          </select>
-
-          <input
-            type="number" min={6} max={120} value={firstCell.font.fontSize}
-            onChange={(e) => updateCells({ font: { ...firstCell.font, fontSize: parseInt(e.target.value) || 12 } })}
-            className="w-14 text-center text-xs border border-border-default rounded-md px-1 py-1.5"
-          />
-
-          <select
-            value={firstCell.font.fontWeight}
-            onChange={(e) => updateCells({ font: { ...firstCell.font, fontWeight: e.target.value } })}
-            className="text-xs border border-border-default rounded-md px-2 py-1.5 bg-surface-panel"
-          >
-            <option value="400">Normal</option>
-            <option value="500">Orta</option>
-            <option value="700">Kalın</option>
-            <option value="900">Siyah</option>
-          </select>
-
-          {/* Yazı Rengi */}
-          <ColorOpacityPicker
-            solidOnly
-            trigger={<ColorSwatchTrigger color={firstCell.font.color} opacity={firstCell.font.opacity} />}
-            value={{ type: 'solid', color: firstCell.font.color, opacity: firstCell.font.opacity }}
-            onChange={(v) => {
-              if (v.type !== 'solid') return;
-              // Apply-path dallanması (docs §3): edit + canlı metin seçimi → run-level; aksi → cell-level.
-              const sess = getActiveSession();
-              if (sess && sess.slotId === slotId && !sess.range.collapsed) {
-                const ce = document
-                  .getElementById(`banner-${sess.cellId}`)
-                  ?.querySelector('[contenteditable]') as HTMLElement | null;
-                if (ce && isRangeWithinElement(sess.range, ce)) {
-                  // SIRA: DOM-seçimi-oku → span-sar → text innerHTML'i store'a yaz.
-                  const newRange = applyRunColor(ce, sess.range, v.color, v.opacity);
-                  const html = sanitizeRichText(ce.innerHTML);
-                  // Tek-hücre hedefli yazım (sess.cellId) — selectedCellIds[0]'a güvenme.
-                  const cells = moduleData.cells.map((c: any) =>
-                    c.id === sess.cellId ? { ...c, text: html } : c,
-                  );
-                  updateSlotModuleData(pageNumber, slotId!, { cells });
-                  // Restore (normalize-sonrası range): seçimi yeni run'a geri kur.
-                  setActiveRange(sess.slotId, sess.cellId, newRange);
-                  ce.focus();
-                  const selApi = window.getSelection();
-                  selApi?.removeAllRanges();
-                  selApi?.addRange(newRange);
-                  return;
-                }
-              }
-              // Cell-level (bugünkü davranış — değişmez).
-              updateCells({ font: { ...firstCell.font, color: v.color, opacity: v.opacity } });
+          {/* Metin biçimlendirme — registry'den render, run-level (Faz 2). Renk dahil tüm kontroller
+              applyTextSetting tek-yolundan geçer (run→motor / cell→patch). */}
+          <TextStyleSection
+            slotId={slotId!}
+            cellId={selectedCellIds[0] ?? firstCell.id}
+            font={firstCell.font}
+            onApply={applyTextSetting}
+            getAvoidRect={() => {
+              const s = getActiveSession();
+              return s && s.slotId === slotId && !s.range.collapsed
+                ? s.range.getBoundingClientRect()
+                : null;
             }}
           />
 

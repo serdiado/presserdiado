@@ -22,6 +22,8 @@ interface Props {
   /** Custom trigger element. When provided, renders as a bar-style button instead of the swatch. */
   trigger?: React.ReactNode;
   className?: string;
+  /** Run-level text uygulamasında örtülmemesi gereken seçim rect'i (no-cover zone). */
+  avoidRect?: DOMRect | null;
 }
 
 const STORAGE_KEY = 'presserdiado_saved_colors';
@@ -602,6 +604,7 @@ export function ColorOpacityPicker({
   solidOnly = false,
   trigger,
   className,
+  avoidRect = null,
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [savedColors, setSavedColors] = useState<{ c: string; o: number }[]>([]);
@@ -643,12 +646,26 @@ export function ColorOpacityPicker({
     const POPUP_HEIGHT = 580;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const left =
+    let left =
       r.right + 5 + POPUP_WIDTH > vw ? Math.max(4, r.left - POPUP_WIDTH - 5) : r.right + 5;
     const top =
       r.bottom + 5 + POPUP_HEIGHT > vh ? Math.max(4, r.top - POPUP_HEIGHT) : r.bottom + 5;
+    // No-cover (run-level metin): popup seçim rect'ini örtüyorsa yatay olarak seçimin yanına kaydır.
+    if (avoidRect) {
+      const overlaps =
+        left < avoidRect.right &&
+        left + POPUP_WIDTH > avoidRect.left &&
+        top < avoidRect.bottom &&
+        top + POPUP_HEIGHT > avoidRect.top;
+      if (overlaps) {
+        const leftOf = avoidRect.left - 5 - POPUP_WIDTH;
+        const rightOf = avoidRect.right + 5;
+        if (leftOf >= 4) left = leftOf;
+        else if (rightOf + POPUP_WIDTH <= vw - 4) left = rightOf;
+      }
+    }
     setCoords({ top, left });
-  }, [isOpen]);
+  }, [isOpen, avoidRect]);
 
   // Close on outside click.
   useEffect(() => {
