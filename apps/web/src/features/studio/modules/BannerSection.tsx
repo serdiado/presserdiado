@@ -1,7 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import { colorValueBackground, colorOpacityToCss, radiusStyle, shadowStyle, hexToRgba } from '../util/style';
+import { usePreserveEditorSelectionOnChrome } from '../util/editorChrome';
 import type { BannerCellData, BannerModuleData } from './types';
+import {
+  setActiveRange,
+  clearActiveSession,
+  sanitizeRichText,
+  isRangeWithinElement,
+} from './richText';
 
 interface Props {
   instanceData: BannerModuleData;
@@ -39,6 +46,10 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
     origPosY: number;
   } | null>(null);
 
+  // Hücre text-edit'teyken Hızlı Bar/popup ile etkileşim editör focus+seçimini bozmasın
+  // (kök desen — yeni araçlar otomatik miras alır). bkz. util/editorChrome.ts
+  usePreserveEditorSelectionOnChrome(!!editingCellId);
+
   const updateCell = (cellId: string, patch: Partial<BannerCellData>) => {
     const newCells = cells.map((c) => (c.id === cellId ? { ...c, ...patch } : c));
     updateSlotModuleData(pageNumber, slotId, { cells: newCells });
@@ -50,21 +61,48 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
       const t = e.target as HTMLElement;
       if (t.closest(`#banner-${editingCellId}`)) return;
       if (t.closest('#contextual-bar')) return;
+      // (1a) Renk seçici popup'ı body'ye portal — ona tıklamak edit'ten DÜŞÜRMEMELİ.
+      // Yoksa run-level renk uygulanırken seçim ölür (bulgu 4 / docs §5).
+      if (t.closest('[data-color-picker-popup]')) return;
       // Hücreden ayrılırken metni COMMIT et: native blur, odaklanılamayan <div>'e (yan hücre/kanvas)
       // tıkta ATEŞLENMEZ → onBlur kaçar. DOM'u doğrudan okuyup yazıyoruz (senaryo ii kök-nedeni).
       const ce = document
         .getElementById(`banner-${editingCellId}`)
         ?.querySelector('[contenteditable]') as HTMLElement | null;
       if (ce) {
-        const html = ce.innerHTML;
+        const clean = sanitizeRichText(ce.innerHTML);
         const c = cells.find((x) => x.id === editingCellId);
-        if (c && html !== c.text) updateCell(editingCellId, { text: html });
+        if (c && clean !== c.text) updateCell(editingCellId, { text: clean });
       }
       setEditingCellId(null);
     };
     document.addEventListener('mousedown', onClickOutside);
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, [editingCellId, cells, updateCell]);
+
+  // (1b) Run-level renk köprüsü: edit açıkken hücre-içi metin seçimini singleton'a yaz.
+  // selectionchange, picker swatch'ına tıklamadan ÖNCE son geçerli range'i yakalar (tıklama
+  // focus'u portal'a taşıyıp canlı seçimi collapse etmeden). ContextualBar onChange bunu okur.
+  useEffect(() => {
+    if (!editingCellId) return;
+    const ce = document
+      .getElementById(`banner-${editingCellId}`)
+      ?.querySelector('[contenteditable]') as HTMLElement | null;
+    if (!ce) return;
+    const onSelChange = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+      const range = sel.getRangeAt(0);
+      // (Düzeltme C) range'in HER İKİ ucu da bu hücrenin contentEditable'ı içinde olsun.
+      if (!isRangeWithinElement(range, ce)) return;
+      setActiveRange(slotId, editingCellId, range);
+    };
+    document.addEventListener('selectionchange', onSelChange);
+    return () => {
+      document.removeEventListener('selectionchange', onSelChange);
+      clearActiveSession();
+    };
+  }, [editingCellId, slotId]);
 
   // Modülden çıkış (dış-tıklama → commit) artık TEK YERDE: Canvas'taki izolasyon çıkış
   // gating'i (capture mousedown, isoSession kapısı). Banner'a özel ikinci listener KALDIRILDI
@@ -333,8 +371,12 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
                 }
               }}
               onBlur={(e) => {
-                if (e.currentTarget.innerHTML !== cell.text)
-                  updateCell(cell.id, { text: e.currentTarget.innerHTML });
+                // (1a-tamamlayıcı) Focus picker'a (portal, odaklanabilir slider/buton) kaçarsa
+                // edit'i KORU — run-level renk uygulanacak; onChange sonrası ce.focus() geri alır.
+                const rel = e.relatedTarget as HTMLElement | null;
+                if (rel && rel.closest('[data-color-picker-popup]')) return;
+                const clean = sanitizeRichText(e.currentTarget.innerHTML);
+                if (clean !== cell.text) updateCell(cell.id, { text: clean });
                 setEditingCellId(null);
               }}
               onKeyDown={(e) => {

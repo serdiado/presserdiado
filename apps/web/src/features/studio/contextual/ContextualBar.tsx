@@ -12,6 +12,13 @@ import {
 } from '../pickers';
 import { deepMerge, colorValueBackground, colorOpacityToCss } from '../util/style';
 import { CornerRadiusIcon } from '@/components/icons/CornerRadiusIcon';
+import {
+  getActiveSession,
+  setActiveRange,
+  applyRunColor,
+  sanitizeRichText,
+  isRangeWithinElement,
+} from '../modules/richText';
 
 const DEFAULT_COLOR: ColorValue = { type: 'solid', color: '#ffffff', opacity: 100 };
 
@@ -2519,6 +2526,31 @@ function BannerCellMode() {
             value={{ type: 'solid', color: firstCell.font.color, opacity: firstCell.font.opacity }}
             onChange={(v) => {
               if (v.type !== 'solid') return;
+              // Apply-path dallanması (docs §3): edit + canlı metin seçimi → run-level; aksi → cell-level.
+              const sess = getActiveSession();
+              if (sess && sess.slotId === slotId && !sess.range.collapsed) {
+                const ce = document
+                  .getElementById(`banner-${sess.cellId}`)
+                  ?.querySelector('[contenteditable]') as HTMLElement | null;
+                if (ce && isRangeWithinElement(sess.range, ce)) {
+                  // SIRA: DOM-seçimi-oku → span-sar → text innerHTML'i store'a yaz.
+                  const newRange = applyRunColor(ce, sess.range, v.color, v.opacity);
+                  const html = sanitizeRichText(ce.innerHTML);
+                  // Tek-hücre hedefli yazım (sess.cellId) — selectedCellIds[0]'a güvenme.
+                  const cells = moduleData.cells.map((c: any) =>
+                    c.id === sess.cellId ? { ...c, text: html } : c,
+                  );
+                  updateSlotModuleData(pageNumber, slotId!, { cells });
+                  // Restore (normalize-sonrası range): seçimi yeni run'a geri kur.
+                  setActiveRange(sess.slotId, sess.cellId, newRange);
+                  ce.focus();
+                  const selApi = window.getSelection();
+                  selApi?.removeAllRanges();
+                  selApi?.addRange(newRange);
+                  return;
+                }
+              }
+              // Cell-level (bugünkü davranış — değişmez).
               updateCells({ font: { ...firstCell.font, color: v.color, opacity: v.opacity } });
             }}
           />
