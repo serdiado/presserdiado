@@ -17,7 +17,9 @@ import {
   setActiveRange,
   sanitizeRichText,
   isRangeWithinElement,
+  richTextToPlain,
   type RunValue,
+  type RichTextSession,
 } from '../modules/richText';
 import { TextStyleSection } from './TextStyleSection';
 import type { TextSettingCtx, TextSettingDef } from '../textSettings/types';
@@ -25,6 +27,57 @@ import type { TextSettingCtx, TextSettingDef } from '../textSettings/types';
 const DEFAULT_COLOR: ColorValue = { type: 'solid', color: '#ffffff', opacity: 100 };
 
 const Divider = () => <div className="w-px h-5 bg-border-default mx-2" />;
+
+// ── Metin ayarı uygulama — TEK KAYNAK dispatcher (modül + ürün ortak) ─────────
+// Ortak mantık (yakalanmış+canlı seçim uzlaşması, ctx kur, registry.apply, Range→commit+restore /
+// patch→cell) burada; yüzey farkı (resolveCellEl / commitRun / applyCell) adapter'da. Paralel kopya YOK.
+interface RunApplyAdapter {
+  surface: 'module' | 'product';
+  slotId: string;
+  font: TypographyData;
+  matchesSession: (s: RichTextSession) => boolean;
+  resolveCellEl: (s: RichTextSession) => HTMLElement | null;
+  commitRun: (s: RichTextSession, html: string) => void;
+  applyCell: (patch: Partial<TypographyData>) => void;
+  fallbackCellId: string;
+}
+
+function dispatchTextSetting(a: RunApplyAdapter, def: TextSettingDef, value: RunValue): void {
+  const sess = getActiveSession();
+  const ce = sess && a.matchesSession(sess) ? a.resolveCellEl(sess) : null;
+  // Fold-#2 canlı uzlaşma: bayat singleton'ı ele — hem YAKALANMIŞ hem CANLI seçim non-collapsed +
+  // bu editable içinde olmalı (guard editörü blur etmediğinden picker açıkken de geçerli).
+  const live = window.getSelection();
+  const liveRange = live && live.rangeCount > 0 ? live.getRangeAt(0) : null;
+  const inSel = !!(
+    sess &&
+    ce &&
+    !sess.range.collapsed &&
+    isRangeWithinElement(sess.range, ce) &&
+    liveRange &&
+    !liveRange.collapsed &&
+    isRangeWithinElement(liveRange, ce)
+  );
+  const ctx: TextSettingCtx = {
+    surface: a.surface,
+    slotId: a.slotId,
+    cellId: inSel ? sess!.cellId : a.fallbackCellId,
+    cellEl: inSel ? ce! : undefined,
+    range: inSel ? sess!.range : undefined,
+    font: a.font,
+  };
+  const res = def.apply(ctx, value);
+  if (res instanceof Range) {
+    a.commitRun(sess!, sanitizeRichText(ce!.innerHTML)); // RUN → yüzeye özel commit
+    setActiveRange(a.slotId, sess!.cellId, res);
+    ce!.focus();
+    const selApi = window.getSelection();
+    selApi?.removeAllRanges();
+    selApi?.addRange(res);
+  } else {
+    a.applyCell(res); // CELL → typography patch
+  }
+}
 
 function ColorSwatchTrigger({
   color,
@@ -528,7 +581,7 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
                   {slot.product.image ? (
                     <img
                       src={slot.product.image}
-                      alt={slot.product.name ?? ''}
+                      alt={richTextToPlain(slot.product.name ?? '')}
                       className="max-w-full max-h-full object-contain"
                     />
                   ) : (
@@ -545,9 +598,10 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
                 <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">Ürün Adı</label>
                 <input
                   type="text"
-                  defaultValue={slot.product.name ?? ''}
+                  defaultValue={richTextToPlain(slot.product.name ?? '')}
                   key={`name-${slot.product.name}`}
                   onBlur={(e) => {
+                    // Düz-metin rename → ad düz metne döner (formatting reset; kabul). Render tespiti güvenli gösterir.
                     updateSlotProduct(pageNumber, slot.id, { name: e.target.value });
                   }}
                   className="w-full text-body-xs border border-border-default rounded px-2 py-1 focus:border-border-strong outline-none"
@@ -1035,6 +1089,7 @@ function TextMode({
   const getActivePages = useCatalogStore((s) => s.getActivePages);
   const setGlobalSettings = useCatalogStore((s) => s.setGlobalSettings);
   const updateSlotCustomSettings = useCatalogStore((s) => s.updateSlotCustomSettings);
+  const updateSlotProduct = useCatalogStore((s) => s.updateSlotProduct);
   const setSidebarState = useUIStore((s) => s.setSidebarState);
   void formas;
 
@@ -1177,56 +1232,97 @@ function TextMode({
     updateSettings(patch);
   };
 
+  // Run-level metin (yalnız ürün ADI) — ortak dispatchTextSetting + ÜRÜN adapter'ı:
+  // run→updateSlotProduct(name HTML) (clone-izole + global saveState), cell→updateFont(fonts.productName).
+  const pageNumber =
+    getActivePages().find((p) => p.slots.some((s) => s.id === slotId))?.pageNumber ?? 0;
+  const applyTextSetting = (def: TextSettingDef, value: RunValue) =>
+    dispatchTextSetting(
+      {
+        surface: 'product',
+        slotId,
+        font,
+        matchesSession: (s) => s.slotId === slotId && s.cellId === 'name',
+        resolveCellEl: () =>
+          document.getElementById(`product-name-${slotId}`) as HTMLElement | null,
+        commitRun: (_s, html) => updateSlotProduct(pageNumber, slotId, { name: html }),
+        applyCell: (patch) => updateFont({ ...font, ...patch }),
+        fallbackCellId: 'name',
+      },
+      def,
+      value,
+    );
+
   const btnCls = 'h-9 px-3 inline-flex items-center gap-1.5 rounded-md text-xs font-medium whitespace-nowrap hover:bg-border-default transition-colors';
 
   return (
     <>
-      {/* 1 — Yazı tipi */}
-      <select
-        value={font.fontFamily}
-        onChange={(e) => updateFont({ ...font, fontFamily: e.target.value })}
-        className="text-xs border border-border-default rounded-md px-2 py-1.5 bg-surface-panel"
-      >
-        {['Inter', 'Roboto', 'Arial', 'Oswald', 'Helvetica', 'Georgia'].map((f) => (
-          <option key={f} value={f}>{f}</option>
-        ))}
-      </select>
+      {isName ? (
+        /* Ürün adı: registry'den render run-level biçimlendirme (Faz 3). */
+        <TextStyleSection
+          surface="product"
+          slotId={slotId}
+          cellId="name"
+          font={font}
+          onApply={applyTextSetting}
+          getAvoidRect={() => {
+            const s = getActiveSession();
+            return s && s.slotId === slotId && s.cellId === 'name' && !s.range.collapsed
+              ? s.range.getBoundingClientRect()
+              : null;
+          }}
+        />
+      ) : (
+        /* Fiyat: cell-level native kontroller (run-level göç sonraki tur). */
+        <>
+          {/* 1 — Yazı tipi */}
+          <select
+            value={font.fontFamily}
+            onChange={(e) => updateFont({ ...font, fontFamily: e.target.value })}
+            className="text-xs border border-border-default rounded-md px-2 py-1.5 bg-surface-panel"
+          >
+            {['Inter', 'Roboto', 'Arial', 'Oswald', 'Helvetica', 'Georgia'].map((f) => (
+              <option key={f} value={f}>{f}</option>
+            ))}
+          </select>
 
-      {/* 2 — Font boyutu */}
-      <input
-        type="number"
-        min={6}
-        max={120}
-        value={font.fontSize}
-        onChange={(e) => updateFont({ ...font, fontSize: parseInt(e.target.value) || 12 })}
-        className="w-14 text-center text-xs border border-border-default rounded-md px-1 py-1.5"
-      />
+          {/* 2 — Font boyutu */}
+          <input
+            type="number"
+            min={6}
+            max={120}
+            value={font.fontSize}
+            onChange={(e) => updateFont({ ...font, fontSize: parseInt(e.target.value) || 12 })}
+            className="w-14 text-center text-xs border border-border-default rounded-md px-1 py-1.5"
+          />
 
-      {/* 3 — Font kalınlığı */}
-      <select
-        value={font.fontWeight}
-        onChange={(e) => updateFont({ ...font, fontWeight: e.target.value })}
-        className="text-xs border border-border-default rounded-md px-2 py-1.5 bg-surface-panel"
-      >
-        <option value="400">Normal</option>
-        <option value="500">Orta</option>
-        <option value="700">Kalın</option>
-        <option value="900">Siyah</option>
-      </select>
+          {/* 3 — Font kalınlığı */}
+          <select
+            value={font.fontWeight}
+            onChange={(e) => updateFont({ ...font, fontWeight: e.target.value })}
+            className="text-xs border border-border-default rounded-md px-2 py-1.5 bg-surface-panel"
+          >
+            <option value="400">Normal</option>
+            <option value="500">Orta</option>
+            <option value="700">Kalın</option>
+            <option value="900">Siyah</option>
+          </select>
 
-      {/* 4 */}
-      <Divider />
+          {/* 4 */}
+          <Divider />
 
-      {/* 7 — Renk */}
-      <ColorOpacityPicker
-        solidOnly
-        trigger={<ColorSwatchTrigger color={font.color} opacity={font.opacity} />}
-        value={{ type: 'solid', color: font.color, opacity: font.opacity }}
-        onChange={(v) => {
-          if (v.type !== 'solid') return;
-          updateFont({ ...font, color: v.color, opacity: v.opacity });
-        }}
-      />
+          {/* 7 — Renk */}
+          <ColorOpacityPicker
+            solidOnly
+            trigger={<ColorSwatchTrigger color={font.color} opacity={font.opacity} />}
+            value={{ type: 'solid', color: font.color, opacity: font.opacity }}
+            onChange={(v) => {
+              if (v.type !== 'solid') return;
+              updateFont({ ...font, color: v.color, opacity: v.opacity });
+            }}
+          />
+        </>
+      )}
 
 
       {/* 10 */}
@@ -2329,56 +2425,31 @@ function BannerCellMode() {
     updateSlotModuleData(pageNumber, slotId!, { cells });
   };
 
-  // Metin ayarı uygula (çağıran sınırı): run dalı → motor DOM mutate + restore-range → sanitize +
-  // store + tarayıcı seçimi geri yükle; cell dalı → typography patch. Tüm kontroller (renk dahil) tek
-  // yol → tek Ctrl+Z. registry.apply saf; commit BURADA. (Eski renk-özel onChange'in genelleştirmesi.)
-  const applyTextSetting = (def: TextSettingDef, value: RunValue) => {
-    const sess = getActiveSession();
-    const ce =
-      sess && sess.slotId === slotId
-        ? (document
-            .getElementById(`banner-${sess.cellId}`)
-            ?.querySelector('[contenteditable]') as HTMLElement | null)
-        : null;
-    // Canlı uzlaşma (fold #2): bayat singleton'ı ele — yalnız hem YAKALANMIŞ hem CANLI seçim
-    // non-collapsed + bu hücre içindeyken run-dalı (guard editörü blur etmediğinden picker açıkken de geçerli).
-    const live = window.getSelection();
-    const liveRange = live && live.rangeCount > 0 ? live.getRangeAt(0) : null;
-    const inCell = !!(
-      sess &&
-      ce &&
-      !sess.range.collapsed &&
-      isRangeWithinElement(sess.range, ce) &&
-      liveRange &&
-      !liveRange.collapsed &&
-      isRangeWithinElement(liveRange, ce)
+  // Metin ayarı uygula — ortak dispatchTextSetting + MODÜL adapter'ı (run→updateSlotModuleData /
+  // cell→updateCells). Mantık tek kaynakta; burada yalnız yüzey farkları.
+  const applyTextSetting = (def: TextSettingDef, value: RunValue) =>
+    dispatchTextSetting(
+      {
+        surface: 'module',
+        slotId: slotId!,
+        font: firstCell.font,
+        matchesSession: (s) => s.slotId === slotId,
+        resolveCellEl: (s) =>
+          document
+            .getElementById(`banner-${s.cellId}`)
+            ?.querySelector('[contenteditable]') as HTMLElement | null,
+        commitRun: (s, html) => {
+          const cells = moduleData.cells.map((c: any) =>
+            c.id === s.cellId ? { ...c, text: html } : c,
+          );
+          updateSlotModuleData(pageNumber, slotId!, { cells });
+        },
+        applyCell: (patch) => updateCells({ font: { ...firstCell.font, ...patch } }),
+        fallbackCellId: selectedCellIds[0] ?? '',
+      },
+      def,
+      value,
     );
-    const ctx: TextSettingCtx = {
-      surface: 'module',
-      slotId: slotId!,
-      cellId: inCell ? sess!.cellId : selectedCellIds[0] ?? '',
-      cellEl: inCell ? ce! : undefined,
-      range: inCell ? sess!.range : undefined,
-      font: firstCell.font,
-    };
-    const res = def.apply(ctx, value);
-    if (res instanceof Range) {
-      // RUN: motor DOM'u sardı → sanitize edip store'a yaz, seçimi yeni run'a geri kur.
-      const html = sanitizeRichText(ce!.innerHTML);
-      const cells = moduleData.cells.map((c: any) =>
-        c.id === ctx.cellId ? { ...c, text: html } : c,
-      );
-      updateSlotModuleData(pageNumber, slotId!, { cells });
-      setActiveRange(slotId!, ctx.cellId, res);
-      ce!.focus();
-      const selApi = window.getSelection();
-      selApi?.removeAllRanges();
-      selApi?.addRange(res);
-    } else {
-      // CELL: typography patch (bugünkü cell-level davranış).
-      updateCells({ font: { ...firstCell.font, ...res } });
-    }
-  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -2547,6 +2618,7 @@ function BannerCellMode() {
           {/* Metin biçimlendirme — registry'den render, run-level (Faz 2). Renk dahil tüm kontroller
               applyTextSetting tek-yolundan geçer (run→motor / cell→patch). */}
           <TextStyleSection
+            surface="module"
             slotId={slotId!}
             cellId={selectedCellIds[0] ?? firstCell.id}
             font={firstCell.font}

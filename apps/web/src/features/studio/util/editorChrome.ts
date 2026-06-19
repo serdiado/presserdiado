@@ -23,15 +23,33 @@ const CHROME_SELECTOR = '#contextual-bar, [data-color-picker-popup]';
  *  font-size input'u, select'ler, opacity range slider'ı vs.). preventDefault'lanmaz. */
 const FOCUSABLE_CONTROL_SELECTOR = 'input, select, textarea, [contenteditable="true"]';
 
+// ── Metin-sürükleme (text-drag) jest-kökeni izleyici — tek kaynak, yüzey-agnostik ──
+// Sorun: ad/hücre düzenlenirken mousedown editable içinde başlayıp mouseup kutu DIŞINDA biten "drag-out"
+// jestinde, `click` ortak-ata (slot kartı / canvas) üzerinde ateşler → toggleSlotSelection/clearSelection
+// → bar metin modundan düşer (edit korunsa da). Çözüm: jest editable'da BAŞLADIYSA işaretle; slot/canvas
+// onClick bunu görüp seçim değişimini atlar (taze dış-tık etkilenmez — o editable dışında başlar).
+let textDragOrigin = false;
+
+/** Son mousedown bir rich-text editable (`[data-rt-editable]`) içinde mi başladı? Okur + TÜKETİR (reset).
+ *  Slot/Canvas onClick çağırır: true ise drag-out jesti → seçim değiştirme. */
+export function consumeTextDragGesture(): boolean {
+  const v = textDragOrigin;
+  textDragOrigin = false;
+  return v;
+}
+
 /**
  * active iken: chrome içindeki (native kontroller HARİÇ) mousedown'ların
- * preventDefault'ı ile contentEditable focus + seçimini korur.
+ * preventDefault'ı ile contentEditable focus + seçimini korur. Ayrıca her mousedown'da text-drag
+ * jest-kökenini ([data-rt-editable]) kaydeder (drag-out slot-seçimi bastırması için).
  */
 export function usePreserveEditorSelectionOnChrome(active: boolean): void {
   useEffect(() => {
     if (!active) return;
     const onMouseDown = (e: MouseEvent) => {
       const t = e.target as HTMLElement | null;
+      // Jest-kökeni: mousedown bir rich-text editable içinde mi? (listener yalnız edit aktifken kurulu.)
+      textDragOrigin = !!(t && typeof t.closest === 'function' && t.closest('[data-rt-editable]'));
       if (!t || typeof t.closest !== 'function') return;
       if (!t.closest(CHROME_SELECTOR)) return;
       // Native odak-gerektiren kontroller normal odaklansın (run-seçimine ihtiyaçları yok).
@@ -40,6 +58,9 @@ export function usePreserveEditorSelectionOnChrome(active: boolean): void {
       e.preventDefault();
     };
     document.addEventListener('mousedown', onMouseDown);
-    return () => document.removeEventListener('mousedown', onMouseDown);
+    return () => {
+      document.removeEventListener('mousedown', onMouseDown);
+      textDragOrigin = false; // edit bitince bayat-flag bırakma
+    };
   }, [active]);
 }

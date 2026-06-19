@@ -1,3 +1,5 @@
+import { richTextToPlain } from '../modules/richText';
+
 /**
  * Sürükleme işlemi sırasında farenin altında belirecek olan ürün "drag image"
  * (hayalet görüntü / ghost) DOM yapısını oluşturur.
@@ -40,7 +42,7 @@ export function createProductDragImage(product: { name: string; imageUrl?: strin
 
   const nameDiv = document.createElement('div');
   nameDiv.className = 'text-label-md truncate text-text-primary font-medium';
-  nameDiv.innerText = product.name;
+  nameDiv.textContent = richTextToPlain(product.name); // HTML ad → düz metin (tag göstermesin)
   contentBox.appendChild(nameDiv);
 
   dragDiv.appendChild(contentBox);

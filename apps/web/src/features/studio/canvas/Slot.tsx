@@ -9,6 +9,14 @@ import {
   type BannerModuleData,
 } from '../modules';
 import {
+  setActiveRange,
+  clearActiveSession,
+  isRangeWithinElement,
+  sanitizeRichText,
+  isRichTextHtml,
+} from '../modules/richText';
+import { usePreserveEditorSelectionOnChrome, consumeTextDragGesture } from '../util/editorChrome';
+import {
   colorOpacityToCss,
   colorValueBackground,
   deepMerge,
@@ -281,6 +289,27 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
 
   const [isOver, setIsOver] = useState(false);
   const [editingText, setEditingText] = useState<'name' | 'price' | null>(null);
+
+  // Ürün adı run-level metin köprüsü (modül BannerSection deseni): edit açıkken hücre-içi seçimi
+  // singleton'a yaz (ContextualBar TextMode okur) + bar custom kontrollerinde blur engeli (seçim yaşar).
+  usePreserveEditorSelectionOnChrome(editingText === 'name');
+  useEffect(() => {
+    if (editingText !== 'name') return;
+    const ce = document.getElementById(`product-name-${slot.id}`) as HTMLElement | null;
+    if (!ce) return;
+    const onSelChange = () => {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+      const range = sel.getRangeAt(0);
+      if (!isRangeWithinElement(range, ce)) return;
+      setActiveRange(slot.id, 'name', range);
+    };
+    document.addEventListener('selectionchange', onSelChange);
+    return () => {
+      document.removeEventListener('selectionchange', onSelChange);
+      clearActiveSession();
+    };
+  }, [editingText, slot.id]);
   const [imgDrag, setImgDrag] = useState({
     isDragging: false,
     startX: 0,
@@ -777,6 +806,9 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
       onClick={(e) => {
         if (isPreviewMode) return;
         e.stopPropagation();
+        // Text-drag jesti (mousedown editable'da başladı, mouseup burada bitti) → seçim DEĞİŞMESİN
+        // (edit + metin seçimi + bar metin modu korunur). Taze dış-tık editable dışında başlar → false.
+        if (consumeTextDragGesture()) return;
         if (editingContent?.slotId === slot.id) return;
         if (editingContent) setEditingContent(null);
         if (!isSelected || selectedSlotIds.length > 1) {
@@ -1167,6 +1199,8 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
                       : 'line-clamp-3 whitespace-pre-wrap'
                   }`}
                   style={{ textAlign: finalSettings.fonts.productName.textAlign }}
+                  id={`product-name-${slot.id}`}
+                  data-rt-editable
                   contentEditable={editingText === 'name'}
                   suppressContentEditableWarning
                   onClick={(e) => {
@@ -1181,7 +1215,15 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
                     setEditingText('name');
                   }}
                   onBlur={(e) => {
-                    updateSlotProduct(pageNumber, slot.id, { name: e.currentTarget.innerText });
+                    // Focus renk picker'ına (portal, odaklanabilir slider/input) kaçarsa edit'i KORU —
+                    // run-level renk uygulanacak; dispatchTextSetting onChange sonrası ce.focus() ile geri
+                    // alır. Yoksa oturum (getActiveSession) çökerdü → renk cell-level'a düşer (modül deseni).
+                    const rel = e.relatedTarget as HTMLElement | null;
+                    if (rel && rel.closest('[data-color-picker-popup]')) return;
+                    // Göç: innerText → constrained-HTML (sanitize commit sınırı, modül gibi).
+                    updateSlotProduct(pageNumber, slot.id, {
+                      name: sanitizeRichText(e.currentTarget.innerHTML),
+                    });
                     setEditingText(null);
                   }}
                   onKeyDown={(e) => {
@@ -1195,19 +1237,30 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
                     }
                   }}
                   ref={(el) => {
-                    if (editingText === 'name' && el && document.activeElement !== el) {
-                      el.focus();
-                      const sel = window.getSelection();
-                      const range = document.createRange();
-                      range.selectNodeContents(el);
-                      range.collapse(false);
-                      sel?.removeAllRanges();
-                      sel?.addRange(range);
+                    if (!el) return;
+                    if (editingText === 'name') {
+                      if (document.activeElement !== el) {
+                        el.focus();
+                        const sel = window.getSelection();
+                        const range = document.createRange();
+                        range.selectNodeContents(el);
+                        range.collapse(false);
+                        sel?.removeAllRanges();
+                        sel?.addRange(range);
+                      }
+                    } else {
+                      // Edit-DIŞI imperatif sync (BannerSection deseni; !isEdit ref-gate). Legacy düz
+                      // metin (`<harf`/`&`) textContent ile, constrained-HTML innerHTML ile yazılır.
+                      const name = slot.product?.name || '';
+                      if (isRichTextHtml(name)) {
+                        if (el.innerHTML !== name) el.innerHTML = name;
+                      } else if (el.textContent !== name) {
+                        el.textContent = name;
+                      }
                     }
                   }}
-                >
-                  {slot.product?.name}
-                </div>
+                />
+                {/* içerik ref ile imperatif yazılır (children YOK → edit-time clobber olmaz) */}
               </>
             );
 

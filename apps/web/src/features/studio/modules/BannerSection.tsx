@@ -350,6 +350,7 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
             <div
               contentEditable={isEdit}
               suppressContentEditableWarning
+              data-rt-editable
               ref={(el) => {
                 if (!el) return;
                 if (isEdit) {

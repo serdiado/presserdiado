@@ -27,6 +27,7 @@ const CASES = [
 ];
 
 interface Props {
+  surface: 'module' | 'product';
   slotId: string;
   cellId: string;
   font: TypographyData;
@@ -46,20 +47,25 @@ function useSelectionTick(): number {
   return tick;
 }
 
-/** Canlı seçimden read-ctx kur: seçim bir banner hücresinin contentEditable'ı içindeyse run-read;
- *  değilse cell-read (font fallback). */
-function buildReadCtx(slotId: string, cellId: string, font: TypographyData): TextSettingCtx {
+/** Canlı seçimden read-ctx kur: seçim bir rich-text editable'ı (`[data-rt-editable]` — modül hücresi
+ *  veya ürün adı, surface-agnostik) içindeyse run-read; değilse cell-read (font fallback). */
+function buildReadCtx(
+  surface: 'module' | 'product',
+  slotId: string,
+  cellId: string,
+  font: TypographyData,
+): TextSettingCtx {
   const sel = window.getSelection();
   if (sel && sel.rangeCount > 0) {
     const range = sel.getRangeAt(0);
     const anchor = range.startContainer;
     const el = (anchor.nodeType === 1 ? (anchor as Element) : anchor.parentElement) ?? null;
-    const ce = el?.closest('[contenteditable]') as HTMLElement | null;
-    if (ce && ce.closest('[id^="banner-"]') && isRangeWithinElement(range, ce)) {
-      return { surface: 'module', slotId, cellId, cellEl: ce, range, font };
+    const ce = el?.closest('[data-rt-editable]') as HTMLElement | null;
+    if (ce && isRangeWithinElement(range, ce)) {
+      return { surface, slotId, cellId, cellEl: ce, range, font };
     }
   }
-  return { surface: 'module', slotId, cellId, font };
+  return { surface, slotId, cellId, font };
 }
 
 // ── inline custom kontroller (hepsi buton; portal yok) ───────────────────────
@@ -182,9 +188,9 @@ function ColorSwatch({ color, opacity }: { color: string; opacity: number }) {
 }
 
 // ── bölüm ────────────────────────────────────────────────────────────────────
-export function TextStyleSection({ slotId, cellId, font, onApply, getAvoidRect }: Props) {
+export function TextStyleSection({ surface, slotId, cellId, font, onApply, getAvoidRect }: Props) {
   useSelectionTick(); // canlı seçim değişince yeniden oku
-  const ctx = buildReadCtx(slotId, cellId, font);
+  const ctx = buildReadCtx(surface, slotId, cellId, font);
 
   const r = textSettingById;
   const famRead = r.fontFamily.read(ctx);

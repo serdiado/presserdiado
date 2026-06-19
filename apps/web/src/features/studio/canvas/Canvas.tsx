@@ -4,6 +4,7 @@ import { useCatalogStore, useHistoryStore, useUIStore } from '@/stores/studio';
 import { Page } from './Page';
 import { LayerStack } from './LayerStack';
 import { MM_TO_PX } from '../util/style';
+import { consumeTextDragGesture } from '../util/editorChrome';
 
 const WHEEL_FACTOR_IN = 1.1;
 const WHEEL_FACTOR_OUT = 0.9;
@@ -188,6 +189,8 @@ export function Canvas() {
         id="canvas"
         onClick={() => {
           if (isPanning) return;
+          // Text-drag jesti canvas üstünde bitti → seçimi temizleme (edit + metin modu korunur).
+          if (consumeTextDragGesture()) return;
           clearSelection();
           disableAllImageEditModes();
         }}

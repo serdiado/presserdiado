@@ -593,3 +593,22 @@ export function sanitizeRichText(html: string): string {
     ALLOWED_ATTR: ['style'],
   });
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5) Legacy düz-metin ↔ constrained-HTML köprüsü (innerText→HTML göçü güvenlik ağı)
+// ─────────────────────────────────────────────────────────────────────────────
+/** String bizim markup'ımızı (span/b/i/u/s/br) VEYA bir HTML entity (&amp; &lt; &#…) içeriyor mu?
+ *  Göç sınırı: true → constrained-HTML (innerHTML ile oku); false → legacy düz metin (textContent ile
+ *  oku — `<harf` ve `&` literal korunur). Tek-kaynak tespit (render + display-strip ortak). */
+export function isRichTextHtml(s: string): boolean {
+  return /<(?:span|b|i|u|s|br)\b|&(?:#\d+|[a-z][a-z0-9]*);/i.test(s);
+}
+
+/** HTML/legacy adı görsel-düz metne indirger (input/önizleme/alt için). Legacy düz metni
+ *  (tag/entity yok) AYNEN döndürür → `Größe <M>` / `Salt & Pepper` bozulmaz. */
+export function richTextToPlain(s: string): string {
+  if (!s || !isRichTextHtml(s)) return s ?? '';
+  const d = document.createElement('div');
+  d.innerHTML = s;
+  return d.textContent ?? '';
+}

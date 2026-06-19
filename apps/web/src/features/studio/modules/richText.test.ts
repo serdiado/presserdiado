@@ -5,6 +5,8 @@ import {
   readRunStyle,
   sanitizeRichText,
   parseRunColor,
+  isRichTextHtml,
+  richTextToPlain,
   MIXED,
 } from './richText';
 
@@ -330,5 +332,25 @@ describe('sanitizeRichText — genişletilmiş allowlist', () => {
     expect(fam).not.toContain('url(');
     const sz = sanitizeRichText('<span style="font-size: 14pt">t</span>');
     expect(sz).not.toContain('14pt');
+  });
+});
+
+describe('isRichTextHtml / richTextToPlain — innerText→HTML göç güvenlik ağı', () => {
+  it('our-markup ve entity → HTML; legacy düz metin → değil', () => {
+    expect(isRichTextHtml('<span style="color:#f00">x</span>')).toBe(true);
+    expect(isRichTextHtml('<b>x</b>')).toBe(true);
+    expect(isRichTextHtml('Salt &amp; Pepper')).toBe(true); // migrated entity
+    expect(isRichTextHtml('Salt & Pepper')).toBe(false); // legacy literal &
+    expect(isRichTextHtml('Größe <M>')).toBe(false); // <M> bizim tag değil → legacy
+    expect(isRichTextHtml('<Özel')).toBe(false);
+    expect(isRichTextHtml('Düz Ad')).toBe(false);
+  });
+
+  it('richTextToPlain: HTML strip; legacy < ve & AYNEN korunur', () => {
+    expect(richTextToPlain('<span style="font-weight:700">Kalın Ad</span>')).toBe('Kalın Ad');
+    expect(richTextToPlain('Salt &amp; Pepper')).toBe('Salt & Pepper'); // entity decode
+    expect(richTextToPlain('Größe <M>')).toBe('Größe <M>'); // legacy: bozulmaz
+    expect(richTextToPlain('Salt & Pepper')).toBe('Salt & Pepper');
+    expect(richTextToPlain('')).toBe('');
   });
 });

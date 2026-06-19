@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import { uploadImage } from '@/lib/upload';
 import { Button } from '@/components/ui';
+import { richTextToPlain } from '../modules/richText';
 
 const RAW_FIELD_LABELS: Record<string, string> = {
   POS: 'Pozisyon',
@@ -111,7 +112,7 @@ export function ProductInfoSettings() {
             <span className="text-label-md text-text-secondary block mb-1">Ürün Adı</span>
             <input
               type="text"
-              value={product.name ?? ''}
+              value={richTextToPlain(product.name ?? '')}
               onChange={(e) =>
                 updateProductField(
                   { name: e.target.value },
