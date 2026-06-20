@@ -13,6 +13,8 @@ import {
   mergeCells,
   splitCell,
   resizeGridTo,
+  colBoundarySegments,
+  rowBoundarySegments,
 } from './gridMutate';
 
 // ─── yardımcılar ──────────────────────────────────────────────────────────────
@@ -447,5 +449,55 @@ describe('primitive yardımcılar', () => {
     expect(r.cells[0].colSpan).toBe(2);
     expect(at(r, 0, 1).hidden).toBe(true);
     assertNoDangling(r);
+  });
+});
+
+// ─── resize handle boundary segmentleme (merge-aware) ───────────────────────────
+
+describe('colBoundarySegments / rowBoundarySegments', () => {
+  const boxesOf = (s: GridState) => getMergeBoxes(s.cells, s.cols);
+
+  it('merge yok → boundary tek tam aralık', () => {
+    const s = makeGrid(4, 3);
+    expect(colBoundarySegments(boxesOf(s), 4, 1)).toEqual([{ start: 0, end: 3 }]);
+    expect(rowBoundarySegments(boxesOf(s), 3, 1)).toEqual([{ start: 0, end: 2 }]);
+  });
+
+  it('tam yatay merge (tüm satırlar) → iç boundary boş', () => {
+    const s = applyMerge(makeGrid(2, 3), 0, 1, 1, 2); // cols[1,2] × rows[0,1] = tüm satır
+    expect(colBoundarySegments(boxesOf(s), 2, 1)).toEqual([]); // j=1 iç
+  });
+
+  it('kısmi yatay merge → yalnız merge-dışı satır aralığı', () => {
+    const s = applyMerge(makeGrid(4, 3), 0, 1, 1, 2); // cols[1,2] × rows[0,1]
+    expect(colBoundarySegments(boxesOf(s), 4, 1)).toEqual([{ start: 2, end: 3 }]);
+  });
+
+  it('boundary merge box dışında → tam aralık (etkilenmez)', () => {
+    const s = applyMerge(makeGrid(4, 4), 0, 2, 1, 3); // cols[2,3]; j=0 kapsanmaz
+    expect(colBoundarySegments(boxesOf(s), 4, 0)).toEqual([{ start: 0, end: 3 }]);
+  });
+
+  it('kenar boundary (sol/sağ) iç DEĞİL', () => {
+    const s = applyMerge(makeGrid(4, 4), 0, 1, 1, 2); // cols[1,2] (c=1,cs=2)
+    expect(colBoundarySegments(boxesOf(s), 4, 0)).toEqual([{ start: 0, end: 3 }]); // sol kenar c-1=0
+    expect(colBoundarySegments(boxesOf(s), 4, 2)).toEqual([{ start: 0, end: 3 }]); // sağ kenar c+cs-1=2
+    expect(colBoundarySegments(boxesOf(s), 4, 1)).toEqual([{ start: 2, end: 3 }]); // yalnız j=1 iç
+  });
+
+  it('ortada merge → iki segment', () => {
+    const s = applyMerge(makeGrid(4, 3), 1, 1, 2, 2); // cols[1,2] × rows[1,2]
+    expect(colBoundarySegments(boxesOf(s), 4, 1)).toEqual([
+      { start: 0, end: 0 },
+      { start: 3, end: 3 },
+    ]);
+  });
+
+  it('rowBoundarySegments simetrik (dikey merge)', () => {
+    const s = applyMerge(makeGrid(3, 4), 1, 0, 2, 1); // rows[1,2] × cols[0,1]
+    // satır boundary i=1 (row1↔row2): box r=1,rs=2 → 1<2 iç; cols[0,1] iç → [{2,3}]
+    expect(rowBoundarySegments(boxesOf(s), 4, 1)).toEqual([{ start: 2, end: 3 }]);
+    // boundary i=0 (row0↔row1): r=1<=0 false → kapsanmaz → tam aralık
+    expect(rowBoundarySegments(boxesOf(s), 4, 0)).toEqual([{ start: 0, end: 3 }]);
   });
 });

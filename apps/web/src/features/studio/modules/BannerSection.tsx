@@ -6,6 +6,7 @@ import { usePreserveEditorSelectionOnChrome, markDragGesture } from '../util/edi
 import type { BannerCellData, BannerModuleData } from './types';
 import { materializeFractions, FRACTION_MIN } from './fractions';
 import { cellDomId } from './bannerDom';
+import { getMergeBoxes, colBoundarySegments, rowBoundarySegments } from './gridMutate';
 import {
   setActiveRange,
   clearActiveSession,
@@ -513,53 +514,73 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
         );
       })}
 
-      {/* Kolon/satır sınır tutamaçları (yalnız düzenleme modunda). İnce şerit → hücre yüzeyi
-          tıklanabilir kalır; stopPropagation lasso'yu tetiklemez; imgDrag aktifken başlamaz. */}
+      {/* Kolon/satır sınır tutamaçları (yalnız düzenleme modunda). MERGE-AWARE: handle yalnız
+          boundary'nin gerçek kenar olduğu (merge'e iç olmayan) satır/sütun aralıklarında çıkar →
+          merge içinde resize cursor/handle yok. Tüm segmentler aynı index'i sürükler (fr global).
+          İnce şerit → hücre yüzeyi tıklanabilir; stopPropagation lasso'yu tetiklemez; imgDrag guard. */}
       {isEditingModule && (() => {
         const handles: React.ReactNode[] = [];
+        const boxes = getMergeBoxes(cells, cols); // bir kez; helper'lara geçir (redundant recompute yok)
         const colTotal = colFr.reduce((s, f) => s + f, 0);
+        const rowTotal = rowFr.reduce((s, f) => s + f, 0);
+        // Prefix toplamlar (segment top/height & left/width için).
+        const rowPrefix = [0];
+        for (let k = 0; k < rowFr.length; k++) rowPrefix.push(rowPrefix[k] + rowFr[k]);
+        const colPrefix = [0];
+        for (let k = 0; k < colFr.length; k++) colPrefix.push(colPrefix[k] + colFr[k]);
+
         let cAcc = 0;
         for (let j = 0; j < colFr.length - 1; j++) {
           cAcc += colFr[j];
-          handles.push(
-            <div
-              key={`colh-${j}`}
-              onMouseDown={(e) => {
-                if (imgDragRef.current) return;
-                e.stopPropagation();
-                resizeDragRef.current = {
-                  axis: 'col',
-                  index: j,
-                  startPos: e.clientX,
-                  startFractions: [...colFr],
-                };
-              }}
-              className="absolute top-0 h-full z-40"
-              style={{ left: `${(cAcc / colTotal) * 100}%`, width: 6, transform: 'translateX(-50%)', cursor: 'col-resize' }}
-            />,
-          );
+          const left = `${(cAcc / colTotal) * 100}%`;
+          for (const seg of colBoundarySegments(boxes, rowFr.length, j)) {
+            const top = (rowPrefix[seg.start] / rowTotal) * 100;
+            const height = ((rowPrefix[seg.end + 1] - rowPrefix[seg.start]) / rowTotal) * 100;
+            handles.push(
+              <div
+                key={`colh-${j}-${seg.start}`}
+                onMouseDown={(e) => {
+                  if (imgDragRef.current) return;
+                  e.stopPropagation();
+                  resizeDragRef.current = {
+                    axis: 'col',
+                    index: j,
+                    startPos: e.clientX,
+                    startFractions: [...colFr],
+                  };
+                }}
+                className="absolute z-40"
+                style={{ left, top: `${top}%`, height: `${height}%`, width: 6, transform: 'translateX(-50%)', cursor: 'col-resize' }}
+              />,
+            );
+          }
         }
-        const rowTotal = rowFr.reduce((s, f) => s + f, 0);
+
         let rAcc = 0;
         for (let i = 0; i < rowFr.length - 1; i++) {
           rAcc += rowFr[i];
-          handles.push(
-            <div
-              key={`rowh-${i}`}
-              onMouseDown={(e) => {
-                if (imgDragRef.current) return;
-                e.stopPropagation();
-                resizeDragRef.current = {
-                  axis: 'row',
-                  index: i,
-                  startPos: e.clientY,
-                  startFractions: [...rowFr],
-                };
-              }}
-              className="absolute left-0 w-full z-40"
-              style={{ top: `${(rAcc / rowTotal) * 100}%`, height: 6, transform: 'translateY(-50%)', cursor: 'row-resize' }}
-            />,
-          );
+          const top = `${(rAcc / rowTotal) * 100}%`;
+          for (const seg of rowBoundarySegments(boxes, colFr.length, i)) {
+            const segLeft = (colPrefix[seg.start] / colTotal) * 100;
+            const width = ((colPrefix[seg.end + 1] - colPrefix[seg.start]) / colTotal) * 100;
+            handles.push(
+              <div
+                key={`rowh-${i}-${seg.start}`}
+                onMouseDown={(e) => {
+                  if (imgDragRef.current) return;
+                  e.stopPropagation();
+                  resizeDragRef.current = {
+                    axis: 'row',
+                    index: i,
+                    startPos: e.clientY,
+                    startFractions: [...rowFr],
+                  };
+                }}
+                className="absolute z-40"
+                style={{ top, left: `${segLeft}%`, width: `${width}%`, height: 6, transform: 'translateY(-50%)', cursor: 'row-resize' }}
+              />,
+            );
+          }
         }
         return handles;
       })()}

@@ -117,6 +117,61 @@ export function getMergeBoxes(cells: BannerCellData[], cols: number): MergeBox[]
   return boxes;
 }
 
+/** Bir boolean dizisindeki bitişik `false` aralıklarını [{start,end}] (end dahil) olarak topla. */
+function falseRanges(internal: boolean[]): Array<{ start: number; end: number }> {
+  const ranges: Array<{ start: number; end: number }> = [];
+  let start = -1;
+  for (let i = 0; i < internal.length; i++) {
+    if (!internal[i]) {
+      if (start < 0) start = i;
+    } else if (start >= 0) {
+      ranges.push({ start, end: i - 1 });
+      start = -1;
+    }
+  }
+  if (start >= 0) ranges.push({ start, end: internal.length - 1 });
+  return ranges;
+}
+
+/**
+ * Sütun boundary j (col j ↔ j+1 arası) için merge'e İÇ OLMAYAN (gerçek kenar) bitişik satır
+ * aralıkları. Satır r iç ⟺ ∃ box: `c<=j<c+cs-1` (boundary'yi yatay kapsar) && r∈[box.r, box.r+rs-1].
+ * Resize handle segmentlemesinde kullanılır (boxes BannerSection'da bir kez hesaplanıp geçirilir).
+ * Merge yok/kapsamıyor → tek tam aralık; tam yatay merge → []. Kenar boundary (sol c-1 / sağ
+ * c+cs-1) iç DEĞİL → yalnız kesin-iç boundary'ler (c..c+cs-2) gizlenir.
+ */
+export function colBoundarySegments(
+  boxes: MergeBox[],
+  rows: number,
+  j: number,
+): Array<{ start: number; end: number }> {
+  const internal = new Array<boolean>(rows).fill(false);
+  for (const b of boxes) {
+    if (b.c <= j && j < b.c + b.cs - 1) {
+      for (let r = b.r; r < b.r + b.rs && r < rows; r++) internal[r] = true;
+    }
+  }
+  return falseRanges(internal);
+}
+
+/**
+ * Satır boundary i (row i ↔ i+1 arası) için merge-dışı bitişik sütun aralıkları (simetrik).
+ * Sütun c iç ⟺ ∃ box: `r<=i<r+rs-1` (boundary'yi dikey kapsar) && c∈[box.c, box.c+cs-1].
+ */
+export function rowBoundarySegments(
+  boxes: MergeBox[],
+  cols: number,
+  i: number,
+): Array<{ start: number; end: number }> {
+  const internal = new Array<boolean>(cols).fill(false);
+  for (const b of boxes) {
+    if (b.r <= i && i < b.r + b.rs - 1) {
+      for (let c = b.c; c < b.c + b.cs && c < cols; c++) internal[c] = true;
+    }
+  }
+  return falseRanges(internal);
+}
+
 /**
  * Merge tutarlılık güvenlik ağı + dangling-önleme. Tam yeniden-türetir:
  *  1) anchor box'larını grid sınırına clamp et; 1×1'e çökeni at (artık geçerli anchor değil).
