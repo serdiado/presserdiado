@@ -4,7 +4,7 @@ import { ChevronDown, Square, Layers, Image, Type, Tag, Link2, X, PanelBottom } 
 import { Button, SegmentedControl, Toggle } from '@/components/ui';
 import { uploadImage } from '@/lib/upload';
 import type { BannerCellData, BannerModuleData } from '../modules';
-import { materializeFractions, resizeFractions, FRACTION_MIN, BANNER_DIM_MIN, BANNER_DIM_MAX } from '../modules/fractions';
+import { materializeFractions, FRACTION_MIN, BANNER_DIM_MIN, BANNER_DIM_MAX } from '../modules/fractions';
 import { ColorOpacityPicker, BorderRadiusPicker, SpacingPicker, ShadowPicker, TypographyPicker } from '../pickers';
 import { clearRunForSurface } from '../textSettings/cellApply';
 import type { RunProperty } from '../modules/richText';
@@ -965,6 +965,7 @@ function BannerPanel() {
   const getActivePages = useCatalogStore((s) => s.getActivePages);
   const updateSlotModuleData = useCatalogStore((s) => s.updateSlotModuleData);
   const setBannerFractions = useCatalogStore((s) => s.setBannerFractions);
+  const setBannerGridSize = useCatalogStore((s) => s.setBannerGridSize);
 
   const slotId =
     selection.type === 'bannerCell' && selection.parentId
@@ -1000,43 +1001,10 @@ function BannerPanel() {
   const cb = module.containerBorder ?? { color: { c: '#e2e8f0', o: 100 }, width: 0 };
   const radius = module.radius ?? { tl: 0, tr: 0, bl: 0, br: 0, linked: true };
 
-  const resizeGrid = (newRows: number, newCols: number) => {
-    const r = Math.max(BANNER_DIM_MIN, Math.min(BANNER_DIM_MAX, newRows));
-    const c = Math.max(BANNER_DIM_MIN, Math.min(BANNER_DIM_MAX, newCols));
-    const newCount = r * c;
-    const existing = module!.cells;
-    const ref = existing[0];
-    const newCells: BannerCellData[] =
-      newCount >= existing.length
-        ? [
-            ...existing,
-            ...Array.from({ length: newCount - existing.length }, (_, i) => ({
-              id: `banner-inst-${existing.length + i}`,
-              text: '',
-              colSpan: 1,
-              rowSpan: 1,
-              hidden: false,
-              mergedInto: null as string | null,
-              font: ref.font,
-              padding: ref.padding,
-              bgColor: ref.bgColor,
-              border: ref.border,
-              image: null,
-              imageMode: 'contain' as const,
-              imagePosX: 0,
-              imagePosY: 0,
-              imageScale: 100,
-            })),
-          ]
-        : existing.slice(0, newCount);
-    // Fraction uzunluk senkronu (bu turda yalnız uzunluk; merge-bilinçli ekle-sil 2.2'de).
-    const updates: Record<string, unknown> = { rows: r, cols: c, cells: newCells };
-    const cf = resizeFractions(module!.colFractions, c);
-    const rf = resizeFractions(module!.rowFractions, r);
-    if (cf) updates.colFractions = cf;
-    if (rf) updates.rowFractions = rf;
-    updateSlotModuleData(pageNumber, slotId, updates);
-  };
+  // Sayısal grid boyutu → merge-aware motor (setBannerGridSize). Clamp store/motorda.
+  const resizeGrid = (newRows: number, newCols: number) =>
+    setBannerGridSize(slotId, Math.max(BANNER_DIM_MIN, Math.min(BANNER_DIM_MAX, newRows)),
+      Math.max(BANNER_DIM_MIN, Math.min(BANNER_DIM_MAX, newCols)));
 
   // Oransal (fr) kolon/satır boyutları — drag ile aynı store alanını yazar (read-back senkron).
   const colFractions = materializeFractions(module.colFractions, cols);

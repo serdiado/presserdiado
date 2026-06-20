@@ -5,31 +5,14 @@ import {
   TypographyPicker,
 } from '../pickers';
 import type { BannerCellData, BannerModuleData } from './types';
-import { resizeFractions, BANNER_DIM_MIN, BANNER_DIM_MAX } from './fractions';
-
-const defaultCell = (i: number, ref: BannerCellData): BannerCellData => ({
-  id: `banner-inst-${i}`,
-  text: '',
-  colSpan: 1,
-  rowSpan: 1,
-  hidden: false,
-  mergedInto: null,
-  font: ref.font,
-  padding: ref.padding,
-  bgColor: ref.bgColor,
-  border: ref.border,
-  image: null,
-  imageMode: 'contain',
-  imagePosX: 0,
-  imagePosY: 0,
-  imageScale: 100,
-});
+import { BANNER_DIM_MIN, BANNER_DIM_MAX } from './fractions';
 
 export function BannerSettingsPanel() {
   const selection = useUIStore((s) => s.selection);
   const selectedSlotIds = useUIStore((s) => s.selectedSlotIds);
   const getActivePages = useCatalogStore((s) => s.getActivePages);
   const updateSlotModuleData = useCatalogStore((s) => s.updateSlotModuleData);
+  const setBannerGridSize = useCatalogStore((s) => s.setBannerGridSize);
 
   const slotId =
     selection.type === 'bannerCell' && selection.parentId
@@ -57,29 +40,10 @@ export function BannerSettingsPanel() {
   const rows = module.rows ?? 4;
   const cols = module.cols ?? 4;
 
-  const resizeGrid = (newRows: number, newCols: number) => {
-    const r = Math.max(BANNER_DIM_MIN, Math.min(BANNER_DIM_MAX, newRows));
-    const c = Math.max(BANNER_DIM_MIN, Math.min(BANNER_DIM_MAX, newCols));
-    const newCount = r * c;
-    const existing = module!.cells;
-    const refCell = existing[0];
-    let newCells: BannerCellData[];
-    if (newCount >= existing.length) {
-      const extra = Array.from({ length: newCount - existing.length }, (_, i) =>
-        defaultCell(existing.length + i, refCell),
-      );
-      newCells = [...existing, ...extra];
-    } else {
-      newCells = existing.slice(0, newCount);
-    }
-    // Fraction uzunluk senkronu (yalnız uzunluk; merge-bilinçli ekle-sil 2.2'de).
-    const updates: Record<string, unknown> = { rows: r, cols: c, cells: newCells };
-    const cf = resizeFractions(module!.colFractions, c);
-    const rf = resizeFractions(module!.rowFractions, r);
-    if (cf) updates.colFractions = cf;
-    if (rf) updates.rowFractions = rf;
-    updateSlotModuleData(pageNumber, slotId, updates);
-  };
+  // Sayısal grid boyutu → merge-aware motor (setBannerGridSize). Clamp burada.
+  const resizeGrid = (newRows: number, newCols: number) =>
+    setBannerGridSize(slotId, Math.max(BANNER_DIM_MIN, Math.min(BANNER_DIM_MAX, newRows)),
+      Math.max(BANNER_DIM_MIN, Math.min(BANNER_DIM_MAX, newCols)));
 
   const selectedCellIds =
     selection.type === 'bannerCell' && selection.parentId === slotId ? selection.ids : [];

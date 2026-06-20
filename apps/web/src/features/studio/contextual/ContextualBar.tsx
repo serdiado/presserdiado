@@ -22,7 +22,7 @@ import {
   type RunProperty,
   type RichTextSession,
 } from '../modules/richText';
-import { resizeFractions, BANNER_DIM_MIN, BANNER_DIM_MAX } from '../modules/fractions';
+import { BANNER_DIM_MIN, BANNER_DIM_MAX } from '../modules/fractions';
 import { TextStyleSection } from './TextStyleSection';
 import { clearRunForSurface } from '../textSettings/cellApply';
 import type { TextSettingCtx, TextSettingDef } from '../textSettings/types';
@@ -2086,51 +2086,13 @@ function FreeSlotMode({ slot, pageNumber, slotIds }: FreeSlotProps) {
     const cb = moduleData.containerBorder ?? { color: { c: '#e2e8f0', o: 100 }, width: 0 };
     const radius = moduleData.radius ?? { tl: 0, tr: 0, bl: 0, br: 0, linked: true };
 
-    const resizeGrid = (newRows: number, newCols: number) => {
-      const r = Math.max(BANNER_DIM_MIN, Math.min(BANNER_DIM_MAX, newRows));
-      const c = Math.max(BANNER_DIM_MIN, Math.min(BANNER_DIM_MAX, newCols));
-      const newCount = r * c;
-      const existing = moduleData.cells ?? [];
-      const ref = existing[0] ?? {
-        id: 'banner-inst-0',
-        text: '',
-        colSpan: 1,
-        rowSpan: 1,
-        hidden: false,
-        mergedInto: null,
-        font: { fontFamily: 'Inter', fontSize: 12, fontWeight: '400', color: '#000000', opacity: 100, textAlign: 'center', verticalAlign: 'middle' },
-        padding: { t: 0, r: 0, b: 0, l: 0, linked: true },
-        bgColor: { type: 'solid', color: '#ffffff', opacity: 100 },
-        border: { t: 0, r: 0, b: 0, l: 0, linked: true, color: { c: '#e2e8f0', o: 100 }, style: 'solid' },
-        image: null,
-        imageMode: 'contain',
-        imagePosX: 0,
-        imagePosY: 0,
-        imageScale: 100,
-      };
-      const newCells: any[] =
-        newCount >= existing.length
-          ? [
-              ...existing,
-              ...Array.from({ length: newCount - existing.length }, (_, i) => ({
-                ...ref,
-                id: `banner-inst-${existing.length + i}`,
-                text: '',
-                colSpan: 1,
-                rowSpan: 1,
-                hidden: false,
-                mergedInto: null,
-              })),
-            ]
-          : existing.slice(0, newCount);
-      // Fraction uzunluk senkronu (yalnız uzunluk; merge-bilinçli ekle-sil 2.2'de).
-      const updates: Record<string, unknown> = { rows: r, cols: c, cells: newCells };
-      const cf = resizeFractions(moduleData.colFractions, c);
-      const rf = resizeFractions(moduleData.rowFractions, r);
-      if (cf) updates.colFractions = cf;
-      if (rf) updates.rowFractions = rf;
-      updateSlotModuleData(pageNumber, slot.id, updates);
-    };
+    // Sayısal grid boyutu → merge-aware motor (setBannerGridSize). Clamp burada.
+    const resizeGrid = (newRows: number, newCols: number) =>
+      useCatalogStore.getState().setBannerGridSize(
+        slot.id,
+        Math.max(BANNER_DIM_MIN, Math.min(BANNER_DIM_MAX, newRows)),
+        Math.max(BANNER_DIM_MIN, Math.min(BANNER_DIM_MAX, newCols)),
+      );
 
     const handleEditModule = () => {
       const firstCellId = moduleData.cells?.[0]?.id;
@@ -2486,38 +2448,11 @@ function BannerCellMode() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const mergeCells = () => {
-    const c = moduleData.cols ?? 4;
-    const positions = selectedCellIds.map((id) => {
-      const idx = moduleData.cells.findIndex((cell: any) => cell.id === id);
-      return { id, row: Math.floor(idx / c), col: idx % c };
-    });
-    const minRow = Math.min(...positions.map((p) => p.row));
-    const maxRow = Math.max(...positions.map((p) => p.row));
-    const minCol = Math.min(...positions.map((p) => p.col));
-    const maxCol = Math.max(...positions.map((p) => p.col));
-    const masterId = moduleData.cells[minRow * c + minCol].id;
-    const newCells = moduleData.cells.map((cell: any, i: number) => {
-      const row = Math.floor(i / c);
-      const col = i % c;
-      if (cell.id === masterId)
-        return { ...cell, colSpan: maxCol - minCol + 1, rowSpan: maxRow - minRow + 1, hidden: false, mergedInto: null };
-      if (row >= minRow && row <= maxRow && col >= minCol && col <= maxCol)
-        return { ...cell, colSpan: 1, rowSpan: 1, hidden: true, mergedInto: masterId };
-      return cell;
-    });
-    updateSlotModuleData(pageNumber, slotId!, { cells: newCells });
-  };
-
+  // Merge/split → merge-aware motor (store action). withHistoryBatch ile tek Ctrl+Z (izolasyon içi+dışı).
+  const mergeCells = () => useCatalogStore.getState().mergeBannerCells(slotId!, selectedCellIds);
   const splitCell = () => {
     if (!firstCell) return;
-    const masterId = firstCell.id;
-    const newCells = moduleData.cells.map((cell: any) => {
-      if (cell.id === masterId) return { ...cell, colSpan: 1, rowSpan: 1 };
-      if (cell.mergedInto === masterId) return { ...cell, hidden: false, mergedInto: null };
-      return cell;
-    });
-    updateSlotModuleData(pageNumber, slotId!, { cells: newCells });
+    useCatalogStore.getState().splitBannerCell(slotId!, firstCell.id);
   };
 
   const resetCell = () => {

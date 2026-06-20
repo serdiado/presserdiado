@@ -28,17 +28,6 @@ export function materializeFractions(arr: number[] | undefined, count: number): 
 }
 
 /**
- * resizeGrid (rows/cols değişimi) senkronu için: yoksa undefined bırak (geriye uyum),
- * varsa uzunluğa uydur. updates objesine yalnız undefined olmadığında eklenmeli.
- */
-export function resizeFractions(
-  arr: number[] | undefined,
-  count: number,
-): number[] | undefined {
-  return Array.isArray(arr) ? padTruncate(arr, count) : undefined;
-}
-
-/**
  * Pozisyonel ekleme (gridMutate insert sütun/satır): `at` konumuna `value` ekler.
  * Eski modül dokunulmaz → tanımsızsa undefined kalır. `at` aralık dışıysa clamp'lenir.
  */

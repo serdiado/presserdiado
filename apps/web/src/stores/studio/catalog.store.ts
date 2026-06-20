@@ -33,6 +33,19 @@ import { ModuleRegistry } from './module-registry';
 // Doğrudan dosyadan (barrel DEĞİL): modules/index → BannerSection → store döngüsünü
 // kırmak için. studioModules.ts yalnız ./types (saf tip) import eder, döngü yok.
 import { listStudioModules } from '../../features/studio/modules/studioModules';
+// gridMutate saf motor (yalnız ./types + ./fractions import eder → döngü yok). Banner yapısal
+// mutasyonları (satır/sütun ekle-sil, merge/split) buradan; store yalnız ince sarmal.
+import {
+  insertColumn as gridInsertColumn,
+  deleteColumn as gridDeleteColumn,
+  insertRow as gridInsertRow,
+  deleteRow as gridDeleteRow,
+  mergeCells as gridMergeCells,
+  splitCell as gridSplitCell,
+  resizeGridTo as gridResizeTo,
+  type GridState,
+} from '../../features/studio/modules/gridMutate';
+import type { BannerModuleData } from '../../features/studio/modules/types';
 import { useHistoryStore } from './history.store';
 import { useUIStore } from './ui.store';
 import { foldNameMap } from '../../features/wizard/buildTemplate';
@@ -297,6 +310,20 @@ interface CatalogActions {
   clearBannerCells: (slotId: string, cellIds: string[]) => void;
   /** Banner kolon/satır oransal (fr) boyutlarını yazar. Atomik (tek undo). Drag + panel ortak. */
   setBannerFractions: (slotId: string, axis: 'col' | 'row', fractions: number[]) => void;
+  /** Banner ızgarasına sütun ekler (atCol konumuna). Merge-aware, fraction-senkron, atomik (tek undo). */
+  insertBannerColumn: (slotId: string, atCol: number) => void;
+  /** Banner ızgarasından sütun siler (cols>1). Merge-aware (küçült/dissolve), atomik. */
+  deleteBannerColumn: (slotId: string, atCol: number) => void;
+  /** Banner ızgarasına satır ekler (atRow konumuna). Merge-aware, fraction-senkron, atomik. */
+  insertBannerRow: (slotId: string, atRow: number) => void;
+  /** Banner ızgarasından satır siler (rows>1). Merge-aware (küçült/dissolve), atomik. */
+  deleteBannerRow: (slotId: string, atRow: number) => void;
+  /** Banner ızgara boyutunu hedef rows×cols'a getirir (tail insert/delete). Merge-aware, atomik. */
+  setBannerGridSize: (slotId: string, rows: number, cols: number) => void;
+  /** Seçili banner hücrelerini birleştirir (bounding-box anchor). Atomik (tek undo). */
+  mergeBannerCells: (slotId: string, cellIds: string[]) => void;
+  /** Birleştirilmiş banner hücresini ayırır (dissolve). Atomik (tek undo). */
+  splitBannerCell: (slotId: string, anchorId: string) => void;
 
   // Grid management
   updateGridSettings: (scope: GridScope, settings: { rows: number; cols: number; gap?: number }) => void;
@@ -333,6 +360,35 @@ interface CatalogActions {
 }
 
 type Store = CatalogState & CatalogActions;
+
+// Banner yapısal mutasyon ortak sarmalı: sayfayı slot'tan çöz → saf motoru çağır → atomik yaz.
+// Motor (gridMutate) saf; girdiyi mutate etmez. Fraction undefined ise updates'e KONMAZ →
+// deepMerge eski modülün undefined'ını korur (fraction'sız modül regresyon yaşamaz).
+function applyBannerMutation(
+  get: () => Store,
+  slotId: string,
+  mutate: (g: GridState) => GridState,
+): void {
+  const { getActivePages, updateSlotModuleData } = get();
+  const page = getActivePages().find((p) => p.slots.some((s) => s.id === slotId));
+  if (!page) return;
+  const slot = page.slots.find((s) => s.id === slotId);
+  const md = slot?.moduleData as BannerModuleData | null;
+  if (!md || md.type !== 'banner' || !Array.isArray(md.cells)) return;
+  const next = mutate({
+    cells: md.cells,
+    rows: md.rows,
+    cols: md.cols,
+    colFractions: md.colFractions,
+    rowFractions: md.rowFractions,
+  });
+  const updates: Record<string, unknown> = { cells: next.cells, rows: next.rows, cols: next.cols };
+  if (next.colFractions !== undefined) updates.colFractions = next.colFractions;
+  if (next.rowFractions !== undefined) updates.rowFractions = next.rowFractions;
+  useHistoryStore.getState().withHistoryBatch(() => {
+    updateSlotModuleData(page.pageNumber, slotId, updates, 'discrete');
+  });
+}
 
 const generateAutoProjectName = (tmpl: BrochureTemplate) => {
   const paperTitle = (tmpl.paperSize || 'A4').trim().replace(/\s+/g, '_');
@@ -1339,6 +1395,22 @@ export const useCatalogStore = create<Store>()(
           updateSlotModuleData(page.pageNumber, slotId, { [key]: fractions }, 'discrete');
         });
       },
+      // Banner yapısal mutasyonlar — hepsi saf motoru (gridMutate) çağıran ince sarmal.
+      // applyBannerMutation: sayfa çöz → motor → withHistoryBatch + updateSlotModuleData('discrete').
+      insertBannerColumn: (slotId, atCol) =>
+        applyBannerMutation(get, slotId, (g) => gridInsertColumn(g, atCol)),
+      deleteBannerColumn: (slotId, atCol) =>
+        applyBannerMutation(get, slotId, (g) => gridDeleteColumn(g, atCol)),
+      insertBannerRow: (slotId, atRow) =>
+        applyBannerMutation(get, slotId, (g) => gridInsertRow(g, atRow)),
+      deleteBannerRow: (slotId, atRow) =>
+        applyBannerMutation(get, slotId, (g) => gridDeleteRow(g, atRow)),
+      setBannerGridSize: (slotId, rows, cols) =>
+        applyBannerMutation(get, slotId, (g) => gridResizeTo(g, rows, cols)),
+      mergeBannerCells: (slotId, cellIds) =>
+        applyBannerMutation(get, slotId, (g) => gridMergeCells(g, cellIds)),
+      splitBannerCell: (slotId, anchorId) =>
+        applyBannerMutation(get, slotId, (g) => gridSplitCell(g, anchorId)),
       applyStudioModule: (pageNumber, slotId, moduleId) => {
         const { getActivePages, setActivePages } = get();
         const module = listStudioModules().find((m) => m.id === moduleId);
