@@ -5,6 +5,10 @@
 /** Her fraction'ın asgari payı (fr). Sürükle/sayısal clamp bunu kullanır. */
 export const FRACTION_MIN = 0.1;
 
+/** Banner ızgara satır/sütun sayısı clamp sınırları (tek-kaynak — üç panel buradan okur). */
+export const BANNER_DIM_MIN = 1;
+export const BANNER_DIM_MAX = 20;
+
 /**
  * Diziyi hedef uzunluğa uydurur; mevcut özel oranları KORUR (tam-sıfırlama yok):
  * eksikse tail'e 1 ekler, fazlaysa tail'den keser.

@@ -22,7 +22,7 @@ import {
   type RunProperty,
   type RichTextSession,
 } from '../modules/richText';
-import { resizeFractions } from '../modules/fractions';
+import { resizeFractions, BANNER_DIM_MIN, BANNER_DIM_MAX } from '../modules/fractions';
 import { TextStyleSection } from './TextStyleSection';
 import { clearRunForSurface } from '../textSettings/cellApply';
 import type { TextSettingCtx, TextSettingDef } from '../textSettings/types';
@@ -2087,8 +2087,8 @@ function FreeSlotMode({ slot, pageNumber, slotIds }: FreeSlotProps) {
     const radius = moduleData.radius ?? { tl: 0, tr: 0, bl: 0, br: 0, linked: true };
 
     const resizeGrid = (newRows: number, newCols: number) => {
-      const r = Math.max(1, Math.min(10, newRows));
-      const c = Math.max(1, Math.min(10, newCols));
+      const r = Math.max(BANNER_DIM_MIN, Math.min(BANNER_DIM_MAX, newRows));
+      const c = Math.max(BANNER_DIM_MIN, Math.min(BANNER_DIM_MAX, newCols));
       const newCount = r * c;
       const existing = moduleData.cells ?? [];
       const ref = existing[0] ?? {
@@ -2152,15 +2152,15 @@ function FreeSlotMode({ slot, pageNumber, slotIds }: FreeSlotProps) {
         <div className="flex items-center gap-1 bg-surface-subtle border border-border-default rounded p-1">
           <span className="text-[10px] text-text-secondary px-1">Satır:</span>
           <input
-            type="number" min={1} max={10} value={rows}
-            onChange={(e) => resizeGrid(parseInt(e.target.value) || 1, cols)}
+            type="number" min={BANNER_DIM_MIN} max={BANNER_DIM_MAX} value={rows}
+            onChange={(e) => resizeGrid(parseInt(e.target.value) || BANNER_DIM_MIN, cols)}
             className="w-8 text-center text-xs font-semibold bg-transparent border-0 outline-none"
           />
           <span className="text-text-muted">×</span>
           <span className="text-[10px] text-text-secondary px-1">Sütun:</span>
           <input
-            type="number" min={1} max={10} value={cols}
-            onChange={(e) => resizeGrid(rows, parseInt(e.target.value) || 1)}
+            type="number" min={BANNER_DIM_MIN} max={BANNER_DIM_MAX} value={cols}
+            onChange={(e) => resizeGrid(rows, parseInt(e.target.value) || BANNER_DIM_MIN)}
             className="w-8 text-center text-xs font-semibold bg-transparent border-0 outline-none"
           />
         </div>

@@ -5,10 +5,7 @@ import {
   TypographyPicker,
 } from '../pickers';
 import type { BannerCellData, BannerModuleData } from './types';
-import { resizeFractions } from './fractions';
-
-const MIN_DIM = 1;
-const MAX_DIM = 10;
+import { resizeFractions, BANNER_DIM_MIN, BANNER_DIM_MAX } from './fractions';
 
 const defaultCell = (i: number, ref: BannerCellData): BannerCellData => ({
   id: `banner-inst-${i}`,
@@ -61,8 +58,8 @@ export function BannerSettingsPanel() {
   const cols = module.cols ?? 4;
 
   const resizeGrid = (newRows: number, newCols: number) => {
-    const r = Math.max(MIN_DIM, Math.min(MAX_DIM, newRows));
-    const c = Math.max(MIN_DIM, Math.min(MAX_DIM, newCols));
+    const r = Math.max(BANNER_DIM_MIN, Math.min(BANNER_DIM_MAX, newRows));
+    const c = Math.max(BANNER_DIM_MIN, Math.min(BANNER_DIM_MAX, newCols));
     const newCount = r * c;
     const existing = module!.cells;
     const refCell = existing[0];
@@ -105,10 +102,10 @@ export function BannerSettingsPanel() {
             <span className="text-[10px] text-text-muted w-10">Satır</span>
             <input
               type="number"
-              min={MIN_DIM}
-              max={MAX_DIM}
+              min={BANNER_DIM_MIN}
+              max={BANNER_DIM_MAX}
               value={rows}
-              onChange={(e) => resizeGrid(parseInt(e.target.value) || MIN_DIM, cols)}
+              onChange={(e) => resizeGrid(parseInt(e.target.value) || BANNER_DIM_MIN, cols)}
               className="w-full text-xs text-center border border-border-default rounded px-1 py-0.5 bg-surface-subtle focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </label>
@@ -117,15 +114,15 @@ export function BannerSettingsPanel() {
             <span className="text-[10px] text-text-muted w-10">Sütun</span>
             <input
               type="number"
-              min={MIN_DIM}
-              max={MAX_DIM}
+              min={BANNER_DIM_MIN}
+              max={BANNER_DIM_MAX}
               value={cols}
-              onChange={(e) => resizeGrid(rows, parseInt(e.target.value) || MIN_DIM)}
+              onChange={(e) => resizeGrid(rows, parseInt(e.target.value) || BANNER_DIM_MIN)}
               className="w-full text-xs text-center border border-border-default rounded px-1 py-0.5 bg-surface-subtle focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </label>
         </div>
-        <p className="text-[11px] text-text-muted">En fazla {MAX_DIM}×{MAX_DIM}</p>
+        <p className="text-[11px] text-text-muted">En fazla {BANNER_DIM_MAX}×{BANNER_DIM_MAX}</p>
       </div>
 
       {/* Hücre ayarları */}

@@ -4,7 +4,7 @@ import { ChevronDown, Square, Layers, Image, Type, Tag, Link2, X, PanelBottom } 
 import { Button, SegmentedControl, Toggle } from '@/components/ui';
 import { uploadImage } from '@/lib/upload';
 import type { BannerCellData, BannerModuleData } from '../modules';
-import { materializeFractions, resizeFractions, FRACTION_MIN } from '../modules/fractions';
+import { materializeFractions, resizeFractions, FRACTION_MIN, BANNER_DIM_MIN, BANNER_DIM_MAX } from '../modules/fractions';
 import { ColorOpacityPicker, BorderRadiusPicker, SpacingPicker, ShadowPicker, TypographyPicker } from '../pickers';
 import { clearRunForSurface } from '../textSettings/cellApply';
 import type { RunProperty } from '../modules/richText';
@@ -949,9 +949,6 @@ function FooterPanel() {
 
 // ─── Banner Panel ─────────────────────────────────────────────────────────────
 
-const BANNER_MIN = 1;
-const BANNER_MAX = 10;
-
 const DEFAULT_BORDER: BorderData = {
   t: 0, r: 0, b: 0, l: 0, linked: true,
   color: { c: '#e2e8f0', o: 100 },
@@ -1004,8 +1001,8 @@ function BannerPanel() {
   const radius = module.radius ?? { tl: 0, tr: 0, bl: 0, br: 0, linked: true };
 
   const resizeGrid = (newRows: number, newCols: number) => {
-    const r = Math.max(BANNER_MIN, Math.min(BANNER_MAX, newRows));
-    const c = Math.max(BANNER_MIN, Math.min(BANNER_MAX, newCols));
+    const r = Math.max(BANNER_DIM_MIN, Math.min(BANNER_DIM_MAX, newRows));
+    const c = Math.max(BANNER_DIM_MIN, Math.min(BANNER_DIM_MAX, newCols));
     const newCount = r * c;
     const existing = module!.cells;
     const ref = existing[0];
@@ -1143,8 +1140,8 @@ function BannerPanel() {
                   <label className="flex items-center gap-2 flex-1">
                     <span className="text-[10px] text-text-secondary w-10 shrink-0">Satır</span>
                     <input
-                      type="number" min={BANNER_MIN} max={BANNER_MAX} value={rows}
-                      onChange={(e) => resizeGrid(parseInt(e.target.value) || BANNER_MIN, cols)}
+                      type="number" min={BANNER_DIM_MIN} max={BANNER_DIM_MAX} value={rows}
+                      onChange={(e) => resizeGrid(parseInt(e.target.value) || BANNER_DIM_MIN, cols)}
                       className="w-full text-xs text-center border border-border-default rounded px-1 py-1 bg-surface-subtle focus:outline-none focus:ring-1 focus:ring-blue-400"
                     />
                   </label>
@@ -1152,13 +1149,13 @@ function BannerPanel() {
                   <label className="flex items-center gap-2 flex-1">
                     <span className="text-[10px] text-text-secondary w-10 shrink-0">Sütun</span>
                     <input
-                      type="number" min={BANNER_MIN} max={BANNER_MAX} value={cols}
-                      onChange={(e) => resizeGrid(rows, parseInt(e.target.value) || BANNER_MIN)}
+                      type="number" min={BANNER_DIM_MIN} max={BANNER_DIM_MAX} value={cols}
+                      onChange={(e) => resizeGrid(rows, parseInt(e.target.value) || BANNER_DIM_MIN)}
                       className="w-full text-xs text-center border border-border-default rounded px-1 py-1 bg-surface-subtle focus:outline-none focus:ring-1 focus:ring-blue-400"
                     />
                   </label>
                 </div>
-                <p className="text-[11px] text-text-muted">En fazla {BANNER_MAX}×{BANNER_MAX}</p>
+                <p className="text-[11px] text-text-muted">En fazla {BANNER_DIM_MAX}×{BANNER_DIM_MAX}</p>
               </div>
             </div>
           </div>
