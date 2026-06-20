@@ -1,7 +1,7 @@
 // Merkezi grid reconciliation çekirdeği.
 // Bir sayfanın slot dizisini hedef grid'e (rows×cols) atomik olarak uyumlar:
-// geometri normalizasyonu (sığmayanı unmerge), büyütme (boş slot ekle), küçültme
-// (politika: ürün→overflow, modül/birleşik→unmerge). İçerik ASLA kaybolmaz,
+// KONUM-TABANLI kenar-kaldırma (en sağ sütun / en alt satır; modülsüz→sil/overflow,
+// merge→span−1, modül→korunur) + büyütme (boş slot ekle). İçerik ASLA kaybolmaz,
 // işlem ASLA bloke etmez. Tek atomik grid-değiştirme mantığı buradan geçer.
 
 import type { ProductInfo, StudioSlot } from '@matbaapro/shared';
@@ -36,18 +36,44 @@ export function applyUnmerge(slots: StudioSlot[], anchorId: string): void {
   }
 }
 
-/** Tamamen boş, atılabilir 1×1 ürün slotu mu? (içerik/birleşme/modül yok) */
-function isExpendable(s: StudioSlot): boolean {
-  return (
-    !s.hidden &&
-    !s.mergedInto &&
-    !s.product &&
-    !s.moduleData &&
-    !s.isCustom &&
-    (s.role ?? 'product') === 'product' &&
-    s.colSpan === 1 &&
-    s.rowSpan === 1
-  );
+/**
+ * Anchor span'ini hedef değere indirir + fazla kapsanan token'ı (oldArea − newArea) diziden siler.
+ * TOKEN INVARIANT: yalnız bu anchor'ın gizli token'larına (mergedInto===anchorId && hidden), tam
+ * sayıda dokunur → kalan token = newCs*newRs−1. İçerik (moduleData/product/role/customSettings)
+ * anchor'da KORUNUR. Dizi yerinde; slot nesneleri değiştirilmez (referans değişimi → immutable-safe).
+ */
+function setSpanAndTrimTokens(
+  slots: StudioSlot[],
+  anchorId: string,
+  newCs: number,
+  newRs: number,
+): void {
+  const ai = slots.findIndex((s) => s.id === anchorId);
+  if (ai === -1) return;
+  const a = slots[ai];
+  if (a.colSpan === newCs && a.rowSpan === newRs) return;
+  let toDelete = a.colSpan * a.rowSpan - newCs * newRs;
+  slots[ai] = { ...a, colSpan: newCs, rowSpan: newRs };
+  for (let i = slots.length - 1; i >= 0 && toDelete > 0; i--) {
+    const s = slots[i];
+    if (s.mergedInto === anchorId && s.hidden) {
+      slots.splice(i, 1);
+      toDelete -= 1;
+    }
+  }
+}
+
+/** Anchor'ı + tüm kapsanan token'larını diziden çıkarır; ürünü (varsa) overflow'a ekler (kanonik sıra). */
+function removeAnchorAndTokens(
+  slots: StudioSlot[],
+  anchorId: string,
+  overflow: ProductInfo[],
+): void {
+  const a = slots.find((s) => s.id === anchorId);
+  if (a?.product) overflow.push(a.product);
+  for (let i = slots.length - 1; i >= 0; i--) {
+    if (slots[i].id === anchorId || slots[i].mergedInto === anchorId) slots.splice(i, 1);
+  }
 }
 
 export interface ReconcileGridResult {
@@ -58,16 +84,15 @@ export interface ReconcileGridResult {
 }
 
 /**
- * Bir sayfanın slotlarını hedef grid'e uyumlar. Saf fonksiyon: girdiyi mutasyona
- * uğratmaz, yeni dizi + overflow listesi döner.
+ * Bir sayfanın slotlarını hedef grid'e uyumlar. Saf fonksiyon: girdiyi mutasyona uğratmaz,
+ * yeni dizi + overflow listesi döner.
  *
  * Sıra:
- *  1) Normalize — colSpan>cols veya rowSpan>rows olan her slot unmerge edilir
- *     (içerik anchor'da korunur).
+ *  1) KONUM-TABANLI KENAR-KALDIRMA (küçültme) — input gridPosition'dan, tek pass: yeni grid DIŞI
+ *     sütun/satırdaki slotlar kaldırılır/daraltılır (en sağ sütun / en alt satır). Eski boyut
+ *     gerekmez. Modülsüz → sil (ürün→overflow); modül → korunur (daralır/1×1, reflow taşır).
  *  2) Büyütme — alan < hedef ise eksik kadar boş 1×1 ürün slotu eklenir.
- *  3) Küçültme — alan > hedef iken kuyruktan azalt: boş 1×1 pop; birleşik/gizli
- *     hücre → unmerge; 1×1 ürün → ürün overflow'a + slot atılır; 1×1 modül/serbest
- *     → içerik kaybedilemez, bu kenar durumda küçültme durur (tasarım bozulmaz).
+ *  recalculateLayout SONRA reflow eder; daraltılmış merge'ler artık sığar (aşağı itilmez).
  */
 export function reconcileGrid(
   inputSlots: StudioSlot[],
@@ -80,20 +105,40 @@ export function reconcileGrid(
   const rows = Math.max(1, grid.rows);
   const target = rows * cols;
 
-  // 1) Geometri normalizasyonu — sığmayan span'leri aç (tek-kaynak applyUnmerge).
-  for (const s of slots) {
-    if (s.hidden) continue;
-    if (s.colSpan > cols || s.rowSpan > rows) {
-      applyUnmerge(slots, s.id);
+  // 1) Kenar-kaldırma — görünür slotların SNAPSHOT'ı (her slot bağımsız; mutasyon yalnız kendi
+  //    anchor token'ını etkiler → sıra önemsiz). Konum 1-indexli (colStart/rowStart).
+  for (const s of slots.filter((x) => !x.hidden)) {
+    const gp = s.gridPosition;
+    // gridPosition-yok FALLBACK (savunma): konum bilinmiyorsa DOKUNMA (içeride say) → daraltma/silme
+    // yapılmaz. Pratikte recalculateLayout her zaman önce koştuğundan görünür slotlar konum taşır.
+    if (!gp) continue;
+    const cs1 = gp.colStart;
+    const rs1 = gp.rowStart;
+    const right = cs1 + s.colSpan - 1;
+    const bottom = rs1 + s.rowSpan - 1;
+
+    // Tümden dışarıda (sol-üst köşesi bile bir eksende yeni grid dışında).
+    if (cs1 > cols || rs1 > rows) {
+      if (s.moduleData) {
+        setSpanAndTrimTokens(slots, s.id, 1, 1); // modül 1×1 KORUNUR → reflow taşır
+      } else {
+        removeAnchorAndTokens(slots, s.id, overflowProducts); // modülsüz sil
+      }
+      continue;
     }
+    // İçeride → dokunma.
+    if (right <= cols && bottom <= rows) continue;
+    // Straddle → kenarı aşan ekseni doğrudan yeni sınıra indir (çok-sütun/satır TEK adımda).
+    const newCs = right > cols ? cols - cs1 + 1 : s.colSpan;
+    const newRs = bottom > rows ? rows - rs1 + 1 : s.rowSpan;
+    setSpanAndTrimTokens(slots, s.id, newCs, newRs);
   }
 
-  // 2) Büyütme — eksik alanı boş 1×1 ürün slotlarıyla doldur.
-  let area = visibleArea(slots);
+  // 2) Büyütme — eksik alanı boş 1×1 ürün slotlarıyla doldur (KORUNUR).
+  const area = visibleArea(slots);
   if (area < target) {
-    const missing = target - area;
     const startIdx = slots.length + 1;
-    for (let i = 0; i < missing; i++) {
+    for (let i = 0; i < target - area; i++) {
       slots.push({
         id: `page-${pageNumber}-slot-${startIdx + i}`,
         colSpan: 1,
@@ -105,52 +150,9 @@ export function reconcileGrid(
         role: 'product',
       });
     }
-    return { slots, overflowProducts };
   }
-
-  // 3) Küçültme — kuyruktan azalt; içerik politikaya göre korunur.
-  let guard = slots.length * 4 + 16; // sonsuz döngü emniyeti
-  while (area > target && slots.length > 0 && guard-- > 0) {
-    const last = slots[slots.length - 1];
-
-    // Boş, atılabilir 1×1 → doğrudan at.
-    if (isExpendable(last)) {
-      slots.pop();
-      area = visibleArea(slots);
-      continue;
-    }
-
-    // Gizli (kapsanan) kuyruk hücresi → anchor'ını aç, hücre boşalsın.
-    if (last.hidden) {
-      if (last.mergedInto) {
-        applyUnmerge(slots, last.mergedInto);
-      } else {
-        slots.pop(); // sahipsiz gizli hücre (olmamalı) — güvenli at.
-      }
-      area = visibleArea(slots);
-      continue;
-    }
-
-    // Görünür birleşik (span>1) → aç; içerik anchor'da kalır, hücreler boşalır.
-    if (last.colSpan > 1 || last.rowSpan > 1) {
-      applyUnmerge(slots, last.id);
-      area = visibleArea(slots);
-      continue;
-    }
-
-    // Görünür 1×1 ürün → ürünü overflow'a (kanonik sıra için unshift), slotu at.
-    if (last.role !== 'free' && !last.moduleData) {
-      if (last.product) overflowProducts.unshift(last.product);
-      slots.pop();
-      area = visibleArea(slots);
-      continue;
-    }
-
-    // Görünür 1×1 modül/serbest → içerik kaybedilemez. Bu kenar durumda küçültmeyi
-    // durdur (kalan modül hücreleri korunur; tasarım geçici olarak hedeften büyük
-    // kalır, kullanıcı düzeltir). Bloke/uyarı yok.
-    break;
-  }
-
+  // Not: kenar-kaldırma sonrası alan tam newRows*newCols olur (korunan modül fazlası hariç) → ayrı
+  // area-shrink döngüsü gerekmez. Sığmayan korunan modülü recalculateLayout ek satıra yerleştirir
+  // (maxRows guard, içerik CLIP edilmez); küçülme doğal olarak orada durur (STOP eşdeğeri).
   return { slots, overflowProducts };
 }
