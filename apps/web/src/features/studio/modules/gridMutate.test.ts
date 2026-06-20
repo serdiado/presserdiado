@@ -21,7 +21,7 @@ import {
 function makeGrid(rows: number, cols: number, withFr = false): GridState {
   const cells: BannerCellData[] = [];
   for (let i = 0; i < rows * cols; i++) {
-    const c = makeCell(undefined, `banner-inst-${i}`);
+    const c = makeCell(`banner-inst-${i}`);
     c.text = `c${i}`;
     cells.push(c);
   }
@@ -99,6 +99,22 @@ describe('sütun insert/delete remap (item 10 fix)', () => {
     const r = deleteColumn(s, 0);
     expect(r.cols).toBe(1);
     expect(r.cells.length).toBe(2);
+  });
+
+  it('item 8: eklenen hücre nötr — komşunun zemin/çerçevesini ALMAZ', () => {
+    const s = makeGrid(2, 3);
+    // komşu hücrelere belirgin stil ver (kırmızı zemin + kalın çerçeve)
+    s.cells = s.cells.map((c) => ({
+      ...c,
+      bgColor: { type: 'solid', color: '#ff0000', opacity: 100 },
+      border: { t: 4, r: 4, b: 4, l: 4, linked: true, color: { c: '#000000', o: 100 }, style: 'solid' },
+    }));
+    const colNew = insertColumn(s, 1);
+    expect(colNew.cells[1].bgColor).toEqual({ type: 'solid', color: '#ffffff', opacity: 100 });
+    expect(colNew.cells[1].border.t).toBe(0);
+    const rowNew = insertRow(s, 1);
+    expect(rowNew.cells[3].bgColor).toEqual({ type: 'solid', color: '#ffffff', opacity: 100 });
+    expect(rowNew.cells[3].border.t).toBe(0);
   });
 });
 
@@ -393,22 +409,24 @@ describe('resizeGridTo', () => {
 
 describe('primitive yardımcılar', () => {
   it('nextCellId mevcut max suffix +1, çakışmasız', () => {
-    const cells = [makeCell(undefined, 'banner-inst-0'), makeCell(undefined, 'banner-inst-5')];
+    const cells = [makeCell('banner-inst-0'), makeCell('banner-inst-5')];
     expect(nextCellId(cells)).toBe('banner-inst-6');
   });
 
   it('nextCellId parse-edilemez id ile güvenli', () => {
-    const cells = [makeCell(undefined, 'banner-inst-x'), makeCell(undefined, 'custom-id')];
+    const cells = [makeCell('banner-inst-x'), makeCell('custom-id')];
     expect(nextCellId(cells)).toBe('banner-inst-0');
   });
 
-  it('makeCell stil ref ten miras, içerik boş', () => {
-    const ref = makeCell(undefined, 'ref');
-    ref.font = { ...ref.font, color: '#abcdef' };
-    const c = makeCell(ref, 'new');
-    expect(c.font.color).toBe('#abcdef');
+  it('makeCell kanonik varsayılan (stil mirası YOK), içerik boş', () => {
+    const c = makeCell('new');
+    // nötr bgColor + varsayılan border + varsayılan font — komşudan miras değil (item 8)
+    expect(c.bgColor).toEqual({ type: 'solid', color: '#ffffff', opacity: 100 });
+    expect(c.border).toEqual({ t: 0, r: 0, b: 0, l: 0, linked: true, color: { c: '#e2e8f0', o: 100 }, style: 'solid' });
+    expect(c.padding).toEqual({ t: 0, r: 0, b: 0, l: 0, linked: true });
     expect(c.text).toBe('');
     expect(c.colSpan).toBe(1);
+    expect(c.hidden).toBe(false);
     expect(c.mergedInto).toBeNull();
   });
 

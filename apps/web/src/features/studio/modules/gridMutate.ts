@@ -52,27 +52,12 @@ function makeIdGen(cells: BannerCellData[]): () => string {
   };
 }
 
-/** Taze hücre: stil ref'ten miras, içerik boş, span 1, merge'siz. ref yoksa kanonik default. */
-export function makeCell(ref: BannerCellData | undefined, id: string): BannerCellData {
-  if (ref) {
-    return {
-      id,
-      text: '',
-      colSpan: 1,
-      rowSpan: 1,
-      hidden: false,
-      mergedInto: null,
-      font: ref.font,
-      padding: ref.padding,
-      bgColor: ref.bgColor,
-      border: ref.border,
-      image: null,
-      imageMode: 'contain',
-      imagePosX: 0,
-      imagePosY: 0,
-      imageScale: 100,
-    };
-  }
+/**
+ * Kanonik boş banner hücresi — TEK KAYNAK. module-registry bannerInit + makeCell buradan beslenir
+ * (ikisi drift etmez). id hariç tüm alanlar sabit: varsayılan font/padding, nötr bgColor (beyaz),
+ * varsayılan border. Yeni hücre ASLA komşudan stil miras ALMAZ (item 8 — zemin/çerçeve sızıntısı yok).
+ */
+export function defaultBannerCell(id: string): BannerCellData {
   return {
     id,
     text: '',
@@ -82,15 +67,14 @@ export function makeCell(ref: BannerCellData | undefined, id: string): BannerCel
     mergedInto: null,
     font: {
       fontFamily: 'Inter',
-      fontWeight: '400',
-      fontSize: 12,
+      fontWeight: '700',
+      fontSize: 14,
       lineHeight: 1.2,
       letterSpacing: 0,
       textAlign: 'center',
       verticalAlign: 'middle',
       textTransform: 'none',
       textDecoration: 'none',
-      fontStyle: 'normal',
       color: '#1e293b',
       opacity: 100,
       decimalScale: 100,
@@ -99,11 +83,12 @@ export function makeCell(ref: BannerCellData | undefined, id: string): BannerCel
     bgColor: { type: 'solid', color: '#ffffff', opacity: 100 },
     border: { t: 0, r: 0, b: 0, l: 0, linked: true, color: { c: '#e2e8f0', o: 100 }, style: 'solid' },
     image: null,
-    imageMode: 'contain',
-    imagePosX: 0,
-    imagePosY: 0,
-    imageScale: 100,
   };
+}
+
+/** Taze hücre = kanonik varsayılan + benzersiz id. Stil mirası YOK (item 8). İçerik boş, span 1, merge'siz. */
+export function makeCell(id: string): BannerCellData {
+  return defaultBannerCell(id);
 }
 
 export interface MergeBox {
@@ -183,7 +168,6 @@ export function normalizeMerges(s: GridState): GridState {
 export function insertColumn(s: GridState, atCol: number): GridState {
   const { cells, rows, cols } = s;
   const at = Math.max(0, Math.min(cols, atCol));
-  const ref = cells[0];
   const gen = makeIdGen(cells);
   const newCols = cols + 1;
   const newCells = new Array<BannerCellData>(rows * newCols);
@@ -191,7 +175,7 @@ export function insertColumn(s: GridState, atCol: number): GridState {
     for (let nc = 0; nc < newCols; nc++) {
       const dst = r * newCols + nc;
       if (nc < at) newCells[dst] = { ...cells[r * cols + nc] };
-      else if (nc === at) newCells[dst] = makeCell(ref, gen());
+      else if (nc === at) newCells[dst] = makeCell(gen());
       else newCells[dst] = { ...cells[r * cols + (nc - 1)] };
     }
   }
@@ -247,11 +231,10 @@ export function deleteColumn(s: GridState, atCol: number): GridState {
 export function insertRow(s: GridState, atRow: number): GridState {
   const { cells, rows, cols } = s;
   const at = Math.max(0, Math.min(rows, atRow));
-  const ref = cells[0];
   const gen = makeIdGen(cells);
   const head = cells.slice(0, at * cols).map((c) => ({ ...c }));
   const tail = cells.slice(at * cols).map((c) => ({ ...c }));
-  const rowCells = Array.from({ length: cols }, () => makeCell(ref, gen()));
+  const rowCells = Array.from({ length: cols }, () => makeCell(gen()));
   const newCells = [...head, ...rowCells, ...tail];
   // Merge dikey genişletme: insert box'ı içeriden deliyorsa anchor rowSpan+1.
   for (const b of getMergeBoxes(cells, cols)) {
