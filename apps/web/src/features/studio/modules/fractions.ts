@@ -37,3 +37,30 @@ export function resizeFractions(
 ): number[] | undefined {
   return Array.isArray(arr) ? padTruncate(arr, count) : undefined;
 }
+
+/**
+ * Pozisyonel ekleme (gridMutate insert sütun/satır): `at` konumuna `value` ekler.
+ * Eski modül dokunulmaz → tanımsızsa undefined kalır. `at` aralık dışıysa clamp'lenir.
+ */
+export function insertFraction(
+  arr: number[] | undefined,
+  at: number,
+  value = 1,
+): number[] | undefined {
+  if (!Array.isArray(arr)) return undefined;
+  const i = Math.max(0, Math.min(arr.length, at));
+  return [...arr.slice(0, i), value, ...arr.slice(i)];
+}
+
+/**
+ * Pozisyonel çıkarma (gridMutate delete sütun/satır): `at` indeksini çıkarır.
+ * Tanımsızsa undefined kalır; `at` aralık dışıysa dizi aynen klonlanır.
+ */
+export function removeFraction(
+  arr: number[] | undefined,
+  at: number,
+): number[] | undefined {
+  if (!Array.isArray(arr)) return undefined;
+  if (at < 0 || at >= arr.length) return [...arr];
+  return [...arr.slice(0, at), ...arr.slice(at + 1)];
+}
