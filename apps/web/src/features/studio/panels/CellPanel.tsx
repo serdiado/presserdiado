@@ -5,6 +5,8 @@ import { Button, SegmentedControl, Toggle } from '@/components/ui';
 import { uploadImage } from '@/lib/upload';
 import type { BannerCellData, BannerModuleData } from '../modules';
 import { ColorOpacityPicker, BorderRadiusPicker, SpacingPicker, ShadowPicker, TypographyPicker } from '../pickers';
+import { clearRunForSurface } from '../textSettings/cellApply';
+import type { RunProperty } from '../modules/richText';
 import type {
   BadgeConfig,
   BadgePosition,
@@ -185,11 +187,13 @@ function VisualContent({
 function TextContent({
   productName,
   onProductNameChange,
+  onClearRun,
   nameSettings,
   onNameSettingsChange,
 }: {
   productName: TypographyData;
   onProductNameChange: (v: TypographyData) => void;
+  onClearRun?: (property: string) => void;
   nameSettings?: TextElementSettings;
   onNameSettingsChange?: (v: Partial<TextElementSettings>) => void;
 }) {
@@ -200,6 +204,7 @@ function TextContent({
         title="Ürün Adı"
         value={productName}
         onChange={onProductNameChange}
+        onClearRun={onClearRun}
       />
 
       {nameSettings && onNameSettingsChange && (
@@ -1413,6 +1418,7 @@ function BannerPanel() {
             {/* Font ve Hizalama (TypographyPicker zaten kendi içinde kart yapısına sahip) */}
             <TypographyPicker inline title="Font ve Hizalama" value={firstCell.font}
               onChange={(v) => updateCells({ font: v })}
+              onClearRun={(p) => clearRunForSurface('module', slotId, selectedCellIds, p as RunProperty)}
             />
           </div>
         )}
@@ -1635,6 +1641,9 @@ export function CellPanel() {
             onProductNameChange={(v) =>
               setGlobalSettings({ fonts: { ...globalSettings.fonts, productName: v } })
             }
+            onClearRun={(p) => {
+              if (effectiveSlotId) clearRunForSurface('product', effectiveSlotId, [], p as RunProperty);
+            }}
           />
         </AccordionItem>
 
@@ -1711,6 +1720,9 @@ export function CellPanel() {
               onProductNameChange={(v) =>
                 updateSlotCustomSettings({ fonts: { ...cs?.fonts, productName: v } })
               }
+              onClearRun={(p) => {
+                if (effectiveSlotId) clearRunForSurface('product', effectiveSlotId, [], p as RunProperty);
+              }}
               nameSettings={
                 (cs?.nameSettings ?? globalSettings.nameSettings) as TextElementSettings
               }

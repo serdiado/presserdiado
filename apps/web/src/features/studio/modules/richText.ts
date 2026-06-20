@@ -515,6 +515,29 @@ export function applyRunColor(
   return applyRunStyle(cellEl, range, { property: 'color', value: { color: hex, opacity } });
 }
 
+/** Cell-level "property-scoped uniform": HTML'den bir run property'sini TÜM segmentlerden siler
+ *  (re-segmentation). `color` → color+opacity birlikte; `underline`/`lineThrough` ortogonal (biri silinince
+ *  diğeri korunur). Diğer run property'leri korunur. Pure (detached element). Plain text → no-op. */
+export function clearRunProperty(html: string, property: RunProperty): string {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  let segs = parseCell(div);
+  segs = segs.map((seg) => {
+    if (!isText(seg)) return seg;
+    const style: RunStyle = { ...seg.style };
+    if (property === 'color') {
+      delete style.color;
+      delete style.opacity;
+    } else {
+      delete style[property as keyof RunStyle];
+    }
+    return { text: seg.text, style: canonicalStyle(style) };
+  });
+  segs = coalesce(segs);
+  serializeSegments(div, segs);
+  return div.innerHTML;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 4) Sanitizer (commit sınırı — DOMPurify, sıkı allowlist)
 // ─────────────────────────────────────────────────────────────────────────────

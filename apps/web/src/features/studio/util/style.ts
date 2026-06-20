@@ -140,6 +140,7 @@ export function fontStyle(font: TypographyData): React.CSSProperties {
     textAlign: font.textAlign,
     textTransform: font.textTransform,
     textDecoration: font.textDecoration,
+    fontStyle: font.fontStyle ?? 'normal',
     color: hexToRgba(font.color, font.opacity),
     display: 'flex',
     justifyContent:

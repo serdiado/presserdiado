@@ -7,6 +7,7 @@ import {
   parseRunColor,
   isRichTextHtml,
   richTextToPlain,
+  clearRunProperty,
   MIXED,
 } from './richText';
 
@@ -352,5 +353,42 @@ describe('isRichTextHtml / richTextToPlain — innerText→HTML göç güvenlik 
     expect(richTextToPlain('Größe <M>')).toBe('Größe <M>'); // legacy: bozulmaz
     expect(richTextToPlain('Salt & Pepper')).toBe('Salt & Pepper');
     expect(richTextToPlain('')).toBe('');
+  });
+});
+
+describe('clearRunProperty — cell-level property-scoped temizleme (Faz 4.1)', () => {
+  it('color sil: tüm run renkleri kalkar; diğer property (weight) korunur', () => {
+    const out = clearRunProperty(
+      `<span style="color:${RED};font-weight:700">A</span><span style="color:${BLUE}">B</span>`,
+      'color',
+    );
+    const cell = makeCell(out);
+    expect(cell.textContent).toBe('AB');
+    cell.querySelectorAll('span').forEach((s) => expect(parseRunColor(s)).toBeNull()); // renk yok
+    expect(readRunStyle(cell, selectAll(cell), 'fontWeight')).toBe(MIXED); // A=700 korundu, B=yok
+  });
+
+  it('color sil: rgba opacity de temizlenir', () => {
+    const cell = makeCell(clearRunProperty(`<span style="color: rgba(255,0,0,0.5)">x</span>`, 'color'));
+    expect(cell.textContent).toBe('x');
+    expect(parseRunColor(cell.querySelector('span') ?? cell)).toBeNull();
+  });
+
+  it('underline sil → line-through KORUNUR (ortogonal)', () => {
+    const cell = makeCell(clearRunProperty(`<u><s>x</s></u>`, 'underline'));
+    expect(readRunStyle(cell, selectAll(cell), 'underline')).toBe(false);
+    expect(readRunStyle(cell, selectAll(cell), 'lineThrough')).toBe(true);
+  });
+
+  it('plain text → no-op', () => {
+    expect(clearRunProperty('Merhaba Dünya', 'color')).toBe('Merhaba Dünya');
+  });
+
+  it('strip sonrası eşitlenen komşular coalesce (stilsiz → çıplak text)', () => {
+    const cell = makeCell(
+      clearRunProperty(`<span style="color:${RED}">AA</span><span style="color:${BLUE}">BB</span>`, 'color'),
+    );
+    expect(cell.querySelectorAll('span').length).toBe(0);
+    expect(cell.textContent).toBe('AABB');
   });
 });

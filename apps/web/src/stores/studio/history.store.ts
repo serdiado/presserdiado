@@ -65,7 +65,13 @@ interface HistoryState {
   future: HistorySnapshot[];
   lastSavedTime: number;
   isoSession: IsoSession | null;
+  /** Atomik işlem penceresi: açıkken iç saveState/pushIsolationSnapshot bastırılır (tek undo). */
+  batching: boolean;
+  /** Batch içinde ilk snapshot henüz alınmadı → ilk iç yazım forced çeker, sonrakiler bastırılır. */
+  batchPending: boolean;
   saveState: (force?: boolean) => void;
+  /** Birden çok yazımı TEK undo adımına sar: bir pre-state snapshot + iç save'leri bastır. */
+  withHistoryBatch: (fn: () => void) => void;
   undo: () => void;
   redo: () => void;
   clearHistory: () => void;
@@ -82,8 +88,15 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
   future: [],
   lastSavedTime: 0,
   isoSession: null,
+  batching: false,
+  batchPending: false,
 
   saveState: (force = false) => {
+    if (get().batching) {
+      if (!get().batchPending) return; // batch: ilk snapshot alındı → sonrakileri bastır
+      set({ batchPending: false }); // batch ilk: bu çağrı geçsin (pre-mutation orijinali yakalar)
+      force = true; // cooldown bypass → atomik taban garanti
+    }
     const now = Date.now();
     const { past, lastSavedTime } = get();
 
@@ -110,6 +123,25 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
       // (ör. modül uygula + ürün sürükle) ayrı undo adımı kalır.
       ...(force ? {} : { lastSavedTime: now }),
     });
+  },
+
+  // Atomik işlem: birden çok yazımı (ör. cell-level container patch + run-property strip HTML) TEK
+  // undo adımına sarar. TEK pre-state snapshot (forced, iso-aware) yakalar; sonra iç save'leri bastırır
+  // → tek Ctrl+Z tam orijinale döner, yarı-geri-alınmış ara-durum YOK. (Slider undo-gruplama ile aynı infra.)
+  withHistoryBatch: (fn) => {
+    if (get().batching) {
+      fn(); // nested → dış batch ilk snapshot'ı yönetiyor
+      return;
+    }
+    // "İlk-yazım yakalar": withHistoryBatch ön-snapshot ALMAZ. Batch içindeki İLK iç save (mutasyondan
+    // ÖNCE, KENDİ mekanizmasıyla — ürün→global saveState; banner→iso pushIsolationSnapshot) forced çeker;
+    // sonraki yazımlar bastırılır → iso-vs-global tahmini YOK, doğru route, tek atomik snapshot.
+    set({ batching: true, batchPending: true });
+    try {
+      fn();
+    } finally {
+      set({ batching: false, batchPending: false });
+    }
   },
 
   undo: () => {
@@ -189,10 +221,15 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
   // yerel yığına iter. Coalesce: 800ms penceresi (global saveState ile aynı ilke). localLastTime=0
   // başladığı için İLK push (baseline) her zaman kaydolur → yerel undo tabanı garanti.
   pushIsolationSnapshot: () => {
+    if (get().batching && !get().batchPending) return; // batch: ilk snapshot alındı → sonrakileri bastır
     const { isoSession } = get();
     if (!isoSession) return;
     const now = Date.now();
-    if (now - isoSession.localLastTime < 800) return;
+    if (get().batching) {
+      set({ batchPending: false }); // batch ilk: coalesce bypass (bu çağrı geçsin)
+    } else if (now - isoSession.localLastTime < 800) {
+      return;
+    }
     const slot = findActiveSlot(isoSession.slotId);
     set({
       isoSession: {

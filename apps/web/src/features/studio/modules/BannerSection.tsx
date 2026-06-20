@@ -394,6 +394,7 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
                 letterSpacing: `${f.letterSpacing}px`,
                 textTransform: f.textTransform,
                 textDecoration: f.textDecoration,
+                fontStyle: f.fontStyle ?? 'normal',
                 color: f.opacity < 100 ? hexToRgba(f.color, f.opacity) : f.color,
                 textAlign: f.textAlign,
                 whiteSpace: 'pre-wrap',

@@ -40,6 +40,8 @@ export interface TypographyData {
   verticalAlign: 'top' | 'middle' | 'bottom';
   textTransform: 'none' | 'uppercase' | 'lowercase' | 'capitalize';
   textDecoration: 'none' | 'underline' | 'line-through';
+  /** İtalik (cell-level). Opsiyonel/additive — eski veri (undefined) = 'normal'. */
+  fontStyle?: 'italic' | 'normal';
   color: string;
   opacity: number; // 0-100
   decimalScale: number; // 0-200, % of base size for decimal portion of prices
@@ -92,6 +94,7 @@ export const defaultTypography: TypographyData = {
   verticalAlign: 'middle',
   textTransform: 'none',
   textDecoration: 'none',
+  fontStyle: 'normal',
   color: '#000000',
   opacity: 100,
   decimalScale: 100,

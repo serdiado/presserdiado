@@ -88,15 +88,15 @@ describe('registry — decoration cell köprüsü + italic run-only', () => {
     expect(get('lineThrough').apply(onCtx, true)).toEqual({ textDecoration: 'line-through' });
   });
 
-  it('italic cell dalı: run-only → read undefined, apply no-op patch', () => {
+  it('italic cell dalı: cell-capable (Faz 4.1) → read font.fontStyle, apply {fontStyle}', () => {
     const ctx: TextSettingCtx = {
       surface: 'module',
       slotId: 's',
       cellId: 'c',
       font: { ...defaultTypography },
     };
-    expect(get('italic').read(ctx)).toBeUndefined();
-    expect(get('italic').apply(ctx, true)).toEqual({});
+    expect(get('italic').read(ctx)).toBe(false); // fontStyle yok → 'normal' → false
+    expect(get('italic').apply(ctx, true)).toEqual({ fontStyle: 'italic' });
   });
 
   it('underline run dalı: motor (cell köprüsü değil)', () => {
@@ -138,9 +138,38 @@ describe('registry — read yansıması', () => {
     expect(get('fontSize').read(ctx)).toBe(22);
   });
 
-  it('her çekirdek giriş runCapable + benzersiz id', () => {
+  it('benzersiz id; run-capable alt küme + cell-only girişler', () => {
     const ids = textSettingsRegistry.map((d) => d.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(textSettingsRegistry.every((d) => d.runCapable)).toBe(true);
+    const runIds = textSettingsRegistry.filter((d) => d.runCapable).map((d) => d.id).sort();
+    expect(runIds).toEqual(
+      ['color', 'fontFamily', 'fontSize', 'fontWeight', 'italic', 'lineThrough', 'textTransform', 'underline'],
+    );
+    const cellIds = textSettingsRegistry.filter((d) => !d.runCapable).map((d) => d.id).sort();
+    expect(cellIds).toEqual(['decimalScale', 'letterSpacing', 'lineHeight', 'textAlign', 'verticalAlign']);
+  });
+
+  it('cell-only giriş (Faz 4): apply→typography patch, read→cell font değeri', () => {
+    const font = { ...defaultTypography, lineHeight: 1.8, textAlign: 'right' as const };
+    const ctx: TextSettingCtx = { surface: 'product', slotId: 's', cellId: 'c', font };
+    expect(get('lineHeight').apply(ctx, 2.0)).toEqual({ lineHeight: 2.0 });
+    expect(get('lineHeight').read(ctx)).toBe(1.8);
+    expect(get('textAlign').apply(ctx, 'center')).toEqual({ textAlign: 'center' });
+    expect(get('textAlign').read(ctx)).toBe('right');
+    expect(get('decimalScale').apply(ctx, 120)).toEqual({ decimalScale: 120 });
+  });
+
+  it('italic cell-capable (Faz 4.1): apply→fontStyle, read→font.fontStyle', () => {
+    const onCtx: TextSettingCtx = {
+      surface: 'product',
+      slotId: 's',
+      cellId: 'c',
+      font: { ...defaultTypography, fontStyle: 'italic' },
+    };
+    expect(get('italic').read(onCtx)).toBe(true);
+    expect(get('italic').apply(onCtx, false)).toEqual({ fontStyle: 'normal' });
+    expect(get('italic').apply(onCtx, true)).toEqual({ fontStyle: 'italic' });
+    const offCtx: TextSettingCtx = { surface: 'product', slotId: 's', cellId: 'c', font: { ...defaultTypography } };
+    expect(get('italic').read(offCtx)).toBe(false);
   });
 });

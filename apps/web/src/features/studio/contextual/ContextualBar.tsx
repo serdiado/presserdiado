@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AlignCenter, AlignLeft, AlignRight, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, AlignVerticalJustifyStart, Check, Clipboard, Copy, CopyPlus, Image, Move, PackageOpen, Palette, Settings, Square, Trash2, ZoomIn, Pencil, Table2, Tag, Box, Combine, Slice, Frame, ChevronDown, PanelBottom, ClipboardPaste, Layers, Ruler as RulerIcon, Shapes, ShoppingBag } from 'lucide-react';
 import { SegmentedControl } from '@/components/ui';
 import type { CatalogSettings, ColorValue, DeepPartial, TypographyData, BorderRadiusData, BadgeConfig, BadgeShape, BadgePosition, TextElementSettings } from '@matbaapro/shared';
-import { useCatalogStore, useUIStore } from '@/stores/studio';
+import { useCatalogStore, useUIStore, useHistoryStore } from '@/stores/studio';
 import {
   ColorOpacityPicker,
   BorderRadiusPicker,
@@ -19,9 +19,11 @@ import {
   isRangeWithinElement,
   richTextToPlain,
   type RunValue,
+  type RunProperty,
   type RichTextSession,
 } from '../modules/richText';
 import { TextStyleSection } from './TextStyleSection';
+import { clearRunForSurface } from '../textSettings/cellApply';
 import type { TextSettingCtx, TextSettingDef } from '../textSettings/types';
 
 const DEFAULT_COLOR: ColorValue = { type: 'solid', color: '#ffffff', opacity: 100 };
@@ -39,6 +41,8 @@ interface RunApplyAdapter {
   resolveCellEl: (s: RichTextSession) => HTMLElement | null;
   commitRun: (s: RichTextSession, html: string) => void;
   applyCell: (patch: Partial<TypographyData>) => void;
+  /** Cell-level (Faz 4.1): bu hücrenin run-bearing HTML'inden `property`'yi sil (tek-kaynak clearRunForSurface). */
+  clearRun?: (property: RunProperty) => void;
   fallbackCellId: string;
 }
 
@@ -74,8 +78,15 @@ function dispatchTextSetting(a: RunApplyAdapter, def: TextSettingDef, value: Run
     const selApi = window.getSelection();
     selApi?.removeAllRanges();
     selApi?.addRange(res);
+  } else if (def.runCapable && a.clearRun) {
+    // CELL property-scoped (Faz 4.1): container patch + bu hücrede X'in run-override'larını temizle.
+    // ATOMİK (Fold 1): iki yazım TEK undo adımı → tek Ctrl+Z tam orijinale.
+    useHistoryStore.getState().withHistoryBatch(() => {
+      a.applyCell(res);
+      a.clearRun!(def.property as RunProperty);
+    });
   } else {
-    a.applyCell(res); // CELL → typography patch
+    a.applyCell(res); // CELL → yalnız container (cell-only property veya run-bearing olmayan yüzey)
   }
 }
 
@@ -1247,6 +1258,7 @@ function TextMode({
           document.getElementById(`product-name-${slotId}`) as HTMLElement | null,
         commitRun: (_s, html) => updateSlotProduct(pageNumber, slotId, { name: html }),
         applyCell: (patch) => updateFont({ ...font, ...patch }),
+        clearRun: (property) => clearRunForSurface('product', slotId, [], property),
         fallbackCellId: 'name',
       },
       def,
@@ -2445,6 +2457,7 @@ function BannerCellMode() {
           updateSlotModuleData(pageNumber, slotId!, { cells });
         },
         applyCell: (patch) => updateCells({ font: { ...firstCell.font, ...patch } }),
+        clearRun: (property) => clearRunForSurface('module', slotId!, selectedCellIds, property),
         fallbackCellId: selectedCellIds[0] ?? '',
       },
       def,

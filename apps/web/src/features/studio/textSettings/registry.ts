@@ -9,7 +9,7 @@
 
 import { applyRunStyle, readRunStyle } from '../modules/richText';
 import type { ReadResult, RunProperty, RunValue } from '../modules/richText';
-import type { TextSettingCtx, TextSettingDef } from './types';
+import type { CellProperty, ControlKind, TextSettingCtx, TextSettingDef } from './types';
 import type { TypographyData } from '@matbaapro/shared';
 
 /** Apply için run dalı geçerli mi? (collapsed seçim → cell-level'a düşülür.) */
@@ -28,6 +28,25 @@ function runApply(ctx: TextSettingCtx, property: RunProperty, value: RunValue): 
 
 function runRead(ctx: TextSettingCtx, property: RunProperty): ReadResult {
   return readRunStyle(ctx.cellEl!, ctx.range!, property);
+}
+
+/** Cell-only giriş (run karşılığı YOK): apply daima typography patch, read daima cell font değeri.
+ *  Sağ Panel tam görünümünün run'sız ayarları (Satır/Harf Aralığı/Küsurat/Yatay/Dikey) — Faz 4. */
+function cellEntry(
+  id: string,
+  label: string,
+  control: ControlKind,
+  property: CellProperty,
+): TextSettingDef {
+  return {
+    id,
+    label,
+    control,
+    property,
+    runCapable: false,
+    apply: (_ctx, value) => ({ [property]: value }) as Partial<TypographyData>,
+    read: (ctx) => ctx.font?.[property],
+  };
 }
 
 export const textSettingsRegistry: TextSettingDef[] = [
@@ -92,12 +111,14 @@ export const textSettingsRegistry: TextSettingDef[] = [
     control: 'toggle',
     property: 'italic',
     runCapable: true,
-    // Cell: TypographyData'da fontStyle/italic alanı yok → bu tur run-only (no-op patch).
+    // Cell: TypographyData.fontStyle (Faz 4.1 additive) → italik cell-capable.
     apply(ctx, value) {
-      return runApplicable(ctx) ? runApply(ctx, 'italic', value) : {};
+      if (runApplicable(ctx)) return runApply(ctx, 'italic', value);
+      return { fontStyle: value ? 'italic' : 'normal' };
     },
     read(ctx) {
-      return runReadable(ctx) ? runRead(ctx, 'italic') : undefined;
+      if (runReadable(ctx)) return runRead(ctx, 'italic');
+      return ctx.font ? ctx.font.fontStyle === 'italic' : undefined;
     },
   },
   {
@@ -146,6 +167,12 @@ export const textSettingsRegistry: TextSettingDef[] = [
       return runReadable(ctx) ? runRead(ctx, 'textTransform') : ctx.font?.textTransform;
     },
   },
+  // ── Cell-only (Sağ Panel tam görünümü; run karşılığı yok) ──
+  cellEntry('lineHeight', 'Satır', 'slider', 'lineHeight'),
+  cellEntry('letterSpacing', 'Harf Aralığı', 'slider', 'letterSpacing'),
+  cellEntry('decimalScale', 'Küsurat', 'slider', 'decimalScale'),
+  cellEntry('textAlign', 'Yatay hizalama', 'align', 'textAlign'),
+  cellEntry('verticalAlign', 'Dikey hizalama', 'align', 'verticalAlign'),
 ];
 
 export const textSettingById: Record<string, TextSettingDef> = Object.fromEntries(

@@ -21,15 +21,23 @@ export interface TextSettingCtx {
   font?: TypographyData;
 }
 
-/** UI kontrol tipi — bu turda yalnız meta (Faz 2/4'te custom kontrol seçimine bağlanır). */
-export type ControlKind = 'color' | 'font' | 'stepper' | 'select' | 'toggle' | 'case';
+/** UI kontrol tipi — yalnız meta. */
+export type ControlKind = 'color' | 'font' | 'stepper' | 'select' | 'toggle' | 'case' | 'slider' | 'align';
+
+/** Cell-only property'ler (run karşılığı YOK; doğrudan TypographyData alanları). Sağ Panel (Faz 4). */
+export type CellProperty =
+  | 'lineHeight'
+  | 'letterSpacing'
+  | 'decimalScale'
+  | 'textAlign'
+  | 'verticalAlign';
 
 export interface TextSettingDef {
   id: string;
   label: string;
   control: ControlKind;
-  /** Mantıksal property — run modeli anahtarı (richText.RunProperty). */
-  property: RunProperty;
+  /** Mantıksal property — run modeli anahtarı (RunProperty) veya cell-only (CellProperty). */
+  property: RunProperty | CellProperty;
   /** Seçime (run) uygulanabilir mi? false → yalnız cell-level. */
   runCapable: boolean;
   /** run → Range (restore); cell → typography patch. Sanitize+commit ÇAĞIRANIN işi. */

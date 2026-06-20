@@ -1249,13 +1249,14 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
                         sel?.addRange(range);
                       }
                     } else {
-                      // Edit-DIŞI imperatif sync (BannerSection deseni; !isEdit ref-gate). Legacy düz
-                      // metin (`<harf`/`&`) textContent ile, constrained-HTML innerHTML ile yazılır.
+                      // Edit-DIŞI imperatif sync (BannerSection deseni; !isEdit ref-gate). Saklanan ad
+                      // değişimini data-rt-synced ile izle → textContent-eşleşme skip'i ÖNLENİR (HTML→düz
+                      // strip sonrası eski span DOM'da kalmasın); `<`/`&` için infinite-loop yok.
                       const name = slot.product?.name || '';
-                      if (isRichTextHtml(name)) {
-                        if (el.innerHTML !== name) el.innerHTML = name;
-                      } else if (el.textContent !== name) {
-                        el.textContent = name;
+                      if (el.getAttribute('data-rt-synced') !== name) {
+                        if (isRichTextHtml(name)) el.innerHTML = name;
+                        else el.textContent = name;
+                        el.setAttribute('data-rt-synced', name);
                       }
                     }
                   }}
