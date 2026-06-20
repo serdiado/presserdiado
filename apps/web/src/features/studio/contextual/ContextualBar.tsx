@@ -23,6 +23,7 @@ import {
   type RichTextSession,
 } from '../modules/richText';
 import { BANNER_DIM_MIN, BANNER_DIM_MAX } from '../modules/fractions';
+import { cellDomId } from '../modules/bannerDom';
 import { TextStyleSection } from './TextStyleSection';
 import { clearRunForSurface } from '../textSettings/cellApply';
 import type { TextSettingCtx, TextSettingDef } from '../textSettings/types';
@@ -2417,7 +2418,7 @@ function BannerCellMode() {
         matchesSession: (s) => s.slotId === slotId,
         resolveCellEl: (s) =>
           document
-            .getElementById(`banner-${s.cellId}`)
+            .getElementById(cellDomId(s.slotId, s.cellId))
             ?.querySelector('[contenteditable]') as HTMLElement | null,
         commitRun: (s, html) => {
           const cells = moduleData.cells.map((c: any) =>

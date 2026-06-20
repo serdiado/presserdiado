@@ -4,6 +4,7 @@ import { colorValueBackground, colorOpacityToCss, radiusStyle, shadowStyle, hexT
 import { usePreserveEditorSelectionOnChrome } from '../util/editorChrome';
 import type { BannerCellData, BannerModuleData } from './types';
 import { materializeFractions, FRACTION_MIN } from './fractions';
+import { cellDomId } from './bannerDom';
 import {
   setActiveRange,
   clearActiveSession,
@@ -72,7 +73,7 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
     const onClickOutside = (e: MouseEvent) => {
       if (!editingCellId) return;
       const t = e.target as HTMLElement;
-      if (t.closest(`#banner-${editingCellId}`)) return;
+      if (t.closest(`#${cellDomId(slotId, editingCellId)}`)) return;
       if (t.closest('#contextual-bar')) return;
       // (1a) Renk seçici popup'ı body'ye portal — ona tıklamak edit'ten DÜŞÜRMEMELİ.
       // Yoksa run-level renk uygulanırken seçim ölür (bulgu 4 / docs §5).
@@ -80,7 +81,7 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
       // Hücreden ayrılırken metni COMMIT et: native blur, odaklanılamayan <div>'e (yan hücre/kanvas)
       // tıkta ATEŞLENMEZ → onBlur kaçar. DOM'u doğrudan okuyup yazıyoruz (senaryo ii kök-nedeni).
       const ce = document
-        .getElementById(`banner-${editingCellId}`)
+        .getElementById(cellDomId(slotId, editingCellId))
         ?.querySelector('[contenteditable]') as HTMLElement | null;
       if (ce) {
         const clean = sanitizeRichText(ce.innerHTML);
@@ -91,7 +92,7 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
     };
     document.addEventListener('mousedown', onClickOutside);
     return () => document.removeEventListener('mousedown', onClickOutside);
-  }, [editingCellId, cells, updateCell]);
+  }, [editingCellId, cells, updateCell, slotId]);
 
   // (1b) Run-level renk köprüsü: edit açıkken hücre-içi metin seçimini singleton'a yaz.
   // selectionchange, picker swatch'ına tıklamadan ÖNCE son geçerli range'i yakalar (tıklama
@@ -99,7 +100,7 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
   useEffect(() => {
     if (!editingCellId) return;
     const ce = document
-      .getElementById(`banner-${editingCellId}`)
+      .getElementById(cellDomId(slotId, editingCellId))
       ?.querySelector('[contenteditable]') as HTMLElement | null;
     if (!ce) return;
     const onSelChange = () => {
@@ -218,7 +219,7 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
     const matched: string[] = [];
     for (const cell of cells) {
       if (cell.hidden) continue;
-      const el = document.getElementById(`banner-${cell.id}`);
+      const el = document.getElementById(cellDomId(slotId, cell.id));
       if (!el) continue;
       const r = el.getBoundingClientRect();
       if (r.left < ar && r.right > al && r.top < ab && r.bottom > at) {
@@ -327,7 +328,7 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
         return (
           <div
             key={cell.id}
-            id={`banner-${cell.id}`}
+            id={cellDomId(slotId, cell.id)}
             onClick={(e) => {
               e.stopPropagation();
               if (!isEditingModule) return;
