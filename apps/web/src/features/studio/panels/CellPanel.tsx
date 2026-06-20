@@ -4,6 +4,7 @@ import { ChevronDown, Square, Layers, Image, Type, Tag, Link2, X, PanelBottom } 
 import { Button, SegmentedControl, Toggle } from '@/components/ui';
 import { uploadImage } from '@/lib/upload';
 import type { BannerCellData, BannerModuleData } from '../modules';
+import { materializeFractions, resizeFractions, FRACTION_MIN } from '../modules/fractions';
 import { ColorOpacityPicker, BorderRadiusPicker, SpacingPicker, ShadowPicker, TypographyPicker } from '../pickers';
 import { clearRunForSurface } from '../textSettings/cellApply';
 import type { RunProperty } from '../modules/richText';
@@ -966,6 +967,7 @@ function BannerPanel() {
   const selectedSlotIds = useUIStore((s) => s.selectedSlotIds);
   const getActivePages = useCatalogStore((s) => s.getActivePages);
   const updateSlotModuleData = useCatalogStore((s) => s.updateSlotModuleData);
+  const setBannerFractions = useCatalogStore((s) => s.setBannerFractions);
 
   const slotId =
     selection.type === 'bannerCell' && selection.parentId
@@ -1030,7 +1032,27 @@ function BannerPanel() {
             })),
           ]
         : existing.slice(0, newCount);
-    updateSlotModuleData(pageNumber, slotId, { rows: r, cols: c, cells: newCells });
+    // Fraction uzunluk senkronu (bu turda yalnız uzunluk; merge-bilinçli ekle-sil 2.2'de).
+    const updates: Record<string, unknown> = { rows: r, cols: c, cells: newCells };
+    const cf = resizeFractions(module!.colFractions, c);
+    const rf = resizeFractions(module!.rowFractions, r);
+    if (cf) updates.colFractions = cf;
+    if (rf) updates.rowFractions = rf;
+    updateSlotModuleData(pageNumber, slotId, updates);
+  };
+
+  // Oransal (fr) kolon/satır boyutları — drag ile aynı store alanını yazar (read-back senkron).
+  const colFractions = materializeFractions(module.colFractions, cols);
+  const rowFractions = materializeFractions(module.rowFractions, rows);
+  const setColFraction = (i: number, v: number) => {
+    const next = [...colFractions];
+    next[i] = Math.max(FRACTION_MIN, v);
+    setBannerFractions(slotId, 'col', next);
+  };
+  const setRowFraction = (i: number, v: number) => {
+    const next = [...rowFractions];
+    next[i] = Math.max(FRACTION_MIN, v);
+    setBannerFractions(slotId, 'row', next);
   };
 
   // — Seviye 2: hücre seçimi —
@@ -1138,6 +1160,44 @@ function BannerPanel() {
                 </div>
                 <p className="text-[11px] text-text-muted">En fazla {BANNER_MAX}×{BANNER_MAX}</p>
               </div>
+            </div>
+          </div>
+
+          {/* Kolon/Satır Boyutları (oran) Kartı */}
+          <div className="flex flex-col border border-border-default rounded-radius-md overflow-hidden bg-surface-panel shadow-drop-sm mb-3">
+            <div className="px-3 py-2 bg-surface-subtle border-b border-border-default font-semibold text-xs text-text-primary">
+              Kolon/Satır Boyutları (oran)
+            </div>
+            <div className="p-3 space-y-3">
+              <div className="space-y-1">
+                <span className="text-[10px] text-text-secondary">Kolon genişlikleri</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {colFractions.map((f, i) => (
+                    <input
+                      key={`colfr-${i}`}
+                      type="number" min={FRACTION_MIN} step={0.1} value={Math.round(f * 100) / 100}
+                      onChange={(e) => setColFraction(i, parseFloat(e.target.value) || FRACTION_MIN)}
+                      title={`Kolon ${i + 1}`}
+                      className="w-12 text-xs text-center border border-border-default rounded px-1 py-1 bg-surface-subtle focus:outline-none focus:ring-1 focus:ring-blue-400"
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] text-text-secondary">Satır yükseklikleri</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {rowFractions.map((f, i) => (
+                    <input
+                      key={`rowfr-${i}`}
+                      type="number" min={FRACTION_MIN} step={0.1} value={Math.round(f * 100) / 100}
+                      onChange={(e) => setRowFraction(i, parseFloat(e.target.value) || FRACTION_MIN)}
+                      title={`Satır ${i + 1}`}
+                      className="w-12 text-xs text-center border border-border-default rounded px-1 py-1 bg-surface-subtle focus:outline-none focus:ring-1 focus:ring-blue-400"
+                    />
+                  ))}
+                </div>
+              </div>
+              <p className="text-[11px] text-text-muted">Oran (fr) — kanvasta sınır sürükleyerek de ayarlanır.</p>
             </div>
           </div>
 

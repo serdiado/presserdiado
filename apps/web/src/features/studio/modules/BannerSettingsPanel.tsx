@@ -5,6 +5,7 @@ import {
   TypographyPicker,
 } from '../pickers';
 import type { BannerCellData, BannerModuleData } from './types';
+import { resizeFractions } from './fractions';
 
 const MIN_DIM = 1;
 const MAX_DIM = 10;
@@ -74,7 +75,13 @@ export function BannerSettingsPanel() {
     } else {
       newCells = existing.slice(0, newCount);
     }
-    updateSlotModuleData(pageNumber, slotId, { rows: r, cols: c, cells: newCells });
+    // Fraction uzunluk senkronu (yalnız uzunluk; merge-bilinçli ekle-sil 2.2'de).
+    const updates: Record<string, unknown> = { rows: r, cols: c, cells: newCells };
+    const cf = resizeFractions(module!.colFractions, c);
+    const rf = resizeFractions(module!.rowFractions, r);
+    if (cf) updates.colFractions = cf;
+    if (rf) updates.rowFractions = rf;
+    updateSlotModuleData(pageNumber, slotId, updates);
   };
 
   const selectedCellIds =

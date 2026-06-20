@@ -22,6 +22,7 @@ import {
   type RunProperty,
   type RichTextSession,
 } from '../modules/richText';
+import { resizeFractions } from '../modules/fractions';
 import { TextStyleSection } from './TextStyleSection';
 import { clearRunForSurface } from '../textSettings/cellApply';
 import type { TextSettingCtx, TextSettingDef } from '../textSettings/types';
@@ -2122,7 +2123,13 @@ function FreeSlotMode({ slot, pageNumber, slotIds }: FreeSlotProps) {
               })),
             ]
           : existing.slice(0, newCount);
-      updateSlotModuleData(pageNumber, slot.id, { rows: r, cols: c, cells: newCells });
+      // Fraction uzunluk senkronu (yalnız uzunluk; merge-bilinçli ekle-sil 2.2'de).
+      const updates: Record<string, unknown> = { rows: r, cols: c, cells: newCells };
+      const cf = resizeFractions(moduleData.colFractions, c);
+      const rf = resizeFractions(moduleData.rowFractions, r);
+      if (cf) updates.colFractions = cf;
+      if (rf) updates.rowFractions = rf;
+      updateSlotModuleData(pageNumber, slot.id, updates);
     };
 
     const handleEditModule = () => {

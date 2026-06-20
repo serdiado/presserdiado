@@ -295,6 +295,8 @@ interface CatalogActions {
   applyStudioModule: (pageNumber: number, slotId: string, moduleId: string) => void;
   /** Seçili banner hücrelerinde içeriği (text + image) temizler; yapı/boyut/stil korunur. Atomik (tek undo). */
   clearBannerCells: (slotId: string, cellIds: string[]) => void;
+  /** Banner kolon/satır oransal (fr) boyutlarını yazar. Atomik (tek undo). Drag + panel ortak. */
+  setBannerFractions: (slotId: string, axis: 'col' | 'row', fractions: number[]) => void;
 
   // Grid management
   updateGridSettings: (scope: GridScope, settings: { rows: number; cols: number; gap?: number }) => void;
@@ -1324,6 +1326,17 @@ export const useCatalogStore = create<Store>()(
         // ilk snapshot'ı forced çeker. İzolasyon dışında 'discrete' zaten forced saveState.
         useHistoryStore.getState().withHistoryBatch(() => {
           updateSlotModuleData(page.pageNumber, slotId, { cells: nextCells }, 'discrete');
+        });
+      },
+      setBannerFractions: (slotId, axis, fractions) => {
+        const { getActivePages, updateSlotModuleData } = get();
+        const page = getActivePages().find((p) => p.slots.some((s) => s.id === slotId));
+        if (!page) return;
+        const key = axis === 'col' ? 'colFractions' : 'rowFractions';
+        // Atomik: tek snapshot → tek Ctrl+Z (izolasyonda coalesce'ı withHistoryBatch forces;
+        // dışında 'discrete' zaten forced). Drag mouseup ve panel sayısal aynı kapıdan geçer.
+        useHistoryStore.getState().withHistoryBatch(() => {
+          updateSlotModuleData(page.pageNumber, slotId, { [key]: fractions }, 'discrete');
         });
       },
       applyStudioModule: (pageNumber, slotId, moduleId) => {

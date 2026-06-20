@@ -3,6 +3,7 @@ import { useCatalogStore, useUIStore } from '@/stores/studio';
 import { colorValueBackground, colorOpacityToCss, radiusStyle, shadowStyle, hexToRgba } from '../util/style';
 import { usePreserveEditorSelectionOnChrome } from '../util/editorChrome';
 import type { BannerCellData, BannerModuleData } from './types';
+import { materializeFractions, FRACTION_MIN } from './fractions';
 import {
   setActiveRange,
   clearActiveSession,
@@ -20,6 +21,7 @@ interface LassoRect { startX: number; startY: number; currentX: number; currentY
 
 export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
   const updateSlotModuleData = useCatalogStore((s) => s.updateSlotModuleData);
+  const setBannerFractions = useCatalogStore((s) => s.setBannerFractions);
   const selection = useUIStore((s) => s.selection);
   const toggleElementSelection = useUIStore((s) => s.toggleElementSelection);
   const setSelection = useUIStore((s) => s.setSelection);
@@ -45,6 +47,17 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
     origPosX: number;
     origPosY: number;
   } | null>(null);
+  // Kolon/satır sınır sürükleme. Store YALNIZ mouseup'ta yazılır (her move'da değil) →
+  // sürükleme tek snapshot. Canlı önizleme dragFractions (local state) ile, rAF-throttle'lı.
+  const resizeDragRef = useRef<{
+    axis: 'col' | 'row';
+    index: number;
+    startPos: number;
+    startFractions: number[];
+  } | null>(null);
+  const pendingResizeRef = useRef<{ axis: 'col' | 'row'; fractions: number[] } | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const [dragFractions, setDragFractions] = useState<{ axis: 'col' | 'row'; fractions: number[] } | null>(null);
 
   // Hücre text-edit'teyken Hızlı Bar/popup ile etkileşim editör focus+seçimini bozmasın
   // (kök desen — yeni araçlar otomatik miras alır). bkz. util/editorChrome.ts
@@ -135,6 +148,31 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
     const scaleX = rect.width / container.clientWidth;
     const scaleY = rect.height / container.clientHeight;
 
+    // Sınır sürükleme: imgDrag/lasso'dan ÖNCE (karşılıklı dışlama). Store'a YAZMAZ.
+    if (resizeDragRef.current) {
+      const d = resizeDragRef.current;
+      const start = d.startFractions;
+      const total = start.reduce((s, f) => s + f, 0);
+      const pairSum = start[d.index] + start[d.index + 1];
+      const deltaPx =
+        d.axis === 'col' ? (e.clientX - d.startPos) / scaleX : (e.clientY - d.startPos) / scaleY;
+      const contentLen = d.axis === 'col' ? container.clientWidth : container.clientHeight;
+      const dFrac = (deltaPx / contentLen) * total;
+      // İki komşu fraction birlikte güncellenir; toplam (pairSum) sabit → diğer kolonlar etkilenmez.
+      const nFirst = Math.max(FRACTION_MIN, Math.min(pairSum - FRACTION_MIN, start[d.index] + dFrac));
+      const next = [...start];
+      next[d.index] = nFirst;
+      next[d.index + 1] = pairSum - nFirst;
+      pendingResizeRef.current = { axis: d.axis, fractions: next };
+      if (rafRef.current == null) {
+        rafRef.current = requestAnimationFrame(() => {
+          rafRef.current = null;
+          if (pendingResizeRef.current) setDragFractions(pendingResizeRef.current);
+        });
+      }
+      return;
+    }
+
     if (imgDragRef.current) {
       const dx = (e.clientX - imgDragRef.current.startX) / scaleX;
       const dy = (e.clientY - imgDragRef.current.startY) / scaleY;
@@ -194,6 +232,21 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
   };
 
   const handleMouseUp = () => {
+    // Sınır sürükleme bitişi: store'a TEK yazım (mouseup), pending fractions varsa commit.
+    if (resizeDragRef.current) {
+      if (rafRef.current != null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      const d = resizeDragRef.current;
+      const pending = pendingResizeRef.current;
+      resizeDragRef.current = null;
+      pendingResizeRef.current = null;
+      setDragFractions(null);
+      if (pending) setBannerFractions(slotId, d.axis, pending.fractions);
+      return;
+    }
+
     if (imgDragRef.current) {
       imgDragRef.current = null;
       return;
@@ -213,6 +266,15 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
 
   const rows = instanceData?.rows ?? 4;
   const cols = instanceData?.cols ?? 4;
+  // Sürükleme sırasında local önizleme (dragFractions), değilse store'dan (yoksa eşit-bölü).
+  const colFr =
+    dragFractions?.axis === 'col'
+      ? dragFractions.fractions
+      : materializeFractions(instanceData?.colFractions, cols);
+  const rowFr =
+    dragFractions?.axis === 'row'
+      ? dragFractions.fractions
+      : materializeFractions(instanceData?.rowFractions, rows);
   const bgColor = instanceData?.bgColor ?? { type: 'solid' as const, color: '#ffffff', opacity: 100 };
   const cb = instanceData?.containerBorder ?? { color: { c: '#e2e8f0', o: 0 }, width: 0 };
   const radius = instanceData?.radius ?? { tl: 0, tr: 0, bl: 0, br: 0, linked: true };
@@ -230,8 +292,8 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
       onMouseLeave={handleMouseUp}
       className="w-full h-full grid relative overflow-hidden box-border select-none"
       style={{
-        gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
-        gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+        gridTemplateColumns: colFr.map((f) => `minmax(0, ${f}fr)`).join(' '),
+        gridTemplateRows: rowFr.map((f) => `minmax(0, ${f}fr)`).join(' '),
         ...colorValueBackground(bgColor),
         borderRadius: radiusStyle(radius),
         boxShadow: shadowStyle(shadow),
@@ -279,7 +341,7 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
               setEditingCellId(cell.id);
               if (!isSel) toggleElementSelection('bannerCell', cell.id, false, slotId);
             }}
-            className={`flex box-border relative overflow-hidden transition-all ${
+            className={`flex box-border relative overflow-hidden ${dragFractions ? 'transition-none' : 'transition-all'} ${
               isSel && !isEdit
                 ? 'ring-2 ring-inset ring-slate-400 z-10 cursor-pointer'
                 : isEdit
@@ -403,6 +465,57 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
           </div>
         );
       })}
+
+      {/* Kolon/satır sınır tutamaçları (yalnız düzenleme modunda). İnce şerit → hücre yüzeyi
+          tıklanabilir kalır; stopPropagation lasso'yu tetiklemez; imgDrag aktifken başlamaz. */}
+      {isEditingModule && (() => {
+        const handles: React.ReactNode[] = [];
+        const colTotal = colFr.reduce((s, f) => s + f, 0);
+        let cAcc = 0;
+        for (let j = 0; j < colFr.length - 1; j++) {
+          cAcc += colFr[j];
+          handles.push(
+            <div
+              key={`colh-${j}`}
+              onMouseDown={(e) => {
+                if (imgDragRef.current) return;
+                e.stopPropagation();
+                resizeDragRef.current = {
+                  axis: 'col',
+                  index: j,
+                  startPos: e.clientX,
+                  startFractions: [...colFr],
+                };
+              }}
+              className="absolute top-0 h-full z-40"
+              style={{ left: `${(cAcc / colTotal) * 100}%`, width: 6, transform: 'translateX(-50%)', cursor: 'col-resize' }}
+            />,
+          );
+        }
+        const rowTotal = rowFr.reduce((s, f) => s + f, 0);
+        let rAcc = 0;
+        for (let i = 0; i < rowFr.length - 1; i++) {
+          rAcc += rowFr[i];
+          handles.push(
+            <div
+              key={`rowh-${i}`}
+              onMouseDown={(e) => {
+                if (imgDragRef.current) return;
+                e.stopPropagation();
+                resizeDragRef.current = {
+                  axis: 'row',
+                  index: i,
+                  startPos: e.clientY,
+                  startFractions: [...rowFr],
+                };
+              }}
+              className="absolute left-0 w-full z-40"
+              style={{ top: `${(rAcc / rowTotal) * 100}%`, height: 6, transform: 'translateY(-50%)', cursor: 'row-resize' }}
+            />,
+          );
+        }
+        return handles;
+      })()}
 
       {lassoRect && (
         <div

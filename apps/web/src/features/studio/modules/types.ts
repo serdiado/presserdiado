@@ -38,6 +38,10 @@ export interface BannerModuleData {
   rows: number;
   cols: number;
   cells: BannerCellData[];
+  // Oransal (fr) kolon/satır boyutları. Opsiyonel: yoksa/uzunluk uyumsuzsa eşit-bölü
+  // fallback (materializeFractions). Eski modüller migration'sız açılır. uzunluk = cols/rows.
+  colFractions?: number[];
+  rowFractions?: number[];
   bgColor: ColorValue;
   containerBorder: { color: { c: string; o: number }; width: number };
   radius: BorderRadiusData;
