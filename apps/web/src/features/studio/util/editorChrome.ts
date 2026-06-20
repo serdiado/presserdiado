@@ -28,28 +28,47 @@ const FOCUSABLE_CONTROL_SELECTOR = 'input, select, textarea, [contenteditable="t
 // jestinde, `click` ortak-ata (slot kartı / canvas) üzerinde ateşler → toggleSlotSelection/clearSelection
 // → bar metin modundan düşer (edit korunsa da). Çözüm: jest editable'da BAŞLADIYSA işaretle; slot/canvas
 // onClick bunu görüp seçim değişimini atlar (taze dış-tık etkilenmez — o editable dışında başlar).
-let textDragOrigin = false;
+let dragGestureOrigin = false;
 
-/** Son mousedown bir rich-text editable (`[data-rt-editable]`) içinde mi başladı? Okur + TÜKETİR (reset).
- *  Slot/Canvas onClick çağırır: true ise drag-out jesti → seçim değiştirme. */
-export function consumeTextDragGesture(): boolean {
-  const v = textDragOrigin;
-  textDragOrigin = false;
+/** Bekleyen drag-jesti var mı? Okur + TÜKETİR (reset). Slot/Canvas onClick çağırır: true ise
+ *  drag-out jesti (text-edit drag VEYA banner lasso) → seçim/deselect bastır. */
+export function consumeDragGesture(): boolean {
+  const v = dragGestureOrigin;
+  dragGestureOrigin = false;
   return v;
+}
+
+/** Açık drag-jesti işareti — `[data-rt-editable]` DIŞINDA başlayan jestler için (banner lasso).
+ *  BannerSection handleMouseUp gerçek lasso tamamlanınca çağırır. */
+export function markDragGesture(): void {
+  dragGestureOrigin = true;
+}
+
+/** Always-on jest-köken izleyici: HER mousedown'da flag'i `[data-rt-editable]` içinde mi
+ *  başladığına göre set/reset eder → tek-kaynak flag-kaydı + her-mousedown reset garantisi
+ *  (staleness yok: in-bounds lasso'nun bıraktığı mark sonraki mousedown'da sıfırlanır).
+ *  Studio canvas'ta KOŞULSUZ tek bir kez mount edilir (Canvas). */
+export function useDragGestureTracking(): void {
+  useEffect(() => {
+    const onMouseDown = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null;
+      dragGestureOrigin = !!(t && typeof t.closest === 'function' && t.closest('[data-rt-editable]'));
+    };
+    document.addEventListener('mousedown', onMouseDown);
+    return () => document.removeEventListener('mousedown', onMouseDown);
+  }, []);
 }
 
 /**
  * active iken: chrome içindeki (native kontroller HARİÇ) mousedown'ların
- * preventDefault'ı ile contentEditable focus + seçimini korur. Ayrıca her mousedown'da text-drag
- * jest-kökenini ([data-rt-editable]) kaydeder (drag-out slot-seçimi bastırması için).
+ * preventDefault'ı ile contentEditable focus + seçimini korur.
+ * (Jest-köken kaydı artık always-on useDragGestureTracking'de — tek-kaynak flag.)
  */
 export function usePreserveEditorSelectionOnChrome(active: boolean): void {
   useEffect(() => {
     if (!active) return;
     const onMouseDown = (e: MouseEvent) => {
       const t = e.target as HTMLElement | null;
-      // Jest-kökeni: mousedown bir rich-text editable içinde mi? (listener yalnız edit aktifken kurulu.)
-      textDragOrigin = !!(t && typeof t.closest === 'function' && t.closest('[data-rt-editable]'));
       if (!t || typeof t.closest !== 'function') return;
       if (!t.closest(CHROME_SELECTOR)) return;
       // Native odak-gerektiren kontroller normal odaklansın (run-seçimine ihtiyaçları yok).
@@ -58,9 +77,6 @@ export function usePreserveEditorSelectionOnChrome(active: boolean): void {
       e.preventDefault();
     };
     document.addEventListener('mousedown', onMouseDown);
-    return () => {
-      document.removeEventListener('mousedown', onMouseDown);
-      textDragOrigin = false; // edit bitince bayat-flag bırakma
-    };
+    return () => document.removeEventListener('mousedown', onMouseDown);
   }, [active]);
 }

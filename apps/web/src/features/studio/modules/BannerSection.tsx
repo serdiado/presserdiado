@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import { colorValueBackground, colorOpacityToCss, radiusStyle, shadowStyle, hexToRgba } from '../util/style';
-import { usePreserveEditorSelectionOnChrome } from '../util/editorChrome';
+import { usePreserveEditorSelectionOnChrome, markDragGesture } from '../util/editorChrome';
 import type { BannerCellData, BannerModuleData } from './types';
 import { materializeFractions, FRACTION_MIN } from './fractions';
 import { cellDomId } from './bannerDom';
@@ -260,6 +260,11 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
     setLassoRect(null);
 
     if (wasActive && rect) commitLasso(rect);
+
+    // Gerçek lasso tamamlandı (in-bounds mouseup VEYA drag-out mouseleave): drag-jesti işaretle
+    // → drag-out'ta canvas/slot click'i consumeDragGesture ile seçimi temizlemez. Staleness yok:
+    // sonraki mousedown always-on tracker'da flag'i sıfırlar.
+    if (wasActive) markDragGesture();
 
     // Reset after click event fires so cell onClick can check the flag
     setTimeout(() => { lassoActive.current = false; }, 0);

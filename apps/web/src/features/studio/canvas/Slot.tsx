@@ -15,7 +15,7 @@ import {
   sanitizeRichText,
   isRichTextHtml,
 } from '../modules/richText';
-import { usePreserveEditorSelectionOnChrome, consumeTextDragGesture } from '../util/editorChrome';
+import { usePreserveEditorSelectionOnChrome, consumeDragGesture } from '../util/editorChrome';
 import {
   colorOpacityToCss,
   colorValueBackground,
@@ -806,9 +806,9 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
       onClick={(e) => {
         if (isPreviewMode) return;
         e.stopPropagation();
-        // Text-drag jesti (mousedown editable'da başladı, mouseup burada bitti) → seçim DEĞİŞMESİN
-        // (edit + metin seçimi + bar metin modu korunur). Taze dış-tık editable dışında başlar → false.
-        if (consumeTextDragGesture()) return;
+        // Drag-jesti (text-edit drag VEYA banner lasso; mousedown editable'da/lasso'da başladı,
+        // mouseup burada bitti) → seçim DEĞİŞMESİN. Taze dış-tık jest dışında başlar → false.
+        if (consumeDragGesture()) return;
         if (editingContent?.slotId === slot.id) return;
         if (editingContent) setEditingContent(null);
         if (!isSelected || selectedSlotIds.length > 1) {

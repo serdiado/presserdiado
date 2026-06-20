@@ -4,7 +4,7 @@ import { useCatalogStore, useHistoryStore, useUIStore } from '@/stores/studio';
 import { Page } from './Page';
 import { LayerStack } from './LayerStack';
 import { MM_TO_PX } from '../util/style';
-import { consumeTextDragGesture } from '../util/editorChrome';
+import { consumeDragGesture, useDragGestureTracking } from '../util/editorChrome';
 
 const WHEEL_FACTOR_IN = 1.1;
 const WHEEL_FACTOR_OUT = 0.9;
@@ -21,6 +21,9 @@ export function Canvas() {
   const isPreviewMode = useUIStore((s) => s.isPreviewMode);
   const isoSlotId = useHistoryStore((s) => s.isoSession?.slotId ?? null);
   const exitIsolation = useUIStore((s) => s.exitIsolation);
+
+  // Drag-jesti köken izleyici — always-on, TEK mount (lasso + text-edit drag origin tek-kaynak).
+  useDragGestureTracking();
 
   // İzolasyon çıkış gating'i — TEK YER (free modül). ALLOWLIST (tek pozitif koşul):
   // çıkış YALNIZ kanvas çalışma yüzeyine ama izole modül DIŞINA tıkta. Tüm krom (sol IconSidebar,
@@ -189,8 +192,8 @@ export function Canvas() {
         id="canvas"
         onClick={() => {
           if (isPanning) return;
-          // Text-drag jesti canvas üstünde bitti → seçimi temizleme (edit + metin modu korunur).
-          if (consumeTextDragGesture()) return;
+          // Drag-jesti (text-edit drag VEYA banner lasso) canvas üstünde bitti → seçimi temizleme.
+          if (consumeDragGesture()) return;
           clearSelection();
           disableAllImageEditModes();
         }}
