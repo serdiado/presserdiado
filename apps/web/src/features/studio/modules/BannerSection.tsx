@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import { colorValueBackground, colorOpacityToCss, radiusStyle, shadowStyle, hexToRgba } from '../util/style';
 import { usePreserveEditorSelectionOnChrome, markDragGesture } from '../util/editorChrome';
@@ -23,6 +24,10 @@ interface LassoRect { startX: number; startY: number; currentX: number; currentY
 export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
   const updateSlotModuleData = useCatalogStore((s) => s.updateSlotModuleData);
   const setBannerFractions = useCatalogStore((s) => s.setBannerFractions);
+  const insertBannerRow = useCatalogStore((s) => s.insertBannerRow);
+  const deleteBannerRow = useCatalogStore((s) => s.deleteBannerRow);
+  const insertBannerColumn = useCatalogStore((s) => s.insertBannerColumn);
+  const deleteBannerColumn = useCatalogStore((s) => s.deleteBannerColumn);
   const selection = useUIStore((s) => s.selection);
   const toggleElementSelection = useUIStore((s) => s.toggleElementSelection);
   const setSelection = useUIStore((s) => s.setSelection);
@@ -59,6 +64,9 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
   const pendingResizeRef = useRef<{ axis: 'col' | 'row'; fractions: number[] } | null>(null);
   const rafRef = useRef<number | null>(null);
   const [dragFractions, setDragFractions] = useState<{ axis: 'col' | 'row'; fractions: number[] } | null>(null);
+
+  // Sağ-tık satır/sütun menüsü (yalnız düzenleme modunda). x/y viewport, cellId tıklanan hücre.
+  const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; cellId: string } | null>(null);
 
   // Hücre text-edit'teyken Hızlı Bar/popup ile etkileşim editör focus+seçimini bozmasın
   // (kök desen — yeni araçlar otomatik miras alır). bkz. util/editorChrome.ts
@@ -126,6 +134,32 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
   // handler'ı (window keydown) Ctrl+Z'yi zaten karşılıyor; buradaki ikinci listener
   // mount başına çift-undo yapıyordu (banner varken her Ctrl+Z iki snapshot pop).
   // Hücre düzenleme Ctrl+Z davranışı TopBar handler'ında aynen kalır.
+
+  // Sağ-tık menüsü: menü dışına mousedown veya Escape ile kapanır.
+  useEffect(() => {
+    if (!ctxMenu) return;
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && typeof t.closest === 'function' && t.closest('#banner-ctx-menu')) return;
+      setCtxMenu(null);
+    };
+    // Escape menüyü handled ediyor → olayı TÜKET. Menü listener'ı document-bubble, TopBar
+    // window-bubble; document window'dan önce gelir → stopPropagation, olayın TopBar'a
+    // (exitIsolation) ulaşmasını keser. Menü kapalıyken effect mount değil → Escape TopBar'a
+    // gider, izolasyon çıkışı normal. Katmanlı: 1. Escape menü, 2. Escape izolasyon.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopPropagation();
+      setCtxMenu(null);
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [ctxMenu]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isEditingModule) return;
@@ -341,6 +375,13 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
               if (!isEdit)
                 toggleElementSelection('bannerCell', cell.id, e.ctrlKey || e.shiftKey, slotId);
             }}
+            onContextMenu={(e) => {
+              // Edit dışı → slot sağ-tık menüsüne bırak (bubble). Edit içi → banner satır/sütun menüsü.
+              if (!isEditingModule) return;
+              e.preventDefault();
+              e.stopPropagation();
+              setCtxMenu({ x: e.clientX, y: e.clientY, cellId: cell.id });
+            }}
             onDoubleClick={(e) => {
               e.stopPropagation();
               if (!isEditingModule) return;
@@ -534,6 +575,35 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
           }}
         />
       )}
+
+      {/* Sağ-tık satır/sütun menüsü — body'ye portal (transform'lu #canvas içindeki fixed/clip
+          sorununu aşar; clientX/Y viewport doğru). Tıklanan hücrenin (sr,sc)'sine göre çağırır. */}
+      {ctxMenu && (() => {
+        const idx = cells.findIndex((c) => c.id === ctxMenu.cellId);
+        if (idx < 0) return null;
+        const sr = Math.floor(idx / cols);
+        const sc = idx % cols;
+        const item =
+          'w-full text-left px-3 py-1.5 text-xs text-text-secondary hover:bg-surface-subtle disabled:opacity-40 disabled:hover:bg-transparent';
+        const run = (fn: () => void) => { fn(); setCtxMenu(null); };
+        return createPortal(
+          <div
+            id="banner-ctx-menu"
+            className="fixed z-99999 bg-surface-panel border border-border-strong shadow-2xl rounded-md py-1 min-w-40"
+            style={{ top: ctxMenu.y, left: ctxMenu.x }}
+            onContextMenu={(e) => e.preventDefault()}
+          >
+            <button className={item} onClick={() => run(() => insertBannerRow(slotId, sr))}>Üste satır ekle</button>
+            <button className={item} onClick={() => run(() => insertBannerRow(slotId, sr + 1))}>Alta satır ekle</button>
+            <button className={item} onClick={() => run(() => insertBannerColumn(slotId, sc))}>Sola sütun ekle</button>
+            <button className={item} onClick={() => run(() => insertBannerColumn(slotId, sc + 1))}>Sağa sütun ekle</button>
+            <div className="my-1 border-t border-border-default" />
+            <button className={item} disabled={rows <= 1} onClick={() => run(() => deleteBannerRow(slotId, sr))}>Satırı sil</button>
+            <button className={item} disabled={cols <= 1} onClick={() => run(() => deleteBannerColumn(slotId, sc))}>Sütunu sil</button>
+          </div>,
+          document.body,
+        );
+      })()}
     </div>
   );
 }
