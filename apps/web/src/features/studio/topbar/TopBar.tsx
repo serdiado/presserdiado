@@ -103,6 +103,20 @@ export function TopBar() {
         return;
       }
 
+      // Del → seçili banner hücre(ler)inde içeriği temizle (yapı/boyut/stil durur).
+      // Guard: metin/giriş düzenlenirken native karakter-silmeye dokunma (undo'daki emsalin aynısı).
+      if (e.key === 'Delete') {
+        const el = document.activeElement as HTMLElement | null;
+        if (el && (el.isContentEditable || el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
+          return;
+        }
+        const sel = useUIStore.getState().selection;
+        if (sel.type !== 'bannerCell' || sel.ids.length === 0) return;
+        e.preventDefault();
+        useCatalogStore.getState().clearBannerCells(sel.parentId ?? '', sel.ids);
+        return;
+      }
+
       const isUndoKey = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z';
       const isRedoKey = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y';
 

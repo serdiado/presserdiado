@@ -293,6 +293,8 @@ interface CatalogActions {
   ) => void;
   /** Kütüphane örneğini (studioModules) slota uygular: free→moduleData klonu, product→customSettings. */
   applyStudioModule: (pageNumber: number, slotId: string, moduleId: string) => void;
+  /** Seçili banner hücrelerinde içeriği (text + image) temizler; yapı/boyut/stil korunur. Atomik (tek undo). */
+  clearBannerCells: (slotId: string, cellIds: string[]) => void;
 
   // Grid management
   updateGridSettings: (scope: GridScope, settings: { rows: number; cols: number; gap?: number }) => void;
@@ -1283,6 +1285,46 @@ export const useCatalogStore = create<Store>()(
               : p,
           ),
         );
+      },
+      clearBannerCells: (slotId, cellIds) => {
+        if (cellIds.length === 0) return;
+        const { getActivePages, updateSlotModuleData } = get();
+        // Slot'un sayfasını içeride çöz (çağıran pageNumber bilmek zorunda değil).
+        const page = getActivePages().find((p) => p.slots.some((s) => s.id === slotId));
+        if (!page) return;
+        const slot = page.slots.find((s) => s.id === slotId);
+        const cells = (slot?.moduleData as { cells?: Record<string, unknown>[] } | null)?.cells;
+        if (!Array.isArray(cells)) return;
+
+        const idSet = new Set(cellIds);
+        // Boş undo adımı oluşturma: seçili hücrelerden en az birinde gerçek içerik varsa çalış.
+        const willChange = cells.some(
+          (c) => idSet.has(c.id as string) && ((c.text as string) !== '' || c.image != null),
+        );
+        if (!willChange) return;
+
+        // İÇERİK temizle: yalnız içerik alanları. Yapı (colSpan/rowSpan/hidden/mergedInto)
+        // ve stil (font/padding/bgColor/border) patch'te YOK → değişmezlik yapısal garanti.
+        const nextCells = cells.map((c) =>
+          idSet.has(c.id as string)
+            ? {
+                ...c,
+                text: '',
+                image: null,
+                imageMode: 'contain',
+                imagePosX: 0,
+                imagePosY: 0,
+                imageScale: 100,
+              }
+            : c,
+        );
+
+        // Atomik: tek snapshot → tek Ctrl+Z. İzolasyonda pushIsolationSnapshot 800ms
+        // coalesce'lı (metin edit'inden hemen sonraki Del bastırılırdı); withHistoryBatch
+        // ilk snapshot'ı forced çeker. İzolasyon dışında 'discrete' zaten forced saveState.
+        useHistoryStore.getState().withHistoryBatch(() => {
+          updateSlotModuleData(page.pageNumber, slotId, { cells: nextCells }, 'discrete');
+        });
       },
       applyStudioModule: (pageNumber, slotId, moduleId) => {
         const { getActivePages, setActivePages } = get();
