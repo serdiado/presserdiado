@@ -4,7 +4,7 @@ import { create } from 'zustand';
 import type { StudioForma, TempPoolProduct, CatalogSettings, StudioSlot } from '@matbaapro/shared';
 import { useCatalogStore } from './catalog.store';
 import { clone, deepEqual } from './defaults';
-import { isFooterSlotId, footerPageNumber, synthFooterSlot, setFooterModule } from './footerSlot';
+import { isFooterSlotId, footerPageNumber, synthFooterSlot, setFooterModule, footerWriteTarget, setPageFooterModule } from './footerSlot';
 
 const MAX_HISTORY = 20;
 
@@ -47,7 +47,8 @@ const findActiveSlot = (slotId: string): StudioSlot | undefined => {
   // SNAPSHOT tarafı (fold-2): footer-slot izolasyonu da buradan okunur → snapshot footer modülünü alır
   // (yalnız restore değil). Footer-farkındalığı footerSlot.ts'te (funnel'a if-isFooter sızmaz).
   if (isFooterSlotId(slotId)) {
-    return synthFooterSlot(footerPageNumber(slotId), useCatalogStore.getState().globalSettings);
+    const catalog = useCatalogStore.getState();
+    return synthFooterSlot(footerPageNumber(slotId), catalog.getActivePages(), catalog.globalSettings);
   }
   for (const p of useCatalogStore.getState().getActivePages()) {
     const s = p.slots.find((x) => x.id === slotId);
@@ -58,9 +59,19 @@ const findActiveSlot = (slotId: string): StudioSlot | undefined => {
 
 // moduleData'yı slota geri yaz — updateSlotModuleData yönlendirmesini (ve yeni snapshot'ı) ATLAR.
 const restoreModuleData = (slotId: string, md: unknown) => {
-  // RESTORE tarafı: footer-slot → globalSettings.footerModule'ü doğrudan değiştir (snapshot/yönlendirme yok).
+  // RESTORE tarafı: footer-slot → override-varlığına göre route (snapshot/yönlendirme yok).
+  // 2a-i: footerWriteTarget daima 'global' → eski setFooterModule yolu birebir; page dalı DORMANT.
   if (isFooterSlotId(slotId)) {
-    useCatalogStore.setState((s) => ({ globalSettings: setFooterModule(s.globalSettings, md) }));
+    const pn = footerPageNumber(slotId);
+    const catalog = useCatalogStore.getState();
+    const page = catalog.getActivePages().find((p) => p.pageNumber === pn);
+    if (footerWriteTarget(page) === 'page' && page) {
+      catalog.setActivePages(
+        catalog.getActivePages().map((p) => (p.pageNumber === pn ? setPageFooterModule(p, md) : p)),
+      );
+    } else {
+      useCatalogStore.setState((s) => ({ globalSettings: setFooterModule(s.globalSettings, md) }));
+    }
     return;
   }
   const catalog = useCatalogStore.getState();

@@ -1486,7 +1486,7 @@ export function CellPanel() {
   const selectedSlot = !effectiveSlotId
     ? null
     : isFooterSlotId(effectiveSlotId)
-    ? synthFooterSlot(footerPageNumber(effectiveSlotId), globalSettings)
+    ? synthFooterSlot(footerPageNumber(effectiveSlotId), pages, globalSettings)
     : pages.flatMap((p) => p.slots).find((s) => s.id === effectiveSlotId);
 
   const isCustom = selectedSlot?.isCustom ?? false;

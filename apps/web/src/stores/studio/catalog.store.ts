@@ -46,7 +46,7 @@ import {
   type GridState,
 } from '../../features/studio/modules/gridMutate';
 import type { BannerModuleData } from '../../features/studio/modules/types';
-import { isFooterSlotId, resolveModuleSlot, mergeFooterModule } from './footerSlot';
+import { isFooterSlotId, resolveModuleSlot, mergeFooterModule, footerWriteTarget, mergePageFooterModule } from './footerSlot';
 import { useHistoryStore } from './history.store';
 import { useUIStore } from './ui.store';
 import { foldNameMap } from '../../features/wizard/buildTemplate';
@@ -1327,13 +1327,21 @@ export const useCatalogStore = create<Store>()(
         // mergeFooterModule'de (deepMerge enjekte — defaults↔footerSlot cycle'ı önler).
         if (isFooterSlotId(slotId)) {
           if (updates && typeof updates === 'object') {
-            set((state) => ({
-              globalSettings: mergeFooterModule(
-                state.globalSettings,
-                updates as Record<string, unknown>,
-                deepMerge,
-              ),
-            }));
+            const u = updates as Record<string, unknown>;
+            // Yazım hedefi override-varlığından (footerWriteTarget). 2a-i: daima 'global' → eski yol birebir.
+            const page = getActivePages().find((p) => p.pageNumber === pageNumber);
+            if (footerWriteTarget(page) === 'page' && page) {
+              // PER-SAYFA override hedefi (2a-ii fork'u seed'ler). 2a-i'de DORMANT.
+              setActivePages(
+                getActivePages().map((p) =>
+                  p.pageNumber === pageNumber ? mergePageFooterModule(p, u, deepMerge) : p,
+                ),
+              );
+            } else {
+              set((state) => ({
+                globalSettings: mergeFooterModule(state.globalSettings, u, deepMerge),
+              }));
+            }
           }
           return;
         }

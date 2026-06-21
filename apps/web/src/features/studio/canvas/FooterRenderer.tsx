@@ -37,7 +37,7 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
   // Footer düzenleme girişi — ürün-slot çift-tık deseniyle BİREBİR (Slot.tsx): izolasyona gir +
   // ilk hücreyi seç. Auto-select olmadan BannerCellMode/CellPanel aktive olmaz (giriş "ölü" görünür).
   const enterFooterEdit = () => {
-    const slot = synthFooterSlot(pageNumber, globalSettings);
+    const slot = synthFooterSlot(pageNumber, getActivePages(), globalSettings);
     enterIsolation(slot);
     const firstCellId = (slot.moduleData as { cells?: { id: string }[] } | undefined)?.cells?.[0]?.id;
     if (firstCellId) toggleElementSelection('bannerCell', firstCellId, false, slotId);
@@ -87,7 +87,7 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
   }
 
   // Normal mod: footer GridModule'ü bölgede render et (default-if-absent guard'lı).
-  const footerModule = resolveFooterModule(globalSettings);
+  const footerModule = resolveFooterModule(page, globalSettings);
   return (
     <div
       id={`slot-${slotId}`}

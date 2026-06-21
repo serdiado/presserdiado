@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { StudioSlot } from '@matbaapro/shared';
 import { useCatalogStore, useLayerStore, useUIStore } from '@/stores/studio';
+import { resolveFooterHeight } from '@/stores/studio/footerSlot';
 import { colorValueBackground } from '../util/style';
 import { consumeDragGesture } from '../util/editorChrome';
 import { Slot } from './Slot';
@@ -95,9 +96,8 @@ export function Page({
   const [mt, mr, , ml] = pageConfig.safeZone;
 
   const isFooterHidden = currentPage.footerMode === 'hidden';
-  const activeFooter =
-    currentPage.footerMode === 'custom' ? currentPage.customFooter : globalSettings.footer;
-  const footerHeight = activeFooter?.heightMm ?? 18;
+  // Footer bölge yüksekliği — footerSlot tek-kaynak (override → legacy custom → global; 2a-i'de byte-identical).
+  const footerHeight = resolveFooterHeight(currentPage, globalSettings);
   const footerOffset = isFooterHidden ? 0 : footerHeight + 5;
 
   const totalColumns = currentPage.gridSettings?.cols ?? defaultGrid?.cols ?? 4;

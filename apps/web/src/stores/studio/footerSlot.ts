@@ -2,10 +2,14 @@
 // host'tur; modül `globalSettings.footerModule`'de (page.slots DIŞINDA) yaşar → recalculateLayout/
 // reconcileGrid/_fillSlotsFromPool üç süreci footer'a yapısal olarak görünmez (iterasyon yalnız
 // page.slots/role==='product'). Bu dosya: footer-slot id şeması + default-if-absent guard +
-// sentezlenmiş StudioSlot. Saf — store/UI'a bağımlı değil (cycle yok); catalog + history store
-// ve render bundan beslenir (funnel'lara if-isFooter dalı SIZMAZ).
+// sentezlenmiş StudioSlot + per-sayfa override routing. Saf — store/UI'a bağımlı değil (cycle yok);
+// catalog + history store ve render bundan beslenir (funnel'lara if-isFooter dalı SIZMAZ).
+//
+// Evre 2a per-sayfa: "custom" tek semantik kaynağı = `page.footerOverride != null` (VARLIK,
+// footerMode değil). Tüm çözümleme/yazma/yükseklik yolları override-varlığını okur → override yokken
+// (2a-i: her zaman) global'e düşer → bugünkü global davranış birebir. footerMode yalnız 'hidden'.
 
-import type { StudioSlot } from '@matbaapro/shared';
+import type { StudioSlot, CatalogPage, CatalogSettings } from '@matbaapro/shared';
 import { defaultBannerCell } from '../../features/studio/modules/gridMutate';
 import type { BannerModuleData } from '../../features/studio/modules/types';
 
@@ -20,6 +24,18 @@ export const isFooterSlotId = (id: string): boolean => id.startsWith(FOOTER_SLOT
 /** footer-slot id'den sayfa numarası. */
 export const footerPageNumber = (id: string): number =>
   parseInt(id.slice(FOOTER_SLOT_PREFIX.length), 10);
+
+type FooterOverride = { module: unknown; heightMm: number };
+
+/** "custom" tek semantik kaynağı: per-sayfa override VARLIĞI (footerMode değil). */
+function footerOverrideOf(page: CatalogPage | undefined): FooterOverride | null {
+  return page?.footerOverride ?? null;
+}
+
+/** Yazım hedefi: override varsa per-sayfa, yoksa global. 2a-i'de daima 'global'. */
+export function footerWriteTarget(page: CatalogPage | undefined): 'global' | 'page' {
+  return footerOverrideOf(page) ? 'page' : 'global';
+}
 
 /** Footer için makul başlangıç GridModule (tek-satır, 5 sütun). bannerInit deseni, defaultBannerCell tabanlı. */
 export function defaultFooterModule(): BannerModuleData {
@@ -36,22 +52,46 @@ export function defaultFooterModule(): BannerModuleData {
 }
 
 /**
- * Default-if-absent guard: eski projeler / ilk init `footerModule` taşımayabilir → render çökmesin
- * diye default GridModule'e düşer. (Eski footer içeriğinin gerçek dönüşümü Evre 2.)
+ * Footer modülünü çöz: per-sayfa override VARSA onu, yoksa global `footerModule` (default-if-absent).
+ * Default-if-absent guard: eski projeler / ilk init `footerModule` taşımayabilir → render çökmesin.
+ * 2a-i: hiçbir sayfada override yok → daima global dal → bugünkü sonuç birebir.
  */
-export function resolveFooterModule(globalSettings: { footerModule?: unknown }): BannerModuleData {
+export function resolveFooterModule(
+  page: CatalogPage | undefined,
+  globalSettings: { footerModule?: unknown },
+): BannerModuleData {
+  const ov = footerOverrideOf(page);
+  if (ov && ov.module && typeof ov.module === 'object') return ov.module as BannerModuleData;
   const fm = globalSettings.footerModule;
   return fm && typeof fm === 'object' ? (fm as BannerModuleData) : defaultFooterModule();
 }
 
 /**
+ * Footer bölge yüksekliği (mm). Precedence: override → (legacy) custom + customFooter → global.footer.
+ * 2a-i: override yok → Page.tsx'in bugünkü `activeFooter?.heightMm ?? 18` ifadesiyle BYTE-IDENTICAL
+ * (legacy customFooter yalnız OKUNUR; 2c'de customFooter ile birlikte legacy dal silinir).
+ */
+export function resolveFooterHeight(
+  page: CatalogPage | undefined,
+  globalSettings: CatalogSettings,
+): number {
+  const ov = footerOverrideOf(page);
+  if (ov) return ov.heightMm;
+  const activeFooter = page?.footerMode === 'custom' ? page.customFooter : globalSettings.footer;
+  return activeFooter?.heightMm ?? 18;
+}
+
+/**
  * Render/edit anında sentezlenmiş footer StudioSlot sarmalı. Geçici taşıyıcı; kaynak-gerçek
- * `globalSettings.footerModule`. role:'free' → isIsolatableModule geçer (predikat genişletme gerekmez).
+ * override VARSA `page.footerOverride.module`, yoksa `globalSettings.footerModule`.
+ * role:'free' → isIsolatableModule geçer (predikat genişletme gerekmez).
  */
 export function synthFooterSlot(
   pageNumber: number,
+  pages: CatalogPage[],
   globalSettings: { footerModule?: unknown },
 ): StudioSlot {
+  const page = pages.find((p) => p.pageNumber === pageNumber);
   return {
     id: footerSlotId(pageNumber),
     colSpan: 1,
@@ -61,31 +101,29 @@ export function synthFooterSlot(
     mergedInto: null,
     role: 'free',
     moduleType: 'banner',
-    moduleData: resolveFooterModule(globalSettings),
+    moduleData: resolveFooterModule(page, globalSettings),
   };
 }
 
 // ─── resolve / write funnel'ları (footer-farkındalığı TEK YER) ──────────────────
 // Funnel'lar (catalog.updateSlotModuleData/applyBannerMutation/clear/fractions, history.findActiveSlot/
 // restoreModuleData, ContextualBar/CellPanel resolver) bunları çağırır → hiçbirine footer-spesifik
-// alan erişimi (footerModule / 'footer-slot-' prefix) sızmaz.
-
-interface PageLike {
-  pageNumber: number;
-  slots: StudioSlot[];
-}
+// alan erişimi (footerModule / footerOverride / 'footer-slot-' prefix) sızmaz.
 
 /**
- * Bir slotId'nin moduleData'sını + sayfa numarasını çöz (okuma/snapshot). Footer-slot ise
- * globalSettings.footerModule'den (default-if-absent); değilse page.slots'tan. Bulunamazsa null.
+ * Bir slotId'nin moduleData'sını + sayfa numarasını çöz (okuma/snapshot). Footer-slot ise sayfayı
+ * bulup override/global route eder; değilse page.slots'tan. Bulunamazsa null. İmza DEĞİŞMEZ →
+ * çağıranlar (catalog/ContextualBar/CellPanel/BannerSettingsPanel/cellApply) dokunulmaz.
  */
 export function resolveModuleSlot(
   slotId: string,
-  pages: PageLike[],
+  pages: CatalogPage[],
   globalSettings: { footerModule?: unknown },
 ): { pageNumber: number; moduleData: unknown } | null {
   if (isFooterSlotId(slotId)) {
-    return { pageNumber: footerPageNumber(slotId), moduleData: resolveFooterModule(globalSettings) };
+    const pn = footerPageNumber(slotId);
+    const page = pages.find((p) => p.pageNumber === pn);
+    return { pageNumber: pn, moduleData: resolveFooterModule(page, globalSettings) };
   }
   for (const p of pages) {
     const slot = p.slots.find((s) => s.id === slotId);
@@ -95,22 +133,47 @@ export function resolveModuleSlot(
 }
 
 /**
- * Footer modül yazımı (deepMerge ile). `merge` çağırandan ENJEKTE edilir (defaults.deepMerge'i
- * footerSlot'a import etmek cycle yaratır: defaults → footerSlot → defaults). Yeni globalSettings döner.
+ * GLOBAL hedef footer modül yazımı (deepMerge ile). `merge` çağırandan ENJEKTE edilir
+ * (defaults.deepMerge'i footerSlot'a import etmek cycle yaratır). Yeni globalSettings döner.
  */
 export function mergeFooterModule<GS extends { footerModule?: unknown }>(
   globalSettings: GS,
   updates: Record<string, unknown>,
   merge: (a: Record<string, unknown>, b: Record<string, unknown>) => Record<string, unknown>,
 ): GS {
-  const current = resolveFooterModule(globalSettings) as unknown as Record<string, unknown>;
+  const current = resolveFooterModule(undefined, globalSettings) as unknown as Record<string, unknown>;
   return { ...globalSettings, footerModule: merge(current, updates) };
 }
 
-/** Footer modülünü tamamen değiştir (izolasyon undo/redo restore'u — yönlendirme/snapshot ATLAR). */
+/** GLOBAL hedef footer modülünü tamamen değiştir (izolasyon undo/redo restore — yönlendirme/snapshot ATLAR). */
 export function setFooterModule<GS extends { footerModule?: unknown }>(
   globalSettings: GS,
   md: unknown,
 ): GS {
   return { ...globalSettings, footerModule: md };
+}
+
+/**
+ * PER-SAYFA hedef footer modül yazımı (override.module deepMerge). 2a-i'de DORMANT (footerWriteTarget
+ * daima 'global') — yol hazır, 2a-ii fork'u tetikler. Yeni CatalogPage döner.
+ */
+export function mergePageFooterModule(
+  page: CatalogPage,
+  updates: Record<string, unknown>,
+  merge: (a: Record<string, unknown>, b: Record<string, unknown>) => Record<string, unknown>,
+): CatalogPage {
+  const current = resolveFooterModule(page, {}) as unknown as Record<string, unknown>;
+  const heightMm = page.footerOverride?.heightMm ?? resolveFooterHeightFallback(page);
+  return { ...page, footerOverride: { module: merge(current, updates), heightMm } };
+}
+
+/** PER-SAYFA hedef footer modülünü tamamen değiştir (izolasyon restore). 2a-i'de DORMANT. */
+export function setPageFooterModule(page: CatalogPage, md: unknown): CatalogPage {
+  const heightMm = page.footerOverride?.heightMm ?? resolveFooterHeightFallback(page);
+  return { ...page, footerOverride: { module: md, heightMm } };
+}
+
+/** Page-writer'lar override yoksa (teorik) yükseklik seed'i — legacy/global precedence (globalSettings'siz). */
+function resolveFooterHeightFallback(page: CatalogPage): number {
+  return (page.footerMode === 'custom' ? page.customFooter?.heightMm : undefined) ?? 18;
 }

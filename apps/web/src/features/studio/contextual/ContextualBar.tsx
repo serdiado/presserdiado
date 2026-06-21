@@ -419,7 +419,7 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
   // Footer-slot page.slots'ta değil → synthFooterSlot ile tam-slot şekli (globalSettings.footerModule).
   const pageWithSlot = isFooter ? undefined : pages.find((p) => p.slots.some((s) => s.id === slotIds[0]));
   const slot = isFooter
-    ? synthFooterSlot(footerPageNumber(slotIds[0]), globalSettings)
+    ? synthFooterSlot(footerPageNumber(slotIds[0]), pages, globalSettings)
     : pageWithSlot?.slots.find((s) => s.id === slotIds[0]);
   const pageNumber = isFooter ? footerPageNumber(slotIds[0]) : (pageWithSlot?.pageNumber ?? 0);
   if (!slot) return null;
