@@ -4,6 +4,7 @@
 
 import { useCatalogStore } from '@/stores/studio';
 import { clearRunProperty, type RunProperty } from '../modules/richText';
+import { resolveModuleSlot } from '@/stores/studio/footerSlot';
 
 function findSlot(slotId: string) {
   for (const p of useCatalogStore.getState().getActivePages()) {
@@ -22,22 +23,25 @@ export function clearRunForSurface(
   property: RunProperty,
 ): void {
   const catalog = useCatalogStore.getState();
-  const found = findSlot(slotId);
-  if (!found) return;
-  const { slot, pageNumber } = found;
 
   if (surface === 'product') {
-    if (!slot.product) return;
-    catalog.updateSlotProduct(pageNumber, slotId, {
-      name: clearRunProperty(slot.product.name ?? '', property),
+    // Ürün adı daima page.slots'ta (footer asla product değil) → findSlot yeterli.
+    const found = findSlot(slotId);
+    if (!found?.slot.product) return;
+    catalog.updateSlotProduct(found.pageNumber, slotId, {
+      name: clearRunProperty(found.slot.product.name ?? '', property),
     });
     return;
   }
 
-  const md = slot.moduleData as { cells?: { id: string; text?: string }[] } | null;
+  // module — footer-aware (resolveModuleSlot: footer-slot → globalSettings.footerModule).
+  // findSlot (page.slots walk) footer-slot'u bulamıyor → run strip no-op olurdu → cell-level override
+  // hayatta kalan run inline-style'ı ezemezdi. Tek yol TÜM run-capable property'leri kapsar.
+  const resolved = resolveModuleSlot(slotId, catalog.getActivePages(), catalog.globalSettings);
+  const md = resolved?.moduleData as { cells?: { id: string; text?: string }[] } | null;
   if (!md?.cells) return;
   const cells = md.cells.map((c) =>
     cellIds.includes(c.id) ? { ...c, text: clearRunProperty(c.text ?? '', property) } : c,
   );
-  catalog.updateSlotModuleData(pageNumber, slotId, { cells });
+  catalog.updateSlotModuleData(resolved!.pageNumber, slotId, { cells });
 }
