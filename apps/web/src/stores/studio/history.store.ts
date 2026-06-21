@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import type { StudioForma, TempPoolProduct, CatalogSettings, StudioSlot } from '@matbaapro/shared';
 import { useCatalogStore } from './catalog.store';
 import { clone, deepEqual } from './defaults';
+import { isFooterSlotId, footerPageNumber, synthFooterSlot, setFooterModule } from './footerSlot';
 
 const MAX_HISTORY = 20;
 
@@ -43,6 +44,11 @@ const snapshotOf = (): HistorySnapshot => {
 };
 
 const findActiveSlot = (slotId: string): StudioSlot | undefined => {
+  // SNAPSHOT tarafı (fold-2): footer-slot izolasyonu da buradan okunur → snapshot footer modülünü alır
+  // (yalnız restore değil). Footer-farkındalığı footerSlot.ts'te (funnel'a if-isFooter sızmaz).
+  if (isFooterSlotId(slotId)) {
+    return synthFooterSlot(footerPageNumber(slotId), useCatalogStore.getState().globalSettings);
+  }
   for (const p of useCatalogStore.getState().getActivePages()) {
     const s = p.slots.find((x) => x.id === slotId);
     if (s) return s;
@@ -52,6 +58,11 @@ const findActiveSlot = (slotId: string): StudioSlot | undefined => {
 
 // moduleData'yı slota geri yaz — updateSlotModuleData yönlendirmesini (ve yeni snapshot'ı) ATLAR.
 const restoreModuleData = (slotId: string, md: unknown) => {
+  // RESTORE tarafı: footer-slot → globalSettings.footerModule'ü doğrudan değiştir (snapshot/yönlendirme yok).
+  if (isFooterSlotId(slotId)) {
+    useCatalogStore.setState((s) => ({ globalSettings: setFooterModule(s.globalSettings, md) }));
+    return;
+  }
   const catalog = useCatalogStore.getState();
   const pages = catalog.getActivePages().map((p) => ({
     ...p,

@@ -5,6 +5,7 @@ import { Button, SegmentedControl, Toggle } from '@/components/ui';
 import { uploadImage } from '@/lib/upload';
 import type { BannerCellData, BannerModuleData } from '../modules';
 import { materializeFractions, FRACTION_MIN, BANNER_DIM_MIN, BANNER_DIM_MAX } from '../modules/fractions';
+import { resolveModuleSlot } from '@/stores/studio/footerSlot';
 import { ColorOpacityPicker, BorderRadiusPicker, SpacingPicker, ShadowPicker, TypographyPicker } from '../pickers';
 import { clearRunForSurface } from '../textSettings/cellApply';
 import type { RunProperty } from '../modules/richText';
@@ -966,6 +967,7 @@ function BannerPanel() {
   const updateSlotModuleData = useCatalogStore((s) => s.updateSlotModuleData);
   const setBannerFractions = useCatalogStore((s) => s.setBannerFractions);
   const setBannerGridSize = useCatalogStore((s) => s.setBannerGridSize);
+  const globalSettings = useCatalogStore((s) => s.globalSettings);
 
   const slotId =
     selection.type === 'bannerCell' && selection.parentId
@@ -979,18 +981,12 @@ function BannerPanel() {
     if (hasCellSel) setOpen('banner-cell');
   }, [hasCellSel]);
 
-  let pageNumber = 0;
-  let module: BannerModuleData | null = null;
-  for (const p of getActivePages()) {
-    const slot = p.slots.find((s) => s.id === slotId);
-    if (slot?.role === 'free' && (slot.moduleData as BannerModuleData)?.type === 'banner') {
-      module = slot.moduleData as BannerModuleData;
-      pageNumber = p.pageNumber;
-      break;
-    }
-  }
+  // Footer-farkındalığı resolveModuleSlot'ta (footer-slot → globalSettings.footerModule).
+  const resolved = resolveModuleSlot(slotId ?? '', getActivePages(), globalSettings);
+  const pageNumber = resolved?.pageNumber ?? 0;
+  const module = (resolved?.moduleData as BannerModuleData | null) ?? null;
 
-  if (!module) return null;
+  if (!module || module.type !== 'banner') return null;
 
   const toggle = (s: string) => setOpen(open === s ? null : s);
 

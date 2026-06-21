@@ -280,6 +280,9 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
       pendingResizeRef.current = null;
       setDragFractions(null);
       if (pending) setBannerFractions(slotId, d.axis, pending.fractions);
+      // Resize de bir drag-jesti: drag-out release'inde canvas/slot/PAGE click'i izolasyonu/seçimi
+      // bozmasın (lasso ile aynı guard — 5fb45af yalnız lasso'yu kapsamıştı).
+      markDragGesture();
       return;
     }
 

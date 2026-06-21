@@ -24,6 +24,7 @@ import {
 } from '../modules/richText';
 import { BANNER_DIM_MIN, BANNER_DIM_MAX } from '../modules/fractions';
 import { cellDomId } from '../modules/bannerDom';
+import { resolveModuleSlot } from '@/stores/studio/footerSlot';
 import { TextStyleSection } from './TextStyleSection';
 import { clearRunForSurface } from '../textSettings/cellApply';
 import type { TextSettingCtx, TextSettingDef } from '../textSettings/types';
@@ -2378,23 +2379,18 @@ function BannerCellMode() {
 
   const getActivePages = useCatalogStore((s) => s.getActivePages);
   const updateSlotModuleData = useCatalogStore((s) => s.updateSlotModuleData);
+  const globalSettings = useCatalogStore((s) => s.globalSettings);
   const formas = useCatalogStore((s) => s.formas); // Reaktif tetikleme için bağımlılık eklendi
   const setSidebarState = useUIStore((s) => s.setSidebarState);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  let pageNumber = 0;
-  let moduleData: any = null;
-  for (const p of getActivePages()) {
-    const slot = p.slots.find((s) => s.id === slotId);
-    if (slot && slot.role === 'free' && (slot.moduleData as any)?.type === 'banner') {
-      moduleData = slot.moduleData;
-      pageNumber = p.pageNumber;
-      break;
-    }
-  }
+  // Footer-farkındalığı resolveModuleSlot'ta (footer-slot → globalSettings.footerModule).
+  const resolved = resolveModuleSlot(slotId ?? '', getActivePages(), globalSettings);
+  const pageNumber = resolved?.pageNumber ?? 0;
+  const moduleData: any = resolved?.moduleData ?? null;
 
-  if (!moduleData || selectedCellIds.length === 0) return null;
+  if (!moduleData || moduleData.type !== 'banner' || selectedCellIds.length === 0) return null;
 
   const targetCells = moduleData.cells.filter((c: any) => selectedCellIds.includes(c.id));
   const firstCell = targetCells[0] ?? null;

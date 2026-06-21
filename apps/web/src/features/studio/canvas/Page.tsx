@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import type { StudioSlot } from '@matbaapro/shared';
 import { useCatalogStore, useLayerStore, useUIStore } from '@/stores/studio';
 import { colorValueBackground } from '../util/style';
+import { consumeDragGesture } from '../util/editorChrome';
 import { Slot } from './Slot';
 import { FooterRenderer } from './FooterRenderer';
 
@@ -287,6 +288,10 @@ export function Page({
         onClick={(e) => {
           if (isPreviewMode) return; // Disable click actions on page in preview mode
           e.stopPropagation();
+          // Drag-jesti (footer/modül lasso veya kenar-resize) sayfaya düşen mouseup'ında izolasyonu/
+          // edit'i BOZMASIN — #canvas/Slot onClick'teki guard'ın aynısı (5fb45af). Kasıtlı tek-tık
+          // çıkış: drag yoksa flag false → setEditingContent(null) normal işler.
+          if (consumeDragGesture()) return;
           setEditingContent(null);
           if (e.ctrlKey || e.metaKey) {
             if (selectedPageIds.includes(currentPage.id))

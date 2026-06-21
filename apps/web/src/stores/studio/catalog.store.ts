@@ -46,6 +46,7 @@ import {
   type GridState,
 } from '../../features/studio/modules/gridMutate';
 import type { BannerModuleData } from '../../features/studio/modules/types';
+import { isFooterSlotId, resolveModuleSlot, mergeFooterModule } from './footerSlot';
 import { useHistoryStore } from './history.store';
 import { useUIStore } from './ui.store';
 import { foldNameMap } from '../../features/wizard/buildTemplate';
@@ -369,11 +370,11 @@ function applyBannerMutation(
   slotId: string,
   mutate: (g: GridState) => GridState,
 ): void {
-  const { getActivePages, updateSlotModuleData } = get();
-  const page = getActivePages().find((p) => p.slots.some((s) => s.id === slotId));
-  if (!page) return;
-  const slot = page.slots.find((s) => s.id === slotId);
-  const md = slot?.moduleData as BannerModuleData | null;
+  const { getActivePages, updateSlotModuleData, globalSettings } = get();
+  // Footer-farkındalığı resolveModuleSlot'ta (footer-slot → globalSettings.footerModule, default-if-absent).
+  const resolved = resolveModuleSlot(slotId, getActivePages(), globalSettings);
+  if (!resolved) return;
+  const md = resolved.moduleData as BannerModuleData | null;
   if (!md || md.type !== 'banner' || !Array.isArray(md.cells)) return;
   const next = mutate({
     cells: md.cells,
@@ -386,7 +387,7 @@ function applyBannerMutation(
   if (next.colFractions !== undefined) updates.colFractions = next.colFractions;
   if (next.rowFractions !== undefined) updates.rowFractions = next.rowFractions;
   useHistoryStore.getState().withHistoryBatch(() => {
-    updateSlotModuleData(page.pageNumber, slotId, updates, 'discrete');
+    updateSlotModuleData(resolved.pageNumber, slotId, updates, 'discrete');
   });
 }
 
@@ -1321,6 +1322,21 @@ export const useCatalogStore = create<Store>()(
         } else if (history === 'discrete') {
           hist.saveState(true);
         }
+        // History tetikleme yukarıda BİREBİR aynı (izolasyon/discrete). Yalnız YAZIM HEDEFİ değişir:
+        // footer-slot → globalSettings.footerModule (deepMerge); değilse page.slots. Footer bilgisi
+        // mergeFooterModule'de (deepMerge enjekte — defaults↔footerSlot cycle'ı önler).
+        if (isFooterSlotId(slotId)) {
+          if (updates && typeof updates === 'object') {
+            set((state) => ({
+              globalSettings: mergeFooterModule(
+                state.globalSettings,
+                updates as Record<string, unknown>,
+                deepMerge,
+              ),
+            }));
+          }
+          return;
+        }
         setActivePages(
           getActivePages().map((p) =>
             p.pageNumber === pageNumber
@@ -1346,12 +1362,11 @@ export const useCatalogStore = create<Store>()(
       },
       clearBannerCells: (slotId, cellIds) => {
         if (cellIds.length === 0) return;
-        const { getActivePages, updateSlotModuleData } = get();
-        // Slot'un sayfasını içeride çöz (çağıran pageNumber bilmek zorunda değil).
-        const page = getActivePages().find((p) => p.slots.some((s) => s.id === slotId));
-        if (!page) return;
-        const slot = page.slots.find((s) => s.id === slotId);
-        const cells = (slot?.moduleData as { cells?: Record<string, unknown>[] } | null)?.cells;
+        const { getActivePages, updateSlotModuleData, globalSettings } = get();
+        // Footer-farkındalığı resolveModuleSlot'ta (footer-slot dahil; çağıran pageNumber bilmez).
+        const resolved = resolveModuleSlot(slotId, getActivePages(), globalSettings);
+        if (!resolved) return;
+        const cells = (resolved.moduleData as { cells?: Record<string, unknown>[] } | null)?.cells;
         if (!Array.isArray(cells)) return;
 
         const idSet = new Set(cellIds);
@@ -1381,18 +1396,18 @@ export const useCatalogStore = create<Store>()(
         // coalesce'lı (metin edit'inden hemen sonraki Del bastırılırdı); withHistoryBatch
         // ilk snapshot'ı forced çeker. İzolasyon dışında 'discrete' zaten forced saveState.
         useHistoryStore.getState().withHistoryBatch(() => {
-          updateSlotModuleData(page.pageNumber, slotId, { cells: nextCells }, 'discrete');
+          updateSlotModuleData(resolved.pageNumber, slotId, { cells: nextCells }, 'discrete');
         });
       },
       setBannerFractions: (slotId, axis, fractions) => {
-        const { getActivePages, updateSlotModuleData } = get();
-        const page = getActivePages().find((p) => p.slots.some((s) => s.id === slotId));
-        if (!page) return;
+        const { getActivePages, updateSlotModuleData, globalSettings } = get();
+        const resolved = resolveModuleSlot(slotId, getActivePages(), globalSettings);
+        if (!resolved) return;
         const key = axis === 'col' ? 'colFractions' : 'rowFractions';
         // Atomik: tek snapshot → tek Ctrl+Z (izolasyonda coalesce'ı withHistoryBatch forces;
         // dışında 'discrete' zaten forced). Drag mouseup ve panel sayısal aynı kapıdan geçer.
         useHistoryStore.getState().withHistoryBatch(() => {
-          updateSlotModuleData(page.pageNumber, slotId, { [key]: fractions }, 'discrete');
+          updateSlotModuleData(resolved.pageNumber, slotId, { [key]: fractions }, 'discrete');
         });
       },
       // Banner yapısal mutasyonlar — hepsi saf motoru (gridMutate) çağıran ince sarmal.

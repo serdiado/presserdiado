@@ -64,3 +64,53 @@ export function synthFooterSlot(
     moduleData: resolveFooterModule(globalSettings),
   };
 }
+
+// ─── resolve / write funnel'ları (footer-farkındalığı TEK YER) ──────────────────
+// Funnel'lar (catalog.updateSlotModuleData/applyBannerMutation/clear/fractions, history.findActiveSlot/
+// restoreModuleData, ContextualBar/CellPanel resolver) bunları çağırır → hiçbirine footer-spesifik
+// alan erişimi (footerModule / 'footer-slot-' prefix) sızmaz.
+
+interface PageLike {
+  pageNumber: number;
+  slots: StudioSlot[];
+}
+
+/**
+ * Bir slotId'nin moduleData'sını + sayfa numarasını çöz (okuma/snapshot). Footer-slot ise
+ * globalSettings.footerModule'den (default-if-absent); değilse page.slots'tan. Bulunamazsa null.
+ */
+export function resolveModuleSlot(
+  slotId: string,
+  pages: PageLike[],
+  globalSettings: { footerModule?: unknown },
+): { pageNumber: number; moduleData: unknown } | null {
+  if (isFooterSlotId(slotId)) {
+    return { pageNumber: footerPageNumber(slotId), moduleData: resolveFooterModule(globalSettings) };
+  }
+  for (const p of pages) {
+    const slot = p.slots.find((s) => s.id === slotId);
+    if (slot) return { pageNumber: p.pageNumber, moduleData: slot.moduleData };
+  }
+  return null;
+}
+
+/**
+ * Footer modül yazımı (deepMerge ile). `merge` çağırandan ENJEKTE edilir (defaults.deepMerge'i
+ * footerSlot'a import etmek cycle yaratır: defaults → footerSlot → defaults). Yeni globalSettings döner.
+ */
+export function mergeFooterModule<GS extends { footerModule?: unknown }>(
+  globalSettings: GS,
+  updates: Record<string, unknown>,
+  merge: (a: Record<string, unknown>, b: Record<string, unknown>) => Record<string, unknown>,
+): GS {
+  const current = resolveFooterModule(globalSettings) as unknown as Record<string, unknown>;
+  return { ...globalSettings, footerModule: merge(current, updates) };
+}
+
+/** Footer modülünü tamamen değiştir (izolasyon undo/redo restore'u — yönlendirme/snapshot ATLAR). */
+export function setFooterModule<GS extends { footerModule?: unknown }>(
+  globalSettings: GS,
+  md: unknown,
+): GS {
+  return { ...globalSettings, footerModule: md };
+}

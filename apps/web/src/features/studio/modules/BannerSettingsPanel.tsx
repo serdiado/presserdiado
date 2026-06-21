@@ -6,6 +6,7 @@ import {
 } from '../pickers';
 import type { BannerCellData, BannerModuleData } from './types';
 import { BANNER_DIM_MIN, BANNER_DIM_MAX } from './fractions';
+import { resolveModuleSlot } from '@/stores/studio/footerSlot';
 
 export function BannerSettingsPanel() {
   const selection = useUIStore((s) => s.selection);
@@ -13,21 +14,19 @@ export function BannerSettingsPanel() {
   const getActivePages = useCatalogStore((s) => s.getActivePages);
   const updateSlotModuleData = useCatalogStore((s) => s.updateSlotModuleData);
   const setBannerGridSize = useCatalogStore((s) => s.setBannerGridSize);
+  const globalSettings = useCatalogStore((s) => s.globalSettings);
 
   const slotId =
     selection.type === 'bannerCell' && selection.parentId
       ? selection.parentId
       : selectedSlotIds[0];
-  let pageNumber = 0;
-  let module: BannerModuleData | null = null;
-  for (const p of getActivePages()) {
-    const slot = p.slots.find((s) => s.id === slotId);
-    if (slot && slot.role === 'free' && (slot.moduleData as BannerModuleData)?.type === 'banner') {
-      module = slot.moduleData as BannerModuleData;
-      pageNumber = p.pageNumber;
-      break;
-    }
-  }
+  // Footer-farkındalığı resolveModuleSlot'ta (footer-slot → globalSettings.footerModule).
+  const resolved = resolveModuleSlot(slotId ?? '', getActivePages(), globalSettings);
+  const pageNumber = resolved?.pageNumber ?? 0;
+  const module: BannerModuleData | null =
+    (resolved?.moduleData as BannerModuleData | null)?.type === 'banner'
+      ? (resolved!.moduleData as BannerModuleData)
+      : null;
 
   if (!module) {
     return (
