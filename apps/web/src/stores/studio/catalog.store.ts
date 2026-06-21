@@ -46,7 +46,7 @@ import {
   type GridState,
 } from '../../features/studio/modules/gridMutate';
 import type { BannerModuleData } from '../../features/studio/modules/types';
-import { isFooterSlotId, resolveModuleSlot, mergeFooterModule, footerWriteTarget, mergePageFooterModule } from './footerSlot';
+import { isFooterSlotId, resolveModuleSlot, mergeFooterModule, footerWriteTarget, mergePageFooterModule, resolveFooterModule } from './footerSlot';
 import { useHistoryStore } from './history.store';
 import { useUIStore } from './ui.store';
 import { foldNameMap } from '../../features/wizard/buildTemplate';
@@ -224,6 +224,11 @@ interface CatalogActions {
     updates: Partial<StudioFooterCell>,
   ) => void;
   setPageFooterMode: (pageNumber: number, mode: 'global' | 'custom' | 'hidden') => void;
+  // Footer per-sayfa fork (Evre 2a-ii). "custom" tek semantik kaynağı = footerOverride VARLIĞI.
+  forkPageFooter: (pageNumber: number) => void;
+  revertPageFooter: (pageNumber: number) => void;
+  showPageFooter: (pageNumber: number) => void;
+  setFooterHeight: (pageNumber: number, mm: number) => void;
   updateFooterSettings: (
     scope: FooterScope,
     updates: Partial<FooterSettings>,
@@ -643,6 +648,89 @@ export const useCatalogStore = create<Store>()(
             return { ...p, footerMode: mode, customFooter: mode === 'custom' ? customFooter : null };
           }),
         );
+      },
+
+      // ── Footer per-sayfa fork (Evre 2a-ii) ──────────────────────────────────────
+      // Sözleşme: footerOverride VARLIĞI = "custom" tek semantik kaynağı; footerMode yalnız 'hidden'.
+      // Hepsi withHistoryBatch + ilk iç saveState(true) (raw setActivePages history tetiklemez →
+      // pre-state'i açıkça yakala → tek Ctrl+Z). Düzenleme funnel'ları (updateSlotModuleData/history/
+      // resolver) override yaratılınca 2a-i route'undan OTOMATİK per-sayfa hedefe gider — yeni kablaj yok.
+      forkPageFooter: (pageNumber) => {
+        useHistoryStore.getState().withHistoryBatch(() => {
+          useHistoryStore.getState().saveState(true);
+          const { getActivePages, setActivePages, globalSettings } = get();
+          setActivePages(
+            getActivePages().map((p) =>
+              p.pageNumber === pageNumber
+                ? {
+                    ...p,
+                    footerMode: 'custom',
+                    // clone = structuredClone (referans-izolasyon ŞART): override.module global
+                    // footerModule ile hiçbir iç referans (cells/renk) paylaşmaz → çapraz mutasyon yok.
+                    footerOverride: {
+                      module: clone(resolveFooterModule(undefined, globalSettings)),
+                      heightMm: globalSettings.footer.heightMm,
+                    },
+                  }
+                : p,
+            ),
+          );
+        });
+      },
+      revertPageFooter: (pageNumber) => {
+        useHistoryStore.getState().withHistoryBatch(() => {
+          useHistoryStore.getState().saveState(true);
+          const { getActivePages, setActivePages } = get();
+          // override SİL + mode='global' (tutarlı: override-yok ⟺ global). Discard; Ctrl+Z geri getirir.
+          setActivePages(
+            getActivePages().map((p) =>
+              p.pageNumber === pageNumber
+                ? { ...p, footerMode: 'global', footerOverride: undefined }
+                : p,
+            ),
+          );
+        });
+      },
+      showPageFooter: (pageNumber) => {
+        useHistoryStore.getState().withHistoryBatch(() => {
+          useHistoryStore.getState().saveState(true);
+          const { getActivePages, setActivePages } = get();
+          // mode override-VARLIĞINDAN türetilir (sabit 'global' değil) → "custom ama gizli" Göster'de
+          // 'custom'a döner, override hayatta. (override-yok → 'global'.)
+          setActivePages(
+            getActivePages().map((p) =>
+              p.pageNumber === pageNumber
+                ? { ...p, footerMode: p.footerOverride ? 'custom' : 'global' }
+                : p,
+            ),
+          );
+        });
+      },
+      setFooterHeight: (pageNumber, mm) => {
+        const clamped = Math.max(5, Math.min(60, mm));
+        useHistoryStore.getState().withHistoryBatch(() => {
+          useHistoryStore.getState().saveState(true);
+          const { getActivePages, setActivePages, globalSettings } = get();
+          const page = getActivePages().find((p) => p.pageNumber === pageNumber);
+          if (footerWriteTarget(page) === 'page' && page?.footerOverride) {
+            // Per-sayfa: yalnız o sayfanın override yüksekliği.
+            setActivePages(
+              getActivePages().map((p) =>
+                p.pageNumber === pageNumber && p.footerOverride
+                  ? { ...p, footerOverride: { ...p.footerOverride, heightMm: clamped } }
+                  : p,
+              ),
+            );
+          } else {
+            // Global: gs.footer.heightMm (resolveFooterHeight global dalıyla tutarlı; tüm global sayfaları etkiler).
+            set((state) => ({
+              globalSettings: {
+                ...state.globalSettings,
+                footer: { ...state.globalSettings.footer, heightMm: clamped },
+              },
+            }));
+          }
+        });
       },
       updateFooterSettings: (scope, updates) => {
         if (scope === 'global') {

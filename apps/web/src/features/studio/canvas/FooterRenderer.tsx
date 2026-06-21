@@ -1,7 +1,7 @@
 import { type CSSProperties, useState } from 'react';
-import { Pencil, EyeOff, Eye } from 'lucide-react';
+import { Pencil, EyeOff, Eye, Globe, File } from 'lucide-react';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
-import { resolveFooterModule, footerSlotId, synthFooterSlot } from '@/stores/studio/footerSlot';
+import { resolveFooterModule, resolveFooterHeight, footerSlotId, synthFooterSlot } from '@/stores/studio/footerSlot';
 import { consumeDragGesture } from '../util/editorChrome';
 import { BannerSection } from '../modules';
 
@@ -20,7 +20,10 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
   const getActivePages = useCatalogStore((s) => s.getActivePages);
   const globalSettings = useCatalogStore((s) => s.globalSettings);
   const setPageFooterMode = useCatalogStore((s) => s.setPageFooterMode);
-  const updateFooterSettings = useCatalogStore((s) => s.updateFooterSettings);
+  const forkPageFooter = useCatalogStore((s) => s.forkPageFooter);
+  const revertPageFooter = useCatalogStore((s) => s.revertPageFooter);
+  const showPageFooter = useCatalogStore((s) => s.showPageFooter);
+  const setFooterHeight = useCatalogStore((s) => s.setFooterHeight);
   const enterIsolation = useUIStore((s) => s.enterIsolation);
   const toggleElementSelection = useUIStore((s) => s.toggleElementSelection);
   const toggleSlotSelection = useUIStore((s) => s.toggleSlotSelection);
@@ -42,7 +45,9 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
     const firstCellId = (slot.moduleData as { cells?: { id: string }[] } | undefined)?.cells?.[0]?.id;
     if (firstCellId) toggleElementSelection('bannerCell', firstCellId, false, slotId);
   };
-  const heightMm = globalSettings.footer.heightMm;
+  const heightMm = resolveFooterHeight(page, globalSettings);
+  // "custom" state'i override-VARLIĞINDAN (footerMode'dan değil) — sözleşme enforcement.
+  const isCustom = !!page.footerOverride;
   const containerBase: CSSProperties = {
     bottom: '5mm',
     left: `${ml}mm`,
@@ -76,7 +81,7 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
           <button
             data-hide-on-export="true"
             className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-panel text-text-primary text-xs font-bold rounded-lg shadow-sm pointer-events-auto"
-            onClick={() => setPageFooterMode(pageNumber, 'global')}
+            onClick={() => showPageFooter(pageNumber)}
           >
             <Eye size={14} /> Alt bilgiyi göster
           </button>
@@ -145,11 +150,30 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
               min={5}
               max={60}
               value={heightMm}
-              onChange={(e) => updateFooterSettings('global', { heightMm: parseInt(e.target.value) || 5 })}
+              onChange={(e) => setFooterHeight(pageNumber, parseInt(e.target.value) || 5)}
               className="w-12 text-center bg-surface-subtle border border-border-default rounded px-1 py-0.5 focus:outline-none"
             />
             <span className="text-text-muted">mm</span>
           </label>
+          <button
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-panel text-text-primary text-xs font-bold rounded-lg shadow-sm pointer-events-auto"
+            onClick={(e) => {
+              // State override-VARLIĞINDAN (footerMode'dan değil): custom→Genel yap (revert), global→Özel yap (fork).
+              e.stopPropagation();
+              if (isCustom) revertPageFooter(pageNumber);
+              else forkPageFooter(pageNumber);
+            }}
+          >
+            {isCustom ? (
+              <>
+                <Globe size={14} /> Genel yap
+              </>
+            ) : (
+              <>
+                <File size={14} /> Özel yap
+              </>
+            )}
+          </button>
           <button
             className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-panel text-text-primary text-xs font-bold rounded-lg shadow-sm pointer-events-auto"
             onClick={(e) => {
