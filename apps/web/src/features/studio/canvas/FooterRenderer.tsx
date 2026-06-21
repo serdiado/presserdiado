@@ -2,6 +2,7 @@ import { type CSSProperties, useState } from 'react';
 import { Pencil, EyeOff, Eye } from 'lucide-react';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import { resolveFooterModule, footerSlotId, synthFooterSlot } from '@/stores/studio/footerSlot';
+import { consumeDragGesture } from '../util/editorChrome';
 import { BannerSection } from '../modules';
 
 // Footer host (Evre 1, global): footer-bölgesinde tam bir GridModule barındırır. Modül
@@ -22,6 +23,7 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
   const updateFooterSettings = useCatalogStore((s) => s.updateFooterSettings);
   const enterIsolation = useUIStore((s) => s.enterIsolation);
   const toggleElementSelection = useUIStore((s) => s.toggleElementSelection);
+  const toggleSlotSelection = useUIStore((s) => s.toggleSlotSelection);
   const editingContent = useUIStore((s) => s.editingContent);
   const [hovered, setHovered] = useState(false);
   const [, mr, , ml] = safeZone;
@@ -94,6 +96,14 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
       style={containerBase}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
+      onClick={(e) => {
+        // Tek-tık → footer modülünü "seçili" yap (ürün-slot deseni: Slot.tsx:806-817).
+        // İzolasyondayken seçme; drag-release seçimi bozmasın; #canvas onClick→clearSelection ezmesin.
+        if (isEditing) return;
+        if (consumeDragGesture()) return;
+        e.stopPropagation();
+        toggleSlotSelection(slotId, false);
+      }}
       onDoubleClick={(e) => {
         // Çift-tık girişi (ürün-slot deseni). Düzenleme DIŞINDAysa izolasyona gir + ilk hücreyi seç.
         if (isEditing) return;
@@ -125,7 +135,10 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
           >
             <Pencil size={14} /> Alt bilgiyi düzenle
           </button>
-          <label className="flex items-center gap-1 px-2 py-1.5 bg-surface-panel rounded-lg shadow-sm text-[11px] pointer-events-auto">
+          <label
+            className="flex items-center gap-1 px-2 py-1.5 bg-surface-panel rounded-lg shadow-sm text-[11px] pointer-events-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <span className="text-text-muted">Yük.</span>
             <input
               type="number"
@@ -139,7 +152,10 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
           </label>
           <button
             className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-panel text-text-primary text-xs font-bold rounded-lg shadow-sm pointer-events-auto"
-            onClick={() => setPageFooterMode(pageNumber, 'hidden')}
+            onClick={(e) => {
+              e.stopPropagation();
+              setPageFooterMode(pageNumber, 'hidden');
+            }}
           >
             <EyeOff size={14} /> Gizle
           </button>

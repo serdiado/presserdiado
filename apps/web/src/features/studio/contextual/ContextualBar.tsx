@@ -24,7 +24,7 @@ import {
 } from '../modules/richText';
 import { BANNER_DIM_MIN, BANNER_DIM_MAX } from '../modules/fractions';
 import { cellDomId } from '../modules/bannerDom';
-import { resolveModuleSlot } from '@/stores/studio/footerSlot';
+import { resolveModuleSlot, isFooterSlotId, synthFooterSlot, footerPageNumber } from '@/stores/studio/footerSlot';
 import { TextStyleSection } from './TextStyleSection';
 import { clearRunForSurface } from '../textSettings/cellApply';
 import type { TextSettingCtx, TextSettingDef } from '../textSettings/types';
@@ -245,11 +245,17 @@ export function ContextualBar() {
   let hasValidSelection = false;
 
   if (selection.type === 'slot' && selectedSlotIds.length > 0) {
-    const pages = getActivePages();
-    const pageWithSlot = pages.find((p) => p.slots.some((s) => s.id === selectedSlotIds[0]));
-    const slot = pageWithSlot?.slots.find((s) => s.id === selectedSlotIds[0]);
-    if (slot) {
+    if (isFooterSlotId(selectedSlotIds[0])) {
+      // Footer modülü seçili (izole DEĞİL) — synthFooterSlot daima geçerli; page.slots'ta değil.
+      // İzolasyon kolu kapıyı baypas ediyordu; bu yeni "modül seçili" durumu kapıdan geçmeli.
       hasValidSelection = true;
+    } else {
+      const pages = getActivePages();
+      const pageWithSlot = pages.find((p) => p.slots.some((s) => s.id === selectedSlotIds[0]));
+      const slot = pageWithSlot?.slots.find((s) => s.id === selectedSlotIds[0]);
+      if (slot) {
+        hasValidSelection = true;
+      }
     }
   } else if (selection.type === 'bannerCell') {
     if (selection.parentId) {
@@ -409,9 +415,13 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
   const updateSlotProduct = useCatalogStore((s) => s.updateSlotProduct);
 
   const pages = getActivePages();
-  const pageWithSlot = pages.find((p) => p.slots.some((s) => s.id === slotIds[0]));
-  const slot = pageWithSlot?.slots.find((s) => s.id === slotIds[0]);
-  const pageNumber = pageWithSlot?.pageNumber ?? 0;
+  const isFooter = isFooterSlotId(slotIds[0]);
+  // Footer-slot page.slots'ta değil → synthFooterSlot ile tam-slot şekli (globalSettings.footerModule).
+  const pageWithSlot = isFooter ? undefined : pages.find((p) => p.slots.some((s) => s.id === slotIds[0]));
+  const slot = isFooter
+    ? synthFooterSlot(footerPageNumber(slotIds[0]), globalSettings)
+    : pageWithSlot?.slots.find((s) => s.id === slotIds[0]);
+  const pageNumber = isFooter ? footerPageNumber(slotIds[0]) : (pageWithSlot?.pageNumber ?? 0);
   if (!slot) return null;
 
   const isMerged = slot.rowSpan > 1 || slot.colSpan > 1;
@@ -2082,6 +2092,8 @@ function FreeSlotMode({ slot, pageNumber, slotIds }: FreeSlotProps) {
 
   // 2. Tablo Modülü Ekliyse (Banner)
   if (isBanner) {
+    // Footer host-slot: "Ürün Hücresi Yap" + "Kaldır" footer'a uymaz (slot-grid'e özgü). Gizle.
+    const isFooter = isFooterSlotId(slot.id);
     const rows = moduleData.rows ?? 4;
     const cols = moduleData.cols ?? 4;
     const bgColor = moduleData.bgColor ?? { type: 'solid', color: '#ffffff', opacity: 100 };
@@ -2216,17 +2228,21 @@ function FreeSlotMode({ slot, pageNumber, slotIds }: FreeSlotProps) {
           Modülü Düzenle
         </button>
 
-        <button onClick={() => toggleSlotRole('product')} className={btnCls}>
-          <Box size={16} />
-          Ürün Hücresi Yap
-        </button>
-        <button
-          onClick={() => updateSlotModuleData(pageNumber, slot.id, null, 'discrete')}
-          className={`${btnCls} text-danger hover:bg-red-50`}
-        >
-          <Trash2 size={16} />
-          Kaldır
-        </button>
+        {!isFooter && (
+          <>
+            <button onClick={() => toggleSlotRole('product')} className={btnCls}>
+              <Box size={16} />
+              Ürün Hücresi Yap
+            </button>
+            <button
+              onClick={() => updateSlotModuleData(pageNumber, slot.id, null, 'discrete')}
+              className={`${btnCls} text-danger hover:bg-red-50`}
+            >
+              <Trash2 size={16} />
+              Kaldır
+            </button>
+          </>
+        )}
 
         <Divider />
 

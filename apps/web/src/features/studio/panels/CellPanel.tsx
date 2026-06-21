@@ -5,7 +5,7 @@ import { Button, SegmentedControl, Toggle } from '@/components/ui';
 import { uploadImage } from '@/lib/upload';
 import type { BannerCellData, BannerModuleData } from '../modules';
 import { materializeFractions, FRACTION_MIN, BANNER_DIM_MIN, BANNER_DIM_MAX } from '../modules/fractions';
-import { resolveModuleSlot } from '@/stores/studio/footerSlot';
+import { resolveModuleSlot, isFooterSlotId, synthFooterSlot, footerPageNumber } from '@/stores/studio/footerSlot';
 import { ColorOpacityPicker, BorderRadiusPicker, SpacingPicker, ShadowPicker, TypographyPicker } from '../pickers';
 import { clearRunForSurface } from '../textSettings/cellApply';
 import type { RunProperty } from '../modules/richText';
@@ -1481,9 +1481,13 @@ export function CellPanel() {
       ? (selection.parentId ?? undefined)
       : undefined);
 
-  const selectedSlot = effectiveSlotId
-    ? pages.flatMap((p) => p.slots).find((s) => s.id === effectiveSlotId)
-    : null;
+  // Footer host-slot page.slots'ta değil → synthFooterSlot ile tam-slot şekli (globalSettings.footerModule).
+  // isBannerSlot=true olunca erken <BannerPanel/> (gövdesi zaten footer-aware: resolveModuleSlot).
+  const selectedSlot = !effectiveSlotId
+    ? null
+    : isFooterSlotId(effectiveSlotId)
+    ? synthFooterSlot(footerPageNumber(effectiveSlotId), globalSettings)
+    : pages.flatMap((p) => p.slots).find((s) => s.id === effectiveSlotId);
 
   const isCustom = selectedSlot?.isCustom ?? false;
   const hasSelection = !!effectiveSlotId;
