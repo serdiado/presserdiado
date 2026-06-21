@@ -17,25 +17,10 @@ export type DeepPartial<T> = T extends object
 
 // === Footer system ===
 
-export interface StudioFooterCell {
-  id: string;
-  colSpan: number;
-  text: string;
-  image: string | null;
-  hidden: boolean;
-  mergedInto: string | null;
-  font: TypographyData;
-  padding: SpacingData;
-  bgColor: ColorOpacity;
-  border: BorderData;
-}
-
 export interface FooterSettings {
+  /** Global footer bölge yüksekliği (mm). Footer İÇERİĞİ artık footerModule (GridModule); eski
+   *  StudioFooterCell/cells sistemi host-slot'a geçişte kaldırıldı (2c). */
   heightMm: number;
-  cells: StudioFooterCell[];
-  bgColor?: ColorValue;
-  containerBorder?: { color: ColorOpacity; width: number };
-  radius?: BorderRadiusData;
 }
 
 // === Text Element Settings ===
@@ -240,12 +225,11 @@ export interface CatalogPage {
   footerLogo: string | null;
   headerData?: PageHeaderData;
   footerMode: PageFooterMode;
-  customFooter: FooterSettings | null;
   /**
    * Per-sayfa footer GridModule override (Evre 2a). VARLIK = "custom" tek semantik kaynağı
    * (footerMode değil) → routing daima `footerOverride != null` okur; footerMode yalnız 'hidden'
    * görünürlüğü taşır. `module: unknown` — web-only BannerModuleData shared'a bağlanmasın (mevcut
-   * footerModule/moduleData paterni). Eski `customFooter` (StudioFooterCell) 2c'de temizlenecek.
+   * footerModule/moduleData paterni).
    */
   footerOverride?: { module: unknown; heightMm: number };
   // gap? = REZERVE: şu an yazılmaz/okunmaz (tek kanonik gridGap kullanılır); ileride

@@ -67,9 +67,8 @@ export function resolveFooterModule(
 }
 
 /**
- * Footer bölge yüksekliği (mm). Precedence: override → (legacy) custom + customFooter → global.footer.
- * 2a-i: override yok → Page.tsx'in bugünkü `activeFooter?.heightMm ?? 18` ifadesiyle BYTE-IDENTICAL
- * (legacy customFooter yalnız OKUNUR; 2c'de customFooter ile birlikte legacy dal silinir).
+ * Footer bölge yüksekliği (mm): per-sayfa override VARSA onun heightMm'i, yoksa global footer height.
+ * (Eski customFooter legacy dalı 2c'de kaldırıldı — host-slot sonrası dormant.)
  */
 export function resolveFooterHeight(
   page: CatalogPage | undefined,
@@ -77,8 +76,7 @@ export function resolveFooterHeight(
 ): number {
   const ov = footerOverrideOf(page);
   if (ov) return ov.heightMm;
-  const activeFooter = page?.footerMode === 'custom' ? page.customFooter : globalSettings.footer;
-  return activeFooter?.heightMm ?? 18;
+  return globalSettings.footer.heightMm;
 }
 
 /**
@@ -163,17 +161,12 @@ export function mergePageFooterModule(
   merge: (a: Record<string, unknown>, b: Record<string, unknown>) => Record<string, unknown>,
 ): CatalogPage {
   const current = resolveFooterModule(page, {}) as unknown as Record<string, unknown>;
-  const heightMm = page.footerOverride?.heightMm ?? resolveFooterHeightFallback(page);
+  const heightMm = page.footerOverride?.heightMm ?? 18;
   return { ...page, footerOverride: { module: merge(current, updates), heightMm } };
 }
 
 /** PER-SAYFA hedef footer modülünü tamamen değiştir (izolasyon restore). 2a-i'de DORMANT. */
 export function setPageFooterModule(page: CatalogPage, md: unknown): CatalogPage {
-  const heightMm = page.footerOverride?.heightMm ?? resolveFooterHeightFallback(page);
+  const heightMm = page.footerOverride?.heightMm ?? 18;
   return { ...page, footerOverride: { module: md, heightMm } };
-}
-
-/** Page-writer'lar override yoksa (teorik) yükseklik seed'i — legacy/global precedence (globalSettings'siz). */
-function resolveFooterHeightFallback(page: CatalogPage): number {
-  return (page.footerMode === 'custom' ? page.customFooter?.heightMm : undefined) ?? 18;
 }

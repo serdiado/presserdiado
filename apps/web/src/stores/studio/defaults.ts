@@ -3,7 +3,6 @@
 import {
   Template1,
   availableTemplates,
-  defaultBorder,
   defaultRadius,
   defaultShadow,
   defaultSpacing,
@@ -11,36 +10,12 @@ import {
   type BrochureTemplate,
   type CatalogPage,
   type CatalogSettings,
-  type StudioFooterCell,
   type StudioForma,
   type StudioSlot,
 } from '@matbaapro/shared';
 import { defaultFooterModule } from './footerSlot';
 
 export { Template1, availableTemplates };
-
-export function defaultFooterCells(): StudioFooterCell[] {
-  const base = (id: string, colSpan: number, hidden: boolean, mergedInto: string | null, text = '') => ({
-    id,
-    colSpan,
-    text,
-    image: null,
-    hidden,
-    mergedInto,
-    font: { ...defaultTypography },
-    padding: { ...defaultSpacing, t: 2, r: 2, b: 2, l: 2 },
-    bgColor: { c: '#ffffff', o: 0 },
-    border: { ...defaultBorder, color: { c: '#e2e8f0', o: 100 } },
-  });
-
-  return [
-    base('fc-1', 1, false, null),
-    { ...base('fc-2', 4, false, null), font: { ...defaultTypography, textAlign: 'right' } },
-    base('fc-3', 1, true, 'fc-2'),
-    base('fc-4', 1, true, 'fc-2'),
-    base('fc-5', 1, true, 'fc-2'),
-  ];
-}
 
 export const initialGlobalSettings: CatalogSettings = {
   defaultGrid: { rows: 4, cols: 4 },
@@ -143,10 +118,6 @@ export const initialGlobalSettings: CatalogSettings = {
   shadows: { cell: { ...defaultShadow, active: false } },
   footer: {
     heightMm: 15,
-    cells: defaultFooterCells(),
-    bgColor: { type: 'solid', color: '#ffffff', opacity: 0 },
-    containerBorder: { color: { c: '#e2e8f0', o: 100 }, width: 0 },
-    radius: { tl: 0, tr: 0, bl: 0, br: 0, linked: true },
   },
   // Footer host-slot (Evre 1): tek global footer GridModule. Eski projeler bunu taşımaz →
   // resolveFooterModule default-if-absent guard'ı render çökmesini önler.

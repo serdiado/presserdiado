@@ -11,7 +11,6 @@ export type SelectionType =
   | 'layer'
   | 'bannerCell'
   | 'textElement'
-  | 'footerCell'
   | 'pageBackground';
 
 export type TextElementType = 'name' | 'price' | 'badge';

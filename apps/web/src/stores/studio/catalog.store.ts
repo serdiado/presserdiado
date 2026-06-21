@@ -10,14 +10,12 @@ import type {
   DeepPartial,
   ModuleType,
   ProductInfo,
-  StudioFooterCell,
   StudioForma,
   StudioSlot,
   StudioPreset,
   StudioPresetBannerArea,
   StudioPresetPageBackground,
   TempPoolProduct,
-  FooterSettings,
 } from '@matbaapro/shared';
 import { availableTemplates, Template1, STUDIO_STORE_NAME, STUDIO_STORE_VERSION } from '@matbaapro/shared';
 import { applyUnmerge, recalculateLayout, reconcileGrid } from '@matbaapro/grid-engine';
@@ -26,7 +24,6 @@ import {
   clone,
   createPageSlots,
   deepMerge,
-  defaultFooterCells,
   initialGlobalSettings,
 } from './defaults';
 import { ModuleRegistry } from './module-registry';
@@ -53,7 +50,6 @@ import { foldNameMap } from '../../features/wizard/buildTemplate';
 import { DEFAULT_OPTIONS, DEFAULT_QUANTITY } from '../../features/print-order/constants';
 import type { PrintOptionsValue } from '../../features/print-order/types';
 
-type FooterScope = number | 'global';
 type GridScope = 'global' | number;
 
 /**
@@ -175,7 +171,6 @@ interface CatalogState {
   tempProductPool: TempPoolProduct[];
   globalSettings: CatalogSettings;
   copiedSlotSettings: DeepPartial<CatalogSettings> | null;
-  copiedFooterSettings: FooterSettings | null;
   copiedBackground: CatalogPage['background'] | null;
   isDirty: boolean;
   // Baskı özellikleri + adet — web/sihirbazdan taşınır, canvasData ile round-trip eder (S6).
@@ -218,35 +213,14 @@ interface CatalogActions {
     pageNumber: number,
     data: Partial<{ logoUrl: string; title: string; date: string; no: string }>,
   ) => void;
-  updatePageFooterCells: (
-    pageNumber: number,
-    cellId: string,
-    updates: Partial<StudioFooterCell>,
-  ) => void;
   setPageFooterMode: (pageNumber: number, mode: 'global' | 'custom' | 'hidden') => void;
   // Footer per-sayfa fork (Evre 2a-ii). "custom" tek semantik kaynağı = footerOverride VARLIĞI.
   forkPageFooter: (pageNumber: number) => void;
   revertPageFooter: (pageNumber: number) => void;
   showPageFooter: (pageNumber: number) => void;
   setFooterHeight: (pageNumber: number, mm: number) => void;
-  updateFooterSettings: (
-    scope: FooterScope,
-    updates: Partial<FooterSettings>,
-  ) => void;
-  copyFooterSettings: () => void;
-  pasteFooterSettings: (pageNumber: number) => void;
   copyBackground: (pageNumber: number) => void;
   pasteBackground: (pageNumber: number) => void;
-  updateFooterCellStore: (
-    scope: FooterScope,
-    cellId: string,
-    updates: Partial<StudioFooterCell>,
-  ) => void;
-  mergeFooterCellsStore: (
-    scope: FooterScope,
-    selectedIds: string[],
-  ) => { success: boolean; error?: string };
-  unmergeFooterCellStore: (scope: FooterScope, cellId: string) => void;
 
   // Hazır şablon (preset)
   applyPreset: (preset: StudioPreset) => void;
@@ -418,7 +392,6 @@ export const useCatalogStore = create<Store>()(
       tempProductPool: [],
       globalSettings: clone(initialGlobalSettings),
       copiedSlotSettings: null,
-      copiedFooterSettings: null,
       copiedBackground: null,
       isDirty: false,
       printOptions: { ...DEFAULT_OPTIONS },
@@ -538,7 +511,6 @@ export const useCatalogStore = create<Store>()(
           productPool: [],
           tempProductPool: [],
           copiedSlotSettings: null,
-          copiedFooterSettings: null,
           copiedBackground: null,
           isDirty: false,
           printOptions: printOptions ?? { ...DEFAULT_OPTIONS },
@@ -615,38 +587,12 @@ export const useCatalogStore = create<Store>()(
           ),
         );
       },
-      updatePageFooterCells: (pageNumber, cellId, updates) => {
-        const { getActivePages, setActivePages, globalSettings } = get();
-        setActivePages(
-          getActivePages().map((page) => {
-            if (page.pageNumber !== pageNumber) return page;
-            let footerMode = page.footerMode;
-            let customFooter = page.customFooter;
-            if (page.footerMode === 'global') {
-              footerMode = 'custom';
-              customFooter = clone(globalSettings.footer);
-            }
-            if (customFooter?.cells) {
-              customFooter = {
-                ...customFooter,
-                cells: customFooter.cells.map((c) =>
-                  c.id === cellId ? { ...c, ...updates } : c,
-                ),
-              };
-            }
-            return { ...page, footerMode, customFooter };
-          }),
-        );
-      },
       setPageFooterMode: (pageNumber, mode) => {
-        const { getActivePages, setActivePages, globalSettings } = get();
+        const { getActivePages, setActivePages } = get();
         setActivePages(
-          getActivePages().map((p) => {
-            if (p.pageNumber !== pageNumber) return p;
-            let customFooter = p.customFooter;
-            if (mode === 'custom' && !customFooter) customFooter = clone(globalSettings.footer);
-            return { ...p, footerMode: mode, customFooter: mode === 'custom' ? customFooter : null };
-          }),
+          getActivePages().map((p) =>
+            p.pageNumber === pageNumber ? { ...p, footerMode: mode } : p,
+          ),
         );
       },
 
@@ -710,7 +656,7 @@ export const useCatalogStore = create<Store>()(
         const clamped = Math.max(5, Math.min(60, mm));
         useHistoryStore.getState().withHistoryBatch(() => {
           useHistoryStore.getState().saveState(true);
-          const { getActivePages, setActivePages, globalSettings } = get();
+          const { getActivePages, setActivePages } = get();
           const page = getActivePages().find((p) => p.pageNumber === pageNumber);
           if (footerWriteTarget(page) === 'page' && page?.footerOverride) {
             // Per-sayfa: yalnız o sayfanın override yüksekliği.
@@ -731,107 +677,6 @@ export const useCatalogStore = create<Store>()(
             }));
           }
         });
-      },
-      updateFooterSettings: (scope, updates) => {
-        if (scope === 'global') {
-          set((state) => ({
-            globalSettings: { ...state.globalSettings, footer: { ...state.globalSettings.footer, ...updates } },
-          }));
-          return;
-        }
-        const { getActivePages, setActivePages } = get();
-        setActivePages(
-          getActivePages().map((p) =>
-            p.pageNumber === scope && p.customFooter
-              ? { ...p, customFooter: { ...p.customFooter, ...updates } }
-              : p,
-          ),
-        );
-      },
-      updateFooterCellStore: (scope, cellId, updates) => {
-        if (scope === 'global') {
-          set((state) => {
-            const cells = state.globalSettings.footer.cells.map((c) =>
-              c.id === cellId ? { ...c, ...updates } : c,
-            );
-            return {
-              globalSettings: {
-                ...state.globalSettings,
-                footer: { ...state.globalSettings.footer, cells },
-              },
-            };
-          });
-          return;
-        }
-        const { getActivePages, setActivePages } = get();
-        setActivePages(
-          getActivePages().map((p) => {
-            if (p.pageNumber !== scope || !p.customFooter) return p;
-            const cells = p.customFooter.cells.map((c) =>
-              c.id === cellId ? { ...c, ...updates } : c,
-            );
-            return { ...p, customFooter: { ...p.customFooter, cells } };
-          }),
-        );
-      },
-      mergeFooterCellsStore: (scope, selectedIds) => {
-        if (selectedIds.length < 2)
-          return { success: false, error: 'En az 2 hucre secmelisiniz.' };
-
-        let cells: StudioFooterCell[] = [];
-        if (scope === 'global') {
-          cells = get().globalSettings.footer.cells;
-        } else {
-          const p = get().getActivePages().find((pp) => pp.pageNumber === scope);
-          if (!p?.customFooter) return { success: false, error: 'Custom footer bulunamadi.' };
-          cells = p.customFooter.cells;
-        }
-
-        const visible = cells.filter((c) => !c.hidden);
-        const selectedVisible = visible.filter((c) => selectedIds.includes(c.id));
-        if (selectedVisible.length !== selectedIds.length)
-          return { success: false, error: 'Gecersiz secim.' };
-
-        const sorted = selectedIds
-          .slice()
-          .sort((a, b) => cells.findIndex((c) => c.id === a) - cells.findIndex((c) => c.id === b));
-        const survivorId = sorted[0];
-        const survivorIdx = cells.findIndex((c) => c.id === survivorId);
-        const totalColSpan = selectedVisible.reduce((s, c) => s + c.colSpan, 0);
-
-        const next: StudioFooterCell[] = clone(cells);
-        next[survivorIdx].colSpan = totalColSpan;
-        for (const id of sorted.slice(1)) {
-          const idx = next.findIndex((c) => c.id === id);
-          next[idx].hidden = true;
-          next[idx].mergedInto = survivorId;
-          next[idx].text = '';
-          next[idx].image = null;
-        }
-
-        get().updateFooterSettings(scope, { cells: next });
-        return { success: true };
-      },
-      unmergeFooterCellStore: (scope, cellId) => {
-        let cells: StudioFooterCell[] = [];
-        if (scope === 'global') {
-          cells = get().globalSettings.footer.cells;
-        } else {
-          const p = get().getActivePages().find((pp) => pp.pageNumber === scope);
-          if (!p?.customFooter) return;
-          cells = p.customFooter.cells;
-        }
-        const next: StudioFooterCell[] = clone(cells);
-        const survivorIdx = next.findIndex((c) => c.id === cellId);
-        if (survivorIdx === -1) return;
-        next[survivorIdx].colSpan = 1;
-        next.forEach((c, i) => {
-          if (c.mergedInto === cellId) {
-            next[i].hidden = false;
-            next[i].mergedInto = null;
-          }
-        });
-        get().updateFooterSettings(scope, { cells: next });
       },
 
       // === Product pool ===
@@ -1135,23 +980,6 @@ export const useCatalogStore = create<Store>()(
           }
         }
         set({ copiedSlotSettings: toCopy ? clone(toCopy) : null });
-      },
-      copyFooterSettings: () => {
-        const { getActivePages, globalSettings } = get();
-        const { selection } = useUIStore.getState();
-        if (selection.type !== 'footerCell' || !selection.parentId) return;
-        const pageNum = parseInt(selection.parentId.replace('page-', ''), 10);
-        const page = getActivePages().find((p) => p.pageNumber === pageNum);
-        if (!page) return;
-        const activeFooter = page.footerMode === 'custom' ? page.customFooter : globalSettings.footer;
-        set({ copiedFooterSettings: activeFooter ? clone(activeFooter) : null });
-      },
-      pasteFooterSettings: (pageNumber) => {
-        const { copiedFooterSettings } = get();
-        if (!copiedFooterSettings || isNaN(pageNumber)) return;
-        useHistoryStore.getState().saveState();
-        get().setPageFooterMode(pageNumber, 'custom');
-        get().updateFooterSettings(pageNumber, copiedFooterSettings);
       },
       copyBackground: (pageNumber) => {
         const { getActivePages } = get();
@@ -2025,16 +1853,8 @@ function normalizeForma(forma: StudioForma): StudioForma {
 }
 
 function normalizeCatalogPage(page: CatalogPage): CatalogPage {
-  let footerMode = page.footerMode;
-  let customFooter = page.customFooter;
-  if (!footerMode && (page.footerText || page.footerLogo)) {
-    footerMode = 'custom';
-    customFooter = { heightMm: 18, cells: defaultFooterCells() };
-    if (page.footerLogo) customFooter.cells[0].image = page.footerLogo;
-    if (page.footerText) customFooter.cells[1].text = page.footerText;
-    page.footerText = '';
-    page.footerLogo = null;
-  }
+  // Eski footer-cell sistemi kaldırıldı (2c). Legacy footerText/footerLogo artık yok sayılır
+  // (greenfield — eski veri umursanmıyor); customFooter üretimi kalktı. Load-safe (crash yok).
   const migratedBg = page.background
     ? (migratePageBackground(page.background) as typeof page.background)
     : page.background;
@@ -2064,7 +1884,6 @@ function normalizeCatalogPage(page: CatalogPage): CatalogPage {
     ...page,
     slots: slots ?? page.slots,
     background: migratedBg,
-    footerMode: footerMode ?? 'global',
-    customFooter: customFooter ?? null,
+    footerMode: page.footerMode ?? 'global',
   };
 }

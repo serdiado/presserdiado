@@ -44,9 +44,6 @@ export function Page({
   const selection = useUIStore((s) => s.selection);
   const isPreviewMode = useUIStore((s) => s.isPreviewMode);
 
-  const copiedFooterSettings = useCatalogStore((s) => s.copiedFooterSettings);
-  const copyFooterSettings = useCatalogStore((s) => s.copyFooterSettings);
-  const pasteFooterSettings = useCatalogStore((s) => s.pasteFooterSettings);
   const copiedBackground = useCatalogStore((s) => s.copiedBackground);
   const copyBackground = useCatalogStore((s) => s.copyBackground);
   const pasteBackground = useCatalogStore((s) => s.pasteBackground);
@@ -120,30 +117,7 @@ export function Page({
             onClick={(e) => e.stopPropagation()}
             onContextMenu={(e) => e.preventDefault()}
           >
-            {selection.type === 'footerCell' ? (
-              <>
-                <button
-                  className="w-full text-left px-4 py-2 text-sm font-semibold text-text-secondary hover:bg-surface-subtle"
-                  onClick={() => {
-                    copyFooterSettings();
-                    setContextMenu(null);
-                  }}
-                >
-                  Stil Kopyala
-                </button>
-                {copiedFooterSettings !== null && (
-                  <button
-                    className="w-full text-left px-4 py-2 text-sm font-semibold text-text-secondary hover:bg-surface-subtle"
-                    onClick={() => {
-                      pasteFooterSettings(pageNumber);
-                      setContextMenu(null);
-                    }}
-                  >
-                    Stil Yapıştır
-                  </button>
-                )}
-              </>
-            ) : selection.type === 'pageBackground' ? (
+            {selection.type === 'pageBackground' ? (
               <>
                 <button
                   className="w-full text-left px-4 py-2 text-sm font-semibold text-text-secondary hover:bg-surface-subtle"
@@ -305,23 +279,10 @@ export function Page({
         onContextMenu={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          const selection = useUIStore.getState().selection;
           const target = e.target as HTMLElement;
           const isSlot = target.closest('[data-slot-id]');
-          const isFooter = target.closest('[data-footer-page]');
 
-          if (isFooter) {
-            if (selection.type === 'footerCell') {
-              setContextMenu({
-                x: e.clientX,
-                y: e.clientY,
-                slot: null as any,
-                canMerge: false,
-                canUnmerge: false,
-                hasProduct: false,
-              });
-            }
-          } else if (!isSlot) {
+          if (!isSlot) {
             selectPages([currentPage.id]);
             useUIStore.getState().setSelection({ type: 'pageBackground', ids: [String(pageNumber)] });
 
