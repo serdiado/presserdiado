@@ -25,7 +25,7 @@ tasarımların neredeyse hepsi bunun üstüne kurulur.
   adı değildir. Kodda `ModuleType = 'banner'` ([`types.ts:199`](../apps/web/src/features/studio/modules/types.ts#L199)) ve `label: 'Tablo Alanı'` ([`module-registry.ts:49`](../apps/web/src/stores/studio/module-registry.ts#L49)).
 - **Not:** Kod tabanında tipler/dosyalar tarihsel olarak hâlâ `banner` öneki taşır
   (`BannerModuleData`, `BannerSection`, `clearBannerCells` …). Bu belge motoru `GridModule`,
-  veri tipini `BannerModuleData` (kodd​aki adıyla) olarak anar.
+  veri tipini `BannerModuleData` (koddaki adıyla) olarak anar.
 
 ### İki iç-içe ızgara: slot-grid ≠ GridModule
 Karıştırılmaması gereken **iki ayrı ızgara sistemi** vardır:
@@ -228,9 +228,16 @@ kopyalamaz:
   ([`BannerSection.tsx:7-12`](../apps/web/src/features/studio/modules/BannerSection.tsx#L7-L12)). Run-level renk köprüsü: `selectionchange`'de hücre-içi seçim singleton'a
   yazılır (`setActiveRange`); ContextualBar `BannerCellMode` `dispatchTextSetting` ile bunu okur,
   `resolveCellEl` hücreyi `cellDomId` üzerinden bulur. Hücre-seviyesi font: panellerde
-  `TypographyPicker` → `updateSelectedCells({ font })`. **[DOĞRULANMADI: `dispatchTextSetting`'in
-  tam run-vs-cell ayrım mantığı bu belgede iz sürülmedi; `ContextualBar.tsx` `BannerCellMode` +
-  `textSettings/registry` kaynağına bakın.]**
+  `TypographyPicker` → `updateSelectedCells({ font })`.
+- **Run-vs-cell karar mantığı** ([`ContextualBar.tsx:51-92`](../apps/web/src/features/studio/contextual/ContextualBar.tsx#L51-L92)): `dispatchTextSetting`, `inSel` bayrağını hesaplar —
+  yakalanmış singleton (`getActiveSession`) **ve** canlı seçim (`window.getSelection`) **ikisi de**
+  non-collapsed ve bu hücrenin editable'ı içinde olmalı ([`:58-66`](../apps/web/src/features/studio/contextual/ContextualBar.tsx#L58-L66)). `inSel` true ve ayarın
+  `apply`'ı bir `Range` döndürürse → **RUN-level**: hücre-içi metin aralığına uygulanır,
+  re-segmentasyon yapılır, `commitRun` ile sanitize edilmiş HTML yazılır, aktif range yeniden
+  kurulur ([`:75-82`](../apps/web/src/features/studio/contextual/ContextualBar.tsx#L75-L82)). Aksi halde → **CELL-level**: `applyCell(res)` (= `updateSelectedCells({ font })`)
+  tüm hücreye uygulanır; run-capable property ise container patch + bu hücredeki run-override'ları
+  `clearRun` ile temizler (atomik, tek Ctrl+Z) ([`:83-92`](../apps/web/src/features/studio/contextual/ContextualBar.tsx#L83-L92)). Özet: **aktif hücre-içi seçim (non-collapsed
+  range) varsa run-level, yoksa cell-level.**
 - **Seçim / isolation / lasso:**
   - Seçim `useUIStore`: `{ type:'bannerCell', ids:string[], parentId:slotId }` (çoklu seçim).
   - Modüle giriş = **izolasyon** (çift-tık → `enterIsolation`): yerel history yığını; çıkışta tek
@@ -274,13 +281,15 @@ Yeni bir hazır modül (şablon) eklerken **GridModule pattern'ini izle**:
 - Kopya `resizeGrid` / clamp sabiti (sync-bug sınıfı).
 
 **Bilinen tuzaklar (operasyonel):**
-- **`oklch` renkler → `html2canvas-pro`:** Export/render-to-canvas'ta `oklch` renk fonksiyonu
-  standart html2canvas'ı kırar; proje `html2canvas-pro` kullanır. **[DOĞRULANMADI: bu belgede
-  `oklch`→pro nedensel zinciri kod düzeyinde iz sürülmedi; `html2canvas-pro` bağımlılığı build
-  uyarısında görünür — `thumbnailCapture.ts` / `StudioPage.tsx` import'larına bakın.]**
-- **Gemini token-dışı Tailwind class halüsinasyonu:** Otomatik üretimde token-dışı (tasarım
-  sistemine ait olmayan) Tailwind sınıfları uydurulabilir; yalnız tanımlı token'ları kullan.
-  **[DOĞRULANMADI: operasyonel uyarı, koddan doğrulanamaz.]**
+- **`oklch` renkler → `html2canvas-pro`:** Tailwind v4 tasarım token'ları `oklch()` renk değeri
+  üretir; standart `html2canvas` `oklch()` parse edemez (canvas'a çizemez) → proje hem thumbnail
+  hem JPG export yolunda **`html2canvas-pro`** kullanır (tek standart). Zincir: thumbnail
+  [`thumbnailCapture.ts:1`](../apps/web/src/lib/thumbnailCapture.ts#L1) (`import html2canvas from 'html2canvas-pro'`; gerekçe yorumu [`:8-12`](../apps/web/src/lib/thumbnailCapture.ts#L8-L12)
+  — "oklch/lab/color() destekler, Tailwind v4 token'ları oklch") · JPG export
+  [`StudioPage.tsx:109`](../apps/web/src/features/studio/StudioPage.tsx#L109) (`handleDownloadJPG` [`:103`](../apps/web/src/features/studio/StudioPage.tsx#L103) içinde dinamik `import('html2canvas-pro')`).
+- **Gemini token-dışı Tailwind class halüsinasyonu** **[OPERASYONEL NOT]**: Otomatik üretimde
+  token-dışı (tasarım sistemine ait olmayan) Tailwind sınıfları uydurulabilir; yalnız tanımlı
+  token'ları kullan.
 
 ---
 
