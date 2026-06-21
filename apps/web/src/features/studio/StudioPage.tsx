@@ -128,6 +128,11 @@ export default function StudioPage() {
             clonedDocument.body.innerHTML = '';
             clonedDocument.body.appendChild(clonedCanvas);
           }
+          // Editör-only chrome export'a sızmasın — data-hide-on-export TEK marker (thumbnail ile aynı blok).
+          clonedDocument.querySelectorAll('[data-hide-on-export]').forEach((el) => el.remove());
+          clonedDocument.querySelectorAll('[data-hide-border-on-export]').forEach((el) => {
+            (el as HTMLElement).style.border = 'none';
+          });
         }
       });
 

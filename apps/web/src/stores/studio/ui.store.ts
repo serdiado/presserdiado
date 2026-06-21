@@ -133,7 +133,17 @@ export const useUIStore = create<UIState>((set, get) => ({
   editingContent: null,
   isPreviewMode: false,
 
-  setPreviewMode: (open) => set({ isPreviewMode: open }),
+  setPreviewMode: (open) => {
+    if (open) {
+      // Temiz preview-state (2d): izolasyon/edit'i commit'leyip çık + seçimi temizle → seçim/edit
+      // chrome'u (footer outline + ileride her seçim-chrome'u) preview'a KÖKTEN sızmaz (seçim yok → outline yok).
+      get().exitIsolation();   // izolasyon yoksa no-op
+      get().clearSelection();
+      set({ isPreviewMode: true, editingContent: null }); // ürün text-edit'i de kapat
+    } else {
+      set({ isPreviewMode: false });
+    }
+  },
   toggleZoom: () => set((s) => ({ isZoomed: !s.isZoomed })),
   setUserZoom: (scale, pan) =>
     set(() => ({ userScale: scale, ...(pan ? { pan } : {}) })),

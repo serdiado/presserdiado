@@ -289,3 +289,28 @@
 .studio-slider:hover::-moz-range-thumb {
   border-color: var(--color-primary-hover);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ÖNİZLEME MODU — düz çıktı sadakati (2d). .preview-mode = #canvas (Canvas.tsx).
+   Tek-mekanizma:
+   • data-hide-on-export = editör-only görsel chrome TEK marker'ı (4 yol uniform tüketir;
+     burası önizleme yolu — .print-mode aynası). JPG/thumbnail strip + print CSS diğer yollar.
+   • pointer-events/user-select none → düz, non-interaktif, kopyalanamaz "jpg" hissi
+     (metin-seçimi + footer-tık + edit-entry + hover-toolbar mount hepsi biter).
+     Önizleme nav'ı #canvas DIŞINDA (kardeş) → etkilenmez.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.preview-mode {
+  user-select: none; /* "kopyalanamaz" — scroll'u etkilemez, geniş kalabilir */
+}
+/* Override-defeating + scroll-safe: içerik subtree'sini !important wildcard ile inert yap →
+   Slot içerik-wrapper/ad/fiyat/görsel/badge'in açık `pointer-events-auto`'su + #canvas inline
+   `pointer-events:auto` (Canvas.tsx) DAHİL kapanır (inline/child auto !important'ı yenemez).
+   Scroll/pan #studio-canvas-root'ta (.preview-mode DEĞİL) → korunur; eventler inert #canvas'tan
+   wrapper'a geçer (önceki scroll uyarısının da çözümü — gate scroll-wrapper'da değil içerikte). */
+.preview-mode,
+.preview-mode * {
+  pointer-events: none !important;
+}
+.preview-mode [data-hide-on-export] {
+  display: none !important;
+}

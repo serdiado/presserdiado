@@ -115,6 +115,7 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
     return (
       <div
         data-footer-page={pageNumber}
+        data-hide-on-export="true"
         className="absolute flex items-center justify-center"
         style={{ ...containerBase, border: '1px dashed rgba(156,163,175,0.4)' }}
         onMouseEnter={() => setHovered(true)}
