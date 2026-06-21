@@ -127,6 +127,12 @@ export interface CatalogSettings {
     cell: ShadowData;
   };
   footer: FooterSettings;
+  /**
+   * Footer GridModule (tek global). `unknown` — web-only `BannerModuleData` shared'a bağlanmasın
+   * diye (mevcut `StudioSlot.moduleData: unknown` paterni). Web tarafı `as BannerModuleData` okur;
+   * yoksa default'a düşer (footerSlot.resolveFooterModule). Evre 1 = tek global footer.
+   */
+  footerModule?: unknown;
 }
 
 // === Hazır şablon (preset) ===

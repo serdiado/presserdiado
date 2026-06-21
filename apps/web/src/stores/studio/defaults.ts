@@ -15,6 +15,7 @@ import {
   type StudioForma,
   type StudioSlot,
 } from '@matbaapro/shared';
+import { defaultFooterModule } from './footerSlot';
 
 export { Template1, availableTemplates };
 
@@ -147,6 +148,9 @@ export const initialGlobalSettings: CatalogSettings = {
     containerBorder: { color: { c: '#e2e8f0', o: 100 }, width: 0 },
     radius: { tl: 0, tr: 0, bl: 0, br: 0, linked: true },
   },
+  // Footer host-slot (Evre 1): tek global footer GridModule. Eski projeler bunu taşımaz →
+  // resolveFooterModule default-if-absent guard'ı render çökmesini önler.
+  footerModule: defaultFooterModule(),
 };
 
 export function createPageSlots(pageNumber: number, count: number): StudioSlot[] {
