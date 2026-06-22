@@ -57,6 +57,6 @@
 ---
 
 ## Faz-üstü
-- **Footer (cat 3):** bu turda DEĞİL; ama registry+motor footer'ı da besleyecek şekilde tasarlanır (footer cat 3'te motora bağlanınca bedava miras alır).
+- **Footer (cat 3):** ✓ GERÇEKLEŞTİ. Tasarım niyeti tuttu — footer host-slot arkıyla motora bağlandı, registry+motor footer'ı da besledi (run/cell + atomik undo bedava miras). Detay: [`footer-host-slot-architecture.md`](./footer-host-slot-architecture.md).
 - **Kapsam dışı (post-pilot):** sağ panelden *sadece-seçime* detaylı ayar (kendi-seçim altyapısı); sistem-Excel clipboard; Animasyon/Konumlandır; Efektler pasif.
 - **Her faz sonu:** diff'siz bitti yok.

@@ -1,6 +1,6 @@
 # Metin Ayarları — Merkezi Mimari (KESİNLEŞMİŞ PLAN)
 
-> Durum: **Faz 1–4.1 SHIPPED + push'lu** (motor → modül → ürün → sağ panel tek-kaynak; cell/run property-scoped; atomik undo; italik). Footer (cat-3) bekliyor.
+> Durum: **Faz 1–4.1 SHIPPED + push'lu** (motor → modül → ürün → sağ panel tek-kaynak; cell/run property-scoped; atomik undo; italik). Footer (cat-3) dahil SHIPPED (host-slot arkı).
 > İlke: **tek merkez, çok görünüm.** Metin ayarları tek yerde (registry) tanımlanır; Hızlı Bar + Sağ Panel + yüzeyler oradan beslenir.
 > Bu not shipped gerçeğe senkronludur (§3 davranış sözleşmesi + §SHIPPED mekanizmalar kanonik).
 
@@ -47,7 +47,7 @@ Bu yüzden: run-level kontroller HEPSİ custom olmalı. Ayrı "floating çubuk" 
 ## 6. PER-YÜZEY TESİSAT (shipped durum)
 - **Modül (banner hücresi):** `cell.text` innerHTML; izolasyon-local undo. ✓ SHIPPED.
 - **Ürün adı:** `slot.product.name` (per-slot, clone-izole → sızma yok). innerText→HTML göçü ✓; render = imperatif ref-sync (`data-rt-synced`, dangerouslySetInnerHTML DEĞİL). Undo: global. ✓ SHIPPED.
-- **Footer:** cat-3 motor-birleştirmesiyle banner motoruna katılacak → run/cell + atomik undo + clearRunForSurface'i miras alır (footer saveState açığı orada kapanır). BEKLİYOR.
+- **Footer:** ✓ SHIPPED. Öngörü gerçekleşti — footer host-slot arkıyla banner motoruna KATILDI → run/cell + atomik undo + `clearRunForSurface` (footer-aware, commit `8d5f90a`) bedava miras alındı; footer saveState açığı kapandı. Detay: [`footer-host-slot-architecture.md`](./footer-host-slot-architecture.md).
 - **Fiyat (price):** hâlâ innerText (Faz 3'te ertelendi); simetrik göç sonraki tur.
 
 ## SHIPPED MEKANİZMALAR (Faz 1–4.1 — kanonik referans)
@@ -63,7 +63,7 @@ Bu yüzden: run-level kontroller HEPSİ custom olmalı. Ayrı "floating çubuk" 
 2. ✓ Hızlı Bar paylaşılan bölüm + custom kontroller + hook — modül — Faz 2
 3. ✓ Ürün (innerText→HTML göçü) — Faz 3
 4. ✓ Sağ Panel registry tam görünümü (TypographyPicker) + cell-level property-scoped + atomik undo + italik — Faz 4 / 4.1
-5. ☐ **Footer (cat-3 motor-birleştirme)** — sıradaki büyük blok (cat 2 mini-excel veya cat 3 footer)
+5. ✓ **Footer (cat-3 motor-birleştirme)** — SHIPPED: footer host-slot arkıyla banner motoruna katıldı, run/cell + atomik undo + `clearRunForSurface` miras (commit `8d5f90a`). Detay: [`footer-host-slot-architecture.md`](./footer-host-slot-architecture.md)
 
 ## 8. KAPSAM DIŞI / ERTELENMİŞ
 - **Undo-gruplama:** slider/artımlı kontroller + **renk seçici (her tık ayrı undo)** her adımı ayrı history yazıyor; doğrusu = kapanışta/`onChangeEnd`'de tek commit → `withHistoryBatch` ile picker oturumunu tek batch'e sar. **Altyapı hazır**, ayrı tur.

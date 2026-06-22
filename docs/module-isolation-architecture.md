@@ -54,6 +54,12 @@ function isIsolatableModule(slot: StudioSlot): boolean {
   tipleridir (`modules/types.ts`, `applyStudioModule` girdisi); slotta saklanmazlar.
 - **Ürün-sunuş modülleri ayrıca dışlanmaz:** onlar `product` rollü slotta yalnız `customSettings`
   ekler, free slotta hiç görünmezler. Yüklem `role === 'free'` ile zaten kapsam dışı bırakır.
+- **Footer izolasyonu (eksik notun tamamlanması):** Yukarıdaki eski-enum `footer` ifadesi hâlâ
+  doğru — `SlotRole='footer'` (CanvasLayer) stüdyoda kullanılmaz. Ama footer **gerçekte izolasyona
+  girer**: footer artık bir GridModule host'udur ve render/edit anında `synthFooterSlot` ile
+  `role:'free'` + `moduleType:'banner'` + `moduleData` taşıyan bir `StudioSlot` sentezlenir → yukarıdaki
+  `isIsolatableModule` yüklemini **karşılar** (predikat genişletme gerekmez) → free-slot modülü gibi
+  izole olur (cell-edit, undo, çıkış-commit). Detay: [`footer-host-slot-architecture.md`](./footer-host-slot-architecture.md).
 
 ---
 

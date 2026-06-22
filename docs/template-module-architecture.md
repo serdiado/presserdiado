@@ -49,32 +49,42 @@ Paralel desen (tutarlılık):
 
 ---
 
-## Banner ve Footer AYRI yapılar
+## Banner ve Footer — ortak motor, ayrı taşıyıcı
 
-Banner ve footer mimari olarak temelden farklı. Zorla tek `StudioModule` modeline
-sokmak YANLIŞ — footer'ı slot mimarisine çevirmek çalışan bir sistemi bozar (ters
-yama). İkisi ayrı ele alınır, paralel desende: ikisi de "tema uygulanınca dolu
-gelir" amacına kendi doğasına uygun yoldan hizmet eder.
+> **GÜNCELLENDİ (footer host-slot arkı).** Aşağısı footer'ın güncel modelidir. Tam footer
+> mimarisi: [`footer-host-slot-architecture.md`](./footer-host-slot-architecture.md).
 
-| Konu | Banner | Footer |
+Footer **artık ortak motorun (GridModule / banner) bir host'udur** — banner makinesini
+(hücreli grid, izolasyon, undo, `gridMutate`) bütünüyle yeniden kullanır. Banner ve footer
+hâlâ ortak `StudioModule` soyutlamasına (kütüphane örneği) oturmaz — biri grid-içi slot, diğeri
+sayfa-altı container — ama **aynı GridModule motorunu paylaşırlar**.
+
+**"Ters yama" uyarısı çürümedi, SAYGI gördü (nüans kritik):** Bu belgenin eski uyarısı —
+"footer'ı **`page.slots`/slot-grid'e zorla sokmak** çalışan sistemi bozar" — **hâlâ doğru**.
+Host-slot bunu yapmaz: footer modülü `globalSettings.footerModule`'de, **`page.slots`'un
+DIŞINDA** kalır → `recalculateLayout`/`reconcileGrid`/`_fillSlotsFromPool` üç sürecine yapısal
+olarak görünmez (footer-host-slot doc §2 = bunun kanıtı). Yani footer slot-grid'e zorlanmadı;
+yalnız **motoru kendi container'ında host'luyor**. Yanlış olan "footer'ı page.slots'a sokmak"
+hâlâ yanlış olurdu — biz onu değil, doğru yolu (substrate-paylaşımı) seçtik.
+
+| Konu | Banner | Footer (güncel) |
 |---|---|---|
-| Taşıyıcı | `StudioSlot` (`role:'free'` + `moduleData`) | `globalSettings.footer` / `page.customFooter` |
-| Yerleşim | Grid içi slot, `bannerAreas + slotIndex` | Sayfa altı sabit (page-bottom) |
-| ModuleRegistry | Var (`banner`, UI adı "Tablo Alanı") | Yok |
-| Scope | Slot instance (çok sayıda olabilir) | Global veya sayfa-özel |
-| İç grid | Değişken `rows×cols` | Sabit 5 kolon |
-| Preset'e girer mi | Alan evet, İÇERİK HAYIR (`moduleData` alınmıyor) | Global footer teorik evet, customFooter HAYIR |
-
-Banner ve footer ortak `StudioModule` soyutlamasına oturmaz; ayrı ele alınır.
-(İleride istenirse ortak bir "içerik bloğu" arayüzü düşünülebilir ama şimdi gereksiz risk.)
+| Taşıyıcı | `StudioSlot` (`role:'free'` + `moduleData`) | `globalSettings.footerModule` (`BannerModuleData`); per-sayfa fork `page.footerOverride`. Render/edit'te `synthFooterSlot` (`role:'free'`) sentezlenir |
+| Yerleşim | Grid içi slot, `bannerAreas + slotIndex` | `page.slots` DIŞINDA, sayfa-altı container (page-bottom) |
+| Motor | GridModule (`gridMutate`) | **Aynı** GridModule motoru (host) |
+| ModuleRegistry | Var (`banner`, UI adı "Tablo Alanı") | Yok (kütüphane TİP'i değil; global tekil host) |
+| Scope | Slot instance (çok sayıda olabilir) | Global tekil; `footerOverride` varlığıyla per-sayfa custom |
+| İç grid | Değişken `rows×cols` | **Değişken `rows×cols`** (host olduğundan banner'la birebir; default tek-satır 5-sütun) |
+| Preset'e girer mi | Alan evet, İÇERİK HAYIR (`moduleData` alınmıyor) | `globalSettings` taşındığından `footerModule` teknik olarak girer; `footerOverride` per-sayfa HAYIR |
 
 - **Banner:** zaten modül (`moduleData.type='banner'`, hücreli, serialize edilebilir).
   Preset banner **alanını** (`bannerAreas`) taşır, **içeriğini** (`moduleData`) taşımaz;
   dolu banner içeriği ayrı modül kütüphanesinden (`studioModules.ts` → `applyStudioModule`)
   gelir.
-- **Footer:** `globalSettings.footer`'da; preset zaten `globalSettings` taşıdığı için
-  footer teknik olarak preset'e girer. Footer sabit page-bottom olduğundan
-  `footerAreas`/`slotIndex` GEREKMEZ — sadece içerik taşınır.
+- **Footer:** `globalSettings.footerModule`'de bir `BannerModuleData` (global); preset
+  `globalSettings` taşıdığı için footer teknik olarak preset'e girer. Footer sabit page-bottom
+  container olduğundan `footerAreas`/`slotIndex` GEREKMEZ — modül içerik olarak taşınır.
+  Per-sayfa custom (`footerOverride`) preset'e girmez. Detay: footer-host-slot doc §3, §8.
 
 ---
 
@@ -96,8 +106,10 @@ Banner ve footer ortak `StudioModule` soyutlamasına oturmaz; ayrı ele alınır
 - **Ürün-sunuş modülü:** `role:'product'` KALIR, ürün verisi BAĞLI kalır
   (resim/ad/fiyat kopmaz); sunuş yapısı mevcut `isCustom`/`customSettings` katmanı
   üstüne özelleşir. YENİ KATMAN DEĞİL.
-- **Footer:** sayfa-tabanlı (`globalSettings.footer`/`page.customFooter`), slot değil,
-  kütüphane DIŞI; ortak contract'a zorlanmaz. Düşük öncelik.
+- **Footer:** sayfa-altı container (`globalSettings.footerModule` + per-sayfa
+  `page.footerOverride`), `page.slots`'un dışında; kütüphane (`StudioModule`) DIŞI ama **GridModule
+  motorunu host'lar**. Render/edit'te `synthFooterSlot` (`role:'free'`) sentezlenir → izolasyon +
+  cell-edit + undo substrate'ten miras. Detay: [`footer-host-slot-architecture.md`](./footer-host-slot-architecture.md).
 
 ### Kapsam — kod-içi sistem modülleri
 - **Sistem modülleri kod-içi:** `studioModules.ts` (presetler gibi), dev export

@@ -42,6 +42,17 @@ GridModule bir slot'a `moduleData` alanı üzerinden bağlanır: `free` rollü s
 `StudioSlot.moduleType/moduleData` — `packages/shared/src/types/studio.ts:212-213`). Yani GridModule,
 slot-grid'in bir hücresinin içine gömülü kendi mini-grid'idir.
 
+### Motorun host'ları (bu motoru kim barındırır)
+Bu motor "ata"dır; iki host'u vardır:
+1. **Ürün/free slotlar** — `page.slots` içindeki `role:'free'` slot (yukarıda anlatıldı).
+2. **Footer** — footer artık aynı motorun ikinci host'udur. Modül `globalSettings.footerModule`'de
+   (`page.slots` DIŞINDA) yaşar; render/edit anında `synthFooterSlot` ile bir `role:'free'`
+   `StudioSlot` sentezlenir → motorun TÜM yetenekleri (merge/split, insert/delete, fractions,
+   rich-text, izolasyon, atomik undo) footer'a değişiklik gerektirmeden akar. Footer-farkındalığı
+   tek soyutlamada (`footerSlot.ts`) toplanır; bu belgedeki funnel'lar (`updateSlotModuleData`,
+   `applyBannerMutation`, `history.findActiveSlot`) footer'ı oradan devralır. Detay (depolama,
+   per-sayfa fork, routing, çıktı-modu): [`footer-host-slot-architecture.md`](./footer-host-slot-architecture.md).
+
 ---
 
 ## 2. Veri Modeli
