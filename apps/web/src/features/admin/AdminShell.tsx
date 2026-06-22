@@ -72,7 +72,7 @@ function AdminSideNav({ orderCount }: { orderCount: number }) {
   return (
     <aside className={`w-60 flex flex-col shrink-0 ${ADMIN_NAV.aside}`}>
       <div className={`h-14 px-5 flex items-center border-b shrink-0 ${ADMIN_NAV.asideBorder}`}>
-        <div className="w-[22px] h-[22px] bg-white rounded-[4px] grid place-items-center text-slate-900 text-[10px] font-extrabold">
+        <div className="w-5.5 h-5.5 bg-white rounded-[4px] grid place-items-center text-slate-900 text-[10px] font-extrabold">
           P
         </div>
         <span className={`ml-2 font-extrabold tracking-tight text-base ${ADMIN_NAV.brand}`}>
@@ -188,7 +188,7 @@ function AdminTopBar({ orderCount }: { orderCount: number }) {
             {initials}
           </div>
           <div className="text-left leading-tight hidden sm:block">
-            <div className="text-xs font-bold text-slate-800 max-w-[140px] truncate">{displayName}</div>
+            <div className="text-xs font-bold text-slate-800 max-w-35 truncate">{displayName}</div>
             <div className="text-[10px] text-slate-500">Yönetici</div>
           </div>
           <button

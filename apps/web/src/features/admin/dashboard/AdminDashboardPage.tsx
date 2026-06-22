@@ -100,7 +100,7 @@ export default function AdminDashboardPage() {
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
                   {['Sipariş', 'Müşteri', 'Tutar', 'Tarih', 'Durum'].map((h) => (
-                    <th key={h} className="text-left text-[10px] font-bold tracking-[0.1em] uppercase text-slate-500 px-4 py-2.5">
+                    <th key={h} className="text-left text-[10px] font-bold tracking-widest uppercase text-slate-500 px-4 py-2.5">
                       {h}
                     </th>
                   ))}
@@ -115,7 +115,7 @@ export default function AdminDashboardPage() {
                   recent.map((o) => (
                     <tr key={o.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
                       <td className="px-4 py-2.5 text-[11px] font-mono text-slate-600">{o.orderNumber}</td>
-                      <td className="px-4 py-2.5 text-sm font-semibold text-slate-800 max-w-[180px] truncate">
+                      <td className="px-4 py-2.5 text-sm font-semibold text-slate-800 max-w-45 truncate">
                         {o.user?.companyName || o.user?.email || '—'}
                       </td>
                       <td className="px-4 py-2.5 text-sm font-bold text-slate-800 tabular-nums" style={ADMIN_DISPLAY_FONT}>
