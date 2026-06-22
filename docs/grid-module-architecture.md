@@ -22,7 +22,7 @@ tasarımların neredeyse hepsi bunun üstüne kurulur.
 ### İsimlendirme
 - **Teknik ad:** `GridModule` (motor).
 - **UI adı:** "Tablo Alanı" — yalnız **mevcut arayüz etiketi**, geçicidir, değişebilir; motorun
-  adı değildir. Kodda `ModuleType = 'banner'` ([`types.ts:199`](../apps/web/src/features/studio/modules/types.ts#L199)) ve `label: 'Tablo Alanı'` ([`module-registry.ts:49`](../apps/web/src/stores/studio/module-registry.ts#L49)).
+  adı değildir. Kodda `ModuleType = 'banner' | null` ([`shared/studio.ts:190`](../packages/shared/src/types/studio.ts#L190); `modules/types.ts` yalnız import eder) ve `label: 'Tablo Alanı'` ([`module-registry.ts:27`](../apps/web/src/stores/studio/module-registry.ts#L27)).
 - **Not:** Kod tabanında tipler/dosyalar tarihsel olarak hâlâ `banner` öneki taşır
   (`BannerModuleData`, `BannerSection`, `clearBannerCells` …). Bu belge motoru `GridModule`,
   veri tipini `BannerModuleData` (koddaki adıyla) olarak anar.
@@ -38,7 +38,7 @@ Karıştırılmaması gereken **iki ayrı ızgara sistemi** vardır:
 | Motor | `packages/grid-engine` (`reconcileGrid`) | `apps/web/.../modules/gridMutate.ts` |
 
 GridModule bir slot'a `moduleData` alanı üzerinden bağlanır: `free` rollü slot
-`moduleType: 'banner'` + `moduleData: BannerModuleData` taşır ([`module-registry.ts:48-50`](../apps/web/src/stores/studio/module-registry.ts#L48-L50); slot tipi
+`moduleType: 'banner'` + `moduleData: BannerModuleData` taşır ([`module-registry.ts:27`](../apps/web/src/stores/studio/module-registry.ts#L27); slot tipi
 `StudioSlot.moduleType/moduleData` — `packages/shared/src/types/studio.ts:212-213`). Yani GridModule,
 slot-grid'in bir hücresinin içine gömülü kendi mini-grid'idir.
 
@@ -109,7 +109,7 @@ interface BannerCellData {
 ### `defaultBannerCell` — tek-kaynak nötr hücre
 [`gridMutate.ts:60-89`](../apps/web/src/features/studio/modules/gridMutate.ts#L60-L89). Stil mirası YOK: yeni hücre her zaman kanonik nötr
 varsayılan (beyaz zemin, 0-genişlik border, varsayılan font/padding). **Hem** `makeCell` ([`gridMutate.ts:90-92`](../apps/web/src/features/studio/modules/gridMutate.ts#L90-L92))
-**hem** `bannerInit` ([`module-registry.ts:20-23`](../apps/web/src/stores/studio/module-registry.ts#L20-L23)) buradan beslenir → ikisi drift edemez (tek-kaynak).
+**hem** `bannerInit` ([`module-registry.ts:15`](../apps/web/src/stores/studio/module-registry.ts#L15)) buradan beslenir → ikisi drift edemez (tek-kaynak).
 > Tarihsel hata (düzeltildi): eski `makeCell(ref, id)` komşu hücreden `bgColor/border` miras
 > alıyordu → eklenen satır/sütun komşunun zeminini/çerçevesini kapıyordu. Çözüm: stil mirası
 > kaldırıldı, `defaultBannerCell` tek-kaynak yapıldı.
@@ -121,7 +121,7 @@ varsayılan (beyaz zemin, 0-genişlik border, varsayılan font/padding). **Hem**
 - `materializeFractions(arr, count)` ([`fractions.ts:22-28`](../apps/web/src/features/studio/modules/fractions.ts#L22-L28)): render/okuma için; yoksa eşit-bölü, varsa
   uzunluğa uydurulmuş dizi döner. **Sonuç asla store'a yazılmaz** (read-only backward-compat) —
   eski modül dokunulmadıkça `undefined` kalır.
-- `insertFraction`/`removeFraction` ([`fractions.ts:41-66`](../apps/web/src/features/studio/modules/fractions.ts#L41-L66)): pozisyonel ekle/çıkar (`undefined`-koruyan;
+- `insertFraction`/`removeFraction` ([`fractions.ts:34-66`](../apps/web/src/features/studio/modules/fractions.ts#L34-L66)): pozisyonel ekle/çıkar (`undefined`-koruyan;
   gridMutate insert/delete tarafından kullanılır).
 - `FRACTION_MIN = 0.1` ([`fractions.ts:6`](../apps/web/src/features/studio/modules/fractions.ts#L6)): her fraction'ın asgari payı (drag/sayısal clamp).
 - **`BANNER_DIM_MIN = 1` / `BANNER_DIM_MAX = 20`** ([`fractions.ts:9-10`](../apps/web/src/features/studio/modules/fractions.ts#L9-L10)): satır/sütun sayısı clamp
@@ -178,7 +178,7 @@ varsayılan (beyaz zemin, 0-genişlik border, varsayılan font/padding). **Hem**
 aralıklara segmentler → merge'in yuttuğu iç boundary'lerde handle/cursor çıkmaz (§5).
 
 ### Vitest kapsamı
-[`gridMutate.test.ts`](../apps/web/src/features/studio/modules/gridMutate.test.ts) — **48 test** (12 describe bloğu). Kapsam: sütun/satır insert-delete remap (item-10
+[`gridMutate.test.ts`](../apps/web/src/features/studio/modules/gridMutate.test.ts) — **41 test** (12 describe bloğu). Kapsam: sütun/satır insert-delete remap (item-10
 fix), merge genişleme/küçülme/dissolve (iki eksen), anchor silme, dangling-yokluğu (fuzz), fraction
 senkronu, mergeCells/splitCell, resizeGridTo, boundary segmentleri, primitive'ler. **Saflık
 testleri:** 8 op için `structuredClone` ön-kopya + op sonrası `toEqual` ([`gridMutate.test.ts:159-179`](../apps/web/src/features/studio/modules/gridMutate.test.ts#L159-L179)) →
@@ -189,10 +189,10 @@ girdi mutate edilmediği (zero-mutation invariant) kanıtlanır.
 ## 4. Store Entegrasyonu
 
 ### Banner action'ları (9 — koddan)
-[`catalog.store.ts:296-311`](../apps/web/src/stores/studio/catalog.store.ts#L296-L311) (imza) + implementasyon:
+[`catalog.store.ts:281-311`](../apps/web/src/stores/studio/catalog.store.ts#L281-L311) (imza) + implementasyon:
 - **Yapısal (7, `applyBannerMutation` üzerinden):** `insertBannerColumn`, `deleteBannerColumn`,
   `insertBannerRow`, `deleteBannerRow`, `setBannerGridSize`, `mergeBannerCells`, `splitBannerCell`
-  ([`catalog.store.ts` ~1398-1413](../apps/web/src/stores/studio/catalog.store.ts#L1398)).
+  ([`catalog.store.ts` ~1339-1360](../apps/web/src/stores/studio/catalog.store.ts#L1339); insertBannerColumn :1339, setBannerGridSize :1347).
 - **İçerik (2, kendi sarmalı):** `clearBannerCells` (seçili hücrelerde içeriği temizle, yapı/stil
   korunur) ve `setBannerFractions` (oransal boyut yaz) — aynı atomik-undo paterni.
 
@@ -204,10 +204,10 @@ withHistoryBatch(() => updateSlotModuleData(pageNumber, slotId, {cells,rows,cols
 ```
 - Fraction `undefined` ise `updates`'e KONMAZ → deepMerge eski modülün `undefined`'ını korur
   (fraction'sız modül regresyon yaşamaz).
-- `withHistoryBatch` ([`history.store.ts:131-145`](../apps/web/src/stores/studio/history.store.ts#L131-L145)): atomik işlem penceresi — batch içindeki ilk iç-save
+- `withHistoryBatch` ([`history.store.ts:153`](../apps/web/src/stores/studio/history.store.ts#L153); arayüz :96): atomik işlem penceresi — batch içindeki ilk iç-save
   forced çeker, sonrakiler bastırılır → izolasyon-içi (`pushIsolationSnapshot`) ve izolasyon-dışı
   (`'discrete'` → `saveState(true)`) rotalarda **tek Ctrl+Z**.
-- `updateSlotModuleData` ([`catalog.store.ts:1254-1290`](../apps/web/src/stores/studio/catalog.store.ts#L1254-L1290)): tüm modül-data yazımının TEK funnel'ı;
+- `updateSlotModuleData` ([`catalog.store.ts:1227`](../apps/web/src/stores/studio/catalog.store.ts#L1227); footer-branch :1244-1258): tüm modül-data yazımının TEK funnel'ı;
   deepMerge (diziler wholesale-replace); izolasyon-bilinçli.
 
 ### Üç yüzey — tek-kaynak (kopya mantık yok)

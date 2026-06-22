@@ -41,7 +41,7 @@ değerlidir — `StudioSlotRole = 'product' | 'free'` (`packages/shared` studio 
 slot'un özel-lik durumu ayrı `isCustom` bayrağında tutulur. Bu yüzden dışlama tek koşula iner:
 
 ```ts
-// Tek karar noktası — sınır burada, dağıtma. (catalog.store içinde)
+// Tek karar noktası — sınır burada, dağıtma. (defaults.ts)
 function isIsolatableModule(slot: StudioSlot): boolean {
   return slot.role === 'free' && slot.moduleType != null && slot.moduleData != null;
 }
