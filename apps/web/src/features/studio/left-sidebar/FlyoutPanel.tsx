@@ -9,7 +9,7 @@ export function FlyoutPanel() {
   const activeFlyout = useUIStore((s) => s.activeFlyout);
   const setActiveFlyout = useUIStore((s) => s.setActiveFlyout);
   const tempPool = useCatalogStore((s) => s.tempProductPool);
-  const moveSlotToTempPool = useCatalogStore((s) => s.moveSlotToTempPool);
+  const clearSlotToPool = useCatalogStore((s) => s.clearSlotToPool);
   const returnProductFromTempPool = useCatalogStore((s) => s.returnProductFromTempPool);
   const removeFromTempPool = useCatalogStore((s) => s.removeFromTempPool);
   const clearTempPool = useCatalogStore((s) => s.clearTempPool);
@@ -56,7 +56,7 @@ export function FlyoutPanel() {
     const page = activeForma?.pages.find((p) => p.pageNumber === sourcePage);
     const slot = page?.slots[sourceIndex];
     if (slot) {
-      moveSlotToTempPool(sourcePage, slot.id);
+      clearSlotToPool(sourcePage, slot.id);
     }
   };
 

@@ -401,7 +401,7 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
   const toggleSlotCustomSettings = useCatalogStore((s) => s.toggleSlotCustomSettings);
   const mergeSelected = useCatalogStore((s) => s.mergeSelected);
   const unmergeSlot = useCatalogStore((s) => s.unmergeSlot);
-  const clearSlot = useCatalogStore((s) => s.clearSlot);
+  const clearSlotToPool = useCatalogStore((s) => s.clearSlotToPool);
   const updateSelectedSlotsImageSettings = useCatalogStore((s) => s.updateSelectedSlotsImageSettings);
   const setSidebarState = useUIStore((s) => s.setSidebarState);
   const setSlotModule = useCatalogStore((s) => s.setSlotModule);
@@ -659,7 +659,7 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
         </button>
       ) : (
         <button
-          onClick={() => clearSlot(pageNumber, slotIds[0])}
+          onClick={() => clearSlotToPool(pageNumber, slotIds[0])}
           className={`${btnCls} text-danger hover:bg-red-50`}
         >
           <Trash2 size={16} />
@@ -1804,7 +1804,7 @@ function FreeSlotMode({ slot, pageNumber, slotIds }: FreeSlotProps) {
         Ürün Hücresi Yap
       </button>
       <button
-        onClick={() => useCatalogStore.getState().clearSlot(pageNumber, slot.id)}
+        onClick={() => useCatalogStore.getState().clearSlotToPool(pageNumber, slot.id)}
         className={`${btnCls} text-danger hover:bg-red-50`}
       >
         <Trash2 size={16} />

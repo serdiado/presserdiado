@@ -10,7 +10,7 @@ const MODULLER_FLYOUT_ID = 'moduller';
 
 export function IconSidebar() {
   const tempPoolCount = useCatalogStore((s) => s.tempProductPool.length);
-  const moveSlotToTempPool = useCatalogStore((s) => s.moveSlotToTempPool);
+  const clearSlotToPool = useCatalogStore((s) => s.clearSlotToPool);
   const activeFlyout = useUIStore((s) => s.activeFlyout);
   const setActiveFlyout = useUIStore((s) => s.setActiveFlyout);
 
@@ -37,13 +37,13 @@ export function IconSidebar() {
     const sourceIndex = parseInt(sourceIndexStr, 10);
     if (isNaN(sourcePage) || isNaN(sourceIndex)) return;
 
-    // moveSlotToTempPool(pageNumber, slotId) imzasını kullanmak için index -> id
+    // clearSlotToPool(pageNumber, slotId) imzasını kullanmak için index -> id
     const { formas, activeFormaId } = useCatalogStore.getState();
     const activeForma = formas.find((f) => f.id === activeFormaId);
     const page = activeForma?.pages.find((p) => p.pageNumber === sourcePage);
     const slot = page?.slots[sourceIndex];
     if (slot) {
-      moveSlotToTempPool(sourcePage, slot.id);
+      clearSlotToPool(sourcePage, slot.id);
     }
   };
 

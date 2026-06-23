@@ -34,8 +34,7 @@ export function Page({
   const globalSettings = useCatalogStore((s) => s.globalSettings);
   const mergeSelected = useCatalogStore((s) => s.mergeSelected);
   const unmergeSlot = useCatalogStore((s) => s.unmergeSlot);
-  const clearSlot = useCatalogStore((s) => s.clearSlot);
-  const moveSlotToTempPool = useCatalogStore((s) => s.moveSlotToTempPool);
+  const clearSlotToPool = useCatalogStore((s) => s.clearSlotToPool);
   const copiedSlotSettings = useCatalogStore((s) => s.copiedSlotSettings);
   const selectPages = useLayerStore((s) => s.selectPages);
   const selectedPageIds = useLayerStore((s) => s.selectedPageIds);
@@ -169,7 +168,7 @@ export function Page({
                     <button
                       className="w-full text-left px-4 py-2 text-sm font-semibold text-text-primary hover:bg-surface-subtle"
                       onClick={() => {
-                        moveSlotToTempPool(pageNumber, contextMenu.slot.id);
+                        clearSlotToPool(pageNumber, contextMenu.slot.id);
                         setContextMenu(null);
                       }}
                     >
@@ -178,7 +177,7 @@ export function Page({
                     <button
                       className="w-full text-left px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
                       onClick={() => {
-                        clearSlot(pageNumber, contextMenu.slot.id);
+                        clearSlotToPool(pageNumber, contextMenu.slot.id);
                         setContextMenu(null);
                       }}
                     >

@@ -43,8 +43,7 @@ export function ProductInfoSettings() {
   const selectedSlotIds = useUIStore((s) => s.selectedSlotIds);
   const getActivePages = useCatalogStore((s) => s.getActivePages);
   const updateSlotProduct = useCatalogStore((s) => s.updateSlotProduct);
-  const clearSlot = useCatalogStore((s) => s.clearSlot);
-  const moveSlotToTempPool = useCatalogStore((s) => s.moveSlotToTempPool);
+  const clearSlotToPool = useCatalogStore((s) => s.clearSlotToPool);
 
   if (selectedSlotIds.length === 0) {
     return (
@@ -218,7 +217,7 @@ export function ProductInfoSettings() {
             <Button
               variant="primary"
               className="flex-1"
-              onClick={() => moveSlotToTempPool(pageNumber, slotId)}
+              onClick={() => clearSlotToPool(pageNumber, slotId)}
             >
               Havuza Gönder
             </Button>
@@ -226,7 +225,7 @@ export function ProductInfoSettings() {
               variant="danger"
               className="flex-1"
               onClick={() => {
-                if (confirm('Hücre temizlensin mi?')) clearSlot(pageNumber, slotId);
+                if (confirm('Hücre temizlensin mi?')) clearSlotToPool(pageNumber, slotId);
               }}
             >
               Temizle

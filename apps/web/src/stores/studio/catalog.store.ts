@@ -43,7 +43,7 @@ import {
   type GridState,
 } from '../../features/studio/modules/gridMutate';
 import type { BannerModuleData } from '../../features/studio/modules/types';
-import { isFooterSlotId, resolveModuleSlot, mergeFooterModule, footerWriteTarget, mergePageFooterModule, resolveFooterModule } from './footerSlot';
+import { isFooterSlotId, resolveModuleSlot, mergeFooterModule, footerWriteTarget, mergePageFooterModule, resolveFooterModule, defaultFooterModule } from './footerSlot';
 import { useHistoryStore } from './history.store';
 import { useUIStore } from './ui.store';
 import { foldNameMap } from '../../features/wizard/buildTemplate';
@@ -219,6 +219,7 @@ interface CatalogActions {
   revertPageFooter: (pageNumber: number) => void;
   showPageFooter: (pageNumber: number) => void;
   setFooterHeight: (pageNumber: number, mm: number) => void;
+  resetFooterToDefault: (scope: number | 'global') => void;
   copyBackground: (pageNumber: number) => void;
   pasteBackground: (pageNumber: number) => void;
 
@@ -250,7 +251,6 @@ interface CatalogActions {
   copySlotSettings: () => void;
   pasteSlotSettings: () => void;
   clearSlotSettings: () => void;
-  clearSlot: (pageNumber: number, slotId: string) => void;
   setSlotProduct: (pageNumber: number, slotId: string, product: ProductInfo) => void;
   updateSlotProduct: (
     pageNumber: number,
@@ -317,7 +317,7 @@ interface CatalogActions {
   ) => void;
   removeFromTempPool: (sku: string) => void;
   clearTempPool: () => void;
-  moveSlotToTempPool: (pageNumber: number, slotId: string) => void;
+  clearSlotToPool: (pageNumber: number, slotId: string) => void;
   dumpPageToTempPool: (pageNumber: number) => void;
   returnProductFromTempPool: (sku: string) => void;
 
@@ -675,6 +675,40 @@ export const useCatalogStore = create<Store>()(
                 footer: { ...state.globalSettings.footer, heightMm: clamped },
               },
             }));
+          }
+        });
+      },
+      // Footer'ı fabrika varsayılanına döndür (defaultFooterModule + initialGlobalSettings.footer).
+      // scope='global' → global footerModule + height; scope=pageNumber → o sayfanın custom
+      // override'ı default'a sıfırlanır, footerMode='custom' KALIR (revert/global'e dönüş DEĞİL).
+      // Footer ailesi paterni: withHistoryBatch + ilk iç saveState(true) → tek Ctrl+Z.
+      resetFooterToDefault: (scope) => {
+        useHistoryStore.getState().withHistoryBatch(() => {
+          useHistoryStore.getState().saveState(true);
+          if (scope === 'global') {
+            set((state) => ({
+              globalSettings: {
+                ...state.globalSettings,
+                footerModule: defaultFooterModule(),
+                footer: { ...state.globalSettings.footer, heightMm: initialGlobalSettings.footer.heightMm },
+              },
+            }));
+          } else {
+            const { getActivePages, setActivePages } = get();
+            setActivePages(
+              getActivePages().map((p) =>
+                p.pageNumber === scope
+                  ? {
+                      ...p,
+                      footerMode: 'custom',
+                      footerOverride: {
+                        module: defaultFooterModule(),
+                        heightMm: initialGlobalSettings.footer.heightMm,
+                      },
+                    }
+                  : p,
+              ),
+            );
           }
         });
       },
@@ -1038,17 +1072,6 @@ export const useCatalogStore = create<Store>()(
       },
 
       // === Slot product ops ===
-      clearSlot: (pageNumber, slotId) => {
-        const { getActivePages, setActivePages } = get();
-        useHistoryStore.getState().saveState();
-        const pages = clone(getActivePages());
-        const page = pages.find((p) => p.pageNumber === pageNumber);
-        if (page) {
-          const slot = page.slots.find((s) => s.id === slotId);
-          if (slot) slot.product = null;
-        }
-        setActivePages(pages);
-      },
       setSlotProduct: (pageNumber, slotId, product) => {
         const { getActivePages, setActivePages } = get();
         useHistoryStore.getState().saveState();
@@ -1484,7 +1507,10 @@ export const useCatalogStore = create<Store>()(
           .saveState();
         set({ tempProductPool: [] });
       },
-      moveSlotToTempPool: (pageNumber, slotId) => {
+      // Hücreyi boşalt → ürün YOK EDİLMEZ, tempProductPool'a gider (slot ürün hücresi olarak kalır).
+      // TEK "boşalt/temizle" action'ı: eski clearSlot (yok ederdi) + moveSlotToTempPool ikilisi burada
+      // birleşti (sağ tık "Temizle", ContextualBar, sağ panel, sürükle-bırak hepsi bunu çağırır).
+      clearSlotToPool: (pageNumber, slotId) => {
         const { getActivePages, setActivePages, tempProductPool } = get();
         useHistoryStore.getState().saveState();
         const pages = clone(getActivePages());
