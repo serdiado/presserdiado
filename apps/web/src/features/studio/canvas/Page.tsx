@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { StudioSlot } from '@matbaapro/shared';
 import { useCatalogStore, useLayerStore, useUIStore } from '@/stores/studio';
-import { resolveFooterHeight } from '@/stores/studio/footerSlot';
+import { resolveFooterHeight, footerSlotId } from '@/stores/studio/footerSlot';
 import { colorValueBackground } from '../util/style';
 import { consumeDragGesture } from '../util/editorChrome';
 import { Slot } from './Slot';
@@ -280,6 +280,20 @@ export function Page({
           e.stopPropagation();
           const target = e.target as HTMLElement;
           const isSlot = target.closest('[data-slot-id]');
+
+          // Footer host-slot sağ tık: ürün-slot'un handleContextMenu "önce seç" desenini mirror et —
+          // seçili değilse seç, seçiliyse koru; pageBackground'a DÜŞME (iki belirtinin de kökü buydu).
+          // Floating footer menüsü (Dal 5) Aşama 2'de gelecek → şimdilik yalnız seçim (hızlı bar
+          // footer'da kalır). Edit-mode (izole iç hücre) HARİÇ: orada mevcut davranış korunur.
+          const fSlotId = footerSlotId(pageNumber);
+          const editing = useUIStore.getState().editingContent;
+          const isFooterEditing = editing?.slotId === fSlotId && editing?.contentType === 'banner';
+          if (target.closest('[data-footer-page]') && !isFooterEditing) {
+            if (!useUIStore.getState().selectedSlotIds.includes(fSlotId)) {
+              useUIStore.getState().toggleSlotSelection(fSlotId, false);
+            }
+            return;
+          }
 
           if (!isSlot) {
             selectPages([currentPage.id]);
