@@ -123,11 +123,9 @@ Stil Yapıştır
 ```
 Özel Ayar Yap / Genele Dön
 ─────────────
-Stil Kopyala
-Stil Yapıştır
-─────────────
 Varsayılana Sıfırla        (KIRMIZI — geri dönüşü zor)
 ```
+(Stil Kopyala/Yapıştır YOK — §6 "ertelenmiş" notu: footer stili canlı düzenlenir, ayrı clipboard yok.)
 
 ### Dal 6 — Footer edit modu (izole, iç hücre)
 ```
@@ -136,11 +134,9 @@ Düzenle
 Hücreleri Birleştir        (çoklu seçimde aktif)
 Hücreleri Ayır             (birleşik hücrede aktif)
 ─────────────
-Stil Kopyala
-Stil Yapıştır
-─────────────
 Sil                        (güvenli — Ctrl+Z var, kırmızı DEĞİL)
 ```
+(Stil Kopyala/Yapıştır YOK — §6 "ertelenmiş" notu.)
 
 ### Dal 7 — Sayfa zemini (mevcut yapı)
 ```
@@ -170,25 +166,35 @@ native kopyala/yapıştır kaybı bu dalla telafi edilir.)
 
 | Aksiyon | Store action | Durum |
 |---|---|---|
-| Modül Ekle | `toggleSlotRole('free')` + `setSlotModule()` | VAR |
+| Modül Ekle | `setSlotModule()` (rol dönüşümünü kendi yapar) | VAR |
 | Ürün Ekle / Ürünü Değiştir | `setSidebarState('products')` | VAR |
-| Modülü Değiştir | `setSidebarState('modules')` | VAR |
+| Modülü Değiştir | `setSlotModule()` (modül-tip seçimi) | VAR |
 | Modülü Kaldır | `toggleSlotRole('product')` | VAR |
 | Hücreleri Birleştir | `mergeSelected()` | VAR |
 | Hücreleri Ayır (slot) | `unmergeSlot()` | VAR |
 | Özel Ayar Yap / Genele Dön (slot) | `toggleSlotCustomSettings()` | VAR |
 | Özel Ayar Yap / Genele Dön (footer) | `setPageFooterMode()` | VAR |
 | Stil Kopyala/Yapıştır (slot) | `copySlotSettings` / `pasteSlotSettings` | VAR |
-| Stil Kopyala/Yapıştır (footer) | `copyFooterSettings` / `pasteFooterSettings` | VAR |
+| Stil Kopyala/Yapıştır (footer) | — *(ayrı clipboard action'ı yok — **ertelendi**, aşağıdaki nota bkz.)* | ⏸ |
 | Stil Kopyala/Yapıştır (zemin) | `copyBackground` / `pasteBackground` | VAR |
-| Footer Birleştir / Ayır | `mergeFooterCellsStore` / `unmergeFooterCellStore` | VAR |
-| Footer Düzenle | edit-mode tetikleme (çift tık yolu) | VAR |
-| Footer Sil | Del tuşu yolu | VAR |
+| Footer Birleştir / Ayır | `mergeBannerCells(slotId, cellIds)` / `splitBannerCell(slotId, anchorId)` | VAR |
+| Footer Düzenle | edit-mode tetikleme (çift tık → `enterIsolation`) | VAR |
+| Footer Sil | `clearBannerCells(slotId, cellIds)` (Del tuşu yolu) | VAR |
 | Zemin Rengi / Görseli | ilgili picker'ı aç | VAR |
 | Zemin Ayarları | `setSidebarState('design','background')` | VAR |
 | Kes / Kopyala / Yapıştır (metin) | native Clipboard API | — |
 | **Hücreyi Boşalt** | **`clearSlotToPool()`** | 🆕 |
 | **Varsayılana Sıfırla** | **`resetFooterToDefault(scope)`** | 🆕 |
+
+> **Footer hücre action'ları = banner motoru (host-slot).** Footer kendi merge/split/clear
+> motorunu taşımaz; `mergeBannerCells` / `splitBannerCell` / `clearBannerCells` footer-slot id'sini
+> alır, `resolveModuleSlot` ile `globalSettings.footerModule`'e yönlenir (footer-farkındalığı tek
+> kaynakta — `footerSlot.ts`). Bu yüzden Dal 6'da ayrı footer-cell action'ı YOK.
+>
+> **Ertelenmiş — Footer Stil Kopyala/Yapıştır:** Footer banner motorunu paylaştığı ve stil
+> *canlı* düzenlendiği için ayrı bir footer-stil clipboard action'ı (eski `copyFooterSettings`/
+> `pasteFooterSettings` — 2c'de silindi) bugün YOK. Bu yüzden Dal 5 ve Dal 6'dan çıkarıldı. Karar:
+> tüm menü dalları bitince zaman kalırsa **ayrı epic** olarak değerlendirilir; Aşama 2 kapsamı değil.
 
 ---
 
