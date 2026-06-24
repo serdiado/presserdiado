@@ -119,3 +119,13 @@ export function resolveMenuContext(d: MenuContextDeps): MenuContext {
 
   return { kind: 'none' };
 }
+
+// Sağ-tık menüsü "önce seç" guard'ı: slot "slot olarak" zaten seçili mi? handleContextMenu bununla
+// karar verir — değilse slot'u seçer (sonra resolver kind:'slot' türetir). selectedSlotIds'e BAKMA:
+// metin-edit (textElement) sırasında setSelectedTextElement selection.type'ı 'textElement' yapar ama
+// selectedSlotIds'i BAYAT [slotId] bırakır → eski selectedSlotIds-guard yanlışça "seçili" sanıp toggle'ı
+// atlardı → resolver kind:'textElement' → boş registry menüsü (ürün adı/fiyat düzenlerken resme/slota
+// sağ-tıkta menü açılmazdı). type-tabanlı guard bunu kapatır; çoklu-seçim merge anchor'ı korunur.
+export function isSlotMenuSelectionActive(selection: SelectionState, slotId: string): boolean {
+  return selection.type === 'slot' && selection.ids.includes(slotId);
+}

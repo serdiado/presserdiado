@@ -26,6 +26,7 @@ import {
   shadowStyle,
   splitPrice,
 } from '../util/style';
+import { isRightClickInActiveTextEdit } from './textEditNativeMenu';
 
 function BadgeRenderer({ badge, scale, slotId }: { badge: BadgeConfig; scale: number; slotId?: string }) {
   if (!badge.active) return null;
@@ -834,6 +835,13 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
       }}
       onContextMenu={(e) => {
         if (isPreviewMode) return;
+        // Dal 8 genişletme (Yol A): ürün adı/fiyat metin imleci aktif + sağ-tık AKTİF contentEditable
+        // içinde → tarayıcının native clipboard menüsü çıksın. stopPropagation üst Page/registry menüsünü
+        // keser (yoksa preventDefault'lanır → native ölür); preventDefault ÇAĞRILMAZ → native menü görünür.
+        if (isRightClickInActiveTextEdit(editingText, e.target as HTMLElement | null)) {
+          e.stopPropagation();
+          return;
+        }
         onContextMenu(e, slot);
       }}
       draggable={!isPreviewMode && !!slot.product && !isImgEditMode}

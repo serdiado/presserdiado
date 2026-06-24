@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { StudioSlot } from '@matbaapro/shared';
 import { useCatalogStore, useLayerStore, useUIStore } from '@/stores/studio';
 import { resolveFooterHeight, footerSlotId } from '@/stores/studio/footerSlot';
-import { resolveMenuContext, type MenuContext } from '../contextMenu/menuContext';
+import { resolveMenuContext, isSlotMenuSelectionActive, type MenuContext } from '../contextMenu/menuContext';
 import { ContextMenu } from '../contextMenu/ContextMenu';
 import { colorValueBackground } from '../util/style';
 import { consumeDragGesture } from '../util/editorChrome';
@@ -71,10 +71,11 @@ export function Page({
     e.preventDefault();
     e.stopPropagation();
 
-    // Sağ tıklanan slot seçili değilse onu seçelim
-    const sel = useUIStore.getState().selectedSlotIds;
-    if (!sel.includes(slot.id)) {
-      useUIStore.getState().toggleSlotSelection(slot.id, false);
+    // Sağ tıklanan slot "slot olarak" seçili değilse onu seçelim. selectedSlotIds'e BAKMA: metin-edit
+    // (textElement) sırasında o BAYAT [slotId] kalır → boş menü bug'ı. selection.type-tabanlı guard.
+    const ui = useUIStore.getState();
+    if (!isSlotMenuSelectionActive(ui.selection, slot.id)) {
+      ui.toggleSlotSelection(slot.id, false);
     }
 
     // Sağ tık daima menüyü açar — bağlam (kind + flag'ler) seçim mutasyonundan SONRA resolver'dan türer.

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { CatalogPage, CatalogSettings, StudioSlot } from '@matbaapro/shared';
 import type { SelectionState } from '../../../stores/studio/ui.store';
-import { resolveMenuContext, type MenuContext, type MenuContextDeps } from './menuContext';
+import { resolveMenuContext, isSlotMenuSelectionActive, type MenuContext, type MenuContextDeps } from './menuContext';
 import { MENU_ACTIONS, MENU_DANGER_ALLOWLIST, buildMenu, type MenuAction } from './menuRegistry';
 
 // ── Fixture yardımcıları ────────────────────────────────────────────────────
@@ -110,6 +110,28 @@ describe('resolveMenuContext', () => {
 
   it('boş seçim → none', () => {
     expect(resolveMenuContext(deps(sel({}), [page([])])).kind).toBe('none');
+  });
+});
+
+// ── isSlotMenuSelectionActive: "önce seç" guard'ı (bayat selectedSlotIds bug'ı) ──
+describe('isSlotMenuSelectionActive', () => {
+  it('slot seçili + bu slot ids içinde → true (toggle atlanır, çoklu-seçim korunur)', () => {
+    expect(isSlotMenuSelectionActive(sel({ type: 'slot', ids: ['s1'] }), 's1')).toBe(true);
+    expect(isSlotMenuSelectionActive(sel({ type: 'slot', ids: ['s1', 's2'] }), 's2')).toBe(true);
+  });
+
+  it('slot seçili ama farklı slot → false (sağ-tıklanan seçilecek)', () => {
+    expect(isSlotMenuSelectionActive(sel({ type: 'slot', ids: ['s1'] }), 's2')).toBe(false);
+  });
+
+  it('textElement seçimi (ad/fiyat edit) → false — selectedSlotIds BAYAT olsa da slot yeniden seçilir', () => {
+    const s = sel({ type: 'textElement', ids: ['s1-name'], parentId: 's1', textElementType: 'name' });
+    expect(isSlotMenuSelectionActive(s, 's1')).toBe(false); // type slot DEĞİL → guard düşmez → toggle çalışır
+  });
+
+  it('pageBackground / none → false', () => {
+    expect(isSlotMenuSelectionActive(sel({ type: 'pageBackground', ids: ['1'] }), 's1')).toBe(false);
+    expect(isSlotMenuSelectionActive(sel({}), 's1')).toBe(false);
   });
 });
 
