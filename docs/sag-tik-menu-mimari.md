@@ -64,6 +64,12 @@ hızlı bar tooltip ile çözülür; her şey etikete sıkıştırılmaz. Hızl�
 **aynı kelime ailesini** paylaşır (birebir aynı string şart değil — toggle vs tek-satır
 farkı nedeniyle zaten mümkün değil).
 
+**Stil kopyala/yapıştır yüzey-spesifiktir.** Etiket genel "Stil Kopyala" değil, hangi yüzey
+olduğunu söyler: **Zemin Stili / Hücre Stili / Alt Bilgi Stili**. Gerekçe: her yüzeyin ayrı
+panosu var; genel "Stil Yapıştır" neyin yapışacağını söylemez (zemin stili sanıp hücre stili
+yapıştırma riski). Kural: bir yüzeyin "Yapıştır"ı YALNIZ o yüzeyin menüsünde ve YALNIZ o
+yüzeyden kopyalanmışsa görünür → panolar karışmaz.
+
 ---
 
 ## 5. Dallar (sıralı, isimli, renk-kararlı)
@@ -76,8 +82,8 @@ Modül Ekle
 Hücreleri Birleştir        (çoklu seçimde aktif)
 Özel Ayar Yap              (hücre genelse) / Genele Dön (hücre özelse)
 ─────────────
-Stil Kopyala
-Stil Yapıştır
+Hücre Stili Kopyala
+Hücre Stili Yapıştır
 ```
 Yıkıcı yok — boş hücrede silinecek içerik yok.
 
@@ -89,8 +95,8 @@ Modül Ekle
 Hücreleri Birleştir        (çoklu seçimde aktif)
 Özel Ayar Yap / Genele Dön
 ─────────────
-Stil Kopyala
-Stil Yapıştır
+Hücre Stili Kopyala
+Hücre Stili Yapıştır
 ─────────────
 Hücreyi Boşalt             (güvenli — kırmızı DEĞİL)
 ```
@@ -102,8 +108,8 @@ Modül Ekle
 Hücreleri Ayır
 Özel Ayar Yap / Genele Dön
 ─────────────
-Stil Kopyala
-Stil Yapıştır
+Hücre Stili Kopyala
+Hücre Stili Yapıştır
 ─────────────
 Hücreyi Boşalt             (içi doluysa aktif — güvenli)
 ```
@@ -114,8 +120,8 @@ Not: "Hücreyi Boşalt" birleşimi BOZMAZ; yalnız içeriği havuza atar. Ayırm
 Modülü Değiştir
 Modülü Kaldır              (modül silinir → boş ürün hücresine döner)
 ─────────────
-Stil Kopyala
-Stil Yapıştır
+Hücre Stili Kopyala
+Hücre Stili Yapıştır
 ```
 Özel/Genel YOK — modüllü hücre zaten özel ayarlıdır.
 
@@ -125,7 +131,7 @@ Stil Yapıştır
 ─────────────
 Varsayılana Sıfırla        (KIRMIZI — geri dönüşü zor)
 ```
-(Stil Kopyala/Yapıştır YOK — §6 "ertelenmiş" notu: footer stili canlı düzenlenir, ayrı clipboard yok.)
+(Alt Bilgi Stili Kopyala/Yapıştır YOK — §6 "ertelenmiş" notu: footer stili canlı düzenlenir, ayrı clipboard yok.)
 
 ### Dal 6 — Footer edit modu (izole, iç hücre)
 ```
@@ -136,15 +142,15 @@ Hücreleri Ayır             (birleşik hücrede aktif)
 ─────────────
 Sil                        (güvenli — Ctrl+Z var, kırmızı DEĞİL)
 ```
-(Stil Kopyala/Yapıştır YOK — §6 "ertelenmiş" notu.)
+(Alt Bilgi Stili Kopyala/Yapıştır YOK — §6 "ertelenmiş" notu.)
 
 ### Dal 7 — Sayfa zemini (mevcut yapı)
 ```
 Zemin Rengi
 Zemin Görseli
 ─────────────
-Stil Kopyala
-Stil Yapıştır
+Zemin Stili Kopyala
+Zemin Stili Yapıştır
 ─────────────
 Zemin Ayarları
 ```
@@ -174,9 +180,9 @@ native kopyala/yapıştır kaybı bu dalla telafi edilir.)
 | Hücreleri Ayır (slot) | `unmergeSlot()` | VAR |
 | Özel Ayar Yap / Genele Dön (slot) | `toggleSlotCustomSettings()` | VAR |
 | Özel Ayar Yap / Genele Dön (footer) | `setPageFooterMode()` | VAR |
-| Stil Kopyala/Yapıştır (slot) | `copySlotSettings` / `pasteSlotSettings` | VAR |
-| Stil Kopyala/Yapıştır (footer) | — *(ayrı clipboard action'ı yok — **ertelendi**, aşağıdaki nota bkz.)* | ⏸ |
-| Stil Kopyala/Yapıştır (zemin) | `copyBackground` / `pasteBackground` | VAR |
+| Hücre Stili Kopyala/Yapıştır | `copySlotSettings` / `pasteSlotSettings` | VAR |
+| Alt Bilgi Stili Kopyala/Yapıştır | — *(ayrı clipboard action'ı yok — **ertelendi**, aşağıdaki nota bkz.)* | ⏸ |
+| Zemin Stili Kopyala/Yapıştır | `copyBackground` / `pasteBackground` | VAR |
 | Footer Birleştir / Ayır | `mergeBannerCells(slotId, cellIds)` / `splitBannerCell(slotId, anchorId)` | VAR |
 | Footer Düzenle | edit-mode tetikleme (çift tık → `enterIsolation`) | VAR |
 | Footer Sil | `clearBannerCells(slotId, cellIds)` (Del tuşu yolu) | VAR |
@@ -254,3 +260,6 @@ deseni: **tek tanım kaynağı, render onu yorumlar.**
 - **Hızlı bar ↔ sağ tık dil ortaklığı:** Aynı kavram aynı kelime ailesiyle. Biri
   değişince diğeri gözden geçirilir.
 - **Footer "Hücreyi Boşalt" ≠ "Ayır":** İçerik temizleme birleşimi bozmaz; ayrı aksiyonlar.
+- **Stil panosu yüzey-spesifik:** Zemin / Hücre / Alt Bilgi panoları AYRI. Her menü yalnız
+  kendi yüzeyinin "Yapıştır"ını ve yalnız o yüzeyden kopyalanmışsa gösterir. Zemin panosu Hücre
+  menüsünde (veya tersi) ASLA görünmez → genel "Stil Yapıştır" muğlaklığı (yanlış-yüzey yapıştırma) kapanır.

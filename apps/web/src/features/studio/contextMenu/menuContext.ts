@@ -38,13 +38,20 @@ export interface MenuContextDeps {
   copiedSlotStyle: boolean;
   /** copiedBackground !== null. */
   copiedBg: boolean;
+  /**
+   * Sağ-tıklanan slot (menü). Verilmezse selection.ids[0] (ContextualBar deseni: SlotMode slotIds[0]).
+   * Çoklu seçimde merge ANCHOR'u (mergeSelected targetSlotId) sağ-tıklanan hücre olmalı → eski menü
+   * davranışıyla parite (eski menü contextMenu.slot.id = sağ-tıklanan kullanırdı).
+   */
+  targetSlotId?: string;
 }
 
 export function resolveMenuContext(d: MenuContextDeps): MenuContext {
   const { selection, pages, globalSettings, copiedSlotStyle, copiedBg } = d;
 
   if (selection.type === 'slot' && selection.ids.length > 0) {
-    const slotId = selection.ids[0];
+    // Menü sağ-tıklanan slotu hedef alır; ContextualBar targetSlotId vermez → ids[0] (bar deseni).
+    const slotId = d.targetSlotId ?? selection.ids[0];
     // Footer host-slot page.slots'ta DEĞİL → ContextualBar:247 ile aynı dal (footer-seçim = Dal 5).
     if (isFooterSlotId(slotId)) {
       const pn = footerPageNumber(slotId);

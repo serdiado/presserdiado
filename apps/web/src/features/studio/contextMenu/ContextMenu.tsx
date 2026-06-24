@@ -4,7 +4,7 @@
 // 2a'da WIRE YOK (Page.tsx henüz bunu mount etmez); 2b pilot parite turunda bağlanır.
 
 import { Fragment } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal, flushSync } from 'react-dom';
 import { buildMenu, MENU_ACTIONS } from './menuRegistry';
 import type { MenuContext } from './menuContext';
 
@@ -43,7 +43,13 @@ export function ContextMenu({ ctx, x, y, onClose }: Props) {
                     : 'text-text-secondary hover:bg-surface-subtle'
                 }`}
                 onClick={() => {
-                  a.run(ctx);
+                  // run() bir dış-store (zustand) mutasyonu; onClose() bu portal'lı bileşeni (ContextMenu)
+                  // AYNI discrete-event handler'ında UNMOUNT eder. React 18, dış-store güncellemesi
+                  // unmount OLAN bileşenin handler'ından tetiklendiğinde abone bileşenlerin (Page/Slot)
+                  // re-render'ını commit ETMİYOR → store doğru ama ekran F5'e kadar bayat. flushSync,
+                  // run'ın abone re-render'ını onClose'dan ÖNCE SENKRON commit eder. (Eski inline menüde
+                  // handler Page'e — aboneye — aitti; bu yüzden sorun yoktu.) Bkz. ContextMenu.test.tsx.
+                  flushSync(() => a.run(ctx));
                   onClose();
                 }}
               >

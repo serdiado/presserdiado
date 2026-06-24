@@ -72,7 +72,7 @@ export const MENU_ACTIONS: MenuAction[] = [
   },
   {
     id: 'slot-stil-kopyala',
-    label: () => 'Stil Kopyala',
+    label: () => 'Hücre Stili Kopyala',
     group: 3,
     visible: (c) => c.kind === 'slot',
     run: (c) => {
@@ -83,7 +83,7 @@ export const MENU_ACTIONS: MenuAction[] = [
   },
   {
     id: 'slot-stil-yapistir',
-    label: () => 'Stil Yapıştır',
+    label: () => 'Hücre Stili Yapıştır',
     group: 3,
     visible: (c) => c.kind === 'slot' && c.hasCopiedSlotStyle,
     run: (c) => {
@@ -105,7 +105,7 @@ export const MENU_ACTIONS: MenuAction[] = [
   // ── Dal 7 — sayfa zemini (kind:'pageBg') ────────────────────────────────────
   {
     id: 'bg-stil-kopyala',
-    label: () => 'Stil Kopyala',
+    label: () => 'Zemin Stili Kopyala',
     group: 3,
     visible: (c) => c.kind === 'pageBg',
     run: (c) => {
@@ -114,7 +114,7 @@ export const MENU_ACTIONS: MenuAction[] = [
   },
   {
     id: 'bg-stil-yapistir',
-    label: () => 'Stil Yapıştır',
+    label: () => 'Zemin Stili Yapıştır',
     group: 3,
     visible: (c) => c.kind === 'pageBg' && c.hasCopiedBg,
     run: (c) => {

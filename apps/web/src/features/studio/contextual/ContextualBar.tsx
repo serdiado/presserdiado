@@ -24,6 +24,7 @@ import {
 import { BANNER_DIM_MIN, BANNER_DIM_MAX } from '../modules/fractions';
 import { cellDomId } from '../modules/bannerDom';
 import { resolveModuleSlot, isFooterSlotId, synthFooterSlot, footerPageNumber } from '@/stores/studio/footerSlot';
+import { resolveMenuContext } from '../contextMenu/menuContext';
 import { TextStyleSection } from './TextStyleSection';
 import { clearRunForSurface } from '../textSettings/cellApply';
 import type { TextSettingCtx, TextSettingDef } from '../textSettings/types';
@@ -235,55 +236,25 @@ export function ContextualBar() {
   const selectedTextElement = useUIStore((s) => s.selectedTextElement);
   const editingContent = useUIStore((s) => s.editingContent);
   const getActivePages = useCatalogStore((s) => s.getActivePages);
+  const globalSettings = useCatalogStore((s) => s.globalSettings);
 
   // İzolasyon (free modül) bağlamı — editingContent⟺isoSession (eşleşme). Aktifse Hızlı Bar
   // YALNIZ "modül izole" kolunu gösterir (mevcut arkaplan/slot/footer kollarının kardeşi).
   const isModuleIsolated =
     !!editingContent && editingContent.contentType === 'banner';
 
-  let hasValidSelection = false;
-
-  if (selection.type === 'slot' && selectedSlotIds.length > 0) {
-    if (isFooterSlotId(selectedSlotIds[0])) {
-      // Footer modülü seçili (izole DEĞİL) — synthFooterSlot daima geçerli; page.slots'ta değil.
-      // İzolasyon kolu kapıyı baypas ediyordu; bu yeni "modül seçili" durumu kapıdan geçmeli.
-      hasValidSelection = true;
-    } else {
-      const pages = getActivePages();
-      const pageWithSlot = pages.find((p) => p.slots.some((s) => s.id === selectedSlotIds[0]));
-      const slot = pageWithSlot?.slots.find((s) => s.id === selectedSlotIds[0]);
-      if (slot) {
-        hasValidSelection = true;
-      }
-    }
-  } else if (selection.type === 'bannerCell') {
-    if (selection.parentId) {
-      const pages = getActivePages();
-      const slot = pages
-        .flatMap((p) => p.slots)
-        .find((s) => s.id === selection.parentId);
-      if (slot && slot.role === 'free' && slot.moduleData) {
-        hasValidSelection = true;
-      }
-    }
-  } else if (selection.type === 'textElement' && selectedTextElement) {
-    const pages = getActivePages();
-    const slot = pages
-      .flatMap((p) => p.slots)
-      .find((s) => s.id === selectedTextElement.slotId);
-    if (slot) {
-      hasValidSelection = true;
-    }
-  } else if (selection.type === 'pageBackground' && selection.ids.length > 0) {
-    const pageNum = Number(selection.ids[0]);
-    if (!isNaN(pageNum)) {
-      const pages = getActivePages();
-      const page = pages.find((p) => p.pageNumber === pageNum);
-      if (page) {
-        hasValidSelection = true;
-      }
-    }
-  }
+  // Seçim geçerliliği TEK KAYNAK: resolveMenuContext (sağ tık menüsüyle ORTAK resolver → doc §4 dil/
+  // karar ortaklığı kod düzeyinde; iki yüzey ıraksamaz). kind!=='none' = geçerli seçim. copiedSlotStyle/
+  // copiedBg kind'i ETKİLEMEZ (yalnız slot/pageBg hasCopied* alanları) → false geçilir. Footer-edit
+  // bannerCell'de kind=bannerCell olsa da aşağıdaki gate'i zaten isModuleIsolated taşır (davranış-nötr).
+  const menuCtx = resolveMenuContext({
+    selection,
+    pages: getActivePages(),
+    globalSettings,
+    copiedSlotStyle: false,
+    copiedBg: false,
+  });
+  const hasValidSelection = menuCtx.kind !== 'none';
 
   if (!hasValidSelection && !isModuleIsolated) return null;
 

@@ -5,6 +5,7 @@ import { Page } from './Page';
 import { LayerStack } from './LayerStack';
 import { MM_TO_PX } from '../util/style';
 import { consumeDragGesture, useDragGestureTracking } from '../util/editorChrome';
+import { shouldExitIsolationOnPointer } from './isolationExit';
 
 const WHEEL_FACTOR_IN = 1.1;
 const WHEEL_FACTOR_OUT = 0.9;
@@ -32,11 +33,10 @@ export function Canvas() {
   useEffect(() => {
     if (!isoSlotId) return;
     const onDown = (e: MouseEvent) => {
-      const t = e.target as HTMLElement | null;
-      if (!t) return;
-      if (!t.closest('#studio-canvas-root')) return; // krom → çıkarMA
-      if (t.closest(`#slot-${isoSlotId}`)) return; // izole modül içi → kal
-      exitIsolation(); // kanvas yüzeyi ama modül dışı → çıkış (commit)
+      // Yüklem SAF + test edilebilir (isolationExit.ts). Sağ tık (button===2) düzenlemeyi İPTAL ETMEZ (madde 10).
+      if (shouldExitIsolationOnPointer(e.button, e.target as HTMLElement | null, isoSlotId)) {
+        exitIsolation(); // kanvas yüzeyi ama modül dışı + sağ-tık-DIŞI → çıkış (commit)
+      }
     };
     document.addEventListener('mousedown', onDown, true);
     return () => document.removeEventListener('mousedown', onDown, true);

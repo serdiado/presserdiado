@@ -57,6 +57,19 @@ describe('resolveMenuContext', () => {
     expect(ctx.kind === 'slot' && ctx.canMerge).toBe(true);
   });
 
+  it('targetSlotId verilince slotId = sağ-tıklanan (çoklu seçimde merge anchor paritesi)', () => {
+    const p = page([slot({ id: 's1' }), slot({ id: 's2' })]);
+    const ctx = resolveMenuContext(deps(sel({ type: 'slot', ids: ['s1', 's2'] }), [p], { targetSlotId: 's2' }));
+    expect(ctx.kind === 'slot' && ctx.slotId).toBe('s2'); // ids[0]=s1 DEĞİL → sağ-tıklanan s2
+    expect(ctx.kind === 'slot' && ctx.canMerge).toBe(true);
+  });
+
+  it('targetSlotId verilmezse slotId = ids[0] (ContextualBar deseni — bar değişmez)', () => {
+    const p = page([slot({ id: 's1' }), slot({ id: 's2' })]);
+    const ctx = resolveMenuContext(deps(sel({ type: 'slot', ids: ['s1', 's2'] }), [p]));
+    expect(ctx.kind === 'slot' && ctx.slotId).toBe('s1');
+  });
+
   it('hasCopiedSlotStyle ctx üstünden taşınır', () => {
     const ctx = resolveMenuContext(deps(sel({ type: 'slot', ids: ['s1'] }), [page([slot({ id: 's1' })])], { copiedSlotStyle: true }));
     expect(ctx.kind === 'slot' && ctx.hasCopiedSlotStyle).toBe(true);
@@ -187,5 +200,36 @@ describe('registry invariantları (§2/§3)', () => {
   it('id benzersiz', () => {
     const all = MENU_ACTIONS.map((a) => a.id);
     expect(new Set(all).size).toBe(all.length);
+  });
+});
+
+// Yüzey-spesifik stil panosu (kullanıcı kararı): etiketler Zemin/Hücre Stili; her yüzey YALNIZ kendi
+// panosunu gösterir → "zemin kopyaladım, hücrede 'stil yapıştır' çıkıyor" muğlaklığı/bug'ı kapanır.
+describe('yüzey-spesifik stil panosu', () => {
+  const slotMenuCtx = (extra: Partial<MenuContextDeps> = {}): MenuContext =>
+    resolveMenuContext(deps(sel({ type: 'slot', ids: ['s1'] }), [page([slot({ id: 's1' })])], extra));
+  const bgMenuCtx = (extra: Partial<MenuContextDeps> = {}): MenuContext =>
+    resolveMenuContext(deps(sel({ type: 'pageBackground', ids: ['1'] }), [page([])], extra));
+  const ids = (ctx: MenuContext) => buildMenu(ctx).flatMap((g) => g.items.map((i) => i.id));
+
+  it('etiketler yüzeye göre: Hücre Stili / Zemin Stili', () => {
+    const sc = slotMenuCtx({ copiedSlotStyle: true });
+    const bc = bgMenuCtx({ copiedBg: true });
+    const lbl = (ctx: MenuContext, id: string) =>
+      buildMenu(ctx).flatMap((g) => g.items).find((a) => a.id === id)!.label(ctx);
+    expect(lbl(sc, 'slot-stil-kopyala')).toBe('Hücre Stili Kopyala');
+    expect(lbl(sc, 'slot-stil-yapistir')).toBe('Hücre Stili Yapıştır');
+    expect(lbl(bc, 'bg-stil-kopyala')).toBe('Zemin Stili Kopyala');
+    expect(lbl(bc, 'bg-stil-yapistir')).toBe('Zemin Stili Yapıştır');
+  });
+
+  it('YALNIZ zemin kopyalı → HÜCRE menüsünde "Hücre Stili Yapıştır" YOK; ZEMİN menüsünde "Zemin Stili Yapıştır" VAR', () => {
+    expect(ids(slotMenuCtx({ copiedBg: true, copiedSlotStyle: false }))).not.toContain('slot-stil-yapistir');
+    expect(ids(bgMenuCtx({ copiedBg: true, copiedSlotStyle: false }))).toContain('bg-stil-yapistir');
+  });
+
+  it('YALNIZ hücre kopyalı → ZEMİN menüsünde "Zemin Stili Yapıştır" YOK; HÜCRE menüsünde "Hücre Stili Yapıştır" VAR', () => {
+    expect(ids(bgMenuCtx({ copiedBg: false, copiedSlotStyle: true }))).not.toContain('bg-stil-yapistir');
+    expect(ids(slotMenuCtx({ copiedBg: false, copiedSlotStyle: true }))).toContain('slot-stil-yapistir');
   });
 });

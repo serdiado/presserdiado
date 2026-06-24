@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
 import type { StudioSlot } from '@matbaapro/shared';
 import { useCatalogStore, useLayerStore, useUIStore } from '@/stores/studio';
 import { resolveFooterHeight, footerSlotId } from '@/stores/studio/footerSlot';
+import { resolveMenuContext, type MenuContext } from '../contextMenu/menuContext';
+import { ContextMenu } from '../contextMenu/ContextMenu';
 import { colorValueBackground } from '../util/style';
 import { consumeDragGesture } from '../util/editorChrome';
 import { Slot } from './Slot';
@@ -11,10 +12,23 @@ import { FooterRenderer } from './FooterRenderer';
 interface ContextMenuState {
   x: number;
   y: number;
-  slot: StudioSlot;
-  canMerge: boolean;
-  canUnmerge: boolean;
-  hasProduct: boolean;
+  ctx: MenuContext;
+}
+
+// Menü açılış anında mevcut store durumundan bağlamı çöz (snapshot). resolveMenuContext SAF; seçim
+// mutasyonundan (önce-seç / pageBg seçimi) SONRA çağrılır → canMerge/hasProduct/pageBg güncel seçimden doğru.
+// targetSlotId = sağ-tıklanan slot (çoklu seçimde merge anchor'u eski menüyle parite kalsın).
+function currentMenuContext(targetSlotId?: string): MenuContext {
+  const cat = useCatalogStore.getState();
+  const ui = useUIStore.getState();
+  return resolveMenuContext({
+    selection: ui.selection,
+    pages: cat.getActivePages(),
+    globalSettings: cat.globalSettings,
+    copiedSlotStyle: cat.copiedSlotSettings !== null,
+    copiedBg: cat.copiedBackground !== null,
+    targetSlotId,
+  });
 }
 
 export function Page({
@@ -32,20 +46,11 @@ export function Page({
   const globalGridGap = useCatalogStore((s) => s.globalSettings?.gridGap ?? 0);
   const defaultGrid = useCatalogStore((s) => s.globalSettings?.defaultGrid);
   const globalSettings = useCatalogStore((s) => s.globalSettings);
-  const mergeSelected = useCatalogStore((s) => s.mergeSelected);
-  const unmergeSlot = useCatalogStore((s) => s.unmergeSlot);
-  const clearSlotToPool = useCatalogStore((s) => s.clearSlotToPool);
-  const copiedSlotSettings = useCatalogStore((s) => s.copiedSlotSettings);
   const selectPages = useLayerStore((s) => s.selectPages);
   const selectedPageIds = useLayerStore((s) => s.selectedPageIds);
   const setEditingContent = useUIStore((s) => s.setEditingContent);
   const foregroundOpacity = useUIStore((s) => s.foregroundOpacity);
-  const selection = useUIStore((s) => s.selection);
   const isPreviewMode = useUIStore((s) => s.isPreviewMode);
-
-  const copiedBackground = useCatalogStore((s) => s.copiedBackground);
-  const copyBackground = useCatalogStore((s) => s.copyBackground);
-  const pasteBackground = useCatalogStore((s) => s.pasteBackground);
 
   const activeForma = formas.find((f) => f.id === activeFormaId) || formas[0];
   const pages = activeForma?.pages ?? [];
@@ -72,12 +77,9 @@ export function Page({
       useUIStore.getState().toggleSlotSelection(slot.id, false);
     }
 
-    const updatedSel = useUIStore.getState().selectedSlotIds;
-    const canMerge = updatedSel.length > 1 && updatedSel.includes(slot.id);
-    const canUnmerge = slot.colSpan > 1 || slot.rowSpan > 1;
-    const hasProduct = !!slot.product;
-    // Sağ tık daima menüyü açar — rol değiştirme her hücrede mümkün
-    setContextMenu({ x: e.clientX, y: e.clientY, slot, canMerge: canMerge, canUnmerge, hasProduct });
+    // Sağ tık daima menüyü açar — bağlam (kind + flag'ler) seçim mutasyonundan SONRA resolver'dan türer.
+    // slot.id targetSlotId olarak verilir → çoklu seçim merge anchor'u sağ-tıklanan hücre (eski parite).
+    setContextMenu({ x: e.clientX, y: e.clientY, ctx: currentMenuContext(slot.id) });
   };
 
   const currentPage = pages.find((p) => p.pageNumber === pageNumber);
@@ -107,143 +109,14 @@ export function Page({
 
   return (
     <>
-      {contextMenu &&
-        createPortal(
-          <div
-            id="context-menu-container"
-            className="fixed z-99999 bg-surface-panel border border-border-strong shadow-2xl rounded-md py-1 min-w-37.5"
-            style={{ top: contextMenu.y, left: contextMenu.x }}
-            onClick={(e) => e.stopPropagation()}
-            onContextMenu={(e) => e.preventDefault()}
-          >
-            {selection.type === 'pageBackground' ? (
-              <>
-                <button
-                  className="w-full text-left px-4 py-2 text-sm font-semibold text-text-secondary hover:bg-surface-subtle"
-                  onClick={() => {
-                    copyBackground(pageNumber);
-                    setContextMenu(null);
-                  }}
-                >
-                  Stil Kopyala
-                </button>
-                {copiedBackground !== null && (
-                  <button
-                    className="w-full text-left px-4 py-2 text-sm font-semibold text-text-secondary hover:bg-surface-subtle"
-                    onClick={() => {
-                      pasteBackground(pageNumber);
-                      setContextMenu(null);
-                    }}
-                  >
-                    Stil Yapıştır
-                  </button>
-                )}
-              </>
-            ) : (
-              <>
-                {contextMenu.canMerge && (
-                  <button
-                    className="w-full text-left px-4 py-2 text-sm font-semibold text-text-secondary hover:bg-surface-subtle"
-                    onClick={() => {
-                      mergeSelected(pageNumber, contextMenu.slot.id);
-                      setContextMenu(null);
-                    }}
-                  >
-                    Hücreleri Birleştir
-                  </button>
-                )}
-                {contextMenu.canUnmerge && (
-                  <button
-                    className="w-full text-left px-4 py-2 text-sm font-semibold text-text-secondary hover:bg-surface-subtle"
-                    onClick={() => {
-                      unmergeSlot(pageNumber, contextMenu.slot.id);
-                      setContextMenu(null);
-                    }}
-                  >
-                    Hücreyi Dağıt
-                  </button>
-                )}
-                {contextMenu.hasProduct && (
-                  <>
-                    <button
-                      className="w-full text-left px-4 py-2 text-sm font-semibold text-text-primary hover:bg-surface-subtle"
-                      onClick={() => {
-                        clearSlotToPool(pageNumber, contextMenu.slot.id);
-                        setContextMenu(null);
-                      }}
-                    >
-                      Havuza Gönder
-                    </button>
-                    <button
-                      className="w-full text-left px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50"
-                      onClick={() => {
-                        clearSlotToPool(pageNumber, contextMenu.slot.id);
-                        setContextMenu(null);
-                      }}
-                    >
-                      Temizle
-                    </button>
-                  </>
-                )}
-                <div className="my-1 border-t border-border-default" />
-                <button
-                  className="w-full text-left px-4 py-2 text-sm font-semibold text-text-secondary hover:bg-surface-subtle"
-                  onClick={() => {
-                    const selIds = useUIStore.getState().selectedSlotIds;
-                    if (!selIds.includes(contextMenu.slot.id)) {
-                      useUIStore.getState().toggleSlotSelection(contextMenu.slot.id, false);
-                    }
-                    useCatalogStore.getState().copySlotSettings();
-                    setContextMenu(null);
-                  }}
-                >
-                  Stil Kopyala
-                </button>
-                {copiedSlotSettings !== null && (
-                  <button
-                    className="w-full text-left px-4 py-2 text-sm font-semibold text-text-secondary hover:bg-surface-subtle"
-                    onClick={() => {
-                      const selIds = useUIStore.getState().selectedSlotIds;
-                      if (!selIds.includes(contextMenu.slot.id)) {
-                        useUIStore.getState().toggleSlotSelection(contextMenu.slot.id, false);
-                      }
-                      useCatalogStore.getState().pasteSlotSettings();
-                      setContextMenu(null);
-                    }}
-                  >
-                    Stil Yapıştır
-                  </button>
-                )}
-                <div className="my-1 border-t border-border-default" />
-                {contextMenu.slot && ((contextMenu.slot.role ?? 'product') === 'product' ? (
-                  <button
-                    className="w-full text-left px-4 py-2 text-sm font-semibold text-text-primary hover:bg-surface-subtle"
-                    onClick={() => {
-                      // toggleSlotRole selectedSlotIds'i kullaniyor — once secelim
-                      useUIStore.getState().toggleSlotSelection(contextMenu.slot.id, false);
-                      useCatalogStore.getState().toggleSlotRole('free');
-                      setContextMenu(null);
-                    }}
-                  >
-                    Serbest Alan Yap
-                  </button>
-                ) : (
-                  <button
-                    className="w-full text-left px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
-                    onClick={() => {
-                      useUIStore.getState().toggleSlotSelection(contextMenu.slot.id, false);
-                      useCatalogStore.getState().toggleSlotRole('product');
-                      setContextMenu(null);
-                    }}
-                  >
-                    Ürün Hücresi Yap
-                  </button>
-                ))}
-              </>
-            )}
-          </div>,
-          document.body,
-        )}
+      {contextMenu && (
+        <ContextMenu
+          ctx={contextMenu.ctx}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+        />
+      )}
 
       <div
         id={`page-${currentPage.id}`}
@@ -298,15 +171,8 @@ export function Page({
           if (!isSlot) {
             selectPages([currentPage.id]);
             useUIStore.getState().setSelection({ type: 'pageBackground', ids: [String(pageNumber)] });
-
-            setContextMenu({
-              x: e.clientX,
-              y: e.clientY,
-              slot: null as any,
-              canMerge: false,
-              canUnmerge: false,
-              hasProduct: false,
-            });
+            // pageBg seçimi SONRASI resolver → kind:'pageBg' (eski slot:null-as-any tip yalanı kalkar).
+            setContextMenu({ x: e.clientX, y: e.clientY, ctx: currentMenuContext() });
           }
         }}
       >
