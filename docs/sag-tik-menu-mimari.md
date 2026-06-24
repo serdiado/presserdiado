@@ -162,13 +162,16 @@ Genel/Özel YOK — zeminde mod sistemi henüz yok (ayrı epic). Yıkıcı yok.
 
 ### Dal 8 — Metin-edit modu (hücre içi metin düzenleme aktif)
 ```
-Kes
-Kopyala
-Yapıştır
+Kes / Kopyala / Yapıştır  → tarayıcının NATIVE clipboard menüsü (custom menü DEĞİL)
 ```
-Tek grup. Native Clipboard API ile çalışır — store action DEĞİL. Banner ve footer
-metin düzenlemede aynı şekilde geçerli. (Sistem sağ tık menüsü kapalı olduğundan
-native kopyala/yapıştır kaybı bu dalla telafi edilir.)
+Metin imleci aktifken sağ tık → **tarayıcının kendi clipboard menüsü** açılır. Kapsam:
+**banner hücresi**, **footer cell-edit** (tek `BannerSection` noktası) **ve ürün adı/fiyat**
+metin düzenleme. Registry'ye descriptor EKLENMEZ, custom menü/clipboard kodu YOKTUR (Yol A).
+Native menü kapatması (preventDefault) yalnız yapısal/izolasyon/slot menüsü içindir; **metin
+imleci aktifken kasıtlı olarak native menüye izin verilir** → `stopPropagation` ile üst
+registry menüsü kesilir, `preventDefault` ÇAĞRILMAZ. Karar tek-kaynak saf yüklemlerde:
+banner/footer → `modules/bannerContextMenu.ts` (`bannerCtxAction`); ürün adı/fiyat →
+`canvas/textEditNativeMenu.ts` (`isRightClickInActiveTextEdit`, DOM-target kapsamı).
 
 ---
 
@@ -192,7 +195,7 @@ native kopyala/yapıştır kaybı bu dalla telafi edilir.)
 | Footer Sil | `clearBannerCells(slotId, cellIds)` (Del tuşu yolu) | VAR |
 | Zemin Rengi / Görseli | ilgili picker'ı aç | VAR |
 | Zemin Ayarları | `setSidebarState('design','background')` | VAR |
-| Kes / Kopyala / Yapıştır (metin) | native Clipboard API | — |
+| Kes / Kopyala / Yapıştır (metin) | native Clipboard API (tarayıcı menüsü — registry'ye girmez) | ✅ |
 | **Hücreyi Boşalt** | **`clearSlotToPool()`** | 🆕 |
 | **Varsayılana Sıfırla** | **`resetFooterToDefault(scope)`** | 🆕 |
 
@@ -267,7 +270,9 @@ deseni: **tek tanım kaynağı, render onu yorumlar.**
   bir "temizle" action'ı türetilmez. `clearSlot` geri eklenmez.
 - **Serbest alan gizli kalır:** Modül ekleme otomatik `free` dönüşümü yapar; kullanıcıya
   "serbest alan yap" aksiyonu SUNULMAZ.
-- **Metin dalı izolasyonu:** Dal 8 native Clipboard'dır; store'a/persist'e girmez.
+- **Metin dalı izolasyonu:** Dal 8 registry'ye GİRMEZ; metin-edit'te native tarayıcı menüsü
+  kullanılır — custom menü/descriptor/clipboard kodu YOKTUR (Yol A). Yalnız `stopPropagation` ile
+  üst registry menüsü kesilir, `preventDefault` çağrılmaz (native menü açılsın). Store'a/persist'e girmez.
 - **Hızlı bar ↔ sağ tık dil ortaklığı:** Aynı kavram aynı kelime ailesiyle. Biri
   değişince diğeri gözden geçirilir.
 - **Footer "Hücreyi Boşalt" ≠ "Ayır":** İçerik temizleme birleşimi bozmaz; ayrı aksiyonlar.

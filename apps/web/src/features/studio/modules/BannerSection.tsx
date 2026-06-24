@@ -7,6 +7,7 @@ import type { BannerCellData, BannerModuleData } from './types';
 import { materializeFractions, FRACTION_MIN } from './fractions';
 import { cellDomId } from './bannerDom';
 import { getMergeBoxes, colBoundarySegments, rowBoundarySegments } from './gridMutate';
+import { bannerCtxAction } from './bannerContextMenu';
 import {
   setActiveRange,
   clearActiveSession,
@@ -380,8 +381,18 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
                 toggleElementSelection('bannerCell', cell.id, e.ctrlKey || e.shiftKey, slotId);
             }}
             onContextMenu={(e) => {
-              // Edit dışı → slot sağ-tık menüsüne bırak (bubble). Edit içi → banner satır/sütun menüsü.
-              if (!isEditingModule) return;
+              // Dal 8 (Yol A) — sağ-tık kararı tek-kaynak saf yüklemde (bannerContextMenu.ts):
+              //  passthrough: edit dışı → slot sağ-tık menüsüne bırak (bubble; preventDefault/stop YOK).
+              //  native: metin imleci BU hücrede aktif → tarayıcının native clipboard menüsü çıksın.
+              //    stopPropagation üst Slot/Page registry menüsünü keser (yoksa onlar preventDefault'lar
+              //    → native ölür); preventDefault ÇAĞRILMAZ → native menü görünür; yapısal menü AÇILMAZ.
+              //  structural: izolasyon var, metin-edit yok → mevcut banner satır/sütun menüsü.
+              const action = bannerCtxAction(isEditingModule, editingCellId === cell.id);
+              if (action === 'passthrough') return;
+              if (action === 'native') {
+                e.stopPropagation();
+                return;
+              }
               e.preventDefault();
               e.stopPropagation();
               setCtxMenu({ x: e.clientX, y: e.clientY, cellId: cell.id });

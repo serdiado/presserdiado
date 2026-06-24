@@ -11,7 +11,8 @@ import { isFooterSlotId, footerPageNumber, resolveModuleSlot } from '../../../st
 // Doc 8 dal → MenuContext kind'leri (8 dal, daha az kind üstünde flag-görünümü; ContextualBar branch'leriyle hizalı):
 // slot (Dal 1/2/3/4 — role/hasProduct/merged flag'leri) · footerSel (Dal 5) · bannerCell (Dal 6) ·
 // pageBg (Dal 7) · textElement (ContextualBar TextMode/BadgeMode — menüde dal değil, none-gibi) · none.
-// (textEdit/Dal 8 contentEditable temelli → 2e'de eklenir; bu resolver üretmez.)
+// (Dal 8 metin-edit registry'ye HİÇ girmez — resolver üretmez VE descriptor da yoktur; metin imleci
+//  aktifken tarayıcının native clipboard menüsüne devredilir [Yol A]. Bkz. modules/bannerContextMenu.ts.)
 export type MenuContext =
   | {
       kind: 'slot';
