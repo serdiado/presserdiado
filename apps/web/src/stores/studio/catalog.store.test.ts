@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { StudioForma } from '@matbaapro/shared';
+import type { StudioForma, StudioSlot } from '@matbaapro/shared';
 import { useCatalogStore } from './catalog.store';
 import { useHistoryStore } from './history.store';
+import { useUIStore } from './ui.store';
 import { clone, deepEqual, initialGlobalSettings } from './defaults';
 import { defaultFooterModule } from './footerSlot';
 
@@ -360,5 +361,192 @@ describe('setSlotModule — A-fix (ürün havuza, kaybolmaz)', () => {
     }));
     useCatalogStore.getState().setSlotModule(1, 'slot-1', 'banner');
     expect(pool()).toHaveLength(0);
+  });
+});
+
+// mergeSelected — anchor içerik kuralı: anchor (sağ-tıklanan) içeriği korunur; diğerleri elden çıkar.
+// İlke: ürün asla yok edilmez (havuza), modül yok edilebilir (sessizce silinir). Survivor (geometrik
+// sol-üst) anchor'ın TÜM içeriğini benimser → modül+ürün'de eski "boş hücre" bug'ı kapanır.
+describe('mergeSelected — anchor içerik kuralı (modül/ürün)', () => {
+  const MODULE = { type: 'banner', cells: [{ id: 'c1' }] };
+
+  function setupMerge(slots: Partial<StudioSlot>[]) {
+    useHistoryStore.getState().clearHistory();
+    useCatalogStore.setState({
+      activeFormaId: 1,
+      tempProductPool: [],
+      formas: [
+        {
+          id: 1,
+          name: 'f',
+          pageMergeGroups: [],
+          pages: [
+            {
+              id: 'p1',
+              pageNumber: 1,
+              footerMode: 'global',
+              slots: slots.map((s, i) => ({
+                id: `s${i + 1}`,
+                colSpan: 1,
+                rowSpan: 1,
+                hidden: false,
+                mergedInto: null,
+                role: 'product',
+                product: null,
+                ...s,
+              })),
+            },
+          ],
+        },
+      ] as unknown as StudioForma[],
+    });
+  }
+
+  const moduleSlot = (over: Partial<StudioSlot> = {}): Partial<StudioSlot> => ({
+    role: 'free', moduleType: 'banner', moduleData: MODULE, isCustom: true, product: null, ...over,
+  });
+  const productSlot = (sku: string, over: Partial<StudioSlot> = {}): Partial<StudioSlot> => ({
+    role: 'product', product: { sku, name: sku } as never, ...over,
+  });
+
+  const byId = (id: string) =>
+    useCatalogStore.getState().getActivePages()[0].slots.find((s) => s.id === id)!;
+  const pool = () => useCatalogStore.getState().tempProductPool;
+  const select = (ids: string[]) => useUIStore.setState({ selectedSlotIds: ids });
+
+  it('anchor MODÜL + diğer ÜRÜN (anchor sol-üst): birleşik = modül; ürün havuza, kaybolmaz', () => {
+    setupMerge([moduleSlot(), productSlot('P2')]); // s1 modül (sol-üst + anchor), s2 ürün
+    select(['s1', 's2']);
+    useCatalogStore.getState().mergeSelected(1, 's1');
+
+    expect(byId('s1').role).toBe('free');
+    expect(byId('s1').moduleType).toBe('banner');
+    expect(byId('s1').moduleData).toBeTruthy();
+    expect(byId('s1').product).toBeNull();
+    expect(byId('s1').colSpan).toBe(2);
+
+    expect(pool()).toHaveLength(1);
+    expect(pool()[0].sku).toBe('P2');
+    expect(pool()[0].originalSlotId).toBe('s2');
+  });
+
+  it('anchor MODÜL + diğer ÜRÜN (anchor SOL-ÜST DEĞİL): survivor anchor modülünü benimser; ürün havuza [bug senaryosu]', () => {
+    setupMerge([productSlot('P1'), moduleSlot()]); // s1 ürün (sol-üst = survivor), s2 modül (anchor)
+    select(['s1', 's2']);
+    useCatalogStore.getState().mergeSelected(1, 's2'); // anchor = s2 = modül
+
+    expect(byId('s1').role).toBe('free'); // survivor s1 modülü benimsedi (boş çıkmaz)
+    expect(byId('s1').moduleType).toBe('banner');
+    expect(byId('s1').moduleData).toBeTruthy();
+    expect(byId('s1').product).toBeNull();
+
+    expect(pool()).toHaveLength(1); // survivor'ın eski ürünü kaybolmadı
+    expect(pool()[0].sku).toBe('P1');
+  });
+
+  it('anchor ÜRÜN + diğer MODÜL: birleşik = ürün; modül havuza GİTMEZ (sessizce silinir)', () => {
+    setupMerge([productSlot('P1'), moduleSlot()]); // s1 ürün (anchor + survivor), s2 modül
+    select(['s1', 's2']);
+    useCatalogStore.getState().mergeSelected(1, 's1');
+
+    expect(byId('s1').role).toBe('product');
+    expect(byId('s1').product?.sku).toBe('P1');
+    expect(byId('s1').moduleType).toBeNull();
+
+    expect(pool()).toHaveLength(0); // modül havuza gitmez; anchor ürünü korunur
+  });
+
+  it('anchor ÜRÜN + diğer MODÜL → unmerge: modül DİRİLMEZ (temiz boş ürün hücresi)', () => {
+    setupMerge([productSlot('P1'), moduleSlot()]);
+    select(['s1', 's2']);
+    useCatalogStore.getState().mergeSelected(1, 's1');
+    useCatalogStore.getState().unmergeSlot(1, 's1');
+
+    expect(byId('s1').product?.sku).toBe('P1');
+    expect(byId('s2').hidden).toBeFalsy();
+    expect(byId('s2').role).toBe('product'); // modül değil
+    expect(byId('s2').moduleType).toBeNull(); // dirilmedi
+    expect(byId('s2').product).toBeNull(); // temiz boş hücre
+  });
+
+  it('çoklu: anchor ÜRÜN + ürün + modül → birleşik anchor ürünü; diğer ürün havuza, modül silinir', () => {
+    setupMerge([productSlot('P1'), productSlot('P2'), moduleSlot()]); // s1 anchor, s2 ürün, s3 modül
+    select(['s1', 's2', 's3']);
+    useCatalogStore.getState().mergeSelected(1, 's1');
+
+    expect(byId('s1').role).toBe('product');
+    expect(byId('s1').product?.sku).toBe('P1');
+    expect(byId('s1').colSpan).toBe(3);
+
+    expect(pool()).toHaveLength(1); // yalnız P2 (modül havuza gitmez, P1 anchor korunur)
+    expect(pool()[0].sku).toBe('P2');
+  });
+
+  it('regresyon ÜRÜN+ÜRÜN: anchor ürünü korunur, diğer havuza (mevcut davranış bozulmadı)', () => {
+    setupMerge([productSlot('P1'), productSlot('P2')]);
+    select(['s1', 's2']);
+    useCatalogStore.getState().mergeSelected(1, 's1');
+
+    expect(byId('s1').product?.sku).toBe('P1');
+    expect(pool()).toHaveLength(1);
+    expect(pool()[0].sku).toBe('P2');
+  });
+
+  it('atomik: birleştirme TEK history adımı; undo modül+ürünü tam geri alır', () => {
+    setupMerge([moduleSlot(), productSlot('P2')]);
+    select(['s1', 's2']);
+    const before = useHistoryStore.getState().past.length;
+    useCatalogStore.getState().mergeSelected(1, 's1');
+    expect(useHistoryStore.getState().past.length).toBe(before + 1);
+
+    useHistoryStore.getState().undo();
+    expect(byId('s1').colSpan).toBe(1);
+    expect(byId('s1').moduleType).toBe('banner'); // modül geri
+    expect(byId('s2').product?.sku).toBe('P2'); // ürün slotta geri
+    expect(pool()).toHaveLength(0); // havuz boş
+  });
+});
+
+// captureProductToPool davranışı (saf helper, public action üzerinden): aynı SKU havuzda varsa
+// TEKİLLEŞİR + yeni origin-tag ile başa gelir. (Helper export'suz — appendOverflowToTempPool gibi.)
+describe('captureProductToPool — dedup + origin-tag (clearSlotToPool yoluyla)', () => {
+  it('havuzda aynı SKU varsa tekilleşir; yeni origin-tag ile başa', () => {
+    useHistoryStore.getState().clearHistory();
+    useCatalogStore.setState({
+      activeFormaId: 1,
+      tempProductPool: [{ sku: 'P1', name: 'eski' } as never], // origin'siz eski kopya
+      formas: [
+        {
+          id: 1,
+          name: 'f',
+          pageMergeGroups: [],
+          pages: [
+            {
+              id: 'p1',
+              pageNumber: 1,
+              footerMode: 'global',
+              slots: [
+                {
+                  id: 'slot-1',
+                  colSpan: 1,
+                  rowSpan: 1,
+                  hidden: false,
+                  mergedInto: null,
+                  role: 'product',
+                  product: { sku: 'P1', name: 'yeni' },
+                },
+              ],
+            },
+          ],
+        },
+      ] as unknown as StudioForma[],
+    });
+    useCatalogStore.getState().clearSlotToPool(1, 'slot-1');
+
+    const pool = useCatalogStore.getState().tempProductPool;
+    expect(pool).toHaveLength(1); // dedup: iki değil bir
+    expect(pool[0].sku).toBe('P1');
+    expect(pool[0].originalPage).toBe(1); // yeni origin-tag
+    expect(pool[0].originalSlotId).toBe('slot-1');
   });
 });

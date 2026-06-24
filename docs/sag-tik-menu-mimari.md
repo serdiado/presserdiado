@@ -113,6 +113,12 @@ Hücreyi Boşalt             (içi doluysa aktif — güvenli)
 ```
 Not: "Hücreyi Boşalt" birleşimi BOZMAZ; yalnız içeriği havuza atar. Ayırma ayrı aksiyon.
 
+**Birleştirme içerik kuralı (anchor kazanır):** Birleştirmede sağ-tıklanan (anchor) hücrenin
+içeriği korunur, diğerlerininki elden çıkar. **İlke: ürün asla yok edilmez (havuza atılır),
+modül yok edilebilir (sessizce silinir).** Yani anchor modüllü + diğer ürünlü → modül kalır,
+ürün havuza; anchor ürünlü + diğer modüllü → ürün kalır, modül silinir. Çoklu seçimde de aynı:
+anchor kalır, diğer ürünlerin hepsi havuza, modüller silinir. (`mergeSelected` + `captureProductToPool`.)
+
 ### Dal 4 — Modül / banner slot (free rolü, modüllü)
 ```
 Modülü Değiştir
@@ -229,11 +235,12 @@ Tüm "Temizle / Boşalt" çağrıları — sağ tık, ContextualBar, sağ panel 
 düzeltme sonrası her yer havuza atar. Tek yerden değişiklik → her yer birden değişir.
 İsim farklı görünebilir ("Temizle", "Hücreyi Boşalt") ama arkadaki action aynıdır.
 
-### Açık borç (sonraki PR)
-- [ ] **Havuza-atma desenini tek kaynağa çıkar** — `clearSlotToPool` + `setSlotModule`
-  aynı "ürün yakala → SKU filter → `originalPage`/`originalSlotId` prepend" mantığını
-  ayrı taşıyor (akış farkı: `setActivePages` vs `recalculateLayout`). 2 kopya bugün
-  kabul; **3. çağıran eklenince** `captureProductToPool` helper'ına zorunlu çıkar.
+### Havuza-atma tek kaynağı (kapandı)
+`clearSlotToPool` + `setSlotModule` + `mergeSelected` ortak "ürün yakala → SKU filter →
+`originalPage`/`originalSlotId` prepend" mantığını **`captureProductToPool(pool, product,
+pageNumber, slotId)`** saf helper'ında paylaşır (set() yapmaz → çağıran kendi atomik
+set()'inde kullanır; `mergeSelected` çoklu ürünü fold'lar). Akış farkı (`setActivePages`
+vs `recalculateLayout`) sayfa-yazımında, havuz transformu saf → helper temiz çıktı.
 
 ---
 

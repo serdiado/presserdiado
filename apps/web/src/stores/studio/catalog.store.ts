@@ -143,6 +143,22 @@ function appendOverflowToTempPool(
 }
 
 /**
+ * Tek ürünü havuza YAKALAR (kaybolmaz): aynı SKU varsa havuzdan çıkarır, ürünü origin-etiketiyle
+ * (originalPage/originalSlotId — geri-getirme için) en başa koyar. SAF: set() YAPMAZ, dizi döner →
+ * çağıran kendi set()'inde kullanır. TEK-KAYNAK: clearSlotToPool + setSlotModule + mergeSelected.
+ * mergeSelected çoklu ürünü bunu fold'layarak işler → tek atomik set bozulmaz (§7 borcu kapandı).
+ */
+function captureProductToPool(
+  pool: TempPoolProduct[],
+  product: ProductInfo,
+  pageNumber: number,
+  slotId: string,
+): TempPoolProduct[] {
+  const filtered = product.sku ? pool.filter((p) => p.sku !== product.sku) : pool;
+  return [{ ...product, originalPage: pageNumber, originalSlotId: slotId }, ...filtered];
+}
+
+/**
  * Serbest hücre (free) görünümü için customSettings üretir: globalSettings klonlanır,
  * hücre arkaplanı/kenarlığı/gölgesi/boşluğu/yarıçapı sıfırlanır (şeffaf görünüm).
  * TEK-KAYNAK: hem toggleSlotRole('free') hem setSlotModule (Tablo Alanı drop'u) bunu kullanır
@@ -904,17 +920,42 @@ export const useCatalogStore = create<Store>()(
           }
         }
 
+        // Survivor (geometrik sol-üst) ANCHOR'ın TÜM içeriğini benimser; geometri survivor'ın kalır.
+        // Yalnız product taşımak modül+ürün'de boş hücreye yol açıyordu — role/moduleType/moduleData/
+        // isCustom/customSettings de aktarılır. imageSettings ürüne özgü (Slot.tsx ürün <img> transform'u):
+        // ürün varsa kadrajı birlikte gelir, modülde anlamsız → product guard'lı (modüle ölü alan taşımaz).
+        const a = targetSlot;
         const survivorIdx = newSlots.findIndex((s) => s.id === survivorId);
         newSlots[survivorIdx] = {
           ...newSlots[survivorIdx],
           colSpan: maxC - minC + 1,
           rowSpan: maxR - minR + 1,
-          product: targetProduct,
+          role: a?.role ?? 'product',
+          product: a?.product ?? null,
+          moduleType: a?.moduleType ?? null,
+          moduleData: a?.moduleData ?? null,
+          isCustom: a?.isCustom ?? false,
+          customSettings: a?.customSettings,
+          imageSettings: a?.product ? a?.imageSettings : undefined,
         };
+        // Non-survivor'lar TEMİZ boş ürün hücresine sıfırlanır: ürün havuza gitti (yukarıda), modül
+        // sessizce DÜŞÜRÜLÜR (kural: ürün asla yok edilmez, modül edilebilir). moduleType/moduleData da
+        // temizlenir — applyUnmerge yalnız hidden/mergedInto/product sıfırlar; aksi halde ayırınca modül DİRİLİR.
         for (const id of selectedSlotIds) {
           if (id === survivorId) continue;
           const idx = newSlots.findIndex((s) => s.id === id);
-          newSlots[idx] = { ...newSlots[idx], hidden: true, mergedInto: survivorId, product: null };
+          newSlots[idx] = {
+            ...newSlots[idx],
+            hidden: true,
+            mergedInto: survivorId,
+            role: 'product',
+            product: null,
+            moduleType: null,
+            moduleData: null,
+            isCustom: false,
+            customSettings: undefined,
+            imageSettings: undefined,
+          };
         }
 
         const newPages = [...pages];
@@ -923,15 +964,11 @@ export const useCatalogStore = create<Store>()(
           f.id === activeFormaId ? { ...f, pages: newPages } : f,
         );
 
+        // Kaybedilen ürünleri (anchor-SKU hariç) havuza yakala — saf helper'ı fold'la (tek-kaynak,
+        // çoklu ürün). Modüller product:null olduğu için productsToPool'a hiç girmez → havuza gitmez.
         let newTemp = [...tempProductPool];
         for (const item of productsToPool) {
-          const sku = item.product.sku;
-          if (sku) newTemp = newTemp.filter((p) => p.sku !== sku);
-          newTemp.unshift({
-            ...item.product,
-            originalPage: pageNumber,
-            originalSlotId: item.slotId,
-          });
+          newTemp = captureProductToPool(newTemp, item.product, pageNumber, item.slotId);
         }
 
         set({
@@ -1250,14 +1287,9 @@ export const useCatalogStore = create<Store>()(
         const newFormas = formas.map((f) => (f.id === activeFormaId ? { ...f, pages } : f));
         if (movedProduct) {
           // Havuz güncellemesini formas ile aynı set() içinde atomik yaz — tek undo kapsar ikisini.
-          const { tempProductPool } = get();
-          const filtered = tempProductPool.filter((p) => p.sku !== movedProduct!.sku);
           set({
             formas: recalculateLayout(newFormas, globalSettings.defaultGrid),
-            tempProductPool: [
-              { ...movedProduct, originalPage: pageNumber, originalSlotId: slotId },
-              ...filtered,
-            ],
+            tempProductPool: captureProductToPool(get().tempProductPool, movedProduct, pageNumber, slotId),
           });
         } else {
           set({ formas: recalculateLayout(newFormas, globalSettings.defaultGrid) });
@@ -1540,13 +1572,7 @@ export const useCatalogStore = create<Store>()(
           }
         }
         if (moved) {
-          const filtered = tempProductPool.filter((p) => p.sku !== moved!.sku);
-          set({
-            tempProductPool: [
-              { ...moved, originalPage: pageNumber, originalSlotId: slotId },
-              ...filtered,
-            ],
-          });
+          set({ tempProductPool: captureProductToPool(tempProductPool, moved, pageNumber, slotId) });
         }
         setActivePages(pages);
       },
