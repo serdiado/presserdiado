@@ -1230,7 +1230,10 @@ export const useCatalogStore = create<Store>()(
 
         // Rol dönüşümü drop'un GERÇEK slot.id'si üstünde yapılır (selectedSlotIds DEĞİL) — Bug 2.
         // toggleSlotRole('free') ile birebir aynı görünüm (buildFreeCellSettings tek-kaynak).
+        // A-fix: ürünü null'dan ÖNCE havuza at (clearSlotToPool mantığı — ikinci kopya yazma).
+        let movedProduct: ProductInfo | null = null;
         if (slot.role !== 'free') {
+          if (slot.product) movedProduct = slot.product;
           slot.role = 'free';
           slot.product = null;
           slot.isCustom = true;
@@ -1245,7 +1248,20 @@ export const useCatalogStore = create<Store>()(
         // recalculateLayout ile bitir — ürün→free dönüşümünde globalNumber renumber korunur
         // (toggleSlotRole'ün eski davranışı; setActivePages recalc yapmazdı).
         const newFormas = formas.map((f) => (f.id === activeFormaId ? { ...f, pages } : f));
-        set({ formas: recalculateLayout(newFormas, globalSettings.defaultGrid) });
+        if (movedProduct) {
+          // Havuz güncellemesini formas ile aynı set() içinde atomik yaz — tek undo kapsar ikisini.
+          const { tempProductPool } = get();
+          const filtered = tempProductPool.filter((p) => p.sku !== movedProduct!.sku);
+          set({
+            formas: recalculateLayout(newFormas, globalSettings.defaultGrid),
+            tempProductPool: [
+              { ...movedProduct, originalPage: pageNumber, originalSlotId: slotId },
+              ...filtered,
+            ],
+          });
+        } else {
+          set({ formas: recalculateLayout(newFormas, globalSettings.defaultGrid) });
+        }
       },
       updateSlotModuleData: (pageNumber, slotId, updates, history = 'none') => {
         const { getActivePages, setActivePages } = get();

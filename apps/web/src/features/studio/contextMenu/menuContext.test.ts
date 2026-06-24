@@ -150,8 +150,13 @@ describe('MENU_ACTIONS — pilot dallar (parite)', () => {
     expect(got).not.toContain('slot-urun-hucresi');
   });
 
-  it('boş ürün slot: yalnız Stil Kopyala (Boşalt yok, Serbest Alan Yap YOK)', () => {
-    expect(ids(slotCtx())).toEqual(['slot-stil-kopyala']);
+  it('boş ürün slot: Modül Ekle + Ürün Ekle (grup 1) + Stil Kopyala (grup 3); Boşalt yok, Serbest Alan Yap YOK', () => {
+    const got = ids(slotCtx()); // role:'product', hasProduct:false, canUnmerge:false
+    expect(got).toContain('slot-modul-ekle');
+    expect(got).toContain('slot-urun');
+    expect(got).toContain('slot-stil-kopyala');
+    expect(got).not.toContain('slot-bosalt');
+    expect(got).not.toContain('slot-urun-hucresi');
   });
 
   it('serbest slot: Ürün Hücresi Yap var, Boşalt yok', () => {

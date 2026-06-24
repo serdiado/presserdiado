@@ -41,6 +41,25 @@ const ensureSelected = (slotId: string) => {
 
 export const MENU_ACTIONS: MenuAction[] = [
   // ── Dal 1/2/3/4 — ürün/serbest slot (kind:'slot') ───────────────────────────
+  // Grup 1: Oluştur/Ekle — ürün rolündeyken (Modül Ekle: free'ye çevirir; Ürün: sidebar açar)
+  {
+    id: 'slot-modul-ekle',
+    label: () => 'Modül Ekle',
+    group: 1,
+    visible: (c) => c.kind === 'slot' && c.role === 'product' && !c.canUnmerge,
+    run: (c) => {
+      if (c.kind === 'slot') cat().setSlotModule(c.pageNumber, c.slotId, 'banner');
+    },
+  },
+  {
+    id: 'slot-urun',
+    label: (c) => (c.kind === 'slot' && c.hasProduct ? 'Ürünü Değiştir' : 'Ürün Ekle'),
+    group: 1,
+    visible: (c) => c.kind === 'slot' && c.role === 'product' && !c.canUnmerge,
+    run: () => {
+      ui().setSidebarState('products');
+    },
+  },
   {
     id: 'slot-birlestir',
     label: () => 'Hücreleri Birleştir',

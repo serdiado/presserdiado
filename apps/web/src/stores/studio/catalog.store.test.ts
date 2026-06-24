@@ -282,3 +282,83 @@ describe('resetFooterToDefault', () => {
     expect(reverted.footerOverride!.heightMm).toBe(40);
   });
 });
+
+// setSlotModule A-fix regresyon: ürünlü slotta modül eklerken ürün YOK EDİLMEZ → havuza gider.
+// Latent bug: slot.product = null (havuza yazılmadan) → kalıcı kayıp. Fix: havuza-at-önce.
+describe('setSlotModule — A-fix (ürün havuza, kaybolmaz)', () => {
+  beforeEach(() => {
+    useHistoryStore.getState().clearHistory();
+    useCatalogStore.setState({ tempProductPool: [] });
+    useCatalogStore.setState({
+      activeFormaId: 1,
+      tempProductPool: [],
+      formas: [
+        {
+          id: 1,
+          name: 'f',
+          pageMergeGroups: [],
+          pages: [
+            {
+              id: 'p1',
+              pageNumber: 1,
+              footerMode: 'global',
+              slots: [
+                {
+                  id: 'slot-1',
+                  colSpan: 1,
+                  rowSpan: 1,
+                  hidden: false,
+                  mergedInto: null,
+                  role: 'product',
+                  product: { sku: 'SKU1', name: 'Ürün 1' },
+                },
+              ],
+            },
+          ],
+        },
+      ] as unknown as StudioForma[],
+    });
+  });
+
+  const slot1 = () => useCatalogStore.getState().getActivePages()[0].slots[0];
+  const pool = () => useCatalogStore.getState().tempProductPool;
+
+  it('ürünlü slot → setSlotModule → ürün havuzda, slot free+banner, ürün YOK OLMADI', () => {
+    useCatalogStore.getState().setSlotModule(1, 'slot-1', 'banner');
+
+    expect(slot1().role).toBe('free');
+    expect(slot1().moduleType).toBe('banner');
+    expect(slot1().product).toBeNull();
+
+    expect(pool()).toHaveLength(1);
+    expect(pool()[0].sku).toBe('SKU1');
+    expect(pool()[0].originalPage).toBe(1);
+    expect(pool()[0].originalSlotId).toBe('slot-1');
+  });
+
+  it('tek undo adımı: Ctrl+Z → ürün slota döner, havuz boşalır', () => {
+    const before = useHistoryStore.getState().past.length;
+    useCatalogStore.getState().setSlotModule(1, 'slot-1', 'banner');
+    expect(useHistoryStore.getState().past.length).toBe(before + 1);
+
+    useHistoryStore.getState().undo();
+    expect(slot1().product?.sku).toBe('SKU1');
+    expect(slot1().role).toBe('product');
+    expect(pool()).toHaveLength(0);
+  });
+
+  it('zaten serbest slot → ürün zaten null, havuz ETKİLENMEZ', () => {
+    useCatalogStore.setState((s) => ({
+      ...s,
+      formas: s.formas.map((f) => ({
+        ...f,
+        pages: f.pages.map((p) => ({
+          ...p,
+          slots: p.slots.map((sl) => ({ ...sl, role: 'free' as const, product: null })),
+        })),
+      })),
+    }));
+    useCatalogStore.getState().setSlotModule(1, 'slot-1', 'banner');
+    expect(pool()).toHaveLength(0);
+  });
+});
