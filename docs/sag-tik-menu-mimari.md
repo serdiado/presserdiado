@@ -78,7 +78,6 @@ yüzeyden kopyalanmışsa görünür → panolar karışmaz.
 ```
 Modül Ekle
 Ürün Ekle
-─────────────
 Hücreleri Birleştir        (çoklu seçimde aktif)
 Özel Ayar Yap              (hücre genelse) / Genele Dön (hücre özelse)
 ─────────────
@@ -91,7 +90,6 @@ Yıkıcı yok — boş hücrede silinecek içerik yok.
 ```
 Modül Ekle
 Ürünü Değiştir
-─────────────
 Hücreleri Birleştir        (çoklu seçimde aktif)
 Özel Ayar Yap / Genele Dön
 ─────────────
@@ -104,7 +102,7 @@ Hücreyi Boşalt             (güvenli — kırmızı DEĞİL)
 ### Dal 3 — Birleşik slot
 ```
 Modül Ekle
-─────────────
+Ürünü Değiştir
 Hücreleri Ayır
 Özel Ayar Yap / Genele Dön
 ─────────────
@@ -230,6 +228,12 @@ Tüm "Temizle / Boşalt" çağrıları — sağ tık, ContextualBar, sağ panel 
 (`clearSlotToPool`) kullanır. Şu an `clearSlot` ürünü YOK EDİYOR (yanlış davranış);
 düzeltme sonrası her yer havuza atar. Tek yerden değişiklik → her yer birden değişir.
 İsim farklı görünebilir ("Temizle", "Hücreyi Boşalt") ama arkadaki action aynıdır.
+
+### Açık borç (sonraki PR)
+- [ ] **Havuza-atma desenini tek kaynağa çıkar** — `clearSlotToPool` + `setSlotModule`
+  aynı "ürün yakala → SKU filter → `originalPage`/`originalSlotId` prepend" mantığını
+  ayrı taşıyor (akış farkı: `setActivePages` vs `recalculateLayout`). 2 kopya bugün
+  kabul; **3. çağıran eklenince** `captureProductToPool` helper'ına zorunlu çıkar.
 
 ---
 

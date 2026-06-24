@@ -126,6 +126,7 @@ describe('buildMenu', () => {
     const groups = buildMenu({ kind: 'none' }, fixtures);
     expect(groups.map((g) => g.group)).toEqual([1, 2, 4]); // g3 görünmez → atlanır
     expect(groups[0].items.map((i) => i.id)).toEqual(['b-g1']);
+    expect(groups.map((g) => g.dividerBefore)).toEqual([false, false, true]); // §2: G1+G2 bitişik; G4 blok sınırı
   });
 
   it('hiç görünür yoksa boş dizi (menü açılmaz)', () => {
@@ -165,8 +166,11 @@ describe('MENU_ACTIONS — pilot dallar (parite)', () => {
     expect(got).not.toContain('slot-bosalt');
   });
 
-  it('birleşik slot: Hücreyi Dağıt var', () => {
-    expect(ids(slotCtx({ canUnmerge: true }))).toContain('slot-ayir');
+  it('birleşik slot: Hücreyi Dağıt + (Fix 1) Modül Ekle & Ürün — birleşik = normal yetenek', () => {
+    const got = ids(slotCtx({ canUnmerge: true }));
+    expect(got).toContain('slot-ayir');
+    expect(got).toContain('slot-modul-ekle'); // !canUnmerge kalktı → birleşikte de görünür
+    expect(got).toContain('slot-urun');
   });
 
   it('çoklu seçim: Hücreleri Birleştir var', () => {
@@ -183,9 +187,10 @@ describe('MENU_ACTIONS — pilot dallar (parite)', () => {
     expect(buildMenu({ kind: 'none' })).toEqual([]);
   });
 
-  it('§2 sıra: ürünlü+birleşik+kopyalı slotta gruplar 2→3→4', () => {
+  it('§2 sıra+divider: birleşik+ürünlü+kopyalı → 1→2→3→4; divider yalnız G3,G4 önünde (G1+G2 bitişik)', () => {
     const groups = buildMenu(slotCtx({ hasProduct: true, canUnmerge: true, hasCopiedSlotStyle: true }));
-    expect(groups.map((g) => g.group)).toEqual([2, 3, 4]); // Dönüştür → Stil → Yıkıcı
+    expect(groups.map((g) => g.group)).toEqual([1, 2, 3, 4]); // Oluştur → Dönüştür → Stil → Yıkıcı
+    expect(groups.map((g) => g.dividerBefore)).toEqual([false, false, true, true]); // §2: G1↔G2 divider YOK
   });
 });
 

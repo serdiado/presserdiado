@@ -27,9 +27,9 @@ export function ContextMenu({ ctx, x, y, onClose }: Props) {
       onClick={(e) => e.stopPropagation()}
       onContextMenu={(e) => e.preventDefault()}
     >
-      {groups.map((grp, gi) => (
+      {groups.map((grp) => (
         <Fragment key={grp.group}>
-          {gi > 0 && <div className="my-1 border-t border-border-default" />}
+          {grp.dividerBefore && <div className="my-1 border-t border-border-default" />}
           {grp.items.map((a) => {
             const disabled = a.enabled ? !a.enabled(ctx) : false;
             const Icon = a.icon;

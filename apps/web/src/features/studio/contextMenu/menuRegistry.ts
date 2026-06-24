@@ -46,7 +46,7 @@ export const MENU_ACTIONS: MenuAction[] = [
     id: 'slot-modul-ekle',
     label: () => 'Modül Ekle',
     group: 1,
-    visible: (c) => c.kind === 'slot' && c.role === 'product' && !c.canUnmerge,
+    visible: (c) => c.kind === 'slot' && c.role === 'product',
     run: (c) => {
       if (c.kind === 'slot') cat().setSlotModule(c.pageNumber, c.slotId, 'banner');
     },
@@ -55,7 +55,7 @@ export const MENU_ACTIONS: MenuAction[] = [
     id: 'slot-urun',
     label: (c) => (c.kind === 'slot' && c.hasProduct ? 'Ürünü Değiştir' : 'Ürün Ekle'),
     group: 1,
-    visible: (c) => c.kind === 'slot' && c.role === 'product' && !c.canUnmerge,
+    visible: (c) => c.kind === 'slot' && c.role === 'product',
     run: () => {
       ui().setSidebarState('products');
     },
@@ -145,16 +145,26 @@ export const MENU_ACTIONS: MenuAction[] = [
 export interface MenuGroup {
   group: number;
   items: MenuAction[];
+  /** §2: bu grubun ÖNÜNE divider çizilsin mi (yalnız BLOK sınırında true). */
+  dividerBefore: boolean;
 }
 
-// Saf: filtrele(visible) → §2 grup sırası (1→4), yalnız DOLU gruplar. Renderer dönen gruplar-ARASI
-// divider koyar → §2 (divider yalnız dolu gruplar arası; baş/son/çift yok) + §3 (renk descriptor.danger'dan)
+// §2 BLOK haritası: G1(Oluştur)+G2(Dönüştür) BİTİŞİK (blok 1) → aralarında divider YOK; G3(Stil) blok 2;
+// G4(Yıkıcı) blok 3. block, group'tan TÜRETİLİR (descriptor'a ayrı 'block' alanı KOYMA → tekrar/tutarsızlık
+// riski; tek-kaynak group). Divider yalnız blok DEĞİŞİNCE, "her grup arası" DEĞİL.
+const GROUP_BLOCK: Record<1 | 2 | 3 | 4, 1 | 2 | 3> = { 1: 1, 2: 1, 3: 2, 4: 3 };
+
+// Saf: filtrele(visible) → §2 grup sırası (1→4), yalnız DOLU gruplar; her gruba blok-sınırı divider'ı
+// (dividerBefore) işlenir → §2 (G1+G2 bitişik; divider yalnız blok arası) + §3 (renk descriptor.danger'dan)
 // OTOMATİK. Yeni dal eklemek = MENU_ACTIONS'a satır; render/sıra/renk koda gömülü invariant.
 export function buildMenu(ctx: MenuContext, actions: MenuAction[] = MENU_ACTIONS): MenuGroup[] {
-  const groups: MenuGroup[] = [];
+  const filled: { group: 1 | 2 | 3 | 4; items: MenuAction[] }[] = [];
   for (const g of [1, 2, 3, 4] as const) {
     const items = actions.filter((a) => a.group === g && a.visible(ctx));
-    if (items.length > 0) groups.push({ group: g, items });
+    if (items.length > 0) filled.push({ group: g, items });
   }
-  return groups;
+  return filled.map((grp, i) => ({
+    ...grp,
+    dividerBefore: i > 0 && GROUP_BLOCK[grp.group] !== GROUP_BLOCK[filled[i - 1].group],
+  }));
 }
