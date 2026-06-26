@@ -188,7 +188,7 @@ describe('MENU_ACTIONS — pilot dallar (parite)', () => {
     expect(got).not.toContain('slot-bosalt');
   });
 
-  it('birleşik slot: Hücreyi Dağıt + (Fix 1) Modül Ekle & Ürün — birleşik = normal yetenek', () => {
+  it('birleşik slot: Hücreleri Ayır + (Fix 1) Modül Ekle & Ürün — birleşik = normal yetenek', () => {
     const got = ids(slotCtx({ canUnmerge: true }));
     expect(got).toContain('slot-ayir');
     expect(got).toContain('slot-modul-ekle'); // !canUnmerge kalktı → birleşikte de görünür

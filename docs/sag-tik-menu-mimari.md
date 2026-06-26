@@ -233,10 +233,10 @@ Uygulama sırası: **önce action altyapısı, sonra menü.** Menü bu action'la
   uygulama anında ele alınır.)*
 
 ### Tek-Action Birleştirme Kuralı (KRİTİK)
-Tüm "Temizle / Boşalt" çağrıları — sağ tık, ContextualBar, sağ panel — **tek action**
+Tüm "Hücreyi Boşalt" çağrıları — sağ tık, ContextualBar, sağ panel — **tek action**
 (`clearSlotToPool`) kullanır. Şu an `clearSlot` ürünü YOK EDİYOR (yanlış davranış);
 düzeltme sonrası her yer havuza atar. Tek yerden değişiklik → her yer birden değişir.
-İsim farklı görünebilir ("Temizle", "Hücreyi Boşalt") ama arkadaki action aynıdır.
+Etiket her yüzeyde aynı: **"Hücreyi Boşalt"** (ContextualBar da hizalandı — eski "Temizle" kalktı).
 
 ### Havuza-atma tek kaynağı (kapandı)
 `clearSlotToPool` + `setSlotModule` + `mergeSelected` ortak "ürün yakala → SKU filter →
@@ -266,8 +266,8 @@ deseni: **tek tanım kaynağı, render onu yorumlar.**
   aksiyon eklenince varsayılan NÖTR; kırmızı için "havuz/undo yok mu?" testi geçilmeli.
 - **Sıralama formülü invariant:** Oluştur → Dönüştür → [div] → Stil → [div] → Yıkıcı.
   Yeni aksiyon doğru gruba girer; yıkıcı her zaman en altta.
-- **Tek-action invariant:** "Boşalt/Temizle" her yerde `clearSlotToPool`. Asla ikinci
-  bir "temizle" action'ı türetilmez. `clearSlot` geri eklenmez.
+- **Tek-action invariant:** "Hücreyi Boşalt" her yerde `clearSlotToPool` (etiket de hizalı —
+  ContextualBar dahil). Asla ikinci bir "boşalt" action'ı türetilmez. `clearSlot` geri eklenmez.
 - **Serbest alan gizli kalır:** Modül ekleme otomatik `free` dönüşümü yapar; kullanıcıya
   "serbest alan yap" aksiyonu SUNULMAZ.
 - **Metin dalı izolasyonu:** Dal 8 registry'ye GİRMEZ; metin-edit'te native tarayıcı menüsü

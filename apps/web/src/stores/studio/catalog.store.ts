@@ -1556,8 +1556,8 @@ export const useCatalogStore = create<Store>()(
         set({ tempProductPool: [] });
       },
       // Hücreyi boşalt → ürün YOK EDİLMEZ, tempProductPool'a gider (slot ürün hücresi olarak kalır).
-      // TEK "boşalt/temizle" action'ı: eski clearSlot (yok ederdi) + moveSlotToTempPool ikilisi burada
-      // birleşti (sağ tık "Temizle", ContextualBar, sağ panel, sürükle-bırak hepsi bunu çağırır).
+      // TEK "Hücreyi Boşalt" action'ı: eski clearSlot (yok ederdi) + moveSlotToTempPool ikilisi burada
+      // birleşti (sağ tık, ContextualBar, sağ panel, sürükle-bırak hepsi bunu çağırır; etiket her yerde aynı).
       clearSlotToPool: (pageNumber, slotId) => {
         const { getActivePages, setActivePages, tempProductPool } = get();
         useHistoryStore.getState().saveState();

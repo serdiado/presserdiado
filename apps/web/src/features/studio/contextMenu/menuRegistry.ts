@@ -71,7 +71,7 @@ export const MENU_ACTIONS: MenuAction[] = [
   },
   {
     id: 'slot-ayir',
-    label: () => 'Hücreyi Dağıt',
+    label: () => 'Hücreleri Ayır',
     group: 2,
     visible: (c) => c.kind === 'slot' && c.canUnmerge,
     run: (c) => {

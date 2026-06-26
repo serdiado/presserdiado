@@ -634,7 +634,7 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
           className={`${btnCls} text-danger hover:bg-red-50`}
         >
           <Trash2 size={16} />
-          Temizle
+          Hücreyi Boşalt
         </button>
       )}
 
@@ -1779,7 +1779,7 @@ function FreeSlotMode({ slot, pageNumber, slotIds }: FreeSlotProps) {
         className={`${btnCls} text-danger hover:bg-red-50`}
       >
         <Trash2 size={16} />
-        Temizle
+        Hücreyi Boşalt
       </button>
     </>
   );
