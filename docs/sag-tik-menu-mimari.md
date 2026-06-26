@@ -1,9 +1,11 @@
 # Sağ Tık Menüsü — Mimari Belge
 
-> Durum: KARARLAŞTIRILDI · Uygulama bekliyor.
+> Durum: UYGULANDI · 8 dal canlı (veri-driven registry göçü tamam).
 > Kapsam: Stüdyo kanvasındaki tüm sağ tık (context menu) davranışları.
-> İlgili kod: `apps/web/src/features/studio/canvas/Page.tsx` (mevcut menü),
-> `apps/web/src/features/studio/contextual/ContextualBar.tsx` (hızlı bar — dil ortaklığı),
+> İlgili kod: `apps/web/src/features/studio/contextMenu/` (registry — `menuRegistry.ts` =
+> `MENU_ACTIONS`+`buildMenu`, `menuContext.ts` = `resolveMenuContext`, `ContextMenu.tsx` = renderer),
+> `apps/web/src/features/studio/canvas/Page.tsx` (menüyü mount eder + bağlamı çözer),
+> `apps/web/src/features/studio/contextual/ContextualBar.tsx` (hızlı bar — dil ortaklığı, ortak resolver),
 > `apps/web/src/stores/studio/catalog.store.ts` (action'lar).
 
 ---
@@ -14,7 +16,8 @@ Menü iki mantıksal katmandan oluşur:
 
 - **KALICI katman:** Seçim ne olursa olsun anlamlı olan, her bağlamda aynı yerde
   duran aksiyonlar. Pratikte yalnızca **Stil Kopyala / Yapıştır**. Desteklemeyen
-  bağlamda pasif görünür.
+  bağlamda **gizlenir** (uygulamada `visible:false`; pasif/disabled-render mekanizması — `MenuAction.enabled`
+  + renderer'ın `disabled:opacity-40`'ı — mevcut ama ŞU AN kullanılmıyor).
 - **BAĞLAMSAL katman:** Seçili öğenin tipine göre belirir / kaybolur. Sekiz dal.
 
 Karar: KALICI katmana Geri Al / İleri Al **konmaz** — üst barda mevcut, tekrar
@@ -123,13 +126,16 @@ anchor kalır, diğer ürünlerin hepsi havuza, modüller silinir. (`mergeSelect
 
 ### Dal 4 — Modül / banner slot (free rolü, modüllü)
 ```
-Modülü Değiştir
-Modülü Kaldır              (modül silinir → boş ürün hücresine döner)
+Ürün Hücresi Yap          (modül kaldırılır → boş ürün hücresine döner)
 ─────────────
 Hücre Stili Kopyala
 Hücre Stili Yapıştır
 ```
-Özel/Genel YOK — modüllü hücre zaten özel ayarlıdır.
+Özel/Genel YOK — modüllü hücre zaten özel ayarlıdır. **"Modülü Değiştir" YOK** (kasıtlı kaldırıldı):
+tek modül-tip var, hazır modüller uzun liste olacak → sağ-tıkta tek-tık modül-tipi seçimi liste
+uzayınca anlamsızlaşır; modül değiştirme **kütüphaneden** yapılır. "Modülü Kaldır" işlevi kodda
+**"Ürün Hücresi Yap"** etiketiyle (`slot-urun-hucresi` = `toggleSlotRole('product')`) — hızlı bar ile
+aynı kelime (§4 dil ortaklığı).
 
 ### Dal 5 — Footer hücre (seçim modu)
 ```
@@ -167,17 +173,20 @@ maliyeti gereksiz). **İçeriği Temizle = `clearBannerCells`** (YALNIZ içerik;
 değil, banner cell'de havuz yok). §3 NÖTR: hepsi Ctrl+Z ile geri alınır → hiç kırmızı yok.
 (Alt Bilgi Stili Kopyala/Yapıştır YOK — §6 "ertelenmiş" notu.)
 
-### Dal 7 — Sayfa zemini (mevcut yapı)
+### Dal 7 — Sayfa zemini (kind:'pageBg')
 ```
-Zemin Rengi
-Zemin Görseli
+Zemin Rengi               (hızlı bardaki renk seçici açılır)
+Zemin Görseli             (hızlı bardaki görsel seçici açılır)
 ─────────────
 Zemin Stili Kopyala
 Zemin Stili Yapıştır
-─────────────
-Zemin Ayarları
 ```
 Genel/Özel YOK — zeminde mod sistemi henüz yok (ayrı epic). Yıkıcı yok.
+**Renk/Görsel köprüsü:** Picker'lar (`ColorOpacityPicker`/`ImagePickerPopover`) trigger-anchored
+popover; registry `run()` bir popover'ı imperatif AÇAMAZ → `ui.store` `bgPickerToOpen` sinyali ile
+hızlı bardaki picker kendi düğmesine anchor'lı açılır (kullanıcı hızlı bara basmış gibi; tek-atış,
+opt-in `openSignal` prop'u yalnız `BackgroundMode`'a). **"Zemin Ayarları" sağ-tıkta YOK** (kullanıcı
+yalnız Renk/Görsel istedi; yan panel hızlı bardaki "Ayarlar"da — `setSidebarState('design','background')`).
 
 ### Dal 8 — Metin-edit modu (hücre içi metin düzenleme aktif)
 ```
@@ -200,11 +209,10 @@ banner/footer → `modules/bannerContextMenu.ts` (`bannerCtxAction`); ürün ad�
 |---|---|---|
 | Modül Ekle | `setSlotModule()` (rol dönüşümünü kendi yapar) | VAR |
 | Ürün Ekle / Ürünü Değiştir | `setSidebarState('products')` | VAR |
-| Modülü Değiştir | `setSlotModule()` (modül-tip seçimi) | VAR |
-| Modülü Kaldır | `toggleSlotRole('product')` | VAR |
+| Ürün Hücresi Yap (Dal 4) | `toggleSlotRole('product')` (modül kaldırılır → ürün hücresi) | VAR |
 | Hücreleri Birleştir | `mergeSelected()` | VAR |
 | Hücreleri Ayır (slot) | `unmergeSlot()` | VAR |
-| Özel Ayar Yap / Genele Dön (slot) | `toggleSlotCustomSettings()` | VAR |
+| Özel Ayar Yap / Genele Dön (slot, Dal 1/2/3) | `toggleSlotCustomSettings()` (sağ-tık `slot-ozel-genel` + hızlı bar toggle) | VAR |
 | Özel Ayar Yap / Genele Dön (footer) | `forkPageFooter()` / `revertPageFooter()` *(setPageFooterMode değil — fork/revert override yaratır/siler)* | VAR |
 | Hücre Stili Kopyala/Yapıştır | `copySlotSettings` / `pasteSlotSettings` | VAR |
 | Alt Bilgi Stili Kopyala/Yapıştır | — *(ayrı clipboard action'ı yok — **ertelendi**, aşağıdaki nota bkz.)* | ⏸ |
@@ -214,8 +222,8 @@ banner/footer → `modules/bannerContextMenu.ts` (`bannerCtxAction`); ürün ad�
 | Footer/banner Satır/Sütun sil | `deleteBannerRow/Column(slotId, anchorRow/anchorCol)` *(son satır/sütunda gizli)* | VAR |
 | Footer/banner Düzenle | çift-tık → `enterIsolation` / hücre-içi `setEditingCellId` — **menüde DEĞİL** | VAR |
 | Footer/banner İçeriği Temizle | `clearBannerCells(slotId, cellIds)` (Del tuşu **+** sağ-tık "İçeriği Temizle") | VAR |
-| Zemin Rengi / Görseli | ilgili picker'ı aç | VAR |
-| Zemin Ayarları | `setSidebarState('design','background')` | VAR |
+| Zemin Rengi / Görseli (sağ-tık) | `openBgPicker('color'/'image')` köprüsü → hızlı-bar picker'ı açılır | VAR |
+| Zemin Ayarları | `setSidebarState('design','background')` — **hızlı bar "Ayarlar"; sağ-tıkta YOK** | VAR |
 | Kes / Kopyala / Yapıştır (metin) | native Clipboard API (tarayıcı menüsü — registry'ye girmez) | ✅ |
 | **Hücreyi Boşalt** | **`clearSlotToPool()`** | 🆕 |
 | **Varsayılana Sıfırla** | **`resetFooterToDefault(scope)`** — custom: pageNumber (onaysız); global: 'global' (onay-gate) | VAR |
@@ -268,16 +276,16 @@ vs `recalculateLayout`) sayfa-yazımında, havuz transformu saf → helper temiz
 
 ---
 
-## 8. Mimari Hedef — Veri-Driven Menü
+## 8. Mimari Hedef — Veri-Driven Menü (UYGULANDI)
 
-Mevcut menü `selection.type`'a göre JSX içinde elle if/else dallarıyla yazılıyor; her
-yeni tip elle dal açmayı gerektiriyor, tutarsızlık riski taşıyor.
+Eskiden menü `selection.type`'a göre JSX içinde elle if/else dallarıyla yazılırdı; her yeni tip elle
+dal açmayı gerektirir, tutarsızlık riski taşırdı.
 
-Hedef: her aksiyon bir veri tanımı —
-`{ id, etiket, ikon, görünürlük-koşulu, tehlikeli mi, grup }`. Menü, mevcut seçime göre
-bu tanımları filtreleyip render eder. Yeni aksiyon = listeye bir satır; JSX'e dokunma.
-Tutarlılık (renk, divider, sıra) otomatik. Bu, `ModuleRegistry` ve token sisteminin
-deseni: **tek tanım kaynağı, render onu yorumlar.**
+**Uygulanan model:** her aksiyon bir veri tanımı (`MenuAction` descriptor) —
+`{ id, label, icon?, group, danger?, visible, run }` (`menuRegistry.ts`). `buildMenu(ctx)` mevcut
+bağlama göre filtreler/gruplar; `ContextMenu.tsx` render eder. Yeni aksiyon = `MENU_ACTIONS`'a bir
+satır; JSX'e dokunma. Tutarlılık (renk §3, divider §2, sıra) `GROUP_BLOCK` + `MENU_DANGER_ALLOWLIST`'ten
+OTOMATİK. Bu, `ModuleRegistry` ve token sisteminin deseni: **tek tanım kaynağı, render onu yorumlar.**
 
 ---
 
