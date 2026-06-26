@@ -159,6 +159,95 @@ export const MENU_ACTIONS: MenuAction[] = [
       }
     },
   },
+  // ── Dal 6 — banner/footer cell-edit (izole iç hücre, kind:'bannerCell') ─────
+  // SÜPERSET: lokal #banner-ctx-menu (satır/sütun ekle-sil) registry'ye taşındı + Birleştir/Ayır/
+  // İçeriği Temizle eklendi. Action paritesi BİREBİR (insert/deleteBannerRow/Column anchor sr/sc =
+  // anchorRow/anchorCol). Footer-aware: action'lar resolveModuleSlot ile footerModule'e yönlenir.
+  // §3 NÖTR: hiç kırmızı yok (hepsi Ctrl+Z ile geri alınır). Düzenle YOK (çift-tık zaten girer).
+  {
+    id: 'cell-row-above',
+    label: () => 'Üste satır ekle',
+    group: 1,
+    visible: (c) => c.kind === 'bannerCell',
+    run: (c) => {
+      if (c.kind === 'bannerCell') cat().insertBannerRow(c.slotId, c.anchorRow);
+    },
+  },
+  {
+    id: 'cell-row-below',
+    label: () => 'Alta satır ekle',
+    group: 1,
+    visible: (c) => c.kind === 'bannerCell',
+    run: (c) => {
+      if (c.kind === 'bannerCell') cat().insertBannerRow(c.slotId, c.anchorRow + 1);
+    },
+  },
+  {
+    id: 'cell-col-left',
+    label: () => 'Sola sütun ekle',
+    group: 1,
+    visible: (c) => c.kind === 'bannerCell',
+    run: (c) => {
+      if (c.kind === 'bannerCell') cat().insertBannerColumn(c.slotId, c.anchorCol);
+    },
+  },
+  {
+    id: 'cell-col-right',
+    label: () => 'Sağa sütun ekle',
+    group: 1,
+    visible: (c) => c.kind === 'bannerCell',
+    run: (c) => {
+      if (c.kind === 'bannerCell') cat().insertBannerColumn(c.slotId, c.anchorCol + 1);
+    },
+  },
+  {
+    id: 'cell-birlestir',
+    label: () => 'Hücreleri Birleştir',
+    group: 2,
+    visible: (c) => c.kind === 'bannerCell' && c.cellIds.length >= 2,
+    run: (c) => {
+      if (c.kind === 'bannerCell') cat().mergeBannerCells(c.slotId, c.cellIds);
+    },
+  },
+  {
+    id: 'cell-ayir',
+    label: () => 'Hücreleri Ayır',
+    group: 2,
+    visible: (c) => c.kind === 'bannerCell' && c.isMerged,
+    run: (c) => {
+      if (c.kind === 'bannerCell') cat().splitBannerCell(c.slotId, c.anchorCellId);
+    },
+  },
+  {
+    id: 'cell-satir-sil',
+    label: () => 'Satırı sil',
+    group: 4,
+    // visible-gizleme (disabled DEĞİL): son satırda (rows<=1) menüde görünmez. enabled mekanizması yok.
+    visible: (c) => c.kind === 'bannerCell' && c.rows > 1,
+    run: (c) => {
+      if (c.kind === 'bannerCell') cat().deleteBannerRow(c.slotId, c.anchorRow);
+    },
+  },
+  {
+    id: 'cell-sutun-sil',
+    label: () => 'Sütunu sil',
+    group: 4,
+    visible: (c) => c.kind === 'bannerCell' && c.cols > 1,
+    run: (c) => {
+      if (c.kind === 'bannerCell') cat().deleteBannerColumn(c.slotId, c.anchorCol);
+    },
+  },
+  {
+    id: 'cell-sil',
+    // clearBannerCells YALNIZ içerik (text+image) temizler; yapı+stil korunur → "İçeriği Temizle"
+    // (Satırı/Sütunu sil yapı siler; bu ondan ayrışır). danger YOK: tek Ctrl+Z geri alır.
+    label: () => 'İçeriği Temizle',
+    group: 4,
+    visible: (c) => c.kind === 'bannerCell',
+    run: (c) => {
+      if (c.kind === 'bannerCell') cat().clearBannerCells(c.slotId, c.cellIds);
+    },
+  },
   // ── Dal 7 — sayfa zemini (kind:'pageBg') ────────────────────────────────────
   {
     id: 'bg-stil-kopyala',

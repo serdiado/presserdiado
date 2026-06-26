@@ -26,7 +26,18 @@ export type MenuContext =
       hasCopiedSlotStyle: boolean;
     }
   | { kind: 'footerSel'; pageNumber: number; isCustom: boolean; isHidden: boolean }
-  | { kind: 'bannerCell'; slotId: string; cellIds: string[]; isMerged: boolean }
+  | {
+      kind: 'bannerCell';
+      slotId: string;
+      cellIds: string[];
+      isMerged: boolean;
+      // Dal 6 anchor (sağ-tıklanan hücre) — satır/sütun ekle-sil konumu + Ayır hedefi bundan türer.
+      anchorCellId: string;
+      anchorRow: number;
+      anchorCol: number;
+      rows: number;
+      cols: number;
+    }
   | { kind: 'textElement'; slotId: string; elementType: TextElementType }
   | { kind: 'pageBg'; pageNumber: number; hasCopiedBg: boolean }
   | { kind: 'none' };
@@ -45,6 +56,11 @@ export interface MenuContextDeps {
    * davranışıyla parite (eski menü contextMenu.slot.id = sağ-tıklanan kullanırdı).
    */
   targetSlotId?: string;
+  /**
+   * Sağ-tıklanan banner hücresi (Dal 6). Verilmezse selection.ids[0]. Anchor (insert konumu +
+   * Ayır hedefi) bundan türer → lokal #banner-ctx-menu sr/sc paritesi (sağ-tıklanan hücre).
+   */
+  targetCellId?: string;
 }
 
 export function resolveMenuContext(d: MenuContextDeps): MenuContext {
@@ -86,13 +102,29 @@ export function resolveMenuContext(d: MenuContextDeps): MenuContext {
     // Footer-farkındalığı resolveModuleSlot'ta (footer-slot → globalSettings.footerModule).
     const resolved = resolveModuleSlot(selection.parentId, pages, globalSettings);
     const md = resolved?.moduleData as
-      | { cells?: { id: string; colSpan?: number; rowSpan?: number }[] }
+      | { cells?: { id: string; colSpan?: number; rowSpan?: number }[]; rows?: number; cols?: number }
       | null
       | undefined;
     if (md && Array.isArray(md.cells)) {
-      const anchor = md.cells.find((c) => selection.ids.includes(c.id));
+      const cols = md.cols ?? 4;
+      const rows = md.rows ?? 4;
+      // Anchor = sağ-tıklanan hücre (targetCellId); verilmezse seçimin ilki (ContextualBar/test deseni).
+      // sr/sc lokal #banner-ctx-menu ile BİREBİR: flat-index ÷ cols (merge-span'i yok sayan naif hesap aynen).
+      const anchorCellId = d.targetCellId ?? selection.ids[0];
+      const anchorIdx = md.cells.findIndex((c) => c.id === anchorCellId);
+      const anchor = anchorIdx >= 0 ? md.cells[anchorIdx] : undefined;
       const isMerged = !!anchor && ((anchor.colSpan ?? 1) > 1 || (anchor.rowSpan ?? 1) > 1);
-      return { kind: 'bannerCell', slotId: selection.parentId, cellIds: selection.ids, isMerged };
+      return {
+        kind: 'bannerCell',
+        slotId: selection.parentId,
+        cellIds: selection.ids,
+        isMerged,
+        anchorCellId,
+        anchorRow: anchorIdx >= 0 ? Math.floor(anchorIdx / cols) : 0,
+        anchorCol: anchorIdx >= 0 ? anchorIdx % cols : 0,
+        rows,
+        cols,
+      };
     }
     return { kind: 'none' };
   }
@@ -128,4 +160,19 @@ export function resolveMenuContext(d: MenuContextDeps): MenuContext {
 // sağ-tıkta menü açılmazdı). type-tabanlı guard bunu kapatır; çoklu-seçim merge anchor'ı korunur.
 export function isSlotMenuSelectionActive(selection: SelectionState, slotId: string): boolean {
   return selection.type === 'slot' && selection.ids.includes(slotId);
+}
+
+// Dal 6 "önce seç" guard'ı (isSlotMenuSelectionActive muadili): hücre, BU modülün bannerCell
+// seçiminde zaten var mı? Varsa BannerSection seçimi DARALTMAZ (çoklu-seçim korunur → "Hücreleri
+// Birleştir" aktif kalır); yoksa sağ-tıklanan tek hücreyi seçer → resolver kind:'bannerCell' türetir.
+export function isBannerCellMenuSelectionActive(
+  selection: SelectionState,
+  slotId: string,
+  cellId: string,
+): boolean {
+  return (
+    selection.type === 'bannerCell' &&
+    selection.parentId === slotId &&
+    selection.ids.includes(cellId)
+  );
 }

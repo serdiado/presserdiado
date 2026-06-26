@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import { colorValueBackground, colorOpacityToCss, radiusStyle, shadowStyle, hexToRgba } from '../util/style';
 import { usePreserveEditorSelectionOnChrome, markDragGesture } from '../util/editorChrome';
@@ -8,6 +7,8 @@ import { materializeFractions, FRACTION_MIN } from './fractions';
 import { cellDomId } from './bannerDom';
 import { getMergeBoxes, colBoundarySegments, rowBoundarySegments } from './gridMutate';
 import { bannerCtxAction } from './bannerContextMenu';
+import { ContextMenu } from '../contextMenu/ContextMenu';
+import { resolveMenuContext, isBannerCellMenuSelectionActive } from '../contextMenu/menuContext';
 import {
   setActiveRange,
   clearActiveSession,
@@ -26,10 +27,6 @@ interface LassoRect { startX: number; startY: number; currentX: number; currentY
 export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
   const updateSlotModuleData = useCatalogStore((s) => s.updateSlotModuleData);
   const setBannerFractions = useCatalogStore((s) => s.setBannerFractions);
-  const insertBannerRow = useCatalogStore((s) => s.insertBannerRow);
-  const deleteBannerRow = useCatalogStore((s) => s.deleteBannerRow);
-  const insertBannerColumn = useCatalogStore((s) => s.insertBannerColumn);
-  const deleteBannerColumn = useCatalogStore((s) => s.deleteBannerColumn);
   const selection = useUIStore((s) => s.selection);
   const toggleElementSelection = useUIStore((s) => s.toggleElementSelection);
   const setSelection = useUIStore((s) => s.setSelection);
@@ -142,7 +139,7 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
     if (!ctxMenu) return;
     const onDown = (e: MouseEvent) => {
       const t = e.target as HTMLElement | null;
-      if (t && typeof t.closest === 'function' && t.closest('#banner-ctx-menu')) return;
+      if (t && typeof t.closest === 'function' && t.closest('#context-menu-container')) return;
       setCtxMenu(null);
     };
     // Escape menüyü handled ediyor → olayı TÜKET. Menü listener'ı document-bubble, TopBar
@@ -328,6 +325,19 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
   if (cells.length === 0) return null;
   const visible = cells.filter((c) => !c.hidden);
 
+  // Dal 6 sağ-tık menüsü bağlamı — ctxMenu açıkken store'dan SAF çöz (Page.currentMenuContext deseni).
+  // targetCellId = sağ-tıklanan hücre → anchor sr/sc paritesi. copiedSlotStyle/Bg bannerCell'i etkilemez.
+  const menuCtx = ctxMenu
+    ? resolveMenuContext({
+        selection: useUIStore.getState().selection,
+        pages: useCatalogStore.getState().getActivePages(),
+        globalSettings: useCatalogStore.getState().globalSettings,
+        copiedSlotStyle: false,
+        copiedBg: false,
+        targetCellId: ctxMenu.cellId,
+      })
+    : null;
+
   return (
     <div
       ref={containerRef}
@@ -395,6 +405,11 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
               }
               e.preventDefault();
               e.stopPropagation();
+              // Dal 6 önce-seç: hücre bu modülün bannerCell seçiminde değilse seç → resolver
+              // kind:'bannerCell' türetir. Zaten seçiliyse DARALTMA (çoklu-seçim/Birleştir korunur).
+              if (!isBannerCellMenuSelectionActive(useUIStore.getState().selection, slotId, cell.id)) {
+                toggleElementSelection('bannerCell', cell.id, false, slotId);
+              }
               setCtxMenu({ x: e.clientX, y: e.clientY, cellId: cell.id });
             }}
             onDoubleClick={(e) => {
@@ -611,34 +626,18 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
         />
       )}
 
-      {/* Sağ-tık satır/sütun menüsü — body'ye portal (transform'lu #canvas içindeki fixed/clip
-          sorununu aşar; clientX/Y viewport doğru). Tıklanan hücrenin (sr,sc)'sine göre çağırır. */}
-      {ctxMenu && (() => {
-        const idx = cells.findIndex((c) => c.id === ctxMenu.cellId);
-        if (idx < 0) return null;
-        const sr = Math.floor(idx / cols);
-        const sc = idx % cols;
-        const item =
-          'w-full text-left px-3 py-1.5 text-xs text-text-secondary hover:bg-surface-subtle disabled:opacity-40 disabled:hover:bg-transparent';
-        const run = (fn: () => void) => { fn(); setCtxMenu(null); };
-        return createPortal(
-          <div
-            id="banner-ctx-menu"
-            className="fixed z-99999 bg-surface-panel border border-border-strong shadow-2xl rounded-md py-1 min-w-40"
-            style={{ top: ctxMenu.y, left: ctxMenu.x }}
-            onContextMenu={(e) => e.preventDefault()}
-          >
-            <button className={item} onClick={() => run(() => insertBannerRow(slotId, sr))}>Üste satır ekle</button>
-            <button className={item} onClick={() => run(() => insertBannerRow(slotId, sr + 1))}>Alta satır ekle</button>
-            <button className={item} onClick={() => run(() => insertBannerColumn(slotId, sc))}>Sola sütun ekle</button>
-            <button className={item} onClick={() => run(() => insertBannerColumn(slotId, sc + 1))}>Sağa sütun ekle</button>
-            <div className="my-1 border-t border-border-default" />
-            <button className={item} disabled={rows <= 1} onClick={() => run(() => deleteBannerRow(slotId, sr))}>Satırı sil</button>
-            <button className={item} disabled={cols <= 1} onClick={() => run(() => deleteBannerColumn(slotId, sc))}>Sütunu sil</button>
-          </div>,
-          document.body,
-        );
-      })()}
+      {/* Dal 6 — registry sağ-tık menüsü (lokal #banner-ctx-menu YERİNE). buildMenu kind:'bannerCell'
+          descriptor'larını çizer: satır/sütun ekle-sil (parite birebir) + Birleştir/Ayır + İçeriği
+          Temizle. ctx render-anında çözülür (targetCellId = sağ-tıklanan hücre). Dal 8 passthrough/
+          native (metin-edit) bu noktaya GİRMEZ — onContextMenu'da erken döner. */}
+      {ctxMenu && menuCtx && (
+        <ContextMenu
+          ctx={menuCtx}
+          x={ctxMenu.x}
+          y={ctxMenu.y}
+          onClose={() => setCtxMenu(null)}
+        />
+      )}
     </div>
   );
 }

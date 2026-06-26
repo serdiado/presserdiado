@@ -1,9 +1,16 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { CatalogPage, CatalogSettings, StudioSlot } from '@matbaapro/shared';
 import type { SelectionState } from '../../../stores/studio/ui.store';
-import { resolveMenuContext, isSlotMenuSelectionActive, type MenuContext, type MenuContextDeps } from './menuContext';
+import {
+  resolveMenuContext,
+  isSlotMenuSelectionActive,
+  isBannerCellMenuSelectionActive,
+  type MenuContext,
+  type MenuContextDeps,
+} from './menuContext';
 import { MENU_ACTIONS, MENU_DANGER_ALLOWLIST, buildMenu, type MenuAction } from './menuRegistry';
 import { useUIStore } from '../../../stores/studio/ui.store';
+import { useCatalogStore } from '../../../stores/studio/catalog.store';
 
 // ── Fixture yardımcıları ────────────────────────────────────────────────────
 const GS = {} as CatalogSettings; // resolver footer-DIŞI dallarda globalSettings'e dokunmaz
@@ -94,6 +101,30 @@ describe('resolveMenuContext', () => {
     expect(ctx).toMatchObject({ kind: 'bannerCell', slotId: 'm1', isMerged: true });
   });
 
+  it('bannerCell targetCellId → anchorRow/anchorCol = flat-index ÷ cols (lokal #banner-ctx-menu sr/sc paritesi)', () => {
+    const cells = Array.from({ length: 6 }, (_, i) => ({ id: `c${i}` }));
+    const p = page([slot({ id: 'm1', role: 'free', moduleData: { type: 'banner', rows: 2, cols: 4, cells } as never })]);
+    const ctx = resolveMenuContext(deps(sel({ type: 'bannerCell', ids: ['c5'], parentId: 'm1' }), [p], { targetCellId: 'c5' }));
+    // c5 → idx 5 → row floor(5/4)=1, col 5%4=1
+    expect(ctx).toMatchObject({ kind: 'bannerCell', anchorCellId: 'c5', anchorRow: 1, anchorCol: 1, rows: 2, cols: 4, isMerged: false });
+  });
+
+  it('bannerCell isMerged anchor-tabanlı (targetCellId birleşik hücreyi gösterince true)', () => {
+    const cells = [{ id: 'c0' }, { id: 'c1', colSpan: 2 }];
+    const p = page([slot({ id: 'm1', role: 'free', moduleData: { type: 'banner', rows: 1, cols: 4, cells } as never })]);
+    const merged = resolveMenuContext(deps(sel({ type: 'bannerCell', ids: ['c1'], parentId: 'm1' }), [p], { targetCellId: 'c1' }));
+    const plain = resolveMenuContext(deps(sel({ type: 'bannerCell', ids: ['c0'], parentId: 'm1' }), [p], { targetCellId: 'c0' }));
+    expect(merged.kind === 'bannerCell' && merged.isMerged).toBe(true);
+    expect(plain.kind === 'bannerCell' && plain.isMerged).toBe(false);
+  });
+
+  it('bannerCell cellIds = seçim (çoklu lasso) korunur', () => {
+    const cells = [{ id: 'c0' }, { id: 'c1' }];
+    const p = page([slot({ id: 'm1', role: 'free', moduleData: { type: 'banner', rows: 1, cols: 2, cells } as never })]);
+    const ctx = resolveMenuContext(deps(sel({ type: 'bannerCell', ids: ['c0', 'c1'], parentId: 'm1' }), [p], { targetCellId: 'c0' }));
+    expect(ctx.kind === 'bannerCell' && ctx.cellIds).toEqual(['c0', 'c1']);
+  });
+
   it('pageBackground → kind:pageBg, hasCopiedBg', () => {
     const ctx = resolveMenuContext(deps(sel({ type: 'pageBackground', ids: ['1'] }), [page([])], { copiedBg: true }));
     expect(ctx).toMatchObject({ kind: 'pageBg', pageNumber: 1, hasCopiedBg: true });
@@ -133,6 +164,26 @@ describe('isSlotMenuSelectionActive', () => {
   it('pageBackground / none → false', () => {
     expect(isSlotMenuSelectionActive(sel({ type: 'pageBackground', ids: ['1'] }), 's1')).toBe(false);
     expect(isSlotMenuSelectionActive(sel({}), 's1')).toBe(false);
+  });
+});
+
+// ── isBannerCellMenuSelectionActive: Dal 6 "önce seç" guard'ı (çoklu-seçim korunur) ──
+describe('isBannerCellMenuSelectionActive', () => {
+  it('bannerCell + aynı parent + cell ids içinde → true (sağ-tıkta seçim DARALTILMAZ → Birleştir korunur)', () => {
+    expect(isBannerCellMenuSelectionActive(sel({ type: 'bannerCell', ids: ['c1', 'c2'], parentId: 'm1' }), 'm1', 'c2')).toBe(true);
+  });
+
+  it('farklı cell → false (sağ-tıklanan hücre seçilecek)', () => {
+    expect(isBannerCellMenuSelectionActive(sel({ type: 'bannerCell', ids: ['c1'], parentId: 'm1' }), 'm1', 'c2')).toBe(false);
+  });
+
+  it('farklı parent (başka modül) → false', () => {
+    expect(isBannerCellMenuSelectionActive(sel({ type: 'bannerCell', ids: ['c1'], parentId: 'm1' }), 'm2', 'c1')).toBe(false);
+  });
+
+  it('slot / none seçimi → false', () => {
+    expect(isBannerCellMenuSelectionActive(sel({ type: 'slot', ids: ['c1'] }), 'm1', 'c1')).toBe(false);
+    expect(isBannerCellMenuSelectionActive(sel({}), 'm1', 'c1')).toBe(false);
   });
 });
 
@@ -283,6 +334,116 @@ describe('footer-sifirla run — global onay gate', () => {
     expect(pc).not.toBeNull();
     expect(pc?.confirmLabel).toBe('Varsayılana Sıfırla');
     expect(typeof pc?.onConfirm).toBe('function'); // onaylanınca resetFooterToDefault('global') çağrılır
+  });
+});
+
+// ── Dal 6 — banner/footer cell-edit (kind:'bannerCell') ──────────────────────
+describe('Dal 6 — banner/footer hücre menüsü', () => {
+  const bc = (over: Partial<Extract<MenuContext, { kind: 'bannerCell' }>> = {}): MenuContext => ({
+    kind: 'bannerCell', slotId: 'm1', cellIds: ['c1'], isMerged: false,
+    anchorCellId: 'c1', anchorRow: 1, anchorCol: 1, rows: 4, cols: 4, ...over,
+  });
+  const ids = (ctx: MenuContext) => buildMenu(ctx).flatMap((g) => g.items.map((i) => i.id));
+
+  it('tek/birleşmemiş hücre: 4 ekle + satır/sütun sil + İçeriği Temizle; Birleştir/Ayır YOK; gruplar [1,4] tek divider', () => {
+    const ctx = bc();
+    expect(ids(ctx)).toEqual([
+      'cell-row-above', 'cell-row-below', 'cell-col-left', 'cell-col-right',
+      'cell-satir-sil', 'cell-sutun-sil', 'cell-sil',
+    ]);
+    const groups = buildMenu(ctx);
+    expect(groups.map((g) => g.group)).toEqual([1, 4]); // g2 boş (ne çoklu ne birleşik) → atlanır
+    expect(groups.map((g) => g.dividerBefore)).toEqual([false, true]); // tek divider, g4 bloğu önünde
+  });
+
+  it('çoklu seçim (cellIds≥2): Hücreleri Birleştir görünür (Ayır değil); gruplar [1,2,4], g1+g2 bitişik', () => {
+    const ctx = bc({ cellIds: ['c1', 'c2'] });
+    expect(ids(ctx)).toContain('cell-birlestir');
+    expect(ids(ctx)).not.toContain('cell-ayir');
+    expect(buildMenu(ctx).map((g) => g.group)).toEqual([1, 2, 4]);
+    expect(buildMenu(ctx).map((g) => g.dividerBefore)).toEqual([false, false, true]); // §2: G1↔G2 divider YOK
+  });
+
+  it('birleşik hücre (isMerged): Hücreleri Ayır görünür; tekken Birleştir görünmez', () => {
+    expect(ids(bc({ isMerged: true }))).toContain('cell-ayir');
+    expect(ids(bc({ isMerged: true }))).not.toContain('cell-birlestir'); // cellIds=['c1'] tek → Birleştir yok
+  });
+
+  it('son satır (rows=1): "Satırı sil" GİZLİ (disabled DEĞİL); "Sütunu sil" durur', () => {
+    expect(ids(bc({ rows: 1 }))).not.toContain('cell-satir-sil');
+    expect(ids(bc({ rows: 1 }))).toContain('cell-sutun-sil');
+  });
+
+  it('son sütun (cols=1): "Sütunu sil" GİZLİ', () => {
+    expect(ids(bc({ cols: 1 }))).not.toContain('cell-sutun-sil');
+  });
+
+  it('1x1 grid: yalnız 4 ekle + İçeriği Temizle (yapısal sil kalemleri gizli)', () => {
+    expect(ids(bc({ rows: 1, cols: 1 }))).toEqual([
+      'cell-row-above', 'cell-row-below', 'cell-col-left', 'cell-col-right', 'cell-sil',
+    ]);
+  });
+
+  it('İçeriği Temizle her zaman görünür, etiket "İçeriği Temizle", NÖTR (danger değil)', () => {
+    const sil = MENU_ACTIONS.find((a) => a.id === 'cell-sil')!;
+    expect(sil.label(bc())).toBe('İçeriği Temizle');
+    expect(sil.danger).toBeFalsy();
+  });
+});
+
+// Dal 6 run() — lokal #banner-ctx-menu ile action+param BİREBİR (insert/delete anchor sr/sc; merge/clear cellIds).
+describe('Dal 6 run — action paritesi', () => {
+  const act = (id: string) => MENU_ACTIONS.find((a) => a.id === id)!;
+  const ctx = (over: Partial<Extract<MenuContext, { kind: 'bannerCell' }>> = {}): MenuContext => ({
+    kind: 'bannerCell', slotId: 'm1', cellIds: ['c1', 'c2'], isMerged: true,
+    anchorCellId: 'c1', anchorRow: 1, anchorCol: 2, rows: 4, cols: 4, ...over,
+  });
+
+  it('Üste/Alta satır → insertBannerRow(slotId, anchorRow / anchorRow+1)', () => {
+    const spy = vi.spyOn(useCatalogStore.getState(), 'insertBannerRow').mockImplementation(() => {});
+    act('cell-row-above').run(ctx());
+    act('cell-row-below').run(ctx());
+    expect(spy).toHaveBeenNthCalledWith(1, 'm1', 1);
+    expect(spy).toHaveBeenNthCalledWith(2, 'm1', 2);
+    spy.mockRestore();
+  });
+
+  it('Sola/Sağa sütun → insertBannerColumn(slotId, anchorCol / anchorCol+1)', () => {
+    const spy = vi.spyOn(useCatalogStore.getState(), 'insertBannerColumn').mockImplementation(() => {});
+    act('cell-col-left').run(ctx());
+    act('cell-col-right').run(ctx());
+    expect(spy).toHaveBeenNthCalledWith(1, 'm1', 2);
+    expect(spy).toHaveBeenNthCalledWith(2, 'm1', 3);
+    spy.mockRestore();
+  });
+
+  it('Satırı/Sütunu sil → deleteBannerRow/Column(slotId, anchorRow/anchorCol)', () => {
+    const sr = vi.spyOn(useCatalogStore.getState(), 'deleteBannerRow').mockImplementation(() => {});
+    const sc = vi.spyOn(useCatalogStore.getState(), 'deleteBannerColumn').mockImplementation(() => {});
+    act('cell-satir-sil').run(ctx());
+    act('cell-sutun-sil').run(ctx());
+    expect(sr).toHaveBeenCalledWith('m1', 1);
+    expect(sc).toHaveBeenCalledWith('m1', 2);
+    sr.mockRestore();
+    sc.mockRestore();
+  });
+
+  it('Birleştir → mergeBannerCells(slotId, cellIds); Ayır → splitBannerCell(slotId, anchorCellId)', () => {
+    const m = vi.spyOn(useCatalogStore.getState(), 'mergeBannerCells').mockImplementation(() => {});
+    const s = vi.spyOn(useCatalogStore.getState(), 'splitBannerCell').mockImplementation(() => {});
+    act('cell-birlestir').run(ctx());
+    act('cell-ayir').run(ctx());
+    expect(m).toHaveBeenCalledWith('m1', ['c1', 'c2']);
+    expect(s).toHaveBeenCalledWith('m1', 'c1'); // anchorCellId (sağ-tıklanan), seçimin ilki değil
+    m.mockRestore();
+    s.mockRestore();
+  });
+
+  it('İçeriği Temizle → clearBannerCells(slotId, cellIds) — seçili tüm hücreler', () => {
+    const spy = vi.spyOn(useCatalogStore.getState(), 'clearBannerCells').mockImplementation(() => {});
+    act('cell-sil').run(ctx());
+    expect(spy).toHaveBeenCalledWith('m1', ['c1', 'c2']);
+    spy.mockRestore();
   });
 });
 

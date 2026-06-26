@@ -143,15 +143,28 @@ ONAY diyaloğu** ister (`resetFooterToDefault('global')` TÜM global footer'lar�
 önlenir). Her iki yol da Ctrl+Z ile geri alınır → kırmızı DEĞİL.
 (Alt Bilgi Stili Kopyala/Yapıştır YOK — §6 "ertelenmiş" notu: footer stili canlı düzenlenir, ayrı clipboard yok.)
 
-### Dal 6 — Footer edit modu (izole, iç hücre)
+### Dal 6 — Footer/banner edit modu (izole, iç hücre)
 ```
-Düzenle
+Üste satır ekle
+Alta satır ekle
+Sola sütun ekle
+Sağa sütun ekle
 ─────────────
-Hücreleri Birleştir        (çoklu seçimde aktif)
-Hücreleri Ayır             (birleşik hücrede aktif)
-─────────────
-Sil                        (güvenli — Ctrl+Z var, kırmızı DEĞİL)
+Hücreleri Birleştir        (çoklu seçimde aktif — cellIds ≥ 2)
+Hücreleri Ayır             (birleşik hücrede aktif — isMerged)
+Satırı sil                 (son satırda GİZLİ — visible: rows>1, disabled DEĞİL)
+Sütunu sil                 (son sütunda GİZLİ — visible: cols>1)
+İçeriği Temizle            (text+image gider; yapı+stil durur — Ctrl+Z; kırmızı DEĞİL)
 ```
+**SÜPERSET (taşıma):** lokal `#banner-ctx-menu` (satır/sütun ekle-sil) registry'ye taşındı **+**
+Birleştir/Ayır + İçeriği Temizle eklendi. **Banner ve footer ORTAK yüzey** (`BannerSection`) —
+footer-only değil; aynı menü ürün-alanı banner modülünde de çıkar. **Action paritesi birebir:**
+`insertBannerRow/Column`, `deleteBannerRow/Column` anchor (sağ-tıklanan hücre) `sr/sc` ile çağrılır
+(eski lokal menü ile aynı flat-index ÷ cols). **§2:** G1(ekle)+G2(Birleştir/Ayır) bitişik → TEK divider
+(sil bloğu önünde); tek/birleşmemiş hücrede G2 boş → `ekle | İçeriği Temizle`. **"Düzenle" YOK** —
+çift-tık zaten hücre-içi metin düzenlemeye geçer (`setEditingCellId`, lokal state; registry'den köprü
+maliyeti gereksiz). **İçeriği Temizle = `clearBannerCells`** (YALNIZ içerik; stil korunur → "Boşalt"
+değil, banner cell'de havuz yok). §3 NÖTR: hepsi Ctrl+Z ile geri alınır → hiç kırmızı yok.
 (Alt Bilgi Stili Kopyala/Yapıştır YOK — §6 "ertelenmiş" notu.)
 
 ### Dal 7 — Sayfa zemini (mevcut yapı)
@@ -196,9 +209,11 @@ banner/footer → `modules/bannerContextMenu.ts` (`bannerCtxAction`); ürün ad�
 | Hücre Stili Kopyala/Yapıştır | `copySlotSettings` / `pasteSlotSettings` | VAR |
 | Alt Bilgi Stili Kopyala/Yapıştır | — *(ayrı clipboard action'ı yok — **ertelendi**, aşağıdaki nota bkz.)* | ⏸ |
 | Zemin Stili Kopyala/Yapıştır | `copyBackground` / `pasteBackground` | VAR |
-| Footer Birleştir / Ayır | `mergeBannerCells(slotId, cellIds)` / `splitBannerCell(slotId, anchorId)` | VAR |
-| Footer Düzenle | edit-mode tetikleme (çift tık → `enterIsolation`) | VAR |
-| Footer Sil | `clearBannerCells(slotId, cellIds)` (Del tuşu yolu) | VAR |
+| Footer/banner Birleştir / Ayır | `mergeBannerCells(slotId, cellIds)` / `splitBannerCell(slotId, anchorCellId)` | VAR |
+| Footer/banner Satır/Sütun ekle | `insertBannerRow/Column(slotId, anchorRow/anchorCol [+1])` | VAR |
+| Footer/banner Satır/Sütun sil | `deleteBannerRow/Column(slotId, anchorRow/anchorCol)` *(son satır/sütunda gizli)* | VAR |
+| Footer/banner Düzenle | çift-tık → `enterIsolation` / hücre-içi `setEditingCellId` — **menüde DEĞİL** | VAR |
+| Footer/banner İçeriği Temizle | `clearBannerCells(slotId, cellIds)` (Del tuşu **+** sağ-tık "İçeriği Temizle") | VAR |
 | Zemin Rengi / Görseli | ilgili picker'ı aç | VAR |
 | Zemin Ayarları | `setSidebarState('design','background')` | VAR |
 | Kes / Kopyala / Yapıştır (metin) | native Clipboard API (tarayıcı menüsü — registry'ye girmez) | ✅ |
