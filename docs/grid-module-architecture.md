@@ -258,10 +258,14 @@ kopyalamaz:
     hücreleri seçer. Drag-out (modül dışına bırakma) seçimi korunur: `markDragGesture`/
     `consumeDragGesture` (`editorChrome.ts`) lasso jestini de kapsar → `#canvas` click `clearSelection`'ı
     atlar.
-  - **Sağ-tık menüsü:** Hücreye sağ-tık → satır/sütun ekle-sil; `createPortal` ile body'ye
-    (transform'lu `#canvas` içindeki fixed/clip sorununu aşar); tıklanan hücrenin `(sr,sc)`'sine
-    göre store action'larını çağırır. Escape katmanlı (menü açıksa `stopPropagation` ile yalnız
-    menüyü kapatır, kapalıysa izolasyondan çıkar).
+  - **Sağ-tık menüsü:** Hücreye sağ-tık → **ortak veri-driven registry menüsü** (`contextMenu/`;
+    eski lokal `#banner-ctx-menu` Dal 6'da registry'ye taşındı). Kalemler (`kind:'bannerCell'`
+    descriptor'ları): satır/sütun ekle-sil **+** Hücreleri Birleştir/Ayır **+** İçeriği Temizle.
+    `ContextMenu` `createPortal` ile body'ye (transform'lu `#canvas` içindeki fixed/clip sorununu
+    aşar); anchor (sağ-tıklanan hücre) `(sr,sc)` `resolveMenuContext`'te `targetCellId`'den türer,
+    descriptor `run` store action'larını çağırır. Escape katmanlı (menü açıksa `stopPropagation` ile
+    yalnız menüyü kapatır, kapalıysa izolasyondan çıkar). Mimari: `docs/sag-tik-menu-mimari.md` §5 Dal 6.
+    Metin imleci aktifken sağ-tık → native clipboard menüsü (Dal 8 — registry'ye girmez).
   - **Resize handle'ları:** Sınır tutamaçları yalnız izolasyon modunda; merge-aware segmentli
     (`colBoundarySegments`/`rowBoundarySegments`) → merge içinde cursor yok. Drag store'a yalnız
     mouseup'ta yazar (tek snapshot).
