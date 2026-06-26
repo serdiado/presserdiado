@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Download, Loader2 } from 'lucide-react';
+import { ConfirmDialog } from '@/components/ui';
 import { TopBar } from './topbar/TopBar';
 import { ContextualBar } from './contextual/ContextualBar';
 import { Canvas } from './canvas/Canvas';
@@ -27,6 +29,7 @@ export default function StudioPage() {
   const isSidebarOpen = useUIStore((s) => s.isSidebarOpen);
   const setSidebarOpen = useUIStore((s) => s.setSidebarOpen);
   const setActiveFlyout = useUIStore((s) => s.setActiveFlyout);
+  const pendingConfirm = useUIStore((s) => s.pendingConfirm);
 
   const formas = useCatalogStore((s) => s.formas);
   const activeFormaId = useCatalogStore((s) => s.activeFormaId);
@@ -362,6 +365,19 @@ export default function StudioPage() {
           </div>
         )}
       </div>
+
+      {/* Onay diyaloğu — tekil mount (studio-kökü), ui.store.pendingConfirm-driven. Stateless registry
+          run()'ları styled dialog'u buradan tetikler. onConfirm flushSync: footer abonesi bayat kalmaz
+          (ContextMenu gotcha öğrenimi — dialog unmount'ı ile mutasyon aynı handler'da). */}
+      <ConfirmDialog
+        isOpen={!!pendingConfirm}
+        title={pendingConfirm?.title ?? ''}
+        description={pendingConfirm?.description ?? ''}
+        confirmLabel={pendingConfirm?.confirmLabel ?? 'Onayla'}
+        confirmVariant={pendingConfirm?.confirmVariant ?? 'primary'}
+        onConfirm={() => flushSync(() => useUIStore.getState().confirmPending())}
+        onCancel={() => useUIStore.getState().cancelConfirm()}
+      />
     </main>
   );
 }

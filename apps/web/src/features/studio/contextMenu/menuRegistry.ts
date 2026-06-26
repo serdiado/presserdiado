@@ -27,8 +27,9 @@ export interface MenuAction {
   run: (ctx: MenuContext) => void;
 }
 
-// §3 invariant ALLOW-LIST: yalnız bu id'ler danger:true olabilir (geri-dönüşü-zor). Pilotta BOŞ —
-// "Hücreyi Boşalt" havuz+undo olduğu için NÖTR. İlk üye "Varsayılana Sıfırla" (Dal 5, 2c) olacak.
+// §3 invariant ALLOW-LIST: yalnız bu id'ler danger:true olabilir (geri-dönüşü-zor). ŞU AN BOŞ — hiç
+// kırmızı kalem yok: "Hücreyi Boşalt" + "Varsayılana Sıfırla" ikisi de Ctrl+Z/havuz ile geri alınır → NÖTR.
+// İlk gerçek geri-dönüşü-zor kalem geldiğinde id buraya + descriptor'a danger:true BİRLİKTE eklenir.
 export const MENU_DANGER_ALLOWLIST = new Set<string>([]);
 
 const cat = () => useCatalogStore.getState();
@@ -119,6 +120,43 @@ export const MENU_ACTIONS: MenuAction[] = [
     visible: (c) => c.kind === 'slot' && c.hasProduct,
     run: (c) => {
       if (c.kind === 'slot') cat().clearSlotToPool(c.pageNumber, c.slotId);
+    },
+  },
+  // ── Dal 5 — footer host-slot seçim modu (kind:'footerSel') ──────────────────
+  {
+    id: 'footer-ozel-genel',
+    // Dinamik: custom footer (footerOverride VAR) → "Genele Dön"; global → "Özel Ayar Yap".
+    label: (c) => (c.kind === 'footerSel' && c.isCustom ? 'Genele Dön' : 'Özel Ayar Yap'),
+    group: 2,
+    visible: (c) => c.kind === 'footerSel' && !c.isHidden,
+    run: (c) => {
+      if (c.kind !== 'footerSel') return;
+      if (c.isCustom) cat().revertPageFooter(c.pageNumber);
+      else cat().forkPageFooter(c.pageNumber);
+    },
+  },
+  {
+    id: 'footer-sifirla',
+    label: () => 'Varsayılana Sıfırla',
+    group: 4,
+    // danger YOK (§3): resetFooterToDefault Ctrl+Z ile geri alınır → NÖTR. ALLOWLIST boş kalır.
+    visible: (c) => c.kind === 'footerSel' && !c.isHidden,
+    run: (c) => {
+      if (c.kind !== 'footerSel') return;
+      if (c.isCustom) {
+        // Tek sayfa (custom override) → doğrudan, onaysız.
+        cat().resetFooterToDefault(c.pageNumber);
+      } else {
+        // Global footer → TÜM global-footer sayfalarını etkiler → ONAY ZORUNLU (sürpriz kayıp önlenir).
+        ui().requestConfirm({
+          title: 'Genel Alt Bilgiyi Sıfırla',
+          description:
+            'Genel ayarlı tüm alt bilgiler varsayılan ayarlara döndürülecek. Onaylıyor musunuz?',
+          confirmLabel: 'Varsayılana Sıfırla',
+          confirmVariant: 'primary',
+          onConfirm: () => cat().resetFooterToDefault('global'),
+        });
+      }
     },
   },
   // ── Dal 7 — sayfa zemini (kind:'pageBg') ────────────────────────────────────

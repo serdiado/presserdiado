@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import type { CatalogPage, CatalogSettings, StudioSlot } from '@matbaapro/shared';
 import type { SelectionState } from '../../../stores/studio/ui.store';
 import { resolveMenuContext, isSlotMenuSelectionActive, type MenuContext, type MenuContextDeps } from './menuContext';
 import { MENU_ACTIONS, MENU_DANGER_ALLOWLIST, buildMenu, type MenuAction } from './menuRegistry';
+import { useUIStore } from '../../../stores/studio/ui.store';
 
 // ── Fixture yardımcıları ────────────────────────────────────────────────────
 const GS = {} as CatalogSettings; // resolver footer-DIŞI dallarda globalSettings'e dokunmaz
@@ -203,8 +204,7 @@ describe('MENU_ACTIONS — pilot dallar (parite)', () => {
     expect(ids({ kind: 'pageBg', pageNumber: 1, hasCopiedBg: true })).toEqual(['bg-stil-kopyala', 'bg-stil-yapistir']);
   });
 
-  it('footerSel / textElement / none: pilotta menü YOK (boş)', () => {
-    expect(buildMenu({ kind: 'footerSel', pageNumber: 1, isCustom: false, isHidden: false })).toEqual([]);
+  it('textElement / none: menüde dal YOK (boş)', () => {
     expect(buildMenu({ kind: 'textElement', slotId: 's1', elementType: 'name' })).toEqual([]);
     expect(buildMenu({ kind: 'none' })).toEqual([]);
   });
@@ -218,11 +218,11 @@ describe('MENU_ACTIONS — pilot dallar (parite)', () => {
 
 // ── İnvariant testleri (§2/§3 kod düzeyinde zorlama) ─────────────────────────
 describe('registry invariantları (§2/§3)', () => {
-  it('§3: danger:true yalnız MENU_DANGER_ALLOWLIST id; pilotta HİÇ danger yok (Boşalt nötr)', () => {
+  it('§3: danger:true ⊆ MENU_DANGER_ALLOWLIST; Dal 5 sonrası HÂLÂ hiç kırmızı yok (Sıfırla nötr — Ctrl+Z)', () => {
     for (const a of MENU_ACTIONS) {
       if (a.danger) expect(MENU_DANGER_ALLOWLIST.has(a.id)).toBe(true);
     }
-    expect(MENU_ACTIONS.filter((a) => a.danger)).toHaveLength(0);
+    expect(MENU_ACTIONS.filter((a) => a.danger)).toHaveLength(0); // KORUNUR: footer-sifirla danger ALMADI
   });
 
   it('§2: her group ∈ {1,2,3,4}', () => {
@@ -232,6 +232,57 @@ describe('registry invariantları (§2/§3)', () => {
   it('id benzersiz', () => {
     const all = MENU_ACTIONS.map((a) => a.id);
     expect(new Set(all).size).toBe(all.length);
+  });
+});
+
+// ── Dal 5 — footer-seçim (kind:'footerSel') ──────────────────────────────────
+describe('Dal 5 — footer-seçim', () => {
+  const fctx = (over: Partial<Extract<MenuContext, { kind: 'footerSel' }>> = {}): MenuContext =>
+    ({ kind: 'footerSel', pageNumber: 1, isCustom: false, isHidden: false, ...over });
+  const ids = (ctx: MenuContext) => buildMenu(ctx).flatMap((g) => g.items.map((i) => i.id));
+  const lbl = (ctx: MenuContext, id: string) =>
+    buildMenu(ctx).flatMap((g) => g.items).find((a) => a.id === id)!.label(ctx);
+
+  it('global footer: Özel Ayar Yap (g2) + Varsayılana Sıfırla (g4); gruplar [2,4], TEK divider (§2 blok)', () => {
+    const ctx = fctx();
+    const groups = buildMenu(ctx);
+    expect(ids(ctx)).toEqual(['footer-ozel-genel', 'footer-sifirla']);
+    expect(groups.map((g) => g.group)).toEqual([2, 4]);
+    expect(groups.map((g) => g.dividerBefore)).toEqual([false, true]); // g3 boş atlanır → tek divider g4 önünde
+    expect(lbl(ctx, 'footer-ozel-genel')).toBe('Özel Ayar Yap');
+  });
+
+  it('custom footer: toggle "Genele Dön"', () => {
+    expect(lbl(fctx({ isCustom: true }), 'footer-ozel-genel')).toBe('Genele Dön');
+  });
+
+  it('gizli footer: kalem YOK (boş menü — savunma)', () => {
+    expect(buildMenu(fctx({ isHidden: true }))).toEqual([]);
+  });
+
+  it('footer-sifirla NÖTR (danger değil — Ctrl+Z var)', () => {
+    const sifirla = buildMenu(fctx()).flatMap((g) => g.items).find((a) => a.id === 'footer-sifirla');
+    expect(sifirla?.danger).toBeFalsy();
+  });
+});
+
+// footer-sifirla run() ONAY gate: global sıfırlama onaysız resetFooterToDefault('global') ÇAĞIRMAZ —
+// önce ui.store.pendingConfirm doldurulur (StudioPage'deki ConfirmDialog onu çizer). custom doğrudan.
+describe('footer-sifirla run — global onay gate', () => {
+  const sifirla = MENU_ACTIONS.find((a) => a.id === 'footer-sifirla')!;
+  beforeEach(() => useUIStore.getState().cancelConfirm()); // temiz pending
+
+  it('custom footer → onaysız (pendingConfirm null kalır)', () => {
+    sifirla.run({ kind: 'footerSel', pageNumber: 1, isCustom: true, isHidden: false });
+    expect(useUIStore.getState().pendingConfirm).toBeNull();
+  });
+
+  it('global footer → ONAY gate: pendingConfirm SET (doğrudan reset YOK)', () => {
+    sifirla.run({ kind: 'footerSel', pageNumber: 1, isCustom: false, isHidden: false });
+    const pc = useUIStore.getState().pendingConfirm;
+    expect(pc).not.toBeNull();
+    expect(pc?.confirmLabel).toBe('Varsayılana Sıfırla');
+    expect(typeof pc?.onConfirm).toBe('function'); // onaylanınca resetFooterToDefault('global') çağrılır
   });
 });
 

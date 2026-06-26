@@ -49,9 +49,11 @@ Kurallar:
 > Kırmızı **yalnızca gerçekten geri-dönüşü-zor** eylemlerde kullanılır.
 > Havuz veya undo (Ctrl+Z) güvencesi olan hiçbir eylem kırmızı değildir.
 
-- **Kırmızı:** yalnızca **"Varsayılana Sıfırla" (Dal 5)**.
+- **Kırmızı:** ŞU AN **hiç kırmızı kalem YOK.** ("Varsayılana Sıfırla" dahil her kalemin
+  Ctrl+Z/havuz güvencesi var → kuralın kendisi gereği nötr.)
 - **Nötr (kırmızı DEĞİL):** Hücreyi Boşalt (havuza gider), Modülü Kaldır (ürün hücresine
-  döner), Sil (Ctrl+Z var). Hepsinin geri dönüşü olduğu için kırmızı enflasyonu yapılmaz.
+  döner), Sil (Ctrl+Z var), **Varsayılana Sıfırla** (`resetFooterToDefault` Ctrl+Z ile geri
+  alınır). Hepsinin geri dönüşü olduğu için kırmızı enflasyonu yapılmaz.
 
 (Renk Sistemi dokümanı ile uyumlu: kırmızı = yıkıcı aksiyon + hata; vurgu/dekorasyon değil.)
 
@@ -133,8 +135,12 @@ Hücre Stili Yapıştır
 ```
 Özel Ayar Yap / Genele Dön
 ─────────────
-Varsayılana Sıfırla        (KIRMIZI — geri dönüşü zor)
+Varsayılana Sıfırla        (nötr — Ctrl+Z geri alır)
 ```
+Davranış: toggle = `forkPageFooter`/`revertPageFooter` (custom↔global). "Varsayılana Sıfırla":
+custom footer'da o sayfayı (`resetFooterToDefault(pageNumber)`) onaysız sıfırlar; **global footer'da
+ONAY diyaloğu** ister (`resetFooterToDefault('global')` TÜM global footer'ları etkiler → sürpriz kayıp
+önlenir). Her iki yol da Ctrl+Z ile geri alınır → kırmızı DEĞİL.
 (Alt Bilgi Stili Kopyala/Yapıştır YOK — §6 "ertelenmiş" notu: footer stili canlı düzenlenir, ayrı clipboard yok.)
 
 ### Dal 6 — Footer edit modu (izole, iç hücre)
@@ -186,7 +192,7 @@ banner/footer → `modules/bannerContextMenu.ts` (`bannerCtxAction`); ürün ad�
 | Hücreleri Birleştir | `mergeSelected()` | VAR |
 | Hücreleri Ayır (slot) | `unmergeSlot()` | VAR |
 | Özel Ayar Yap / Genele Dön (slot) | `toggleSlotCustomSettings()` | VAR |
-| Özel Ayar Yap / Genele Dön (footer) | `setPageFooterMode()` | VAR |
+| Özel Ayar Yap / Genele Dön (footer) | `forkPageFooter()` / `revertPageFooter()` *(setPageFooterMode değil — fork/revert override yaratır/siler)* | VAR |
 | Hücre Stili Kopyala/Yapıştır | `copySlotSettings` / `pasteSlotSettings` | VAR |
 | Alt Bilgi Stili Kopyala/Yapıştır | — *(ayrı clipboard action'ı yok — **ertelendi**, aşağıdaki nota bkz.)* | ⏸ |
 | Zemin Stili Kopyala/Yapıştır | `copyBackground` / `pasteBackground` | VAR |
@@ -197,7 +203,7 @@ banner/footer → `modules/bannerContextMenu.ts` (`bannerCtxAction`); ürün ad�
 | Zemin Ayarları | `setSidebarState('design','background')` | VAR |
 | Kes / Kopyala / Yapıştır (metin) | native Clipboard API (tarayıcı menüsü — registry'ye girmez) | ✅ |
 | **Hücreyi Boşalt** | **`clearSlotToPool()`** | 🆕 |
-| **Varsayılana Sıfırla** | **`resetFooterToDefault(scope)`** | 🆕 |
+| **Varsayılana Sıfırla** | **`resetFooterToDefault(scope)`** — custom: pageNumber (onaysız); global: 'global' (onay-gate) | VAR |
 
 > **Footer hücre action'ları = banner motoru (host-slot).** Footer kendi merge/split/clear
 > motorunu taşımaz; `mergeBannerCells` / `splitBannerCell` / `clearBannerCells` footer-slot id'sini
@@ -264,6 +270,9 @@ deseni: **tek tanım kaynağı, render onu yorumlar.**
 
 - **Renk kuralı invariant:** Kırmızı yalnızca geri-dönüşü-zor eylemde. Yeni yıkıcı
   aksiyon eklenince varsayılan NÖTR; kırmızı için "havuz/undo yok mu?" testi geçilmeli.
+  Mekanizma HAZIR ama ŞU AN KULLANILMIYOR: ContextMenu.tsx `descriptor.danger` → kırmızı render,
+  `MENU_DANGER_ALLOWLIST` (boş) test-invariant'ı zorlar. İlk gerçek kırmızı kalem geldiğinde
+  `danger:true` + allowlist'e id BİRLİKTE eklenir (§3 testi bunu kilitler).
 - **Sıralama formülü invariant:** Oluştur → Dönüştür → [div] → Stil → [div] → Yıkıcı.
   Yeni aksiyon doğru gruba girer; yıkıcı her zaman en altta.
 - **Tek-action invariant:** "Hücreyi Boşalt" her yerde `clearSlotToPool` (etiket de hizalı —

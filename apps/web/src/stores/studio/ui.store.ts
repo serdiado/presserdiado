@@ -28,6 +28,17 @@ interface SidebarState {
   activeSubTab: string | null;
 }
 
+// Onay diyaloğu köprüsü: stateless registry run()'ları styled ConfirmDialog'u tetikleyebilsin diye
+// tekil pending-confirm slot'u. Yeni dialog YAZILMAZ — mevcut <ConfirmDialog> StudioPage'de tek mount,
+// bu slot'tan beslenir. (İlk kullanan: Dal 5 footer-sifirla global-sıfırlama onay-gate'i.)
+export interface PendingConfirm {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  confirmVariant?: 'danger' | 'primary';
+  onConfirm: () => void;
+}
+
 interface UIState {
   isZoomed: boolean;
   isTempPoolOpen: boolean;
@@ -52,6 +63,8 @@ interface UIState {
   contextualBarSelectedPages: number[];
   editingContent: { slotId: string; contentType: 'product' | 'banner' } | null;
   isPreviewMode: boolean;
+  /** Açık onay diyaloğu isteği (null = kapalı). Registry run() → requestConfirm doldurur. */
+  pendingConfirm: PendingConfirm | null;
 
   setPreviewMode: (open: boolean) => void;
   toggleZoom: () => void;
@@ -92,6 +105,12 @@ interface UIState {
   setMergedPageGroups: (groups: number[][]) => void;
   setActiveBadgeMoveSlotId: (slotId: string | null) => void;
   setSidebarOpen: (open: boolean) => void;
+  /** Onay diyaloğunu aç (tekil slot). */
+  requestConfirm: (req: PendingConfirm) => void;
+  /** Onayla: pending.onConfirm çalıştırılır, slot temizlenir. */
+  confirmPending: () => void;
+  /** İptal: slot temizlenir, onConfirm çalışmaz. */
+  cancelConfirm: () => void;
   setActiveFlyout: (id: string | null) => void;
 }
 
@@ -131,6 +150,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   contextualBarSelectedPages: [],
   editingContent: null,
   isPreviewMode: false,
+  pendingConfirm: null,
 
   setPreviewMode: (open) => {
     if (open) {
@@ -288,6 +308,14 @@ export const useUIStore = create<UIState>((set, get) => ({
   setActiveBadgeMoveSlotId: (slotId) => set({ activeBadgeMoveSlotId: slotId }),
   setSidebarOpen: (open) => set({ isSidebarOpen: open }),
   setActiveFlyout: (id) => set({ activeFlyout: id }),
+
+  requestConfirm: (req) => set({ pendingConfirm: req }),
+  confirmPending: () => {
+    const req = get().pendingConfirm;
+    set({ pendingConfirm: null });
+    req?.onConfirm();
+  },
+  cancelConfirm: () => set({ pendingConfirm: null }),
 
   clearSelectionAndSelectPage: (pageNumber) => {
     get().clearSelection();
