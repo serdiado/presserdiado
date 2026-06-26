@@ -251,6 +251,25 @@ describe('MENU_ACTIONS — pilot dallar (parite)', () => {
     expect(ids(slotCtx({ canMerge: true }))).toContain('slot-birlestir');
   });
 
+  it('Özel/Genel: ürün slotunda görünür (grup 2), serbest slotta gizli; etiket isCustom toggle', () => {
+    expect(ids(slotCtx())).toContain('slot-ozel-genel'); // role:'product'
+    expect(ids(slotCtx({ role: 'free' }))).not.toContain('slot-ozel-genel'); // Dal 4 — modüllü zaten özel
+    const a = MENU_ACTIONS.find((x) => x.id === 'slot-ozel-genel')!;
+    expect(a.group).toBe(2);
+    expect(a.label(slotCtx({ isCustom: false }))).toBe('Özel Ayar Yap');
+    expect(a.label(slotCtx({ isCustom: true }))).toBe('Genele Dön');
+  });
+
+  it('slot-ozel-genel run → toggleSlotCustomSettings(!isCustom)', () => {
+    const spy = vi.spyOn(useCatalogStore.getState(), 'toggleSlotCustomSettings').mockImplementation(() => {});
+    const a = MENU_ACTIONS.find((x) => x.id === 'slot-ozel-genel')!;
+    a.run(slotCtx({ isCustom: false }));
+    expect(spy).toHaveBeenLastCalledWith(true); // genel → özel yap
+    a.run(slotCtx({ isCustom: true }));
+    expect(spy).toHaveBeenLastCalledWith(false); // özel → genele dön
+    spy.mockRestore();
+  });
+
   it('pageBg + kopyalı: iki stil aksiyonu', () => {
     expect(ids({ kind: 'pageBg', pageNumber: 1, hasCopiedBg: true })).toEqual(['bg-stil-kopyala', 'bg-stil-yapistir']);
   });

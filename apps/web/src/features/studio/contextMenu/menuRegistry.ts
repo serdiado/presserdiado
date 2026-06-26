@@ -80,6 +80,19 @@ export const MENU_ACTIONS: MenuAction[] = [
     },
   },
   {
+    id: 'slot-ozel-genel',
+    // Dinamik (footer Dal 5 toggle paraleli): özel ayarlı slot → "Genele Dön"; genel → "Özel Ayar Yap".
+    label: (c) => (c.kind === 'slot' && c.isCustom ? 'Genele Dön' : 'Özel Ayar Yap'),
+    group: 2,
+    // Yalnız ürün slotu (Dal 1/2/3); free/modüllü (Dal 4) zaten özel ayarlı → hariç (doc §5 Dal 4).
+    visible: (c) => c.kind === 'slot' && c.role === 'product',
+    run: (c) => {
+      if (c.kind !== 'slot') return;
+      ensureSelected(c.slotId); // toggleSlotCustomSettings selectedSlotIds üzerinden çalışır
+      cat().toggleSlotCustomSettings(!c.isCustom);
+    },
+  },
+  {
     id: 'slot-urun-hucresi',
     label: () => 'Ürün Hücresi Yap',
     group: 2,
