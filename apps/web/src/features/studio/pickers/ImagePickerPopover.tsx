@@ -42,6 +42,14 @@ interface ImagePickerPopoverProps {
       imageOpacity: number;
     }>,
   ) => void;
+  /**
+   * Dışarıdan-aç sinyali (opt-in). true'ya geçince picker kendi trigger'ına anchor'lı açılır —
+   * zemin sağ-tık "Görsel" kalemi bunu kullanır (ui.store bgPickerToOpen köprüsü). Yalnız BackgroundMode
+   * geçirir; diğer örnekler bu prop'u almaz → etkilenmez.
+   */
+  openSignal?: boolean;
+  /** openSignal tüketildiğinde çağrılır → çağıran sinyali temizler (tek-atış). */
+  onConsumeOpen?: () => void;
 }
 
 const POPUP_WIDTH = 320;
@@ -81,8 +89,18 @@ export function ImagePickerPopover({
   onImageSelected,
   onImageCleared,
   onSettingsChange,
+  openSignal = false,
+  onConsumeOpen,
 }: ImagePickerPopoverProps) {
   const [isOpen, setIsOpen] = useState(false);
+
+  // Dışarıdan-aç köprüsü: openSignal true'ya geçince aç + sinyali tüket (tek-atış). ColorOpacityPicker
+  // ile aynı desen — isOpen bağımsız kalır.
+  useEffect(() => {
+    if (!openSignal) return;
+    setIsOpen(true);
+    onConsumeOpen?.();
+  }, [openSignal, onConsumeOpen]);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const [imageTab, setImageTab] = useState<ImageTab>('image');
   const [draftImageSize, setDraftImageSize] = useState<ImageSizeType>(imageSize);

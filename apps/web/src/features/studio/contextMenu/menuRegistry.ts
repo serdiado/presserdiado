@@ -262,6 +262,23 @@ export const MENU_ACTIONS: MenuAction[] = [
     },
   },
   // ── Dal 7 — sayfa zemini (kind:'pageBg') ────────────────────────────────────
+  // Zemin Rengi/Görseli: hızlı bardaki picker'ı açar (ui.store bgPickerToOpen köprüsü → BackgroundMode
+  // picker'ı kendi düğmesine anchor'lı açılır; kullanıcı hızlı bara basmış gibi). Picker imperatif
+  // açılamadığı için (trigger-anchored popover) köprü şart — registry run() doğrudan açamaz.
+  {
+    id: 'bg-renk',
+    label: () => 'Zemin Rengi',
+    group: 2,
+    visible: (c) => c.kind === 'pageBg',
+    run: () => ui().openBgPicker('color'),
+  },
+  {
+    id: 'bg-gorsel',
+    label: () => 'Zemin Görseli',
+    group: 2,
+    visible: (c) => c.kind === 'pageBg',
+    run: () => ui().openBgPicker('image'),
+  },
   {
     id: 'bg-stil-kopyala',
     label: () => 'Zemin Stili Kopyala',

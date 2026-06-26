@@ -24,6 +24,14 @@ interface Props {
   className?: string;
   /** Run-level text uygulamasında örtülmemesi gereken seçim rect'i (no-cover zone). */
   avoidRect?: DOMRect | null;
+  /**
+   * Dışarıdan-aç sinyali (opt-in). true'ya geçince picker kendi trigger'ına anchor'lı açılır —
+   * zemin sağ-tık "Renk" kalemi bunu kullanır (ui.store bgPickerToOpen köprüsü). Yalnız BackgroundMode
+   * geçirir; diğer picker örnekleri (hücre/badge) bu prop'u almaz → etkilenmez.
+   */
+  openSignal?: boolean;
+  /** openSignal tüketildiğinde (picker açıldı) çağrılır → çağıran sinyali temizler (tek-atış). */
+  onConsumeOpen?: () => void;
 }
 
 const STORAGE_KEY = 'presserdiado_saved_colors';
@@ -605,8 +613,18 @@ export function ColorOpacityPicker({
   trigger,
   className,
   avoidRect = null,
+  openSignal = false,
+  onConsumeOpen,
 }: Props) {
   const [isOpen, setIsOpen] = useState(false);
+
+  // Dışarıdan-aç köprüsü: openSignal true'ya geçince aç + sinyali tüket (tek-atış). isOpen bağımsız
+  // kalır → sinyal false'a dönünce picker kapanmaz; tekrar açma için sinyal yeniden true olur.
+  useEffect(() => {
+    if (!openSignal) return;
+    setIsOpen(true);
+    onConsumeOpen?.();
+  }, [openSignal, onConsumeOpen]);
   const [savedColors, setSavedColors] = useState<{ c: string; o: number }[]>([]);
   const [coords, setCoords] = useState({ top: 0, left: 0 });
   const [topTab, setTopTab] = useState<TopTab>(value.type === 'gradient' ? 'gradient' : 'solid');

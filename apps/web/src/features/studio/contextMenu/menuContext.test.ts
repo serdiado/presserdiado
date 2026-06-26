@@ -270,8 +270,10 @@ describe('MENU_ACTIONS — pilot dallar (parite)', () => {
     spy.mockRestore();
   });
 
-  it('pageBg + kopyalı: iki stil aksiyonu', () => {
-    expect(ids({ kind: 'pageBg', pageNumber: 1, hasCopiedBg: true })).toEqual(['bg-stil-kopyala', 'bg-stil-yapistir']);
+  it('pageBg + kopyalı: Zemin Rengi/Görseli + iki stil aksiyonu', () => {
+    expect(ids({ kind: 'pageBg', pageNumber: 1, hasCopiedBg: true })).toEqual([
+      'bg-renk', 'bg-gorsel', 'bg-stil-kopyala', 'bg-stil-yapistir',
+    ]);
   });
 
   it('textElement / none: menüde dal YOK (boş)', () => {
@@ -462,6 +464,29 @@ describe('Dal 6 run — action paritesi', () => {
     const spy = vi.spyOn(useCatalogStore.getState(), 'clearBannerCells').mockImplementation(() => {});
     act('cell-sil').run(ctx());
     expect(spy).toHaveBeenCalledWith('m1', ['c1', 'c2']);
+    spy.mockRestore();
+  });
+});
+
+// Dal 7 — zemin Renk/Görsel köprüsü: registry openBgPicker çağırır (picker imperatif açılamaz →
+// ui.store bgPickerToOpen sinyali → BackgroundMode picker'ı açar).
+describe('Dal 7 — zemin Renk/Görsel', () => {
+  const bgCtx: MenuContext = { kind: 'pageBg', pageNumber: 1, hasCopiedBg: false };
+  const ids = (ctx: MenuContext) => buildMenu(ctx).flatMap((g) => g.items.map((i) => i.id));
+
+  it('Zemin Rengi + Görseli görünür (grup 2, stil üstünde); tek divider (g2→g3)', () => {
+    expect(ids(bgCtx)).toEqual(['bg-renk', 'bg-gorsel', 'bg-stil-kopyala']); // hasCopiedBg:false → yapıştır yok
+    const groups = buildMenu(bgCtx);
+    expect(groups.map((g) => g.group)).toEqual([2, 3]);
+    expect(groups.map((g) => g.dividerBefore)).toEqual([false, true]);
+  });
+
+  it('run → openBgPicker(color / image)', () => {
+    const spy = vi.spyOn(useUIStore.getState(), 'openBgPicker').mockImplementation(() => {});
+    MENU_ACTIONS.find((a) => a.id === 'bg-renk')!.run(bgCtx);
+    MENU_ACTIONS.find((a) => a.id === 'bg-gorsel')!.run(bgCtx);
+    expect(spy).toHaveBeenNthCalledWith(1, 'color');
+    expect(spy).toHaveBeenNthCalledWith(2, 'image');
     spy.mockRestore();
   });
 });

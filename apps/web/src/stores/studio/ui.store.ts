@@ -65,6 +65,12 @@ interface UIState {
   isPreviewMode: boolean;
   /** Açık onay diyaloğu isteği (null = kapalı). Registry run() → requestConfirm doldurur. */
   pendingConfirm: PendingConfirm | null;
+  /**
+   * Zemin sağ-tık → hızlı bardaki Renk/Görsel picker'ını açma sinyali (one-shot; null = yok).
+   * Registry run() openBgPicker doldurur; BackgroundMode'daki picker tüketince clearBgPicker temizler.
+   * pendingConfirm köprü deseninin aynısı — yeni picker yazılmaz, mevcut hızlı-bar picker'ı açılır.
+   */
+  bgPickerToOpen: 'color' | 'image' | null;
 
   setPreviewMode: (open: boolean) => void;
   toggleZoom: () => void;
@@ -111,6 +117,10 @@ interface UIState {
   confirmPending: () => void;
   /** İptal: slot temizlenir, onConfirm çalışmaz. */
   cancelConfirm: () => void;
+  /** Zemin Renk/Görsel sağ-tık kalemi → hızlı-bar picker'ını aç (one-shot sinyal). */
+  openBgPicker: (kind: 'color' | 'image') => void;
+  /** Picker sinyali tüketince temizle (BackgroundMode picker'ı çağırır). */
+  clearBgPicker: () => void;
   setActiveFlyout: (id: string | null) => void;
 }
 
@@ -151,6 +161,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   editingContent: null,
   isPreviewMode: false,
   pendingConfirm: null,
+  bgPickerToOpen: null,
 
   setPreviewMode: (open) => {
     if (open) {
@@ -316,6 +327,9 @@ export const useUIStore = create<UIState>((set, get) => ({
     req?.onConfirm();
   },
   cancelConfirm: () => set({ pendingConfirm: null }),
+
+  openBgPicker: (kind) => set({ bgPickerToOpen: kind }),
+  clearBgPicker: () => set({ bgPickerToOpen: null }),
 
   clearSelectionAndSelectPage: (pageNumber) => {
     get().clearSelection();

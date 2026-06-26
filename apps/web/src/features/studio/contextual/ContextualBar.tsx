@@ -1419,6 +1419,9 @@ function BackgroundMode({ pageNumber }: { pageNumber: number }) {
   const updatePagesBackground = useCatalogStore((s) => s.updatePagesBackground);
   const applyBackgroundGlobally = useCatalogStore((s) => s.applyBackgroundGlobally);
   const setSidebarState = useUIStore((s) => s.setSidebarState);
+  // Zemin sağ-tık "Renk"/"Görsel" köprüsü: registry openBgPicker doldurur → uygun picker açılır.
+  const bgPickerToOpen = useUIStore((s) => s.bgPickerToOpen);
+  const clearBgPicker = useUIStore((s) => s.clearBgPicker);
 
   const currentPage = formas
     .find((f) => f.id === activeFormaId)
@@ -1480,10 +1483,14 @@ function BackgroundMode({ pageNumber }: { pageNumber: number }) {
           setColorValue(v);
           updatePagesBackground([pageNumber], { type: 'color', value: v });
         }}
+        openSignal={bgPickerToOpen === 'color'}
+        onConsumeOpen={clearBgPicker}
       />
 
       {/* 2. GÖRSEL BUTONU */}
       <ImagePickerPopover
+        openSignal={bgPickerToOpen === 'image'}
+        onConsumeOpen={clearBgPicker}
         className={`h-9 px-3 flex items-center gap-1.5 rounded text-xs cursor-pointer ${
           bgType === 'image' ? 'bg-surface-subtle text-text-primary font-medium' : 'text-text-secondary hover:bg-border-default'
         }`}
