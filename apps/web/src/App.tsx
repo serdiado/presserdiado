@@ -18,6 +18,7 @@ import { ComingSoon } from '@/features/dashboard/pages/ComingSoon';
 import StudioPage from '@/features/studio/StudioPage';
 import NewStudioWizard from '@/features/wizard/NewStudioWizard';
 import PrintView from '@/features/print-view/PrintView';
+import PresetPreview from '@/features/preset-preview/PresetPreview';
 import AdminLayout from '@/features/admin/AdminLayout';
 import AdminDashboardPage from '@/features/admin/dashboard/AdminDashboardPage';
 import AdminThemePage from '@/features/admin/theme/AdminThemePage';
@@ -81,6 +82,9 @@ export default function App() {
         }
       />
       <Route path="/print-view" element={<PrintView />} />
+      {/* Hazır şablon önizleme üreticisi — chrome'suz izole render; gen:preset-thumbs
+          Puppeteer ile buraya gelip screenshot alır. /print-view gibi guard YOK. */}
+      <Route path="/preset-preview" element={<PresetPreview />} />
       {/* Tüm /admin/* rotaları TEK guard (AdminRoute) + tek layout (AdminLayout) altında.
           Guard layout seviyesinde olduğundan alt rotaların HEPSİ (dashboard, orders,
           theme, yakinda) admin değilse engellenir — theme dahil. */}

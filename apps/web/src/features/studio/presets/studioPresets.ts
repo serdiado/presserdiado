@@ -12,6 +12,7 @@ const PRESETS: StudioPreset[] = [
     id: 'preset-klasik-market',
     name: 'Klasik Market',
     description: '4×4 ızgara, kırmızı fiyat kutusu — standart market broşürü.',
+    thumbnail: '/presets/preset-klasik-market.jpg',
     settings: {
       defaultGrid: { rows: 4, cols: 4 },
       colors: {
@@ -30,6 +31,7 @@ const PRESETS: StudioPreset[] = [
     id: 'preset-modern-vitrin',
     name: 'Modern Vitrin',
     description: '3×4 ızgara, koyu hücre + yuvarlatılmış köşe, üstte boş banner alanı.',
+    thumbnail: '/presets/preset-modern-vitrin.jpg',
     settings: {
       defaultGrid: { rows: 3, cols: 4 },
       colors: {
@@ -54,6 +56,7 @@ const PRESETS: StudioPreset[] = [
     id: 'preset-yogun-liste',
     name: 'Yoğun Liste',
     description: '5×4 sıkışık ızgara, küçük boşluklar — çok ürünlü liste sayfaları.',
+    thumbnail: '/presets/preset-yogun-liste.jpg',
     settings: {
       defaultGrid: { rows: 5, cols: 4 },
       gridGap: 1,

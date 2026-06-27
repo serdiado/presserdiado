@@ -63,7 +63,7 @@ export function TemalarFlyoutPanel() {
               key={preset.id}
               className="flex flex-col gap-2 p-3 rounded-xl border border-border-default bg-surface-panel"
             >
-              <div className="flex items-center justify-center h-20 rounded-lg bg-surface-subtle border border-border-default overflow-hidden">
+              <div className="flex items-center justify-center aspect-424/301 rounded-lg bg-surface-subtle border border-border-default overflow-hidden">
                 {preset.thumbnail ? (
                   <img src={preset.thumbnail} alt={preset.name} className="h-full w-full object-cover" />
                 ) : (
