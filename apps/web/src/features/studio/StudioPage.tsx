@@ -12,6 +12,7 @@ import { IconSidebar } from './left-sidebar/IconSidebar';
 import { FlyoutPanel } from './left-sidebar/FlyoutPanel';
 import { ProjelerFlyoutPanel } from './left-sidebar/ProjelerFlyoutPanel';
 import { TemalarFlyoutPanel } from './left-sidebar/TemalarFlyoutPanel';
+import { MedyaFlyoutPanel } from './left-sidebar/MedyaFlyoutPanel';
 import { PlaceholderFlyout } from './left-sidebar/PlaceholderFlyout';
 import { useCatalogStore, useUIStore, buildFormasForTemplate } from '@/stores/studio';
 import { Template1 } from '@matbaapro/shared';
@@ -25,7 +26,6 @@ export default function StudioPage() {
 
   const isPreviewMode = useUIStore((s) => s.isPreviewMode);
   const setPreviewMode = useUIStore((s) => s.setPreviewMode);
-  const selection = useUIStore((s) => s.selection);
   const isSidebarOpen = useUIStore((s) => s.isSidebarOpen);
   const setSidebarOpen = useUIStore((s) => s.setSidebarOpen);
   const setActiveFlyout = useUIStore((s) => s.setActiveFlyout);
@@ -268,7 +268,7 @@ export default function StudioPage() {
             <FlyoutPanel />
             <ProjelerFlyoutPanel />
             <TemalarFlyoutPanel />
-            <PlaceholderFlyout flyoutId="medya" title="Medya" description="Yüklediğiniz görseller ve logolar burada listelenecek." />
+            <MedyaFlyoutPanel />
             <PlaceholderFlyout flyoutId="moduller" title="Modüller" description="Hazır içerik bloklarını buradan sürükleyip bırakabileceksiniz." />
           </div>
         )}
