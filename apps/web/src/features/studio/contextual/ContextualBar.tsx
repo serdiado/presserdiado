@@ -1915,8 +1915,6 @@ function BannerCellMode() {
   const formas = useCatalogStore((s) => s.formas); // Reaktif tetikleme için bağımlılık eklendi
   const setSidebarState = useUIStore((s) => s.setSidebarState);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
   // Footer-farkındalığı resolveModuleSlot'ta (footer-slot → globalSettings.footerModule).
   const resolved = resolveModuleSlot(slotId ?? '', getActivePages(), globalSettings);
   const pageNumber = resolved?.pageNumber ?? 0;
@@ -1962,21 +1960,6 @@ function BannerCellMode() {
       value,
     );
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64 = event.target?.result as string;
-      updateCells({
-        image: base64,
-        imageMode: firstCell?.imageMode || 'contain'
-      });
-    };
-    reader.readAsDataURL(file);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
   // Merge/split → merge-aware motor (store action). withHistoryBatch ile tek Ctrl+Z (izolasyon içi+dışı).
   const mergeCells = () => useCatalogStore.getState().mergeBannerCells(slotId!, selectedCellIds);
   const splitCell = () => {
@@ -2016,20 +1999,29 @@ function BannerCellMode() {
 
       {firstCell && (
         <>
-          {/* Görsel Butonu */}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className={btnCls}
-          >
-            <Image size={16} />
-            <span>Görsel</span>
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleFileSelect}
+          {/* Görsel — sayfa zemini ile aynı birleşik picker (yükleme + boyut + konum + saydamlık) */}
+          <ImagePickerPopover
+            className={`${btnCls} cursor-pointer`}
+            trigger={
+              <>
+                <Image size={16} />
+                <span>Görsel</span>
+              </>
+            }
+            imageUrl={firstCell.image ?? undefined}
+            imageSize={firstCell.imageSize ?? 'fit'}
+            imagePosition={firstCell.imagePosition ?? 'center'}
+            imageOpacity={firstCell.imageOpacity ?? 100}
+            onImageSelected={(p) =>
+              updateCells({
+                image: p.imageUrl,
+                imageSize: p.imageSize,
+                imagePosition: p.imagePosition,
+                imageOpacity: p.imageOpacity,
+              })
+            }
+            onSettingsChange={(patch) => updateCells(patch)}
+            onImageCleared={() => updateCells({ image: null })}
           />
 
           {/* Hücre Zemin Rengi */}

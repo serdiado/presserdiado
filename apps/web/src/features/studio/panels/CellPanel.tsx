@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useUIStore, useCatalogStore } from '@/stores/studio';
-import { ChevronDown, Square, Layers, Image, Type, Tag, Link2, X } from 'lucide-react';
+import { ChevronDown, Square, Layers, Image, Type, Tag, Link2 } from 'lucide-react';
 import { Button, SegmentedControl, Toggle } from '@/components/ui';
-import { uploadImage } from '@/lib/upload';
 import type { BannerCellData, BannerModuleData } from '../modules';
 import { materializeFractions, FRACTION_MIN, BANNER_DIM_MIN, BANNER_DIM_MAX } from '../modules/fractions';
 import { resolveModuleSlot, isFooterSlotId, synthFooterSlot, footerPageNumber } from '@/stores/studio/footerSlot';
-import { ColorOpacityPicker, BorderRadiusPicker, SpacingPicker, ShadowPicker, TypographyPicker } from '../pickers';
+import { ColorOpacityPicker, BorderRadiusPicker, SpacingPicker, ShadowPicker, TypographyPicker, ImagePickerPopover } from '../pickers';
 import { clearRunForSurface } from '../textSettings/cellApply';
 import type { RunProperty } from '../modules/richText';
 import type {
@@ -644,8 +643,6 @@ const DEFAULT_BORDER: BorderData = {
 function BannerPanel() {
   const [open, setOpen] = useState<string | null>('banner-appearance');
   const [confirmReset, setConfirmReset] = useState(false);
-  const [imgUploading, setImgUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const selection = useUIStore((s) => s.selection);
   const selectedSlotIds = useUIStore((s) => s.selectedSlotIds);
   const getActivePages = useCatalogStore((s) => s.getActivePages);
@@ -964,95 +961,33 @@ function BannerPanel() {
                     />
                   </div>
 
+                  {/* Resim — sayfa zemini ile AYNI birleşik picker (yükleme + Sığdır/Doldur/Uzat/Döşe + konum + saydamlık) */}
                   <div className="space-y-1.5">
                     <span className="text-[11px] font-medium text-text-secondary">Resim</span>
-                    {firstCell.image ? (
-                      <div className="relative">
-                        <img
-                          src={firstCell.image}
-                          alt=""
-                          className="w-full h-20 object-contain rounded border border-border-default bg-surface-subtle"
-                        />
-                        <button
-                          onClick={() => updateCells({ image: null })}
-                          className="absolute top-1 right-1 p-0.5 bg-surface-panel rounded border border-border-default text-red-500 hover:bg-red-50"
-                        >
-                          <X size={10} />
-                        </button>
-                      </div>
-                    ) : (
-                      <Button variant="secondary" size="sm" fullWidth disabled={imgUploading} onClick={() => fileInputRef.current?.click()}>
-                        {imgUploading ? 'Yükleniyor...' : '+ Resim ekle'}
-                      </Button>
-                    )}
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        setImgUploading(true);
-                        try {
-                          const result = await uploadImage(file);
-                          updateCells({ image: result.absoluteUrl });
-                        } catch {
-                          // ignore upload errors silently
-                        }
-                        setImgUploading(false);
-                        if (fileInputRef.current) fileInputRef.current.value = '';
-                      }}
+                    <ImagePickerPopover
+                      className="w-full flex items-center justify-center gap-1.5 py-2 rounded-md border border-border-default bg-surface-panel text-text-primary text-xs font-medium cursor-pointer hover:bg-surface-subtle transition-colors"
+                      trigger={
+                        <>
+                          <Image size={14} />
+                          <span>{firstCell.image ? 'Görseli Düzenle' : 'Resim Ekle'}</span>
+                        </>
+                      }
+                      imageUrl={firstCell.image ?? undefined}
+                      imageSize={firstCell.imageSize ?? 'fit'}
+                      imagePosition={firstCell.imagePosition ?? 'center'}
+                      imageOpacity={firstCell.imageOpacity ?? 100}
+                      onImageSelected={(p) =>
+                        updateCells({
+                          image: p.imageUrl,
+                          imageSize: p.imageSize,
+                          imagePosition: p.imagePosition,
+                          imageOpacity: p.imageOpacity,
+                        })
+                      }
+                      onSettingsChange={(patch) => updateCells(patch)}
+                      onImageCleared={() => updateCells({ image: null })}
                     />
                   </div>
-
-                  {/* Resim modu — sadece resim varsa */}
-                  {firstCell.image && (
-                    <div className="space-y-2 pt-2 border-t border-border-default">
-                      <span className="text-[11px] font-medium text-text-secondary">Resim Modu</span>
-                      <div className="flex bg-surface-subtle rounded p-1 gap-1 border border-border-default">
-                        {([
-                          { value: 'contain', label: 'Sığdır' },
-                          { value: 'cover',   label: 'Doldur' },
-                          { value: 'free',    label: 'Serbest' },
-                        ] as const).map(({ value, label }) => (
-                          <button
-                            key={value}
-                            onClick={() => updateCells({ imageMode: value, imagePosX: 0, imagePosY: 0, imageScale: 100 })}
-                            className={`flex-1 py-1.5 text-[10px] font-medium rounded transition-colors ${
-                              (firstCell.imageMode ?? 'contain') === value
-                                ? 'bg-surface-panel shadow border border-border-default text-text-primary'
-                                : 'text-text-secondary hover:text-text-primary'
-                            }`}
-                          >
-                            {label}
-                          </button>
-                        ))}
-                      </div>
-
-                      {(firstCell.imageMode ?? 'contain') === 'free' && (
-                        <div className="space-y-2 pt-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[11px] font-medium text-text-secondary w-12">Büyütme</span>
-                            <input
-                              type="range" min={10} max={300} value={firstCell.imageScale ?? 100}
-                              onChange={(e) => updateCells({ imageScale: parseInt(e.target.value) })}
-                              className="flex-1 studio-slider"
-                            />
-                            <input
-                              type="number" value={firstCell.imageScale ?? 100}
-                              onChange={(e) => updateCells({ imageScale: parseInt(e.target.value) || 10 })}
-                              className="w-12 text-xs font-normal text-text-primary text-right border border-border-default rounded p-0.5"
-                            />
-                            <span className="text-[11px] text-text-muted">%</span>
-                          </div>
-                          <Button variant="secondary" size="sm" fullWidth onClick={() => updateCells({ imagePosX: 0, imagePosY: 0, imageScale: 100 })}>
-                            Konumu sıfırla
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  )}
                 </div>
               </div>
             )}

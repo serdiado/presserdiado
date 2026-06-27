@@ -11,6 +11,7 @@ import type {
   SpacingData,
   TypographyData,
 } from '@matbaapro/shared';
+import type { ImageSizeType, ImagePositionType } from '../pickers/ImagePickerPopover';
 
 export interface BannerCellData {
   id: string;
@@ -24,9 +25,13 @@ export interface BannerCellData {
   bgColor: ColorValue;
   border: BorderData;
   image: string | null;
-  // Opsiyonel: set edilmişse korunur (tasarım kararı), edilmemişse BannerSection
-  // render'da default'a düşer ('contain', pos 0/0, scale 100) — bannerInit bunları
-  // üretmiyor, BannerSection zaten savunmalı okuyor (?? 0/100, === 'free'/'cover').
+  // Birleşik resim modeli — sayfa zemini ile AYNI (ImagePickerPopover yazar). BannerSection
+  // render'ı bunlara göre çizer; yoksa geriye-uyum: eski imageMode'dan türetir.
+  imageSize?: ImageSizeType; // Sığdır/Doldur/Uzat/Döşe
+  imagePosition?: ImagePositionType; // 9-konum
+  imageOpacity?: number; // 0-100
+  // @deprecated Eski serbest-sürükle modeli — yalnız geriye-uyum (eski projeler) için OKUNUR;
+  // yeni UI yazmaz. BannerSection imageSize yoksa imageMode'dan türetir (contain/free→fit, cover→fill).
   imageMode?: 'contain' | 'cover' | 'free';
   imagePosX?: number;
   imagePosY?: number;

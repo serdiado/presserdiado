@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import { colorValueBackground, colorOpacityToCss, radiusStyle, shadowStyle, hexToRgba } from '../util/style';
 import { usePreserveEditorSelectionOnChrome, markDragGesture } from '../util/editorChrome';
@@ -15,6 +15,25 @@ import {
   sanitizeRichText,
   isRangeWithinElement,
 } from './richText';
+
+// Birleşik resim katmanı stili — sayfa zemini (Page.tsx) ile AYNI eşleme. Hücre resmi artık
+// fit/fill/stretch/tile + 9-konum + saydamlık ile çizilir (eski serbest-sürükle kaldırıldı).
+function bannerImageLayerStyle(cell: BannerCellData): CSSProperties {
+  const size = cell.imageSize ?? (cell.imageMode === 'cover' ? 'fill' : 'fit');
+  const position = cell.imagePosition ?? 'center';
+  return {
+    position: 'absolute',
+    inset: 0,
+    zIndex: 0,
+    pointerEvents: 'none',
+    backgroundImage: `url(${cell.image ?? ''})`,
+    backgroundSize:
+      size === 'fit' ? 'contain' : size === 'stretch' ? '100% 100%' : size === 'tile' ? 'auto' : 'cover',
+    backgroundRepeat: size === 'tile' ? 'repeat' : 'no-repeat',
+    backgroundPosition: position.replace('middle', 'center').replace(/-/g, ' '),
+    opacity: (cell.imageOpacity ?? 100) / 100,
+  };
+}
 
 interface Props {
   instanceData: BannerModuleData;
@@ -45,13 +64,6 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const lassoOrigin = useRef<{ x: number; y: number } | null>(null);
   const lassoActive = useRef(false);
-  const imgDragRef = useRef<{
-    cellId: string;
-    startX: number;
-    startY: number;
-    origPosX: number;
-    origPosY: number;
-  } | null>(null);
   // Kolon/satır sınır sürükleme. Store YALNIZ mouseup'ta yazılır (her move'da değil) →
   // sürükleme tek snapshot. Canlı önizleme dragFractions (local state) ile, rAF-throttle'lı.
   const resizeDragRef = useRef<{
@@ -207,16 +219,6 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
       return;
     }
 
-    if (imgDragRef.current) {
-      const dx = (e.clientX - imgDragRef.current.startX) / scaleX;
-      const dy = (e.clientY - imgDragRef.current.startY) / scaleY;
-      updateCell(imgDragRef.current.cellId, {
-        imagePosX: imgDragRef.current.origPosX + dx,
-        imagePosY: imgDragRef.current.origPosY + dy,
-      });
-      return;
-    }
-
     if (!lassoOrigin.current) return;
     const currentX = (e.clientX - rect.left) / scaleX;
     const currentY = (e.clientY - rect.top) / scaleY;
@@ -281,11 +283,6 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
       // Resize de bir drag-jesti: drag-out release'inde canvas/slot/PAGE click'i izolasyonu/seçimi
       // bozmasın (lasso ile aynı guard — 5fb45af yalnız lasso'yu kapsamıştı).
       markDragGesture();
-      return;
-    }
-
-    if (imgDragRef.current) {
-      imgDragRef.current = null;
       return;
     }
 
@@ -440,50 +437,8 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
               alignItems: align,
             }}
           >
-            {/* Resim katmanı — her zaman arkada */}
-            {cell.image && (
-              cell.imageMode === 'free' ? (
-                <img
-                  src={cell.image}
-                  crossOrigin="anonymous"
-                  alt=""
-                  draggable={false}
-                  style={{
-                    position: 'absolute',
-                    top: '50%',
-                    left: '50%',
-                    transform: `translate(calc(-50% + ${cell.imagePosX ?? 0}px), calc(-50% + ${cell.imagePosY ?? 0}px)) scale(${(cell.imageScale ?? 100) / 100})`,
-                    maxWidth: 'none',
-                    zIndex: 0,
-                    pointerEvents: isEditingModule ? 'auto' : 'none',
-                    cursor: isEditingModule ? 'grab' : 'default',
-                    userSelect: 'none',
-                  }}
-                  onMouseDown={(e) => {
-                    if (!isEditingModule) return;
-                    e.stopPropagation();
-                    imgDragRef.current = {
-                      cellId: cell.id,
-                      startX: e.clientX,
-                      startY: e.clientY,
-                      origPosX: cell.imagePosX ?? 0,
-                      origPosY: cell.imagePosY ?? 0,
-                    };
-                  }}
-                />
-              ) : (
-                <img
-                  src={cell.image}
-                  crossOrigin="anonymous"
-                  alt=""
-                  className="absolute inset-0 w-full h-full pointer-events-none"
-                  style={{
-                    objectFit: cell.imageMode === 'cover' ? 'cover' : 'contain',
-                    zIndex: 0,
-                  }}
-                />
-              )
-            )}
+            {/* Resim katmanı — her zaman arkada (sayfa zemini ile aynı birleşik model) */}
+            {cell.image && <div aria-hidden style={bannerImageLayerStyle(cell)} />}
 
             {/* Yazı katmanı — her zaman resmin önünde */}
             <div
@@ -569,7 +524,6 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
               <div
                 key={`colh-${j}-${seg.start}`}
                 onMouseDown={(e) => {
-                  if (imgDragRef.current) return;
                   e.stopPropagation();
                   resizeDragRef.current = {
                     axis: 'col',
@@ -596,7 +550,6 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
               <div
                 key={`rowh-${i}-${seg.start}`}
                 onMouseDown={(e) => {
-                  if (imgDragRef.current) return;
                   e.stopPropagation();
                   resizeDragRef.current = {
                     axis: 'row',
