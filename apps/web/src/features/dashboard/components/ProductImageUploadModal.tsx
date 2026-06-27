@@ -7,7 +7,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import {
   X, Loader2, ImagePlus, UploadCloud, CheckCircle2,
-  AlertTriangle, CheckCircle, HelpCircle,
+  AlertTriangle, CheckCircle, HelpCircle, Download,
 } from 'lucide-react';
 import axios from 'axios';
 import api from '@/lib/api';
@@ -35,6 +35,7 @@ interface UploadItem {
   status: UploadStatus;
   progress: number;
   url?: string;          // relative imageKey (/uploads/...)
+  error?: string;        // hata nedeni (status === 'error' iken)
   isPng: boolean;
   isTransparent: boolean;
 }
@@ -147,6 +148,21 @@ function analyzeTransparency(file: File): Promise<boolean> {
   });
 }
 
+// Yükleme hatasından kullanıcı dostu Türkçe neden türet. Sunucu /upload hata gövdesinde
+// `error` anahtarını kullanır (bkz. upload.routes.ts).
+function uploadErrorReason(err: unknown): string {
+  if (axios.isAxiosError(err)) {
+    if (!err.response) return 'Sunucuya ulaşılamadı (ağ hatası)';
+    const status = err.response.status;
+    if (status === 400) return 'Boş veya bozuk dosya';
+    if (status === 413) return 'Dosya çok büyük (max 20 MB)';
+    if (status === 415) return 'Desteklenmeyen dosya türü';
+    const serverMsg = (err.response.data as { error?: string } | undefined)?.error;
+    return serverMsg || `Sunucu hatası (${status})`;
+  }
+  return 'Beklenmeyen hata';
+}
+
 export function ProductImageUploadModal({ isOpen, onClose, onSaved }: ProductImageUploadModalProps) {
   const [step, setStep] = useState<Step>(1);
   const [items, setItems] = useState<UploadItem[]>([]);
@@ -207,7 +223,7 @@ export function ProductImageUploadModal({ isOpen, onClose, onSaved }: ProductIma
       patchItem(item.id, { status: 'done', progress: 100, url: res.data.url, isTransparent });
     } catch (err) {
       console.error('Upload error', item.file.name, err);
-      patchItem(item.id, { status: 'error' });
+      patchItem(item.id, { status: 'error', error: uploadErrorReason(err) });
     }
   };
 
@@ -337,6 +353,29 @@ export function ProductImageUploadModal({ isOpen, onClose, onSaved }: ProductIma
     }
   };
 
+  // Başarısız yüklemeleri CSV rapor olarak indir (Dosya Adı; Hata Nedeni).
+  // ; ayraç + UTF-8 BOM → Türkçe Excel uyumu.
+  const downloadFailReport = () => {
+    const failed = items.filter((i) => i.status === 'error');
+    if (failed.length === 0) return;
+    const esc = (s: string) => `"${s.replace(/"/g, '""')}"`;
+    const lines = [
+      'Dosya Adı;Hata Nedeni',
+      ...failed.map((i) => `${esc(i.file.name)};${esc(i.error || 'Bilinmeyen hata')}`),
+    ];
+    const blob = new Blob(['﻿' + lines.join('\r\n')], {
+      type: 'text/csv;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'yuklenemeyen-resimler.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
+
   const matchBadge = (state: RowState) =>
     state === 'matched' ? (
       <span className="inline-flex items-center gap-1 text-body-xs text-success">
@@ -431,6 +470,16 @@ export function ProductImageUploadModal({ isOpen, onClose, onSaved }: ProductIma
                       {doneCount} / {items.length} yüklendi
                       {errorCount > 0 && ` · ${errorCount} hata`}
                     </span>
+                    {errorCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={downloadFailReport}
+                        className="inline-flex items-center gap-1 text-danger hover:underline shrink-0"
+                      >
+                        <Download size={13} />
+                        Raporu indir
+                      </button>
+                    )}
                   </div>
                   <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
                     {items.map((it) => (
@@ -553,6 +602,18 @@ export function ProductImageUploadModal({ isOpen, onClose, onSaved }: ProductIma
                 {result.matched + result.noSku} resim kaydedildi ({result.matched} eşleşti,{' '}
                 {result.noSku} SKU atanmadı)
               </p>
+              {errorCount > 0 && (
+                <div className="mt-4 flex flex-col items-center gap-2">
+                  <p className="inline-flex items-center gap-1.5 text-body-sm text-danger">
+                    <AlertTriangle size={16} />
+                    {errorCount} dosya yüklenemedi
+                  </p>
+                  <Button variant="secondary" size="sm" onClick={downloadFailReport}>
+                    <Download size={15} />
+                    <span>Raporu indir</span>
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
