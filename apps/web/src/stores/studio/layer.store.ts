@@ -16,6 +16,7 @@ interface LayerState {
   updateLayerProperties: (id: string, properties: Partial<Layer['properties']>) => void;
   setTargetPagesForMask: (id: string, pageIds: string[]) => void;
   selectPages: (pageIds: string[], options?: { multi?: boolean; toggle?: boolean }) => void;
+  clearPageSelection: () => void;
   selectLayers: (layerIds: string[]) => void;
   moveLayer: (id: string, direction: 'up' | 'down') => void;
   toggleLayerVisibility: (id: string) => void;
@@ -112,6 +113,14 @@ export const useLayerStore = create<LayerState>((set, get) => ({
       setTimeout(() => useUIStore.getState().setContextualBarSelectedPages(numericIds), 0);
       return { selectedPageIds: next };
     });
+  },
+
+  // Sayfa seçimini temizler — element seçimi (slot/footer/metin/banner) aktif olunca ui.store
+  // buradan çağırır → aynı anda tek aktif seçim (sayfa ring'i kalmaz).
+  clearPageSelection: () => {
+    if (get().selectedPageIds.length === 0) return;
+    set({ selectedPageIds: [] });
+    useUIStore.getState().setContextualBarSelectedPages([]);
   },
 
   selectLayers: (layerIds) => {

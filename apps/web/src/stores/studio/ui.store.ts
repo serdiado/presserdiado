@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import type { StudioSlot } from '@matbaapro/shared';
 import { isIsolatableModule } from './defaults';
 import { useHistoryStore } from './history.store';
+import { useLayerStore } from './layer.store';
 
 export type SelectionType =
   | 'none'
@@ -181,67 +182,73 @@ export const useUIStore = create<UIState>((set, get) => ({
   toggleTempPool: () => set((s) => ({ isTempPoolOpen: !s.isTempPoolOpen })),
   setTempPoolOpen: (open) => set({ isTempPoolOpen: open }),
 
-  setSelection: (updates) =>
-    set((state) => {
-      const next: SelectionState = { ...state.selection, ...updates };
-      // İzolasyon scope guard (I6): modül dışına seçim yazma.
-      const iso = useHistoryStore.getState().isoSession;
-      if (iso && !isSelectionWithinModule(next, iso.slotId)) return state;
-      return {
-        selection: next,
-        selectedSlotIds: next.type === 'slot' ? next.ids : [],
-        selectedPageNumber: null,
-        selectedTextElement:
-          next.type === 'textElement'
-            ? { slotId: next.parentId ?? '', elementType: next.textElementType ?? 'name' }
-            : null,
-      };
-    }),
+  setSelection: (updates) => {
+    const next: SelectionState = { ...get().selection, ...updates };
+    // İzolasyon scope guard (I6): modül dışına seçim yazma.
+    const iso = useHistoryStore.getState().isoSession;
+    if (iso && !isSelectionWithinModule(next, iso.slotId)) return;
+    set({
+      selection: next,
+      selectedSlotIds: next.type === 'slot' ? next.ids : [],
+      selectedPageNumber: null,
+      selectedTextElement:
+        next.type === 'textElement'
+          ? { slotId: next.parentId ?? '', elementType: next.textElementType ?? 'name' }
+          : null,
+    });
+    // Karşılıklı dışlama: 'pageBackground' HARİÇ her seçim sayfa ring'ini temizler
+    // (sayfa tıklaması selectPages + setSelection('pageBackground') çağırır → sayfa korunmalı).
+    if (next.type !== 'pageBackground') useLayerStore.getState().clearPageSelection();
+  },
 
-  toggleElementSelection: (type, id, isMulti, parentId = null) =>
-    set((state) => {
-      // İzolasyon scope guard (I6): yalnız izole modülün hücresi/eleman seçilebilir.
-      const iso = useHistoryStore.getState().isoSession;
-      if (
-        iso &&
-        !((type === 'bannerCell' || type === 'textElement') && parentId === iso.slotId)
-      ) {
-        return state;
-      }
-      let ids: string[] = [];
-      if (state.selection.type !== type || state.selection.parentId !== parentId) {
-        ids = [id];
-      } else if (isMulti) {
-        ids = state.selection.ids.includes(id)
-          ? state.selection.ids.filter((x) => x !== id)
-          : [...state.selection.ids, id];
-      } else {
-        ids = [id];
-      }
-      const next: SelectionState = {
-        type: ids.length === 0 ? 'none' : type,
-        ids,
-        parentId,
-      };
-      return {
-        selection: next,
-        selectedSlotIds: next.type === 'slot' ? next.ids : [],
-        selectedPageNumber: null,
-        selectedTextElement: null,
-      };
-    }),
+  toggleElementSelection: (type, id, isMulti, parentId = null) => {
+    const state = get();
+    // İzolasyon scope guard (I6): yalnız izole modülün hücresi/eleman seçilebilir.
+    const iso = useHistoryStore.getState().isoSession;
+    if (
+      iso &&
+      !((type === 'bannerCell' || type === 'textElement') && parentId === iso.slotId)
+    ) {
+      return;
+    }
+    let ids: string[];
+    if (state.selection.type !== type || state.selection.parentId !== parentId) {
+      ids = [id];
+    } else if (isMulti) {
+      ids = state.selection.ids.includes(id)
+        ? state.selection.ids.filter((x) => x !== id)
+        : [...state.selection.ids, id];
+    } else {
+      ids = [id];
+    }
+    const next: SelectionState = {
+      type: ids.length === 0 ? 'none' : type,
+      ids,
+      parentId,
+    };
+    set({
+      selection: next,
+      selectedSlotIds: next.type === 'slot' ? next.ids : [],
+      selectedPageNumber: null,
+      selectedTextElement: null,
+    });
+    // Element seçimi (slot/footer/banner/none) → sayfa ring'ini temizle (karşılıklı dışlama).
+    useLayerStore.getState().clearPageSelection();
+  },
 
   toggleSlotSelection: (id, isMulti) => {
     get().toggleElementSelection('slot', id, isMulti);
   },
 
-  clearSelection: () =>
+  clearSelection: () => {
     set({
       selection: { type: 'none', ids: [] },
       selectedSlotIds: [],
       selectedPageNumber: null,
       selectedTextElement: null,
-    }),
+    });
+    useLayerStore.getState().clearPageSelection();
+  },
 
   setSelectedPage: (pageNumber) => {
     if (pageNumber === null) {
@@ -263,6 +270,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   setSelectedTextElement: (el) => {
     if (!el) {
       set({ selectedTextElement: null, selection: { type: 'none', ids: [] } });
+      useLayerStore.getState().clearPageSelection();
       return;
     }
     set({
@@ -274,6 +282,8 @@ export const useUIStore = create<UIState>((set, get) => ({
         textElementType: el.elementType,
       },
     });
+    // Metin elemanı (isim/fiyat/badge) seçimi → sayfa ring'ini temizle (karşılıklı dışlama).
+    useLayerStore.getState().clearPageSelection();
   },
 
   setSidebarState: (panel, tab = null, subTab = null) =>
