@@ -147,7 +147,7 @@ export function FooterRenderer({ pageNumber, safeZone }: Props) {
       style={{
         ...containerBase,
         ...(isFooterSelected
-          ? { outline: '2px solid var(--color-blue-500)', outlineOffset: '2px' }
+          ? { outline: '2px solid var(--color-selected)', outlineOffset: '2px' }
           : {}),
       }}
       onMouseEnter={() => setHovered(true)}

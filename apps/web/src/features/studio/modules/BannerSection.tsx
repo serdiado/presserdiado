@@ -370,7 +370,7 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
           borderLeft:   `${b.l}px ${b.style} ${borderColor}`,
           outline: isEditingModule
             ? isSel
-              ? '1px solid rgba(100,116,139,0.9)'
+              ? '1px solid var(--color-selected)'
               : '1px dashed rgba(148,163,184,0.6)'
             : 'none',
           outlineOffset: '-1px',
@@ -417,7 +417,7 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
             }}
             className={`flex box-border relative overflow-hidden ${dragFractions ? 'transition-none' : 'transition-all'} ${
               isSel && !isEdit
-                ? 'ring-2 ring-inset ring-slate-400 z-10 cursor-pointer'
+                ? 'ring-2 ring-inset ring-selected z-10 cursor-pointer'
                 : isEdit
                   ? 'cursor-text z-20'
                   : isEditingModule

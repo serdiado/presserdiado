@@ -895,7 +895,7 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
               borderWidth: `${finalSettings.borderWidth}px`,
               boxShadow: boxShadow,
             }),
-        outline: !isPreviewMode && isSelected ? '2px solid var(--color-border-selected)' : undefined,
+        outline: !isPreviewMode && isSelected ? '2px solid var(--color-selected)' : undefined,
         outlineOffset: isSelected ? '2px' : undefined,
         padding: slot.role === 'free' ? undefined : paddingStyle(finalSettings.spacings.cell),
         ...freeStyles,
@@ -1020,7 +1020,7 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
             data-badge-drag="true"
             className={`absolute pointer-events-auto cursor-pointer transition-all z-40 ${
               isSelectedBadge
-                ? 'ring-2 ring-border-selected ring-offset-1'
+                ? 'ring-2 ring-selected ring-offset-1'
                 : 'hover:ring-1 hover:ring-border-strong'
             }`}
             style={{
@@ -1082,7 +1082,7 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
               <div
                 className={`absolute z-30 flex shadow-sm transition-all px-1.5 py-1 pointer-events-auto outline-none ${
                   isPriceSelected
-                    ? 'ring-2 ring-border-selected ring-offset-1 cursor-text'
+                    ? 'ring-2 ring-selected ring-offset-1 cursor-text'
                     : 'cursor-pointer hover:ring-1 hover:ring-border-strong'
                 }`}
                 style={{
@@ -1164,7 +1164,9 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
           {/* Image */}
           <div
             title={slot.product.sku ?? ''}
-            className="flex-1 flex items-center justify-center min-h-0 min-w-0 mb-2 mt-6 pointer-events-auto relative z-10"
+            className={`flex-1 flex items-center justify-center min-h-0 min-w-0 mb-2 mt-6 pointer-events-auto relative z-10${
+              isImgEditMode ? ' ring-2 ring-selected rounded' : ''
+            }`}
           >
             {slot.product.image ? (
               <>
@@ -1203,7 +1205,7 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
                 <div
                   className={`outline-none transition-all ${
                     editingText === 'name'
-                      ? 'bg-white/90 text-black z-50 ring-2 ring-border-selected overflow-hidden whitespace-pre-wrap rounded cursor-text'
+                      ? 'bg-white/90 text-black z-50 ring-2 ring-selected overflow-hidden whitespace-pre-wrap rounded cursor-text'
                       : 'line-clamp-3 whitespace-pre-wrap'
                   }`}
                   style={{ textAlign: finalSettings.fonts.productName.textAlign }}
@@ -1308,7 +1310,7 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
               selectedTextElement?.slotId === slot.id &&
               selectedTextElement?.elementType === 'name' &&
               editingText !== 'name'
-                ? 'ring-2 ring-border-selected'
+                ? 'ring-2 ring-selected'
                 : editingText !== 'name'
                   ? 'hover:ring-1 hover:ring-border-strong'
                   : ''

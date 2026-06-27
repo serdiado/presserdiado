@@ -26,6 +26,9 @@
   --color-border-default:   #e2e8f0;
   --color-border-strong:    #cbd5e1;
   --color-border-selected:  #0f172a;
+  /* Ortak seçim çerçevesi rengi — SABİT mavi (= blue-500). ThemeInjector'a EKLENMEZ:
+     tema/DB ile değişmez, tüm stüdyo seçimleri her temada aynı mavi kalır. */
+  --color-selected:         #3b82f6;
   --color-text-primary:     #0f172a;
   --color-text-secondary:   #475569;
   --color-text-muted:       #94a3b8;

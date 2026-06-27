@@ -212,7 +212,7 @@ export function Page({
 
         {isSelected && !isPreviewMode && (
           <div
-            className="absolute pointer-events-none ring-2 ring-border-selected z-50"
+            className="absolute pointer-events-none ring-2 ring-selected z-50"
             style={{
               top: `-${template.bleedMm}mm`,
               left: bleedLeft,
