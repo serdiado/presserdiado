@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Plus, Search, Edit2, Trash2, PackageSearch, AlertCircle, RefreshCw, FileSpreadsheet, ImageOff } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, PackageSearch, AlertCircle, RefreshCw, FileSpreadsheet } from 'lucide-react';
 import api from '@/lib/api';
-import { toAbsoluteUrl } from '@/lib/upload';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
@@ -10,36 +9,17 @@ import { ExcelImportModal } from '../components/ExcelImportModal';
 import { RematchImagesButton } from '../components/RematchImagesButton';
 import { sortByName } from '../components/librarySort';
 import { LibraryToolbar, useLibraryView } from '../components/LibraryToolbar';
+import { LibraryItemsView, type LibraryItemAction } from '../components/LibraryItemsView';
+import { LibraryPagination, usePagedSlice } from '../components/LibraryPagination';
 import type { Product } from '../types';
-
-// Ürün satırı için küçük resim. Resim yoksa veya yüklenemezse nötr placeholder gösterir.
-// Hata durumunu React state ile yönetir (DOM'a doğrudan müdahale yok).
-function ProductThumbnail({ src, alt }: { src?: string | null; alt: string }) {
-  const [errored, setErrored] = useState(false);
-  const showImage = src && !errored;
-  return (
-    <div className="w-12 h-12 shrink-0 rounded border border-border-default bg-white flex items-center justify-center overflow-hidden">
-      {showImage ? (
-        <img
-          src={toAbsoluteUrl(src)}
-          alt={alt}
-          loading="lazy"
-          className="w-full h-full object-contain"
-          onError={() => setErrored(true)}
-        />
-      ) : (
-        <ImageOff size={18} className="text-text-muted" strokeWidth={1.5} />
-      )}
-    </div>
-  );
-}
 
 export function UrunListelerim() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
-  const { sortDir, setSortDir } = useLibraryView();
+  const { sortDir, setSortDir, viewMode, setViewMode, pageSize, setPageSize, page, setPage } =
+    useLibraryView({ storageKey: 'products', defaultViewMode: 'list' });
 
   // Modals state
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -87,6 +67,14 @@ export function UrunListelerim() {
     () => sortByName(filteredProducts, sortDir, (p) => p.name),
     [filteredProducts, sortDir],
   );
+
+  // Arama/sıralama değişince ilk sayfaya dön.
+  useEffect(() => {
+    setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, sortDir]);
+
+  const { items: pagedProducts, currentPage } = usePagedSlice(sortedProducts, page, setPage, pageSize);
 
   const handleAddClick = () => {
     setEditingProduct(null);
@@ -162,6 +150,31 @@ export function UrunListelerim() {
       toast.error('Ürünler silinemedi');
     }
   };
+
+  // LibraryItemsView slotları (Liste/Küçük/Büyük modlarında ortak).
+  const renderProductMeta = (p: Product) => (
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+      <span className="font-mono text-body-xs text-text-muted bg-slate-50 px-1.5 py-0.5 rounded">
+        {p.sku}
+      </span>
+      {p.category && (
+        <span className="text-body-xs text-text-secondary bg-surface-subtle px-1.5 py-0.5 rounded border border-border-default">
+          {p.category}
+        </span>
+      )}
+      {p.price !== null && p.price !== undefined && (
+        <span className="text-body-xs text-text-primary">
+          {Number(p.price).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
+          {p.unit ? ` / ${p.unit}` : ''}
+        </span>
+      )}
+    </div>
+  );
+
+  const getProductActions = (p: Product): LibraryItemAction[] => [
+    { key: 'edit', label: 'Düzenle', icon: <Edit2 size={16} />, onClick: () => handleEditClick(p) },
+    { key: 'delete', label: 'Sil', icon: <Trash2 size={16} />, onClick: () => handleDeleteClick(p), danger: true },
+  ];
 
   if (isLoading && products.length === 0) {
     return (
@@ -242,6 +255,8 @@ export function UrunListelerim() {
             </div>
             <div className="flex items-center gap-4">
               <LibraryToolbar
+                viewMode={viewMode}
+                onViewModeChange={setViewMode}
                 sortDir={sortDir}
                 onSortChange={setSortDir}
                 allSelected={allSelected}
@@ -278,95 +293,34 @@ export function UrunListelerim() {
             </div>
           )}
 
-          {/* List */}
+          {/* Liste / Küçük / Büyük — ortak görünüm */}
           <div className="flex-1 overflow-auto">
-            <div className="space-y-2">
-              {sortedProducts.map((product) => {
-                const selected = selectedIds.has(product.id);
-                return (
-                <div
-                  key={product.id}
-                  className={`group flex items-center justify-between border p-4 rounded-md transition-colors ${
-                    selected
-                      ? 'bg-surface-subtle border-border-strong'
-                      : 'bg-white border-border-default hover:border-border-strong'
-                  }`}
-                >
-                  <div className="flex items-center gap-4 flex-1 min-w-0">
-                    <input
-                      type="checkbox"
-                      className={`w-4 h-4 accent-primary cursor-pointer shrink-0 transition-opacity ${
-                        selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                      }`}
-                      checked={selected}
-                      onChange={() => toggleSelect(product.id)}
-                    />
-                    <ProductThumbnail src={product.primaryImage} alt={product.name} />
-                    <div className="w-24 shrink-0">
-                      <span className="font-mono text-body-xs text-text-muted bg-slate-50 px-2 py-1 rounded">
-                        {product.sku}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <h4 className="text-heading-sm text-text-primary truncate">
-                          {product.name}
-                        </h4>
-                        {product.category && (
-                          <span className="text-body-xs text-text-secondary bg-surface-subtle px-1.5 py-0.5 rounded border border-border-default shrink-0">
-                            {product.category}
-                          </span>
-                        )}
-                      </div>
-                      {product.description && (
-                        <p className="text-body-xs text-text-muted truncate mt-0.5">
-                          {product.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+            <LibraryItemsView
+              items={pagedProducts}
+              mode={viewMode}
+              getKey={(p) => p.id}
+              getImage={(p) => p.primaryImage}
+              getTitle={(p) => p.name}
+              getPreviewSubtitle={(p) => p.sku}
+              isSelected={(p) => selectedIds.has(p.id)}
+              onToggleSelect={(p) => toggleSelect(p.id)}
+              renderMeta={(p) => renderProductMeta(p)}
+              getActions={(p) => getProductActions(p)}
+            />
 
-                  <div className="flex items-center gap-6 shrink-0 ml-4">
-                    <div className="text-right w-24">
-                      {product.price !== null && product.price !== undefined ? (
-                        <div className="text-heading-sm text-text-primary">
-                          {Number(product.price).toLocaleString('tr-TR', { minimumFractionDigits: 2 })} ₺
-                        </div>
-                      ) : (
-                        <span className="text-body-xs text-text-muted">-</span>
-                      )}
-                      {product.unit && (
-                        <div className="text-[10px] text-text-muted mt-0.5">/ {product.unit}</div>
-                      )}
-                    </div>
+            {filteredProducts.length === 0 && search && (
+              <div className="text-center py-12 text-body-md text-text-secondary">
+                Aramanızla eşleşen ürün bulunamadı.
+              </div>
+            )}
 
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => handleEditClick(product)}
-                        className="p-1.5 text-text-secondary hover:text-text-primary hover:bg-surface-subtle rounded transition-colors"
-                        title="Düzenle"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(product)}
-                        className="p-1.5 text-text-secondary hover:text-danger hover:bg-danger-subtle rounded transition-colors"
-                        title="Sil"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                );
-              })}
-
-              {filteredProducts.length === 0 && search && (
-                <div className="text-center py-12 text-body-md text-text-secondary">
-                  Aramanızla eşleşen ürün bulunamadı.
-                </div>
-              )}
-            </div>
+            <LibraryPagination
+              total={sortedProducts.length}
+              page={currentPage}
+              pageSize={pageSize}
+              onPageChange={setPage}
+              onPageSizeChange={setPageSize}
+            />
           </div>
         </>
       )}

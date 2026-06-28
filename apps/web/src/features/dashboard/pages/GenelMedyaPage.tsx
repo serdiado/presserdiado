@@ -8,6 +8,8 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { MediaUploadModal } from '../components/MediaUploadModal';
 import { sortByName } from '../components/librarySort';
 import { LibraryToolbar, useLibraryView } from '../components/LibraryToolbar';
+import { LibraryItemsView, type LibraryItemAction } from '../components/LibraryItemsView';
+import { LibraryPagination, usePagedSlice } from '../components/LibraryPagination';
 import type { MediaAsset, MediaAssetType } from '../types';
 
 type Filter = 'all' | MediaAssetType;
@@ -39,7 +41,8 @@ export function GenelMedyaPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
-  const { sortDir, setSortDir } = useLibraryView();
+  const { sortDir, setSortDir, viewMode, setViewMode, pageSize, setPageSize, page, setPage } =
+    useLibraryView({ storageKey: 'media', defaultViewMode: 'large' });
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [deleting, setDeleting] = useState<MediaAsset | null>(null);
   // Çoklu seçim
@@ -70,6 +73,14 @@ export function GenelMedyaPage() {
   }, [assets, filter]);
 
   const sortedAssets = useMemo(() => sortByName(filteredAssets, sortDir), [filteredAssets, sortDir]);
+
+  // Filtre/sıralama değişince ilk sayfaya dön.
+  useEffect(() => {
+    setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, sortDir]);
+
+  const { items: pagedAssets, currentPage } = usePagedSlice(sortedAssets, page, setPage, pageSize);
 
   const countFor = (key: Filter) =>
     key === 'all' ? assets.length : assets.filter((asset) => asset.type === key).length;
@@ -132,6 +143,24 @@ export function GenelMedyaPage() {
       toast.error('Medyalar silinemedi');
     }
   };
+
+  // LibraryItemsView slotları (Liste/Küçük modlarında). Büyük mod aşağıda mevcut kartla çizilir.
+  const renderMediaMeta = (asset: MediaAsset) => (
+    <div className="flex items-center justify-between gap-2">
+      <span className="inline-flex items-center px-2 py-0.5 rounded-radius-md border border-border-default bg-surface-subtle text-body-xs text-text-secondary shrink-0">
+        {TYPE_LABELS[asset.type]}
+      </span>
+      {formatFileSize(asset.size) && (
+        <span className="text-body-xs text-text-muted tabular-nums shrink-0">
+          {formatFileSize(asset.size)}
+        </span>
+      )}
+    </div>
+  );
+
+  const getMediaActions = (asset: MediaAsset): LibraryItemAction[] => [
+    { key: 'delete', label: 'Sil', icon: <Trash2 size={16} />, onClick: () => setDeleting(asset), danger: true },
+  ];
 
   if (isLoading) {
     return (
@@ -202,6 +231,8 @@ export function GenelMedyaPage() {
             ))}
             <LibraryToolbar
               className="ml-auto"
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
               sortDir={sortDir}
               onSortChange={setSortDir}
               allSelected={allSelected}
@@ -232,8 +263,10 @@ export function GenelMedyaPage() {
             </div>
           )}
 
+          {/* Büyük = mevcut kart (dokunulmaz); Liste/Küçük = ortak LibraryItemsView */}
+          {viewMode === 'large' ? (
           <div className="grid grid-cols-3 lg:grid-cols-4 gap-4">
-            {sortedAssets.map((asset) => {
+            {pagedAssets.map((asset) => {
               const selected = selectedIds.has(asset.id);
               return (
                 <div
@@ -287,12 +320,34 @@ export function GenelMedyaPage() {
               );
             })}
           </div>
+          ) : (
+            <LibraryItemsView
+              items={pagedAssets}
+              mode={viewMode}
+              getKey={(a) => a.id}
+              getImage={(a) => a.imageKey}
+              getTitle={(a) => a.fileName ?? 'İsimsiz medya'}
+              getPreviewSubtitle={(a) => TYPE_LABELS[a.type]}
+              isSelected={(a) => selectedIds.has(a.id)}
+              onToggleSelect={(a) => toggleSelect(a.id)}
+              renderMeta={(a) => renderMediaMeta(a)}
+              getActions={(a) => getMediaActions(a)}
+            />
+          )}
 
           {filteredAssets.length === 0 && (
             <div className="text-center py-12 text-body-md text-text-secondary">
               Bu filtreyle eşleşen medya yok.
             </div>
           )}
+
+          <LibraryPagination
+            total={sortedAssets.length}
+            page={currentPage}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
         </>
       )}
 

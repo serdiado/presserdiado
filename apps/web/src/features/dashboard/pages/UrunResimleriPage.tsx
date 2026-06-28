@@ -13,6 +13,8 @@ import { ProductFormModal } from '../components/ProductFormModal';
 import { SkuCombobox, type SkuOption } from '../components/SkuCombobox';
 import { sortByName } from '../components/librarySort';
 import { LibraryToolbar, useLibraryView } from '../components/LibraryToolbar';
+import { LibraryItemsView, type LibraryItemAction } from '../components/LibraryItemsView';
+import { LibraryPagination, usePagedSlice } from '../components/LibraryPagination';
 import type { ProductImage, Product } from '../types';
 
 type Filter = 'all' | 'matched' | 'unmatched';
@@ -23,7 +25,8 @@ export function UrunResimleriPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
-  const { sortDir, setSortDir } = useLibraryView();
+  const { sortDir, setSortDir, viewMode, setViewMode, pageSize, setPageSize, page, setPage } =
+    useLibraryView({ storageKey: 'product-images', defaultViewMode: 'large' });
 
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -74,6 +77,14 @@ export function UrunResimleriPage() {
   }, [images, filter, skuSet]);
 
   const sortedFiltered = useMemo(() => sortByName(filtered, sortDir), [filtered, sortDir]);
+
+  // Filtre/sıralama değişince ilk sayfaya dön.
+  useEffect(() => {
+    setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, sortDir]);
+
+  const { items: pagedImages, currentPage } = usePagedSlice(sortedFiltered, page, setPage, pageSize);
 
   const matchedCount = useMemo(
     () => images.filter(isMatched).length,
@@ -203,6 +214,55 @@ export function UrunResimleriPage() {
     { key: 'unmatched', label: `Eşleşmemiş (${images.length - matchedCount})` },
   ];
 
+  // LibraryItemsView slotları (Liste/Küçük modlarında). Büyük mod aşağıda mevcut kartla çizilir.
+  const renderImageMeta = (img: ProductImage) => {
+    const matched = isMatched(img);
+    if (editingId === img.id) {
+      return (
+        <SkuCombobox
+          value={img.sku ?? ''}
+          options={productOptions}
+          onChange={(sku) => handleSelectSku(img, sku)}
+          autoOpen
+          onClose={() => setEditingId(null)}
+          className="w-full"
+        />
+      );
+    }
+    return (
+      <button
+        onClick={() => setEditingId(img.id)}
+        title="SKU ata / değiştir"
+        className={`inline-flex items-center max-w-full truncate text-body-xs px-2 py-0.5 rounded-radius-md border transition-colors ${
+          !img.sku
+            ? 'text-danger bg-danger-subtle border-danger/30'
+            : matched
+              ? 'text-success bg-success/10 border-success/30 font-mono'
+              : 'text-warning bg-warning/10 border-warning/30 font-mono'
+        }`}
+      >
+        {img.sku || 'SKU atanmadı'}
+      </button>
+    );
+  };
+
+  const renderImageBadges = (img: ProductImage) =>
+    !img.isTransparent && img.fileName?.toLowerCase().endsWith('.png') ? (
+      <span
+        title="Bu PNG'nin köşeleri opak olabilir — şeffaf arka plan beklentinizi kontrol edin"
+        className="p-1 rounded-radius-md bg-surface-panel/90 text-warning inline-flex"
+      >
+        <AlertTriangle size={14} />
+      </span>
+    ) : null;
+
+  const getImageActions = (img: ProductImage): LibraryItemAction[] => [
+    img.sku
+      ? { key: 'unassign', label: 'Eşleştirmeyi kaldır', icon: <X size={16} />, onClick: () => setUnassigning(img) }
+      : { key: 'new', label: 'Yeni ürün oluştur', icon: <Plus size={16} />, onClick: () => setCreatingForImage(img) },
+    { key: 'delete', label: 'Sil', icon: <Trash2 size={16} />, onClick: () => setDeleting(img), danger: true },
+  ];
+
   if (isLoading) {
     return (
       <div className="p-8 w-full max-w-300 mx-auto">
@@ -282,6 +342,8 @@ export function UrunResimleriPage() {
             ))}
             <LibraryToolbar
               className="ml-auto"
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
               sortDir={sortDir}
               onSortChange={setSortDir}
               allSelected={allSelected}
@@ -314,9 +376,10 @@ export function UrunResimleriPage() {
             </div>
           )}
 
-          {/* Grid */}
+          {/* Büyük = mevcut kart (dokunulmaz); Liste/Küçük = ortak LibraryItemsView */}
+          {viewMode === 'large' ? (
           <div className="grid grid-cols-3 lg:grid-cols-4 gap-4">
-            {sortedFiltered.map((img) => {
+            {pagedImages.map((img) => {
               const matched = isMatched(img);
               const selected = selectedIds.has(img.id);
               return (
@@ -418,12 +481,35 @@ export function UrunResimleriPage() {
               );
             })}
           </div>
+          ) : (
+            <LibraryItemsView
+              items={pagedImages}
+              mode={viewMode}
+              getKey={(i) => i.id}
+              getImage={(i) => i.imageKey}
+              getTitle={(i) => i.fileName ?? 'İsimsiz'}
+              getPreviewSubtitle={(i) => i.sku ?? undefined}
+              isSelected={(i) => selectedIds.has(i.id)}
+              onToggleSelect={(i) => toggleSelect(i.id)}
+              renderMeta={(i) => renderImageMeta(i)}
+              renderBadges={(i) => renderImageBadges(i)}
+              getActions={(i) => getImageActions(i)}
+            />
+          )}
 
           {filtered.length === 0 && (
             <div className="text-center py-12 text-body-md text-text-secondary">
               Bu filtreyle eşleşen resim yok.
             </div>
           )}
+
+          <LibraryPagination
+            total={sortedFiltered.length}
+            page={currentPage}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={setPageSize}
+          />
         </>
       )}
 
