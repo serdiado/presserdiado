@@ -11,6 +11,7 @@ import { ZoomWidget } from './ZoomWidget';
 import { useProjectSave } from '../hooks/useProjectSave';
 import { exportPresetFromState } from '../presets/studioPresets';
 import { exportModuleFromState } from '../modules/exportStudioModule';
+import { discardStudioSession } from '../lib/projectSerializer';
 
 function EditableTitle() {
   const projectName = useCatalogStore((s) => s.projectName);
@@ -196,6 +197,9 @@ export function TopBar() {
   };
 
   const handleDismissModal = () => {
+    // Kaydetmeden Çık: bellek içi oturumu sıfırla + kalıcı taslağı (localStorage) sil ki
+    // proje tekrar açıldığında sunucudaki kayıtlı sürüm yüklensin.
+    discardStudioSession();
     if (pendingNavigatePath) {
       navigate(pendingNavigatePath);
     }

@@ -85,6 +85,15 @@ export function deserializeStudioState(data: StudioCanvasData) {
   useHistoryStore.getState().clearHistory();
 }
 
+// "Kaydetmeden Çık": stüdyo oturumunu (catalog + layers + history) sıfırla ve kalıcı
+// localStorage taslağını sil. Böylece proje tekrar açıldığında sunucudan yüklenir.
+// (deserializeStudioState'in karşıtı; çok-store koordinasyonu burada toplanır.)
+export function discardStudioSession() {
+  useCatalogStore.getState().discardSession();
+  useLayerStore.setState({ layers: [], selectedPageIds: [] });
+  useCatalogStore.persist.clearStorage();
+}
+
 export function serializeProjectFile(): ProjectFile {
   const c = useCatalogStore.getState();
   return {

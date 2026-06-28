@@ -207,6 +207,9 @@ interface CatalogActions {
     printOptions?: PrintOptionsValue,
     quantity?: number,
   ) => void;
+  // "Kaydetmeden Çık": oturumu temiz başlangıca döndür (projectId=null) ki tekrar açılışta
+  // sunucudan yüklensin. Kalıcı localStorage temizliği koordinatörde yapılır (projectSerializer).
+  discardSession: () => void;
   setPrintOptions: (options: PrintOptionsValue) => void;
   setQuantity: (quantity: number) => void;
   setActiveTab: (tab: 'outer' | 'inner') => void;
@@ -537,6 +540,24 @@ export const useCatalogStore = create<Store>()(
         if (firstSlot) {
           useUIStore.getState().toggleSlotSelection(firstSlot.id, false);
         }
+      },
+      discardSession: () => {
+        set({
+          projectId: null,
+          projectName: '',
+          formas: [],
+          activeFormaId: 1,
+          activeTab: 'outer',
+          productPool: [],
+          tempProductPool: [],
+          globalSettings: clone(initialGlobalSettings),
+          copiedSlotSettings: null,
+          copiedBackground: null,
+          isDirty: false,
+          printOptions: { ...DEFAULT_OPTIONS },
+          quantity: DEFAULT_QUANTITY,
+        });
+        useHistoryStore.getState().clearHistory();
       },
       setActiveTab: (tab) =>
         set({ activeTab: tab, activeFormaId: tab === 'inner' ? 2 : 1 }),
