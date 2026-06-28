@@ -25,6 +25,11 @@ export function ProductFormModal({ isOpen, onClose, product, onSave }: ProductFo
   
   const [isLoading, setIsLoading] = useState(false);
   const [skuError, setSkuError] = useState<string | null>(null);
+  // Bu oturumda oluşturulan ürün — kayıttan sonra modal kapanmadan görsel bölümü açılsın diye.
+  const [createdProduct, setCreatedProduct] = useState<Product | null>(null);
+
+  // Etkin ürün: düzenleme modundaki ürün ya da bu oturumda oluşturulan ürün.
+  const effectiveProduct = product ?? createdProduct;
 
   useEffect(() => {
     if (isOpen) {
@@ -44,6 +49,7 @@ export function ProductFormModal({ isOpen, onClose, product, onSave }: ProductFo
         setDescription('');
       }
       setSkuError(null);
+      setCreatedProduct(null);
     }
   }, [isOpen, product]);
 
@@ -66,18 +72,20 @@ export function ProductFormModal({ isOpen, onClose, product, onSave }: ProductFo
         description: description.trim() || undefined,
       };
 
-      let saved: Product | undefined;
-      if (product) {
-        await api.patch(`/products/${product.id}`, payload);
+      if (effectiveProduct) {
+        // Düzenleme ya da oluşturma-sonrası sonlandırma → kaydet ve kapat.
+        await api.patch(`/products/${effectiveProduct.id}`, payload);
         toast.success('Ürün güncellendi');
+        onSave();
+        onClose();
       } else {
+        // İlk oluşturma → modalı KAPATMA; görsel bölümü açılsın diye createdProduct'ı işaretle.
         const res = await api.post<Product>('/products', payload);
-        saved = res.data;
-        toast.success('Ürün eklendi');
+        const saved = res.data;
+        setCreatedProduct(saved);
+        onSave(saved);
+        toast.success('Ürün eklendi — artık görsel ekleyebilirsiniz');
       }
-
-      onSave(saved);
-      onClose();
     } catch (err) {
       if (axios.isAxiosError(err) && err.response?.status === 409) {
         setSkuError('Bu SKU zaten kullanımda');
@@ -99,7 +107,7 @@ export function ProductFormModal({ isOpen, onClose, product, onSave }: ProductFo
               <Package size={16} />
             </div>
             <h2 className="text-heading-xl text-text-primary">
-              {product ? 'Ürünü Düzenle' : 'Yeni Ürün Ekle'}
+              {effectiveProduct ? 'Ürünü Düzenle' : 'Yeni Ürün Ekle'}
             </h2>
           </div>
           <button
@@ -210,15 +218,16 @@ export function ProductFormModal({ isOpen, onClose, product, onSave }: ProductFo
                 />
               </div>
 
-              {/* Ürün görselleri — yalnızca düzenleme modunda (resimler kalıcı SKU'ya bağlı). */}
+              {/* Ürün görselleri — ürün kaydedildikten sonra (SKU kesinleşince) görünür.
+                  Yeni üründe ilk Kaydet sonrası modal kapanmadan burası açılır. */}
               <div className="pt-2 border-t border-border-default">
-                {product ? (
-                  <ProductImagesManager sku={product.sku} />
+                {effectiveProduct ? (
+                  <ProductImagesManager sku={effectiveProduct.sku} />
                 ) : (
                   <div className="rounded-radius-md border border-dashed border-border-default bg-surface-subtle px-4 py-3">
                     <p className="text-body-xs text-text-secondary">
-                      Görsel eklemek için önce ürünü kaydedin, ardından düzenleyerek görsel
-                      ekleyebilirsiniz.
+                      Görsel eklemek için önce <strong>Kaydet</strong>'e basın; ürün oluşturulunca
+                      görsel ekleme bölümü hemen burada açılır.
                     </p>
                   </div>
                 )}
@@ -228,7 +237,7 @@ export function ProductFormModal({ isOpen, onClose, product, onSave }: ProductFo
             {/* Footer */}
             <div className="px-6 py-4 border-t border-border-default flex justify-end gap-3 shrink-0">
               <Button variant="secondary" size="md" onClick={onClose} disabled={isLoading}>
-                İptal
+                {effectiveProduct ? 'Kapat' : 'İptal'}
               </Button>
               <Button
                 variant="primary"
