@@ -1,4 +1,6 @@
 import { randomUUID } from 'node:crypto';
+import { unlink } from 'node:fs/promises';
+import { join } from 'node:path';
 import { eq, and, asc, count, inArray, sql } from 'drizzle-orm';
 import { db } from '../../db/index.js';
 import { productImages } from '../../db/schema/index.js';
@@ -6,6 +8,17 @@ import { NotFoundError, ConflictError } from '../../lib/errors.js';
 
 // Aynı SKU'ya atanabilecek maksimum resim sayısı.
 const MAX_IMAGES_PER_SKU = 10;
+
+// Yerel uploads diskinden bir dosyayı best-effort siler (üzerine yazmada eski görsel için).
+// Yalnız /uploads/ altındaki relative imageKey'ler silinir; http URL'ler ve hatalar yutulur.
+async function deleteUploadFile(imageKey: string | null | undefined) {
+  if (!imageKey || !imageKey.startsWith('/uploads/')) return;
+  try {
+    await unlink(join(process.cwd(), imageKey));
+  } catch {
+    // ENOENT vb. — sessiz geç.
+  }
+}
 
 export interface CreateProductImageInput {
   sku?: string;
@@ -35,6 +48,32 @@ export const productImagesService = {
   },
 
   async create(userId: string, input: CreateProductImageInput) {
+    // Dosya adına göre tekilleştirme: aynı (userId, fileName) varsa yeni kayıt açmak yerine
+    // mevcut resmin görselini güncelle (ÜZERİNE YAZ). SKU ve sıra AYNEN korunur; yalnız
+    // imageKey/isTransparent değişir. Böylece ERP/otomasyon aynı dosyayı tekrar gönderince
+    // kopya oluşmaz. fileName yoksa tekilleştirme yapılamaz → normal INSERT.
+    const fileName = input.fileName?.trim();
+    if (fileName) {
+      const existing = await db.query.productImages.findFirst({
+        where: and(eq(productImages.userId, userId), eq(productImages.fileName, fileName)),
+      });
+      if (existing) {
+        await db
+          .update(productImages)
+          .set({ imageKey: input.imageKey, isTransparent: input.isTransparent ?? false })
+          .where(and(eq(productImages.id, existing.id), eq(productImages.userId, userId)));
+        // Eski disk dosyasını temizle (yeni imageKey'den farklıysa).
+        if (existing.imageKey !== input.imageKey) {
+          await deleteUploadFile(existing.imageKey);
+        }
+        const updated = await db.query.productImages.findFirst({
+          where: eq(productImages.id, existing.id),
+        });
+        if (!updated) throw new Error('Update failed');
+        return { ...updated, replaced: true };
+      }
+    }
+
     let sortOrder = input.sortOrder;
 
     // SKU atanmışsa: limit kontrolü + sortOrder verilmemişse otomatik (mevcut max + 1).
@@ -71,7 +110,7 @@ export const productImagesService = {
       where: eq(productImages.id, id),
     });
     if (!image) throw new Error('Insert failed');
-    return image;
+    return { ...image, replaced: false };
   },
 
   async updateSku(userId: string, id: string, sku: string | null) {

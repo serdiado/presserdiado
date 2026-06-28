@@ -7,7 +7,7 @@
 import React, { useMemo, useRef, useState } from 'react';
 import {
   X, Loader2, ImagePlus, UploadCloud, CheckCircle2,
-  AlertTriangle, CheckCircle, Download,
+  AlertTriangle, CheckCircle, Download, RefreshCw,
 } from 'lucide-react';
 import axios from 'axios';
 import { normalizeSku, guessSkuFromFileName, matchSku } from '@matbaapro/shared';
@@ -44,6 +44,7 @@ interface UploadItem {
 interface SaveResult {
   matched: number;  // SKU atanmış kaydedilen
   noSku: number;    // SKU atanmadan kaydedilen
+  replaced: number; // aynı dosya adıyla üzerine yazılan
 }
 
 // Dosya adı → SKU eşleştirme yardımcıları artık @matbaapro/shared'da (normalizeSku,
@@ -115,6 +116,10 @@ export function ProductImageUploadModal({ isOpen, onClose, onSaved }: ProductIma
   const [productOptions, setProductOptions] = useState<SkuOption[]>([]);
   // SKU (normalize) → DB'de mevcut en yüksek sortOrder. Yeni resimlerin sırası bunun üstüne eklenir.
   const [existingMaxBySku, setExistingMaxBySku] = useState<Map<string, number>>(new Map());
+  // Kütüphanede zaten var olan dosya adları (küçük harf) — üzerine yazma uyarısı için.
+  const [existingFileNames, setExistingFileNames] = useState<Set<string>>(new Set());
+  // Üzerine yazma onayı: çakışan satırlar (null = onay kapalı).
+  const [collisions, setCollisions] = useState<MatchRow[] | null>(null);
   const [dragging, setDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -135,6 +140,8 @@ export function ProductImageUploadModal({ isOpen, onClose, onSaved }: ProductIma
     setRows([]);
     setProductOptions([]);
     setExistingMaxBySku(new Map());
+    setExistingFileNames(new Set());
+    setCollisions(null);
     setDragging(false);
     setIsUploading(false);
     setIsSaving(false);
@@ -214,13 +221,15 @@ export function ProductImageUploadModal({ isOpen, onClose, onSaved }: ProductIma
   const goToMatching = async () => {
     let options: SkuOption[] = [];
     const maxBySku = new Map<string, number>();
+    const fileNames = new Set<string>();
     try {
       const [prodRes, imgRes] = await Promise.all([
         api.get<{ sku: string; name: string }[]>('/products/skus'),
-        api.get<{ sku: string | null; sortOrder: number }[]>('/product-images'),
+        api.get<{ sku: string | null; sortOrder: number; fileName: string | null }[]>('/product-images'),
       ]);
       options = (prodRes.data ?? []).filter((p) => p.sku).map((p) => ({ sku: p.sku, name: p.name }));
       for (const img of imgRes.data ?? []) {
+        if (img.fileName) fileNames.add(img.fileName.toLowerCase()); // üzerine yazma tespiti
         if (!img.sku) continue; // SKU'suz resimler max hesabına girmez (null.trim() patlamasın)
         const key = normalizeSku(img.sku);
         maxBySku.set(key, Math.max(maxBySku.get(key) ?? 0, img.sortOrder ?? 0));
@@ -231,6 +240,7 @@ export function ProductImageUploadModal({ isOpen, onClose, onSaved }: ProductIma
     }
     setProductOptions(options);
     setExistingMaxBySku(maxBySku);
+    setExistingFileNames(fileNames);
     const normMap = new Map<string, string>();
     for (const o of options) normMap.set(normalizeSku(o.sku), o.sku);
 
@@ -255,27 +265,28 @@ export function ProductImageUploadModal({ isOpen, onClose, onSaved }: ProductIma
   const matchedCount = rows.filter((r) => rowState(r) === 'matched').length;
   const noneCount = rows.filter((r) => rowState(r) === 'none').length;
 
-  const handleSaveAll = async () => {
-    if (rows.length === 0) {
-      toast.error('Kaydedilecek resim yok');
-      return;
-    }
+  // Bir resmin kütüphanede aynı dosya adıyla zaten var olup olmadığı (üzerine yazılacak).
+  const willOverwrite = (r: MatchRow) => existingFileNames.has(r.fileName.toLowerCase());
+
+  // Verilen satırları sıralı kaydet. Aynı dosya adı sunucuda upsert'lenir (üzerine yazılır).
+  const saveRows = async (rowsToSave: MatchRow[]) => {
     setIsSaving(true);
     let matched = 0;
     let noSku = 0;
+    let replaced = 0;
     const limitSkus = new Set<string>();
     try {
-      // Sıralı kayıt — SKU'su olan da olmayan da kaydedilir (eşleşmemişler null sku).
-      for (const r of rows) {
+      for (const r of rowsToSave) {
         const sku = r.sku.trim();
         try {
-          await api.post('/product-images', {
+          const { data } = await api.post<{ replaced?: boolean }>('/product-images', {
             imageKey: r.url,
             fileName: r.fileName,
             ...(sku ? { sku } : {}),
             sortOrder: sortOrders.get(r.id) || 1,
             isTransparent: r.isTransparent,
           });
+          if (data?.replaced) replaced++;
           if (sku) matched++;
           else noSku++;
         } catch (err) {
@@ -291,11 +302,40 @@ export function ProductImageUploadModal({ isOpen, onClose, onSaved }: ProductIma
           `Bazı resimler kaydedilemedi — SKU başına en fazla 10 resim: ${[...limitSkus].join(', ')}`,
         );
       }
-      setResult({ matched, noSku });
+      setResult({ matched, noSku, replaced });
       setStep(3);
     } finally {
       setIsSaving(false);
     }
+  };
+
+  // "Hepsini Kaydet": aynı isimli (üzerine yazılacak) dosya varsa önce onay iste.
+  const handleSaveAll = () => {
+    if (rows.length === 0) {
+      toast.error('Kaydedilecek resim yok');
+      return;
+    }
+    const colliding = rows.filter(willOverwrite);
+    if (colliding.length === 0) {
+      void saveRows(rows);
+    } else {
+      setCollisions(colliding);
+    }
+  };
+
+  // Onay aksiyonları: tümünü üzerine yaz / çakışanları atla / iptal.
+  const confirmOverwriteAll = () => {
+    setCollisions(null);
+    void saveRows(rows);
+  };
+  const skipDuplicates = () => {
+    const kept = rows.filter((r) => !willOverwrite(r));
+    setCollisions(null);
+    if (kept.length === 0) {
+      toast('Tüm dosyalar zaten mevcut — yeni kayıt yok');
+      return;
+    }
+    void saveRows(kept);
   };
 
   // Başarısız yüklemeleri CSV rapor olarak indir (Dosya Adı; Hata Nedeni).
@@ -322,6 +362,7 @@ export function ProductImageUploadModal({ isOpen, onClose, onSaved }: ProductIma
   };
 
   return (
+    <>
     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-99999 animate-fade-in">
       <div className="bg-surface-panel border border-border-default rounded-radius-xl w-full max-w-3xl shadow-drop-lg animate-in fade-in zoom-in-95 duration-150 relative max-h-[90vh] flex flex-col">
         {/* Header */}
@@ -494,7 +535,17 @@ export function ProductImageUploadModal({ isOpen, onClose, onSaved }: ProductIma
                                       </span>
                                     )}
                                   </div>
-                                  <div className="mt-0.5">{matchBadge(state)}</div>
+                                  <div className="mt-0.5 flex items-center gap-2">
+                                    {matchBadge(state)}
+                                    {willOverwrite(r) && (
+                                      <span
+                                        title="Aynı adlı resim kütüphanede var — kaydedince üzerine yazılır"
+                                        className="inline-flex items-center gap-1 text-body-xs text-warning"
+                                      >
+                                        <RefreshCw size={12} /> Üzerine yazılacak
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </td>
@@ -536,6 +587,11 @@ export function ProductImageUploadModal({ isOpen, onClose, onSaved }: ProductIma
                 {result.matched + result.noSku} resim kaydedildi ({result.matched} eşleşti,{' '}
                 {result.noSku} SKU atanmadı)
               </p>
+              {result.replaced > 0 && (
+                <p className="text-body-sm text-text-muted mt-1">
+                  {result.replaced} tanesi mevcut resmin üzerine yazıldı
+                </p>
+              )}
               {errorCount > 0 && (
                 <div className="mt-4 flex flex-col items-center gap-2">
                   <p className="inline-flex items-center gap-1.5 text-body-sm text-danger">
@@ -613,5 +669,44 @@ export function ProductImageUploadModal({ isOpen, onClose, onSaved }: ProductIma
         </div>
       </div>
     </div>
+
+    {/* Üzerine yazma onayı — aynı isimli dosyalar */}
+    {collisions && (
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-100000 animate-fade-in">
+        <div className="bg-surface-panel border border-border-default rounded-radius-xl w-full max-w-md shadow-drop-lg p-6 animate-in fade-in zoom-in-95 duration-150">
+          <div className="flex gap-4">
+            <div className="h-10 w-10 shrink-0 flex items-center justify-center rounded-full bg-warning/10 text-warning">
+              <RefreshCw size={20} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-base font-bold text-text-primary mb-1">Üzerine yazılacak dosyalar</h3>
+              <p className="text-sm text-text-secondary leading-relaxed">
+                Şu {collisions.length} dosya kütüphanede zaten var. Üzerine yazarsanız mevcut
+                resmin görseli güncellenir (SKU ve sıra korunur).
+              </p>
+            </div>
+          </div>
+          <div className="mt-3 max-h-48 overflow-y-auto rounded-radius-md border border-border-default bg-surface-subtle/40 divide-y divide-border-default">
+            {collisions.map((r) => (
+              <div key={r.id} className="px-3 py-1.5 text-body-xs text-text-primary truncate">
+                {r.fileName}
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center justify-end gap-2 mt-5 flex-wrap">
+            <Button variant="ghost" size="sm" onClick={() => setCollisions(null)}>
+              İptal
+            </Button>
+            <Button variant="secondary" size="sm" onClick={skipDuplicates}>
+              Yenileri Atla
+            </Button>
+            <Button variant="primary" size="sm" onClick={confirmOverwriteAll}>
+              Üzerine Yaz
+            </Button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
