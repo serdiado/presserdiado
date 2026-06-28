@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { and, count, desc, eq, sql } from 'drizzle-orm';
+import { and, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '../../db/index.js';
 import { mediaAssets, productImages } from '../../db/schema/index.js';
 import { ConflictError, NotFoundError } from '../../lib/errors.js';
@@ -68,6 +68,25 @@ export const mediaAssetsService = {
       .where(and(eq(mediaAssets.id, id), eq(mediaAssets.userId, userId)));
 
     return { success: true };
+  },
+
+  async bulkRemove(userId: string, ids: string[]) {
+    // Yalnız bu kullanıcıya ait id'leri al (IDOR koruması).
+    const owned = await db
+      .select({ id: mediaAssets.id })
+      .from(mediaAssets)
+      .where(and(eq(mediaAssets.userId, userId), inArray(mediaAssets.id, ids)));
+
+    if (owned.length === 0) {
+      return { deleted: 0 };
+    }
+
+    const ownedIds = owned.map((m) => m.id);
+    await db
+      .delete(mediaAssets)
+      .where(and(eq(mediaAssets.userId, userId), inArray(mediaAssets.id, ownedIds)));
+
+    return { deleted: ownedIds.length };
   },
 
   async assignToProduct(userId: string, id: string, input: AssignMediaAssetToProductInput) {

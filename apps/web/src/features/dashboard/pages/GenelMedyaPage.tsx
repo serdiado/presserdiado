@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, ImageOff, MoreVertical, RefreshCw, Trash2, Upload } from 'lucide-react';
+import { AlertCircle, ImageOff, RefreshCw, Trash2, Upload } from 'lucide-react';
 import api from '@/lib/api';
 import { toAbsoluteUrl } from '@/lib/upload';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { MediaUploadModal } from '../components/MediaUploadModal';
+import { NameSortToggle, sortByName, type NameSortDir } from '../components/librarySort';
 import type { MediaAsset, MediaAssetType } from '../types';
 
 type Filter = 'all' | MediaAssetType;
@@ -37,9 +38,12 @@ export function GenelMedyaPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
+  const [sortDir, setSortDir] = useState<NameSortDir>('default');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<MediaAsset | null>(null);
+  // Çoklu seçim
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -59,19 +63,15 @@ export function GenelMedyaPage() {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    if (!openMenuId) return;
-    const close = () => setOpenMenuId(null);
-    document.addEventListener('mousedown', close);
-    return () => document.removeEventListener('mousedown', close);
-  }, [openMenuId]);
-
   const filteredAssets = useMemo(() => {
     if (filter === 'all') return assets;
     return assets.filter((asset) => asset.type === filter);
   }, [assets, filter]);
 
-  const countFor = (key: Filter) => (key === 'all' ? assets.length : assets.filter((asset) => asset.type === key).length);
+  const sortedAssets = useMemo(() => sortByName(filteredAssets, sortDir), [filteredAssets, sortDir]);
+
+  const countFor = (key: Filter) =>
+    key === 'all' ? assets.length : assets.filter((asset) => asset.type === key).length;
 
   const handleDeleteConfirm = async () => {
     if (!deleting) return;
@@ -84,6 +84,51 @@ export function GenelMedyaPage() {
       toast.error('Medya silinemedi');
     } finally {
       setDeleting(null);
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const allSelected = filteredAssets.length > 0 && filteredAssets.every((a) => selectedIds.has(a.id));
+
+  const toggleAll = () => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (filteredAssets.every((a) => prev.has(a.id))) {
+        filteredAssets.forEach((a) => next.delete(a.id));
+      } else {
+        filteredAssets.forEach((a) => next.add(a.id));
+      }
+      return next;
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    try {
+      // Backend istek başına en fazla 100 id kabul ediyor — 100'lük dilimlere böl.
+      let deleted = 0;
+      for (let i = 0; i < ids.length; i += 100) {
+        const res = await api.delete('/media-assets/bulk', { data: { ids: ids.slice(i, i + 100) } });
+        deleted += res.data?.deleted ?? 0;
+      }
+      toast.success(`${deleted} medya silindi`);
+      clearSelection();
+      setIsBulkDeleteOpen(false);
+      fetchData();
+    } catch (err) {
+      console.error('Toplu silme hatası', err);
+      toast.error('Medyalar silinemedi');
     }
   };
 
@@ -154,69 +199,97 @@ export function GenelMedyaPage() {
                 {tab.label} ({countFor(tab.key)})
               </button>
             ))}
+            <div className="ml-auto flex items-center gap-3">
+              <NameSortToggle dir={sortDir} onChange={setSortDir} />
+              <label className="flex items-center gap-2 text-body-sm text-text-secondary cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 accent-primary cursor-pointer"
+                  checked={allSelected}
+                  onChange={toggleAll}
+                />
+                Tümünü Seç
+              </label>
+            </div>
           </div>
 
-          <div className="grid grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredAssets.map((asset) => (
-              <div
-                key={asset.id}
-                className="group relative bg-surface-panel border border-border-default rounded-radius-lg overflow-visible transition-colors hover:border-border-strong"
+          {/* Seçim aksiyon bar'ı */}
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-3 mb-4 shrink-0 bg-surface-subtle border border-border-default rounded-radius-md px-4 py-2">
+              <span className="text-body-sm text-text-primary">{selectedIds.size} öğe seçildi</span>
+              <button
+                onClick={clearSelection}
+                className="text-body-sm text-text-secondary hover:text-text-primary transition-colors"
               >
-                <div className="aspect-square bg-surface-subtle flex items-center justify-center overflow-hidden rounded-t-radius-lg">
-                  <img
-                    src={toAbsoluteUrl(asset.imageKey)}
-                    alt={asset.fileName ?? TYPE_LABELS[asset.type]}
-                    className="w-full h-full object-contain"
-                    loading="lazy"
-                  />
-                </div>
+                Seçimi Temizle
+              </button>
+              <div className="ml-auto">
+                <Button
+                  variant="danger"
+                  size="sm"
+                  leftIcon={<Trash2 size={14} />}
+                  onClick={() => setIsBulkDeleteOpen(true)}
+                >
+                  Seçilenleri Sil
+                </Button>
+              </div>
+            </div>
+          )}
 
-                <div className="absolute top-2 right-2" onMouseDown={(event) => event.stopPropagation()}>
+          <div className="grid grid-cols-3 lg:grid-cols-4 gap-4">
+            {sortedAssets.map((asset) => {
+              const selected = selectedIds.has(asset.id);
+              return (
+                <div
+                  key={asset.id}
+                  className={`group relative bg-surface-panel border rounded-radius-lg overflow-hidden transition-colors ${
+                    selected ? 'border-border-strong bg-surface-subtle' : 'border-border-default hover:border-border-strong'
+                  }`}
+                >
+                  <div className="aspect-square bg-surface-subtle flex items-center justify-center overflow-hidden">
+                    <img
+                      src={toAbsoluteUrl(asset.imageKey)}
+                      alt={asset.fileName ?? TYPE_LABELS[asset.type]}
+                      className="w-full h-full object-contain"
+                      loading="lazy"
+                    />
+                  </div>
+
+                  {/* Seçim checkbox'ı — sol üst */}
+                  <input
+                    type="checkbox"
+                    className={`absolute top-2 left-2 w-4 h-4 accent-primary cursor-pointer transition-opacity ${
+                      selected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                    }`}
+                    checked={selected}
+                    onChange={() => toggleSelect(asset.id)}
+                  />
+
+                  {/* Sil butonu — sağ üst */}
                   <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setOpenMenuId((current) => (current === asset.id ? null : asset.id));
-                    }}
-                    className="p-1.5 rounded-radius-md bg-surface-panel/90 text-text-secondary hover:text-text-primary hover:bg-surface-subtle opacity-0 group-hover:opacity-100 transition-all"
-                    title="Aksiyonlar"
+                    onClick={() => setDeleting(asset)}
+                    className="absolute top-2 right-2 p-1.5 rounded-radius-md bg-surface-panel/90 text-text-secondary hover:text-danger hover:bg-danger-subtle opacity-0 group-hover:opacity-100 transition-all"
+                    title="Sil"
                   >
-                    <MoreVertical size={16} />
+                    <Trash2 size={16} />
                   </button>
 
-                  {openMenuId === asset.id && (
-                    <div className="absolute right-0 mt-1 z-50 w-36 bg-surface-panel border border-border-default rounded-radius-md shadow-drop-lg py-1 animate-in fade-in slide-in-from-top-2 duration-100">
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setOpenMenuId(null);
-                          setDeleting(asset);
-                        }}
-                        className="w-full px-3 py-2 text-left text-body-xs text-danger hover:bg-danger-subtle hover:text-danger-hover flex items-center gap-2 cursor-pointer transition-colors"
-                      >
-                        <Trash2 size={14} className="text-danger" />
-                        <span>Sil</span>
-                      </button>
+                  <div className="p-2.5 space-y-2 overflow-hidden">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-radius-md border border-border-default bg-surface-subtle text-body-xs text-text-secondary shrink-0">
+                        {TYPE_LABELS[asset.type]}
+                      </span>
+                      {formatFileSize(asset.size) && (
+                        <span className="text-body-xs text-text-muted tabular-nums shrink-0">{formatFileSize(asset.size)}</span>
+                      )}
                     </div>
-                  )}
-                </div>
-
-                <div className="p-2.5 space-y-2 overflow-hidden rounded-b-radius-lg">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-radius-md border border-border-default bg-surface-subtle text-body-xs text-text-secondary shrink-0">
-                      {TYPE_LABELS[asset.type]}
-                    </span>
-                    {formatFileSize(asset.size) && (
-                      <span className="text-body-xs text-text-muted tabular-nums shrink-0">{formatFileSize(asset.size)}</span>
-                    )}
+                    <p className="text-body-xs text-text-primary truncate" title={asset.fileName ?? undefined}>
+                      {asset.fileName ?? 'İsimsiz medya'}
+                    </p>
                   </div>
-                  <p className="text-body-xs text-text-primary truncate" title={asset.fileName ?? undefined}>
-                    {asset.fileName ?? 'İsimsiz medya'}
-                  </p>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {filteredAssets.length === 0 && (
@@ -242,6 +315,17 @@ export function GenelMedyaPage() {
         confirmVariant="danger"
         onConfirm={handleDeleteConfirm}
         onCancel={() => setDeleting(null)}
+      />
+
+      <ConfirmModal
+        isOpen={isBulkDeleteOpen}
+        title="Seçilenleri Sil"
+        description={`${selectedIds.size} öğe silinecek. Bu işlem geri alınamaz.`}
+        confirmLabel="Sil"
+        cancelLabel="Vazgeç"
+        confirmVariant="danger"
+        onConfirm={handleBulkDelete}
+        onCancel={() => setIsBulkDeleteOpen(false)}
       />
     </div>
   );

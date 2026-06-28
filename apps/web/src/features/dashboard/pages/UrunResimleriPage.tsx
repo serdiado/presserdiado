@@ -11,6 +11,7 @@ import { ProductImageUploadModal } from '../components/ProductImageUploadModal';
 import { RematchImagesButton } from '../components/RematchImagesButton';
 import { ProductFormModal } from '../components/ProductFormModal';
 import { SkuCombobox, type SkuOption } from '../components/SkuCombobox';
+import { NameSortToggle, sortByName, type NameSortDir } from '../components/librarySort';
 import type { ProductImage, Product } from '../types';
 
 type Filter = 'all' | 'matched' | 'unmatched';
@@ -21,6 +22,7 @@ export function UrunResimleriPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
+  const [sortDir, setSortDir] = useState<NameSortDir>('default');
 
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -69,6 +71,8 @@ export function UrunResimleriPage() {
     if (filter === 'unmatched') return images.filter((i) => !isMatched(i));
     return images;
   }, [images, filter, skuSet]);
+
+  const sortedFiltered = useMemo(() => sortByName(filtered, sortDir), [filtered, sortDir]);
 
   const matchedCount = useMemo(
     () => images.filter(isMatched).length,
@@ -275,15 +279,18 @@ export function UrunResimleriPage() {
                 {tab.label}
               </button>
             ))}
-            <label className="ml-auto flex items-center gap-2 text-body-sm text-text-secondary cursor-pointer select-none">
-              <input
-                type="checkbox"
-                className="w-4 h-4 accent-primary cursor-pointer"
-                checked={allSelected}
-                onChange={toggleAll}
-              />
-              Tümünü Seç
-            </label>
+            <div className="ml-auto flex items-center gap-3">
+              <NameSortToggle dir={sortDir} onChange={setSortDir} />
+              <label className="flex items-center gap-2 text-body-sm text-text-secondary cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 accent-primary cursor-pointer"
+                  checked={allSelected}
+                  onChange={toggleAll}
+                />
+                Tümünü Seç
+              </label>
+            </div>
           </div>
 
           {/* Seçim aksiyon bar'ı */}
@@ -313,7 +320,7 @@ export function UrunResimleriPage() {
 
           {/* Grid */}
           <div className="grid grid-cols-3 lg:grid-cols-4 gap-4">
-            {filtered.map((img) => {
+            {sortedFiltered.map((img) => {
               const matched = isMatched(img);
               const selected = selectedIds.has(img.id);
               return (

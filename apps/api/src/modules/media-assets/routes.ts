@@ -18,6 +18,10 @@ const assignMediaAssetToProductSchema = z.object({
   sku: z.string().min(1).max(100),
 });
 
+const bulkDeleteSchema = z.object({
+  ids: z.array(z.string()).min(1).max(100),
+});
+
 export async function mediaAssetsRoutes(app: FastifyInstance) {
   app.addHook('onRequest', app.authenticate);
 
@@ -44,6 +48,14 @@ export async function mediaAssetsRoutes(app: FastifyInstance) {
     const userId = request.user.id; // IDOR Protection: Sadece kendi medyasını ürün resmi olarak atayabilir.
     const image = await mediaAssetsService.assignToProduct(userId, id, body);
     return reply.status(201).send(image);
+  });
+
+  // DELETE /media-assets/bulk — toplu sil. Statik segment :id'den önce tanımlı.
+  app.delete('/media-assets/bulk', async (request, reply) => {
+    const { ids } = bulkDeleteSchema.parse(request.body);
+    const userId = request.user.id; // IDOR Protection: Sadece kendi medyalarını silebilir.
+    const result = await mediaAssetsService.bulkRemove(userId, ids);
+    return reply.send(result);
   });
 
   // DELETE /media-assets/:id — medya sil
