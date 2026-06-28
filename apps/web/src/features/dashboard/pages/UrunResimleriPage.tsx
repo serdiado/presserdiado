@@ -25,7 +25,7 @@ export function UrunResimleriPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
-  const { sortDir, setSortDir, viewMode, setViewMode, pageSize, setPageSize, page, setPage } =
+  const { sortDir, setSortDir, viewMode, setViewMode, pageSize, setPageSize, page, setPage, query, setQuery } =
     useLibraryView({ storageKey: 'product-images', defaultViewMode: 'large' });
 
   const [isUploadOpen, setIsUploadOpen] = useState(false);
@@ -71,18 +71,27 @@ export function UrunResimleriPage() {
   const isMatched = (img: ProductImage) => !!img.sku && skuSet.has(img.sku);
 
   const filtered = useMemo(() => {
-    if (filter === 'matched') return images.filter(isMatched);
-    if (filter === 'unmatched') return images.filter((i) => !isMatched(i));
-    return images;
-  }, [images, filter, skuSet]);
+    let list = images;
+    if (filter === 'matched') list = list.filter(isMatched);
+    else if (filter === 'unmatched') list = list.filter((i) => !isMatched(i));
+    const q = query.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (i) =>
+          (i.fileName ?? '').toLowerCase().includes(q) ||
+          (i.sku ?? '').toLowerCase().includes(q),
+      );
+    }
+    return list;
+  }, [images, filter, skuSet, query]);
 
   const sortedFiltered = useMemo(() => sortByName(filtered, sortDir), [filtered, sortDir]);
 
-  // Filtre/sıralama değişince ilk sayfaya dön.
+  // Filtre/sıralama/arama değişince ilk sayfaya dön.
   useEffect(() => {
     setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter, sortDir]);
+  }, [filter, sortDir, query]);
 
   const { items: pagedImages, currentPage } = usePagedSlice(sortedFiltered, page, setPage, pageSize);
 
@@ -341,7 +350,10 @@ export function UrunResimleriPage() {
               </button>
             ))}
             <LibraryToolbar
-              className="ml-auto"
+              className="flex-1"
+              query={query}
+              onQueryChange={setQuery}
+              searchPlaceholder="Dosya adı veya SKU ile ara..."
               viewMode={viewMode}
               onViewModeChange={setViewMode}
               sortDir={sortDir}

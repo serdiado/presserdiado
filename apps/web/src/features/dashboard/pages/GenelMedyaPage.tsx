@@ -41,7 +41,7 @@ export function GenelMedyaPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
-  const { sortDir, setSortDir, viewMode, setViewMode, pageSize, setPageSize, page, setPage } =
+  const { sortDir, setSortDir, viewMode, setViewMode, pageSize, setPageSize, page, setPage, query, setQuery } =
     useLibraryView({ storageKey: 'media', defaultViewMode: 'large' });
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [deleting, setDeleting] = useState<MediaAsset | null>(null);
@@ -68,17 +68,19 @@ export function GenelMedyaPage() {
   }, []);
 
   const filteredAssets = useMemo(() => {
-    if (filter === 'all') return assets;
-    return assets.filter((asset) => asset.type === filter);
-  }, [assets, filter]);
+    let list = filter === 'all' ? assets : assets.filter((asset) => asset.type === filter);
+    const q = query.trim().toLowerCase();
+    if (q) list = list.filter((a) => (a.fileName ?? '').toLowerCase().includes(q));
+    return list;
+  }, [assets, filter, query]);
 
   const sortedAssets = useMemo(() => sortByName(filteredAssets, sortDir), [filteredAssets, sortDir]);
 
-  // Filtre/sıralama değişince ilk sayfaya dön.
+  // Filtre/sıralama/arama değişince ilk sayfaya dön.
   useEffect(() => {
     setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filter, sortDir]);
+  }, [filter, sortDir, query]);
 
   const { items: pagedAssets, currentPage } = usePagedSlice(sortedAssets, page, setPage, pageSize);
 
@@ -230,7 +232,10 @@ export function GenelMedyaPage() {
               </button>
             ))}
             <LibraryToolbar
-              className="ml-auto"
+              className="flex-1"
+              query={query}
+              onQueryChange={setQuery}
+              searchPlaceholder="Dosya adı ile ara..."
               viewMode={viewMode}
               onViewModeChange={setViewMode}
               sortDir={sortDir}

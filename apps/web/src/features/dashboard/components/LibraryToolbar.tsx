@@ -5,7 +5,7 @@
 // Her sayfa kontrolün değerini kendi verisine/render'ına bağlar.
 
 import { useState } from 'react';
-import { List, LayoutGrid, Image as ImageIcon } from 'lucide-react';
+import { List, LayoutGrid, Image as ImageIcon, Search } from 'lucide-react';
 import { NameSortToggle, type NameSortDir } from './librarySort';
 
 export type ViewMode = 'list' | 'small' | 'large';
@@ -51,6 +51,8 @@ export function useLibraryView(opts: UseLibraryViewOptions = {}) {
   );
   const [pageSize, setPageSizeState] = useState<number>(() => readStoredPageSize(storageKey));
   const [page, setPage] = useState(1);
+  // Arama sorgusu — geçici (persist edilmez). Her sayfa kendi verisinde uygular.
+  const [query, setQuery] = useState('');
 
   const setViewMode = (mode: ViewMode) => {
     setViewModeState(mode);
@@ -75,7 +77,7 @@ export function useLibraryView(opts: UseLibraryViewOptions = {}) {
     }
   };
 
-  return { sortDir, setSortDir, viewMode, setViewMode, pageSize, setPageSize, page, setPage };
+  return { sortDir, setSortDir, viewMode, setViewMode, pageSize, setPageSize, page, setPage, query, setQuery };
 }
 
 const VIEW_META: Record<ViewMode, { label: string; Icon: typeof List }> = {
@@ -113,6 +115,10 @@ interface LibraryToolbarProps {
   onSortChange: (dir: NameSortDir) => void;
   allSelected: boolean;
   onToggleAll: () => void;
+  // Arama — verilirse soldaki arama input'u render edilir; her sayfa kendi verisinde filtreler.
+  query?: string;
+  onQueryChange?: (q: string) => void;
+  searchPlaceholder?: string;
   className?: string;
 }
 
@@ -123,11 +129,26 @@ export function LibraryToolbar({
   onSortChange,
   allSelected,
   onToggleAll,
+  query,
+  onQueryChange,
+  searchPlaceholder = 'Ara...',
   className = '',
 }: LibraryToolbarProps) {
   return (
     <div className={`flex items-center gap-3 ${className}`}>
       {/* Yeni ortak kontroller buraya eklenir → tüm bölümlerde belirir. */}
+      {onQueryChange && (
+        <div className="relative flex-1 min-w-40">
+          <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
+          <input
+            type="text"
+            placeholder={searchPlaceholder}
+            value={query ?? ''}
+            onChange={(e) => onQueryChange(e.target.value)}
+            className="w-full h-8 pl-8 pr-3 rounded-radius-md border border-border-default hover:border-border-strong bg-surface-panel text-body-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-border-strong"
+          />
+        </div>
+      )}
       <ViewModeToggle value={viewMode} onChange={onViewModeChange} />
       <NameSortToggle dir={sortDir} onChange={onSortChange} />
       <label className="flex items-center gap-2 text-body-sm text-text-secondary cursor-pointer select-none">

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Plus, Search, Edit2, Trash2, PackageSearch, AlertCircle, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import { Plus, Edit2, Trash2, PackageSearch, AlertCircle, RefreshCw, FileSpreadsheet } from 'lucide-react';
 import api from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
@@ -17,8 +17,7 @@ export function UrunListelerim() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState('');
-  const { sortDir, setSortDir, viewMode, setViewMode, pageSize, setPageSize, page, setPage } =
+  const { sortDir, setSortDir, viewMode, setViewMode, pageSize, setPageSize, page, setPage, query, setQuery } =
     useLibraryView({ storageKey: 'products', defaultViewMode: 'list' });
 
   // Modals state
@@ -54,14 +53,14 @@ export function UrunListelerim() {
   }, []);
 
   const filteredProducts = useMemo(() => {
-    const q = search.toLowerCase();
+    const q = query.toLowerCase();
     return products.filter(
       (p) =>
         p.name.toLowerCase().includes(q) ||
         p.sku.toLowerCase().includes(q) ||
         (p.category && p.category.toLowerCase().includes(q))
     );
-  }, [products, search]);
+  }, [products, query]);
 
   const sortedProducts = useMemo(
     () => sortByName(filteredProducts, sortDir, (p) => p.name),
@@ -72,7 +71,7 @@ export function UrunListelerim() {
   useEffect(() => {
     setPage(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, sortDir]);
+  }, [query, sortDir]);
 
   const { items: pagedProducts, currentPage } = usePagedSlice(sortedProducts, page, setPage, pageSize);
 
@@ -242,29 +241,21 @@ export function UrunListelerim() {
       ) : (
         <>
           {/* Toolbar */}
-          <div className="flex items-center justify-between mb-4 shrink-0">
-            <div className="relative w-80">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-              <input
-                type="text"
-                placeholder="İsim, SKU veya kategori ile ara..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full h-9 pl-9 pr-3 rounded-md border border-border-default hover:border-border-strong bg-white text-body-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-border-strong"
-              />
-            </div>
-            <div className="flex items-center gap-4">
-              <LibraryToolbar
-                viewMode={viewMode}
-                onViewModeChange={setViewMode}
-                sortDir={sortDir}
-                onSortChange={setSortDir}
-                allSelected={allSelected}
-                onToggleAll={toggleAll}
-              />
-              <div className="text-body-sm text-text-secondary">
-                Toplam {filteredProducts.length} ürün
-              </div>
+          <div className="flex items-center gap-4 mb-4 shrink-0">
+            <LibraryToolbar
+              className="flex-1"
+              query={query}
+              onQueryChange={setQuery}
+              searchPlaceholder="İsim, SKU veya kategori ile ara..."
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              sortDir={sortDir}
+              onSortChange={setSortDir}
+              allSelected={allSelected}
+              onToggleAll={toggleAll}
+            />
+            <div className="text-body-sm text-text-secondary shrink-0">
+              Toplam {filteredProducts.length} ürün
             </div>
           </div>
 
@@ -308,7 +299,7 @@ export function UrunListelerim() {
               getActions={(p) => getProductActions(p)}
             />
 
-            {filteredProducts.length === 0 && search && (
+            {filteredProducts.length === 0 && query && (
               <div className="text-center py-12 text-body-md text-text-secondary">
                 Aramanızla eşleşen ürün bulunamadı.
               </div>
