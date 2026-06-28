@@ -8,6 +8,8 @@ import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { ProductFormModal } from '../components/ProductFormModal';
 import { ExcelImportModal } from '../components/ExcelImportModal';
 import { RematchImagesButton } from '../components/RematchImagesButton';
+import { sortByName } from '../components/librarySort';
+import { LibraryToolbar, useLibraryView } from '../components/LibraryToolbar';
 import type { Product } from '../types';
 
 // Ürün satırı için küçük resim. Resim yoksa veya yüklenemezse nötr placeholder gösterir.
@@ -37,6 +39,7 @@ export function UrunListelerim() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const { sortDir, setSortDir } = useLibraryView();
 
   // Modals state
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -79,6 +82,11 @@ export function UrunListelerim() {
         (p.category && p.category.toLowerCase().includes(q))
     );
   }, [products, search]);
+
+  const sortedProducts = useMemo(
+    () => sortByName(filteredProducts, sortDir, (p) => p.name),
+    [filteredProducts, sortDir],
+  );
 
   const handleAddClick = () => {
     setEditingProduct(null);
@@ -233,15 +241,12 @@ export function UrunListelerim() {
               />
             </div>
             <div className="flex items-center gap-4">
-              <label className="flex items-center gap-2 text-body-sm text-text-secondary cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 accent-primary cursor-pointer"
-                  checked={allSelected}
-                  onChange={toggleAll}
-                />
-                Tümünü Seç
-              </label>
+              <LibraryToolbar
+                sortDir={sortDir}
+                onSortChange={setSortDir}
+                allSelected={allSelected}
+                onToggleAll={toggleAll}
+              />
               <div className="text-body-sm text-text-secondary">
                 Toplam {filteredProducts.length} ürün
               </div>
@@ -276,7 +281,7 @@ export function UrunListelerim() {
           {/* List */}
           <div className="flex-1 overflow-auto">
             <div className="space-y-2">
-              {filteredProducts.map((product) => {
+              {sortedProducts.map((product) => {
                 const selected = selectedIds.has(product.id);
                 return (
                 <div

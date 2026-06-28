@@ -6,7 +6,8 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { MediaUploadModal } from '../components/MediaUploadModal';
-import { NameSortToggle, sortByName, type NameSortDir } from '../components/librarySort';
+import { sortByName } from '../components/librarySort';
+import { LibraryToolbar, useLibraryView } from '../components/LibraryToolbar';
 import type { MediaAsset, MediaAssetType } from '../types';
 
 type Filter = 'all' | MediaAssetType;
@@ -38,7 +39,7 @@ export function GenelMedyaPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
-  const [sortDir, setSortDir] = useState<NameSortDir>('default');
+  const { sortDir, setSortDir } = useLibraryView();
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [deleting, setDeleting] = useState<MediaAsset | null>(null);
   // Çoklu seçim
@@ -199,18 +200,13 @@ export function GenelMedyaPage() {
                 {tab.label} ({countFor(tab.key)})
               </button>
             ))}
-            <div className="ml-auto flex items-center gap-3">
-              <NameSortToggle dir={sortDir} onChange={setSortDir} />
-              <label className="flex items-center gap-2 text-body-sm text-text-secondary cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 accent-primary cursor-pointer"
-                  checked={allSelected}
-                  onChange={toggleAll}
-                />
-                Tümünü Seç
-              </label>
-            </div>
+            <LibraryToolbar
+              className="ml-auto"
+              sortDir={sortDir}
+              onSortChange={setSortDir}
+              allSelected={allSelected}
+              onToggleAll={toggleAll}
+            />
           </div>
 
           {/* Seçim aksiyon bar'ı */}

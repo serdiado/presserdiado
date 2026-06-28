@@ -5,16 +5,20 @@ import { ArrowDownUp, ArrowDownAZ, ArrowDownZA } from 'lucide-react';
 
 export type NameSortDir = 'default' | 'asc' | 'desc';
 
-// fileName'e göre Türkçe locale ile sıralı KOPYA döndürür. 'default' → diziyi olduğu gibi
+// İsme göre Türkçe locale ile sıralı KOPYA döndürür. 'default' → diziyi olduğu gibi
 // (liste zaten createdAt desc geliyor). İsimsiz öğeler sona alınır.
-export function sortByName<T extends { fileName?: string | null }>(
+// getName: hangi alanın "isim" olduğunu belirler — varsayılan fileName (resim/medya);
+// ürün listesinde (p) => p.name geçilir.
+export function sortByName<T>(
   items: T[],
   dir: NameSortDir,
+  getName: (item: T) => string | null | undefined = (item) =>
+    (item as { fileName?: string | null }).fileName,
 ): T[] {
   if (dir === 'default') return items;
   const sorted = [...items].sort((a, b) => {
-    const an = a.fileName?.trim() ?? '';
-    const bn = b.fileName?.trim() ?? '';
+    const an = getName(a)?.trim() ?? '';
+    const bn = getName(b)?.trim() ?? '';
     if (!an && !bn) return 0;
     if (!an) return 1; // isimsizler sona
     if (!bn) return -1;
