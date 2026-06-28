@@ -6,6 +6,7 @@ import { useCatalogStore, useUIStore } from '@/stores/studio';
 import { uploadImage } from '@/lib/upload';
 import { Button } from '@/components/ui';
 import { richTextToPlain } from '../modules/richText';
+import { SlotProductImages } from './SlotProductImages';
 
 const RAW_FIELD_LABELS: Record<string, string> = {
   POS: 'Pozisyon',
@@ -41,6 +42,11 @@ function rawPatchForKnownField(raw: Record<string, unknown>, candidates: string[
 
 export function ProductInfoSettings() {
   const selectedSlotIds = useUIStore((s) => s.selectedSlotIds);
+  // formas + activeFormaId'ye abone ol → reconcile (örn. birincil resim değişimi) formas'ı
+  // değiştirince panel re-render olur. getActivePages yalnız tip için tutulur (stabil referans
+  // re-render tetiklemez). SlotMode paterninin aynısı.
+  const formas = useCatalogStore((s) => s.formas);
+  const activeFormaId = useCatalogStore((s) => s.activeFormaId);
   const getActivePages = useCatalogStore((s) => s.getActivePages);
   const updateSlotProduct = useCatalogStore((s) => s.updateSlotProduct);
   const clearSlotToPool = useCatalogStore((s) => s.clearSlotToPool);
@@ -61,9 +67,10 @@ export function ProductInfoSettings() {
   }
 
   const slotId = selectedSlotIds[0];
+  const pages = formas.find((f) => f.id === activeFormaId)?.pages ?? [];
   let pageNumber = 0;
   let slot = null as ReturnType<typeof getActivePages>[number]['slots'][number] | null;
-  for (const p of getActivePages()) {
+  for (const p of pages) {
     const found = p.slots.find((s) => s.id === slotId);
     if (found) {
       slot = found;
@@ -187,6 +194,13 @@ export function ProductInfoSettings() {
               }
             />
           </label>
+
+          {/* Kütüphane resim yönetimi (sıralama/birincil/ekle/sil) — yalnız SKU'lu üründe. */}
+          {product.sku?.trim() && (
+            <div className="pt-3 mt-3 border-t border-border-default">
+              <SlotProductImages sku={product.sku} />
+            </div>
+          )}
 
           {Object.keys(rawRecord).length > 0 && (
             <div className="pt-3 mt-3 border-t border-border-default space-y-2">

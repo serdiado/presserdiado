@@ -233,6 +233,45 @@ export const productImagesService = {
     return { matched: updates.length, skipped };
   },
 
+  // Bir SKU'nun resimlerini verilen sıraya göre yeniden dizer (sortOrder = index + 1).
+  // orderedIds yalnız bu kullanıcıya + bu SKU'ya ait id'lere filtrelenir (IDOR/bütünlük);
+  // listede yer almayan sahip-resimler mevcut sıralarını koruyarak sona eklenir (savunmacı —
+  // UI tam liste gönderse de eksik/fazla id'de bütünlük bozulmaz). Birincil = en düşük sortOrder.
+  async reorder(userId: string, sku: string, orderedIds: string[]) {
+    // Bu SKU'nun tüm resimleri — mevcut sırayla (sona-ekleme için referans).
+    const current = await db
+      .select({ id: productImages.id })
+      .from(productImages)
+      .where(and(eq(productImages.userId, userId), eq(productImages.sku, sku)))
+      .orderBy(asc(productImages.sortOrder), asc(productImages.createdAt));
+    const ownedIds = new Set(current.map((r) => r.id));
+
+    // İstenen sıra: yalnız sahip olunan + tekil; ardından listede olmayan sahip-resimler.
+    const seen = new Set<string>();
+    const finalOrder: string[] = [];
+    for (const id of orderedIds) {
+      if (ownedIds.has(id) && !seen.has(id)) {
+        seen.add(id);
+        finalOrder.push(id);
+      }
+    }
+    for (const r of current) {
+      if (!seen.has(r.id)) finalOrder.push(r.id);
+    }
+    if (finalOrder.length === 0) return { reordered: 0 };
+
+    await db.transaction(async (tx) => {
+      for (let i = 0; i < finalOrder.length; i++) {
+        await tx
+          .update(productImages)
+          .set({ sortOrder: i + 1 })
+          .where(and(eq(productImages.id, finalOrder[i]), eq(productImages.userId, userId)));
+      }
+    });
+
+    return { reordered: finalOrder.length };
+  },
+
   async remove(userId: string, id: string) {
     const existing = await db.query.productImages.findFirst({
       where: and(eq(productImages.id, id), eq(productImages.userId, userId)),

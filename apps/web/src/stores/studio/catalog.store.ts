@@ -212,7 +212,8 @@ interface CatalogActions {
   discardSession: () => void;
   // Proje açılışında: yerleştirilmiş ürünlerin resimlerini SKU'ya göre güncel kütüphaneyle
   // yeniden bağla. map: normalize SKU → mutlak URL (yalnız resmi olan ürünler).
-  reconcileProductImagesBySku: (skuToImage: Map<string, string>) => void;
+  // Dönüş: herhangi bir görsel gerçekten değiştiyse true (çağıran isterse dirty işaretler).
+  reconcileProductImagesBySku: (skuToImage: Map<string, string>) => boolean;
   setPrintOptions: (options: PrintOptionsValue) => void;
   setQuantity: (quantity: number) => void;
   setActiveTab: (tab: 'outer' | 'inner') => void;
@@ -566,14 +567,23 @@ export const useCatalogStore = create<Store>()(
         // Kütüphane URL'i (silinince temizlenecek) vs harici/Excel URL (korunacak) ayrımı.
         const isLibraryUrl = (u: unknown): u is string =>
           typeof u === 'string' && u.includes('/uploads/');
+        let changed = false;
         // Tek ürün için resmi çöz: SKU'suz → dokunma; kütüphanede varsa güncelle; yoksa ve
         // mevcut resim kütüphane URL'iyse temizle ("Resim Yok"); harici ise koru.
+        // Görsel gerçekten değiştiğinde changed=true (çağıran dirty kararına kullanır).
         const resolve = <T extends ProductInfo>(p: T): T => {
           const sku = typeof p.sku === 'string' ? p.sku.trim() : '';
           if (!sku) return p;
           const lib = skuToImage.get(normalizeSku(sku));
-          if (lib) return p.image === lib ? p : { ...p, image: lib };
-          if (isLibraryUrl(p.image)) return { ...p, image: '' };
+          if (lib) {
+            if (p.image === lib) return p;
+            changed = true;
+            return { ...p, image: lib };
+          }
+          if (isLibraryUrl(p.image)) {
+            changed = true;
+            return { ...p, image: '' };
+          }
           return p;
         };
         set((state) => ({
@@ -589,6 +599,7 @@ export const useCatalogStore = create<Store>()(
           productPool: state.productPool.map(resolve),
           tempProductPool: state.tempProductPool.map(resolve),
         }));
+        return changed;
       },
       setActiveTab: (tab) =>
         set({ activeTab: tab, activeFormaId: tab === 'inner' ? 2 : 1 }),

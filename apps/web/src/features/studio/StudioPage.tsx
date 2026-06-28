@@ -15,10 +15,10 @@ import { TemalarFlyoutPanel } from './left-sidebar/TemalarFlyoutPanel';
 import { MedyaFlyoutPanel } from './left-sidebar/MedyaFlyoutPanel';
 import { PlaceholderFlyout } from './left-sidebar/PlaceholderFlyout';
 import { useCatalogStore, useUIStore, buildFormasForTemplate } from '@/stores/studio';
-import { Template1, normalizeSku } from '@matbaapro/shared';
+import { Template1 } from '@matbaapro/shared';
 import api from '@/lib/api';
-import { toAbsoluteUrl } from '@/lib/upload';
 import { deserializeStudioState } from './lib/projectSerializer';
+import { syncProductImagesFromLibrary } from './lib/syncProductImagesFromLibrary';
 import toast from 'react-hot-toast';
 
 export default function StudioPage() {
@@ -179,21 +179,8 @@ export default function StudioPage() {
 
     // Yerleştirilmiş ürün resimlerini SKU'ya göre güncel kütüphaneyle yeniden bağla:
     // kütüphaneden silinen → "Resim Yok", değişen → güncel görsel. Hata sessiz geçilir
-    // (snapshot korunur), proje yüklemesini düşürmez.
-    const reconcileFromLibrary = async () => {
-      try {
-        const { data } = await api.get<{ sku: string; primaryImage: string | null }[]>(
-          '/products/with-images',
-        );
-        const map = new Map<string, string>();
-        for (const p of data ?? []) {
-          if (p.sku && p.primaryImage) map.set(normalizeSku(p.sku), toAbsoluteUrl(p.primaryImage));
-        }
-        useCatalogStore.getState().reconcileProductImagesBySku(map);
-      } catch (e) {
-        console.error('Ürün resmi senkronu başarısız:', e);
-      }
-    };
+    // (snapshot korunur), proje yüklemesini düşürmez. Tek-kaynak util (SlotProductImages ile ortak).
+    const reconcileFromLibrary = syncProductImagesFromLibrary;
 
     const loadProjectFromServer = async () => {
       if (!projectId) {

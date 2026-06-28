@@ -26,6 +26,7 @@ import { cellDomId } from '../modules/bannerDom';
 import { resolveModuleSlot, isFooterSlotId, synthFooterSlot, footerPageNumber } from '@/stores/studio/footerSlot';
 import { resolveMenuContext } from '../contextMenu/menuContext';
 import { TextStyleSection } from './TextStyleSection';
+import { SlotProductImages } from '../panels/SlotProductImages';
 import { clearRunForSurface } from '../textSettings/cellApply';
 import type { TextSettingCtx, TextSettingDef } from '../textSettings/types';
 
@@ -561,7 +562,7 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
                 <span>Ürün Bilgisi</span>
               </>
             }
-            width="w-72"
+            width="w-96"
           >
             <div className="flex flex-col gap-3 font-sans text-text-primary text-left">
               <div className="flex items-center gap-3">
@@ -608,6 +609,13 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
                   className="w-full text-body-xs border border-border-default rounded px-2 py-1 focus:border-border-strong outline-none"
                 />
               </div>
+
+              {/* Kütüphane resim yönetimi (sıralama/birincil/ekle/sil) — yalnız SKU'lu üründe. */}
+              {slot.product.sku?.trim() && (
+                <div className="pt-3 mt-1 border-t border-border-default">
+                  <SlotProductImages sku={slot.product.sku} />
+                </div>
+              )}
 
               <button
                 onClick={() => setSidebarState('products')}

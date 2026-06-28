@@ -4,6 +4,7 @@
 // çağıranın işidir (tek-kaynak).
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Check, ImageOff, Loader2, AlertCircle, RefreshCw, Search } from 'lucide-react';
 import api from '@/lib/api';
 import { toAbsoluteUrl } from '@/lib/upload';
@@ -165,8 +166,15 @@ export function MediaPickerModal({ isOpen, onClose, onConfirm, remainingSlots = 
       ? 'Medya kütüphanenizde henüz görsel yok. Önce Medya sayfasından görsel yükleyin.'
       : 'Atanabilecek (boşta) ürün resmi yok.';
 
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-99999 animate-fade-in">
+  // Body'ye portal: transform'lu üst-atalardan (studio canvas zoom / sağ panel) kaçar ki
+  // `fixed inset-0` tüm ekranı kaplasın. data-image-picker-popup: studio Hızlı Bar popover'ının
+  // dış-tık dinleyicisi bu modalı muaf tutar (modala tıklayınca popover kapanıp manager'ı
+  // unmount etmesin). Dashboard bağlamlarında attribute etkisizdir.
+  return createPortal(
+    <div
+      data-image-picker-popup
+      className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-99999 animate-fade-in"
+    >
       <div className="bg-surface-panel border border-border-default rounded-radius-xl w-full max-w-3xl shadow-drop-lg animate-in fade-in zoom-in-95 duration-150 relative max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-default shrink-0">
@@ -320,6 +328,7 @@ export function MediaPickerModal({ isOpen, onClose, onConfirm, remainingSlots = 
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

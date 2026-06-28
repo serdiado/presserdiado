@@ -3,7 +3,7 @@
 // Eklemenin iki kaynağı: (a) bilgisayardan yükle, (b) Medya Kütüphanesi'nden seç.
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Loader2, Trash2, UploadCloud, Library, ImageOff } from 'lucide-react';
+import { Loader2, Trash2, UploadCloud, Library, ImageOff, Star } from 'lucide-react';
 import axios from 'axios';
 import api from '@/lib/api';
 import { uploadImage, toAbsoluteUrl } from '@/lib/upload';
@@ -28,6 +28,8 @@ export function ProductImagesManager({ sku, onChange }: ProductImagesManagerProp
   const [isUploading, setIsUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [isReordering, setIsReordering] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const remaining = MAX_IMAGES_PER_SKU - images.length;
@@ -145,33 +147,74 @@ export function ProductImagesManager({ sku, onChange }: ProductImagesManagerProp
     }
   };
 
+  // Yeni sırayı optimistic uygula → backend'e yaz → üst bileşeni bildir (refetch yapmadan; spinner
+  // flash'ı olmasın, optimistic durum sunucuyla zaten aynı). Hata → eski sıraya geri dön.
+  const persistOrder = async (newImages: ProductImage[]) => {
+    const prev = images;
+    setImages(newImages);
+    setIsReordering(true);
+    try {
+      await api.patch('/product-images/reorder', {
+        sku,
+        orderedIds: newImages.map((i) => i.id),
+      });
+      onChange?.();
+    } catch (err) {
+      console.error('Sıralama güncellenemedi:', err);
+      toast.error('Sıralama güncellenemedi');
+      setImages(prev);
+    } finally {
+      setIsReordering(false);
+    }
+  };
+
+  // Bir resmi başa al (birincil yap). Zaten birincilse veya tek resim varsa no-op.
+  const handleSetPrimary = (id: string) => {
+    if (images.length < 2 || images[0]?.id === id) return;
+    const target = images.find((i) => i.id === id);
+    if (!target) return;
+    persistOrder([target, ...images.filter((i) => i.id !== id)]);
+  };
+
+  // Sürükle-bırak ile yeniden sırala: dragId'yi targetId'nin konumuna taşı.
+  const handleDrop = (targetId: string) => {
+    const sourceId = dragId;
+    setDragId(null);
+    if (!sourceId || sourceId === targetId) return;
+    const fromIdx = images.findIndex((i) => i.id === sourceId);
+    const toIdx = images.findIndex((i) => i.id === targetId);
+    if (fromIdx < 0 || toIdx < 0) return;
+    const next = [...images];
+    const [moved] = next.splice(fromIdx, 1);
+    next.splice(toIdx, 0, moved);
+    persistOrder(next);
+  };
+
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <label className="block text-label-md text-text-primary">
-          Ürün Görselleri{' '}
-          <span className="text-text-muted tabular-nums">({images.length}/{MAX_IMAGES_PER_SKU})</span>
-        </label>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            leftIcon={<UploadCloud size={14} />}
-            onClick={() => inputRef.current?.click()}
-            disabled={isUploading || atLimit}
-          >
-            Bilgisayardan Yükle
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            leftIcon={<Library size={14} />}
-            onClick={() => setIsPickerOpen(true)}
-            disabled={isUploading || atLimit}
-          >
-            Kütüphaneden Seç
-          </Button>
-        </div>
+      {/* Aksiyon butonları kendi satırında — dar panelde (Stüdyo sağ panel) sarıp alt alta geçer,
+          geniş modalda yan yana durur. Görsel sayısı başlıktan çıkarılıp ızgaranın altına alındı. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant="secondary"
+          size="sm"
+          className="flex-1 min-w-36"
+          leftIcon={<UploadCloud size={14} />}
+          onClick={() => inputRef.current?.click()}
+          disabled={isUploading || atLimit}
+        >
+          Bilgisayardan Yükle
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          className="flex-1 min-w-36"
+          leftIcon={<Library size={14} />}
+          onClick={() => setIsPickerOpen(true)}
+          disabled={isUploading || atLimit}
+        >
+          Kütüphaneden Seç
+        </Button>
       </div>
 
       {atLimit && (
@@ -209,21 +252,55 @@ export function ProductImagesManager({ sku, onChange }: ProductImagesManagerProp
         <div className="grid grid-cols-4 sm:grid-cols-5 gap-2.5">
           {images.map((img, index) => {
             const isDeleting = deletingId === img.id;
+            const isDragging = dragId === img.id;
+            const canReorder = images.length > 1 && !isReordering && !isUploading;
             return (
               <div
                 key={img.id}
-                className="group relative aspect-square rounded-radius-md overflow-hidden border border-border-default bg-surface-subtle"
+                draggable={canReorder}
+                onDragStart={(e) => {
+                  if (!canReorder) return;
+                  setDragId(img.id);
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
+                onDragEnd={() => setDragId(null)}
+                onDragOver={(e) => {
+                  if (canReorder && dragId && dragId !== img.id) e.preventDefault();
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  handleDrop(img.id);
+                }}
+                title={canReorder ? 'Sürükleyerek sırayı değiştirin' : undefined}
+                className={`group relative aspect-square rounded-radius-md overflow-hidden border bg-surface-subtle transition-all ${
+                  isDragging
+                    ? 'opacity-40 border-border-strong'
+                    : dragId && dragId !== img.id
+                      ? 'border-dashed border-border-strong'
+                      : 'border-border-default'
+                } ${canReorder ? 'cursor-grab active:cursor-grabbing' : ''}`}
               >
                 <img
                   src={toAbsoluteUrl(img.imageKey)}
                   alt={img.fileName ?? 'Ürün görseli'}
                   loading="lazy"
-                  className="w-full h-full object-contain"
+                  draggable={false}
+                  className="w-full h-full object-contain pointer-events-none"
                 />
-                {index === 0 && (
+                {index === 0 ? (
                   <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-surface-panel/90 border border-border-default text-text-secondary">
                     Birincil
                   </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleSetPrimary(img.id)}
+                    disabled={isReordering}
+                    title="Birincil yap"
+                    className="absolute top-1 left-1 p-1 rounded bg-surface-panel/90 text-text-secondary hover:text-warning hover:bg-warning/10 opacity-0 group-hover:opacity-100 transition-all disabled:opacity-50"
+                  >
+                    <Star size={14} />
+                  </button>
                 )}
                 <button
                   type="button"
@@ -242,6 +319,13 @@ export function ProductImagesManager({ sku, onChange }: ProductImagesManagerProp
             );
           })}
         </div>
+      )}
+
+      {!isLoading && (
+        <p className="text-body-xs text-text-muted">
+          Ürün Görselleri{' '}
+          <span className="tabular-nums">({images.length}/{MAX_IMAGES_PER_SKU})</span>
+        </p>
       )}
 
       {isUploading && (

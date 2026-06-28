@@ -26,6 +26,11 @@ const rematchSchema = z.object({
     .max(1000),
 });
 
+const reorderSchema = z.object({
+  sku: z.string().min(1).max(100),
+  orderedIds: z.array(z.string().min(1)).min(1).max(100),
+});
+
 export async function productImagesRoutes(app: FastifyInstance) {
   app.addHook('onRequest', app.authenticate);
 
@@ -59,6 +64,15 @@ export async function productImagesRoutes(app: FastifyInstance) {
     const { assignments } = rematchSchema.parse(request.body ?? {});
     const userId = request.user.id; // IDOR Protection: Sadece kendi resimlerini günceller.
     const result = await productImagesService.applyRematch(userId, assignments);
+    return reply.send(result);
+  });
+
+  // PATCH /product-images/reorder — bir SKU'nun resim sırasını yeniden diz (sortOrder).
+  // Statik segment; dinamik :id route'larından önce tanımlı.
+  app.patch('/product-images/reorder', async (request, reply) => {
+    const { sku, orderedIds } = reorderSchema.parse(request.body);
+    const userId = request.user.id; // IDOR Protection: Sadece kendi resimlerini sıralayabilir.
+    const result = await productImagesService.reorder(userId, sku, orderedIds);
     return reply.send(result);
   });
 
