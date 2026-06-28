@@ -15,8 +15,9 @@ import { TemalarFlyoutPanel } from './left-sidebar/TemalarFlyoutPanel';
 import { MedyaFlyoutPanel } from './left-sidebar/MedyaFlyoutPanel';
 import { PlaceholderFlyout } from './left-sidebar/PlaceholderFlyout';
 import { useCatalogStore, useUIStore, buildFormasForTemplate } from '@/stores/studio';
-import { Template1 } from '@matbaapro/shared';
+import { Template1, normalizeSku } from '@matbaapro/shared';
 import api from '@/lib/api';
+import { toAbsoluteUrl } from '@/lib/upload';
 import { deserializeStudioState } from './lib/projectSerializer';
 import toast from 'react-hot-toast';
 
@@ -43,6 +44,8 @@ export default function StudioPage() {
   const leftSidebarRef = useRef<HTMLDivElement | null>(null);
   const isDraggingRef = useRef(false);
   const dragResetTimeoutRef = useRef<number | null>(null);
+  // Bu mount'ta hangi proje için kütüphane senkronu yapıldı (setProjectId tetikli çift fetch'i önler).
+  const reconciledProjectRef = useRef<string | null>(null);
 
   const activeIndex = formas.findIndex((f) => f.id === activeFormaId);
 
@@ -174,28 +177,55 @@ export default function StudioPage() {
   useEffect(() => {
     if (!_hasHydrated) return;
 
+    // Yerleştirilmiş ürün resimlerini SKU'ya göre güncel kütüphaneyle yeniden bağla:
+    // kütüphaneden silinen → "Resim Yok", değişen → güncel görsel. Hata sessiz geçilir
+    // (snapshot korunur), proje yüklemesini düşürmez.
+    const reconcileFromLibrary = async () => {
+      try {
+        const { data } = await api.get<{ sku: string; primaryImage: string | null }[]>(
+          '/products/with-images',
+        );
+        const map = new Map<string, string>();
+        for (const p of data ?? []) {
+          if (p.sku && p.primaryImage) map.set(normalizeSku(p.sku), toAbsoluteUrl(p.primaryImage));
+        }
+        useCatalogStore.getState().reconcileProductImagesBySku(map);
+      } catch (e) {
+        console.error('Ürün resmi senkronu başarısız:', e);
+      }
+    };
+
     const loadProjectFromServer = async () => {
       if (!projectId) {
         if (projectIdStore) {
           setProjectId(null);
         }
+        reconciledProjectRef.current = null;
         return;
       }
 
-      if (projectId === projectIdStore) return;
+      // Bu mount'ta bu proje için zaten yüklenip senkronlandıysa tekrar etme
+      // (setProjectId, effect'i yeniden tetikler).
+      if (projectId === projectIdStore && reconciledProjectRef.current === projectId) return;
 
       try {
         setIsHydratingFromServer(true);
-        const { data } = await api.get(`/projects/${projectId}`);
-        if (data && data.canvasData) {
-          deserializeStudioState(data.canvasData);
-          // Rehydration ve deserialization tamamlandıktan sonra güncel proje ismini db'den gelenle senkronize et
-          useCatalogStore.setState({ projectName: data.name });
-          setProjectId(projectId);
-          toast.success('Proje buluttan başarıyla yüklendi');
-        } else {
-          throw new Error('Proje verisi eksik');
+        // Aynı projeye tekrar girişte ağır proje fetch'i atlanır ama yine de kütüphaneyle
+        // yeniden bağlama yapılır (kütüphane bu arada değişmiş olabilir).
+        if (projectId !== projectIdStore) {
+          const { data } = await api.get(`/projects/${projectId}`);
+          if (data && data.canvasData) {
+            deserializeStudioState(data.canvasData);
+            // Rehydration ve deserialization tamamlandıktan sonra güncel proje ismini db'den gelenle senkronize et
+            useCatalogStore.setState({ projectName: data.name });
+            setProjectId(projectId);
+            toast.success('Proje buluttan başarıyla yüklendi');
+          } else {
+            throw new Error('Proje verisi eksik');
+          }
         }
+        reconciledProjectRef.current = projectId;
+        await reconcileFromLibrary();
       } catch (err) {
         console.error('Proje buluttan yüklenirken hata oluştu:', err);
         toast.error('Proje yüklenemedi. Dashboard\'a yönlendiriliyorsunuz...');

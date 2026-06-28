@@ -17,7 +17,7 @@ import type {
   StudioPresetPageBackground,
   TempPoolProduct,
 } from '@matbaapro/shared';
-import { availableTemplates, Template1, STUDIO_STORE_NAME, STUDIO_STORE_VERSION } from '@matbaapro/shared';
+import { availableTemplates, Template1, STUDIO_STORE_NAME, STUDIO_STORE_VERSION, normalizeSku } from '@matbaapro/shared';
 import { applyUnmerge, recalculateLayout, reconcileGrid } from '@matbaapro/grid-engine';
 import {
   buildFormasForTemplate,
@@ -210,6 +210,9 @@ interface CatalogActions {
   // "Kaydetmeden Çık": oturumu temiz başlangıca döndür (projectId=null) ki tekrar açılışta
   // sunucudan yüklensin. Kalıcı localStorage temizliği koordinatörde yapılır (projectSerializer).
   discardSession: () => void;
+  // Proje açılışında: yerleştirilmiş ürünlerin resimlerini SKU'ya göre güncel kütüphaneyle
+  // yeniden bağla. map: normalize SKU → mutlak URL (yalnız resmi olan ürünler).
+  reconcileProductImagesBySku: (skuToImage: Map<string, string>) => void;
   setPrintOptions: (options: PrintOptionsValue) => void;
   setQuantity: (quantity: number) => void;
   setActiveTab: (tab: 'outer' | 'inner') => void;
@@ -558,6 +561,34 @@ export const useCatalogStore = create<Store>()(
           quantity: DEFAULT_QUANTITY,
         });
         useHistoryStore.getState().clearHistory();
+      },
+      reconcileProductImagesBySku: (skuToImage) => {
+        // Kütüphane URL'i (silinince temizlenecek) vs harici/Excel URL (korunacak) ayrımı.
+        const isLibraryUrl = (u: unknown): u is string =>
+          typeof u === 'string' && u.includes('/uploads/');
+        // Tek ürün için resmi çöz: SKU'suz → dokunma; kütüphanede varsa güncelle; yoksa ve
+        // mevcut resim kütüphane URL'iyse temizle ("Resim Yok"); harici ise koru.
+        const resolve = <T extends ProductInfo>(p: T): T => {
+          const sku = typeof p.sku === 'string' ? p.sku.trim() : '';
+          if (!sku) return p;
+          const lib = skuToImage.get(normalizeSku(sku));
+          if (lib) return p.image === lib ? p : { ...p, image: lib };
+          if (isLibraryUrl(p.image)) return { ...p, image: '' };
+          return p;
+        };
+        set((state) => ({
+          formas: state.formas.map((f) => ({
+            ...f,
+            pages: f.pages.map((pg) => ({
+              ...pg,
+              slots: pg.slots.map((s) =>
+                s.product ? { ...s, product: resolve(s.product) } : s,
+              ),
+            })),
+          })),
+          productPool: state.productPool.map(resolve),
+          tempProductPool: state.tempProductPool.map(resolve),
+        }));
       },
       setActiveTab: (tab) =>
         set({ activeTab: tab, activeFormaId: tab === 'inner' ? 2 : 1 }),
