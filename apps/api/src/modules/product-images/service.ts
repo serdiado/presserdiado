@@ -94,6 +94,85 @@ export const productImagesService = {
     return image;
   },
 
+  // Kullanıcının inceleyip onayladığı SKU atamalarını mevcut resimlere uygula.
+  // Eşleştirme/öneri client'ta hesaplanır; burada yalnız atanmış (id, sku) çiftleri işlenir.
+  // sortOrder her SKU için mevcut max'ın üstüne eklenir (birincil resim değişmez);
+  // SKU başına MAX_IMAGES_PER_SKU limiti korunur, aşan resimler atlanır (skipped).
+  async applyRematch(userId: string, assignments: { id: string; sku: string }[]) {
+    // 1) Temizle: boş sku/id ele; id başına tek sku (son kazanır).
+    const byId = new Map<string, string>();
+    for (const a of assignments) {
+      const id = a.id?.trim();
+      const sku = a.sku?.trim();
+      if (id && sku) byId.set(id, sku);
+    }
+    if (byId.size === 0) return { matched: 0, skipped: 0 };
+
+    // 2) Sahiplik (IDOR): yalnız bu kullanıcıya ait id'ler.
+    const ids = [...byId.keys()];
+    const owned = await db
+      .select({ id: productImages.id })
+      .from(productImages)
+      .where(and(eq(productImages.userId, userId), inArray(productImages.id, ids)));
+    const ownedSet = new Set(owned.map((o) => o.id));
+
+    // 3) SKU'ya göre grupla (yalnız sahip olunan id'ler).
+    const bySku = new Map<string, string[]>();
+    for (const [id, sku] of byId) {
+      if (!ownedSet.has(id)) continue;
+      const arr = bySku.get(sku) ?? [];
+      arr.push(id);
+      bySku.set(sku, arr);
+    }
+    if (bySku.size === 0) return { matched: 0, skipped: 0 };
+
+    // 4) Her hedef SKU için mevcut adet + max sortOrder (tek sorgu).
+    const skus = [...bySku.keys()];
+    const existing = await db
+      .select({
+        sku: productImages.sku,
+        n: count(),
+        maxSort: sql<number | null>`max(${productImages.sortOrder})`,
+      })
+      .from(productImages)
+      .where(and(eq(productImages.userId, userId), inArray(productImages.sku, skus)))
+      .groupBy(productImages.sku);
+    const existingBySku = new Map<string, { n: number; maxSort: number }>();
+    for (const e of existing) {
+      if (e.sku) existingBySku.set(e.sku, { n: Number(e.n), maxSort: Number(e.maxSort ?? 0) });
+    }
+
+    // 5) sortOrder ata + SKU başına limit uygula.
+    const updates: { id: string; sku: string; sortOrder: number }[] = [];
+    let skipped = 0;
+    for (const [sku, skuIds] of bySku) {
+      const cur = existingBySku.get(sku) ?? { n: 0, maxSort: 0 };
+      let assigned = 0;
+      for (const id of skuIds) {
+        if (cur.n + assigned >= MAX_IMAGES_PER_SKU) {
+          skipped++;
+          continue;
+        }
+        assigned++;
+        updates.push({ id, sku, sortOrder: cur.maxSort + assigned });
+      }
+    }
+
+    // 6) Tek transaction'da uygula.
+    if (updates.length > 0) {
+      await db.transaction(async (tx) => {
+        for (const u of updates) {
+          await tx
+            .update(productImages)
+            .set({ sku: u.sku, sortOrder: u.sortOrder })
+            .where(and(eq(productImages.id, u.id), eq(productImages.userId, userId)));
+        }
+      });
+    }
+
+    return { matched: updates.length, skipped };
+  },
+
   async remove(userId: string, id: string) {
     const existing = await db.query.productImages.findFirst({
       where: and(eq(productImages.id, id), eq(productImages.userId, userId)),

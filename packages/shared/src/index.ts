@@ -10,3 +10,4 @@ export * from './types/studio.js';
 export * from './templates.js';
 export * from './constants.js';
 export * from './terminology.js';
+export * from './sku-matching.js';

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { ProductFormModal } from '../components/ProductFormModal';
 import { ExcelImportModal } from '../components/ExcelImportModal';
+import { RematchImagesButton } from '../components/RematchImagesButton';
 import type { Product } from '../types';
 
 // Ürün satırı için küçük resim. Resim yoksa veya yüklenemezse nötr placeholder gösterir.
@@ -188,6 +189,7 @@ export function UrunListelerim() {
       <div className="flex items-center justify-between mb-8 shrink-0">
         <h1 className="text-heading-xl text-text-primary">Ürün Listelerim</h1>
         <div className="flex items-center gap-3">
+          <RematchImagesButton />
           <Button
             variant="secondary"
             size="md"

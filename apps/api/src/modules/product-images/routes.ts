@@ -19,6 +19,13 @@ const bulkDeleteSchema = z.object({
   ids: z.array(z.string()).min(1).max(100),
 });
 
+const rematchSchema = z.object({
+  // Kullanıcının inceleyip onayladığı SKU atamaları (id → sku).
+  assignments: z
+    .array(z.object({ id: z.string().min(1), sku: z.string().min(1).max(100) }))
+    .max(1000),
+});
+
 export async function productImagesRoutes(app: FastifyInstance) {
   app.addHook('onRequest', app.authenticate);
 
@@ -44,6 +51,15 @@ export async function productImagesRoutes(app: FastifyInstance) {
     const userId = request.user.id; // IDOR Protection: Sadece kendi adına resim kaydı oluşturabilir.
     const image = await productImagesService.create(userId, body);
     return reply.status(201).send(image);
+  });
+
+  // POST /product-images/rematch — kullanıcının onayladığı SKU atamalarını mevcut resimlere uygula.
+  // Statik segment; dinamik :id route'larından önce tanımlı.
+  app.post('/product-images/rematch', async (request, reply) => {
+    const { assignments } = rematchSchema.parse(request.body ?? {});
+    const userId = request.user.id; // IDOR Protection: Sadece kendi resimlerini günceller.
+    const result = await productImagesService.applyRematch(userId, assignments);
+    return reply.send(result);
   });
 
   // PATCH /product-images/:id/sku — SKU güncelle

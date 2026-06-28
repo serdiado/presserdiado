@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { eq, and, desc, like, ne, inArray, sql, getTableColumns } from 'drizzle-orm';
 import { db } from '../../db/index.js';
-import { products, productImages } from '../../db/schema/index.js';
+import { products } from '../../db/schema/index.js';
 import { NotFoundError, ConflictError } from '../../lib/errors.js';
 
 export interface ListProductsQuery {
@@ -57,6 +57,16 @@ export const productsService = {
       limit: data.length,
       totalPages: 1,
     };
+  },
+
+  // Hafif SKU listesi — dosya adı → SKU eşleştirme için yalnız { sku, name }.
+  // list()'teki korelasyonlu primaryImage alt-sorgusu yok; büyük kataloglarda hızlıdır.
+  async listSkus(userId: string) {
+    return db
+      .select({ sku: products.sku, name: products.name })
+      .from(products)
+      .where(eq(products.userId, userId))
+      .orderBy(desc(products.createdAt));
   },
 
   // Stüdyo ürün havuzu: her ürünü birincil resmiyle (en düşük sortOrder, eşitlikte
@@ -179,7 +189,7 @@ export const productsService = {
   async bulkRemove(userId: string, ids: string[]) {
     // Yalnız bu kullanıcıya ait id'leri al (IDOR koruması).
     const owned = await db
-      .select({ id: products.id, sku: products.sku })
+      .select({ id: products.id })
       .from(products)
       .where(and(eq(products.userId, userId), inArray(products.id, ids)));
 
@@ -188,19 +198,12 @@ export const productsService = {
     }
 
     const ownedIds = owned.map((p) => p.id);
-    const skus = [...new Set(owned.map((p) => p.sku))];
 
-    await db.transaction(async (tx) => {
-      // Cascade: silinen ürünlerin SKU'larına ait resimleri de sil.
-      if (skus.length > 0) {
-        await tx
-          .delete(productImages)
-          .where(and(eq(productImages.userId, userId), inArray(productImages.sku, skus)));
-      }
-      await tx
-        .delete(products)
-        .where(and(eq(products.userId, userId), inArray(products.id, ownedIds)));
-    });
+    // Ürün resimleri SİLİNMEZ: ürün silinince ilgili resimler korunur ve "eşleşmemiş"
+    // (SKU var ama ürün yok) duruma geçer; aynı SKU'lu ürün tekrar eklenince yeniden eşleşir.
+    await db
+      .delete(products)
+      .where(and(eq(products.userId, userId), inArray(products.id, ownedIds)));
 
     return { deleted: ownedIds.length };
   },
@@ -257,12 +260,7 @@ export const productsService = {
       throw new NotFoundError('Ürün bulunamadı');
     }
 
-    // Cascade delete: productImages first
-    await db.delete(productImages).where(
-      and(eq(productImages.userId, userId), eq(productImages.sku, existing.sku))
-    );
-
-    // Delete product
+    // Ürün resmi SİLİNMEZ (bkz. bulkRemove): resimler korunur, "eşleşmemiş" duruma geçer.
     await db.delete(products).where(
       and(eq(products.id, id), eq(products.userId, userId))
     );

@@ -7,15 +7,16 @@
 import React, { useMemo, useRef, useState } from 'react';
 import {
   X, Loader2, ImagePlus, UploadCloud, CheckCircle2,
-  AlertTriangle, CheckCircle, HelpCircle, Download,
+  AlertTriangle, CheckCircle, Download,
 } from 'lucide-react';
 import axios from 'axios';
+import { normalizeSku, guessSkuFromFileName, matchSku } from '@matbaapro/shared';
 import api from '@/lib/api';
 import { toAbsoluteUrl } from '@/lib/upload';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { SkuCombobox, type SkuOption } from './SkuCombobox';
-import type { Product } from '../types';
+import { type MatchRow, rowState, computeSortOrders, matchBadge } from './imageSkuMatch';
 
 interface ProductImageUploadModalProps {
   isOpen: boolean;
@@ -40,69 +41,13 @@ interface UploadItem {
   isTransparent: boolean;
 }
 
-interface MatchRow {
-  id: string;
-  fileName: string;
-  url: string;           // relative imageKey
-  isPng: boolean;
-  isTransparent: boolean;
-  sku: string;           // seçili SKU ('' = atanmadı)
-}
-
-type RowState = 'matched' | 'none';
-
-// Satırın anlık durumu: seçili SKU varsa eşleşti, yoksa eşleşmedi.
-function rowState(r: MatchRow): RowState {
-  return r.sku.trim() ? 'matched' : 'none';
-}
-
-// Her satır için sortOrder hesapla: o SKU'nun DB'deki en yüksek sortOrder'ı baz alınır,
-// üstüne bu oturumda aynı SKU'ya atanan resimler için artan sıra eklenir (base+1, base+2...).
-// SKU'su olmayan satır 0 alır (kaydedilmez). existingMaxBySku anahtarları normalize edilmiştir.
-function computeSortOrders(rows: MatchRow[], existingMaxBySku: Map<string, number>): Map<string, number> {
-  const used = new Map<string, number>();
-  const result = new Map<string, number>();
-  for (const r of rows) {
-    const sku = r.sku.trim();
-    if (!sku) {
-      result.set(r.id, 0);
-      continue;
-    }
-    const key = normalizeSku(sku);
-    const seen = used.get(key) ?? 0;
-    const base = existingMaxBySku.get(key) ?? 0;
-    result.set(r.id, base + seen + 1);
-    used.set(key, seen + 1);
-  }
-  return result;
-}
-
 interface SaveResult {
   matched: number;  // SKU atanmış kaydedilen
   noSku: number;    // SKU atanmadan kaydedilen
 }
 
-const normalizeSku = (s: string) => s.trim().toUpperCase();
-
-// Dosya adından SKU adayını çıkar (sıra numarası sortOrder için kullanılmaz; o, SKU başına
-// DB max + oturum sırası ile hesaplanır — bkz. computeSortOrders).
-// 755BU.jpg → 755BU; 755BU_02.jpg → 755BU; urun_755BU.jpg → 755BU; IMG_001.jpg → IMG
-function guessSkuFromFileName(fileName: string): string {
-  const base = fileName.replace(/\.[^.]+$/, '').trim();
-  // Sondaki ayraç + 1-3 haneli sıra ekini at (755BU_02 → 755BU)
-  const body = base.replace(/[_-]\d{1,3}$/, '');
-  // Adayı son segment olarak al (urun_755BU → 755BU)
-  const parts = body.split(/[_-]/).filter(Boolean);
-  return (parts.length ? parts[parts.length - 1] : body).trim();
-}
-
-// Adayı SKU listesiyle yalnızca TAM eşleşme kuralıyla eşleştir.
-// Levenshtein/öneri yok: kısa kodlarda (0022A↔1022 gibi) yanıltıcı önerileri ve
-// acemi kullanıcının yanlış onayını engellemek için kesin eşleşme şart.
-function matchSku(candidate: string, normMap: Map<string, string>): string {
-  if (!candidate) return '';
-  return normMap.get(normalizeSku(candidate)) ?? '';
-}
+// Dosya adı → SKU eşleştirme yardımcıları artık @matbaapro/shared'da (normalizeSku,
+// guessSkuFromFileName, matchSku) — web ve api aynı kuralı kullanır.
 
 // PNG'nin 4 köşe pikselini canvas ile analiz et — herhangi biri yarı saydamsa şeffaf.
 function analyzeTransparency(file: File): Promise<boolean> {
@@ -271,12 +216,12 @@ export function ProductImageUploadModal({ isOpen, onClose, onSaved }: ProductIma
     const maxBySku = new Map<string, number>();
     try {
       const [prodRes, imgRes] = await Promise.all([
-        api.get('/products'),
-        api.get<{ sku: string; sortOrder: number }[]>('/product-images'),
+        api.get<{ sku: string; name: string }[]>('/products/skus'),
+        api.get<{ sku: string | null; sortOrder: number }[]>('/product-images'),
       ]);
-      const data: Product[] = prodRes.data?.data ?? prodRes.data ?? [];
-      options = data.filter((p) => p.sku).map((p) => ({ sku: p.sku, name: p.name }));
+      options = (prodRes.data ?? []).filter((p) => p.sku).map((p) => ({ sku: p.sku, name: p.name }));
       for (const img of imgRes.data ?? []) {
+        if (!img.sku) continue; // SKU'suz resimler max hesabına girmez (null.trim() patlamasın)
         const key = normalizeSku(img.sku);
         maxBySku.set(key, Math.max(maxBySku.get(key) ?? 0, img.sortOrder ?? 0));
       }
@@ -375,17 +320,6 @@ export function ProductImageUploadModal({ isOpen, onClose, onSaved }: ProductIma
     a.remove();
     URL.revokeObjectURL(url);
   };
-
-  const matchBadge = (state: RowState) =>
-    state === 'matched' ? (
-      <span className="inline-flex items-center gap-1 text-body-xs text-success">
-        <CheckCircle size={14} /> Eşleşti
-      </span>
-    ) : (
-      <span className="inline-flex items-center gap-1 text-body-xs text-danger">
-        <HelpCircle size={14} /> Eşleşmedi
-      </span>
-    );
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-99999 animate-fade-in">

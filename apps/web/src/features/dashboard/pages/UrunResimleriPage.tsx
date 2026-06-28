@@ -8,6 +8,7 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/Button';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { ProductImageUploadModal } from '../components/ProductImageUploadModal';
+import { RematchImagesButton } from '../components/RematchImagesButton';
 import { ProductFormModal } from '../components/ProductFormModal';
 import { SkuCombobox, type SkuOption } from '../components/SkuCombobox';
 import type { ProductImage, Product } from '../types';
@@ -230,14 +231,17 @@ export function UrunResimleriPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6 shrink-0">
         <h1 className="text-heading-xl text-text-primary">Ürün Resimleri</h1>
-        <Button
-          variant="primary"
-          size="md"
-          leftIcon={<ImagePlus size={16} />}
-          onClick={() => setIsUploadOpen(true)}
-        >
-          Resim Yükle
-        </Button>
+        <div className="flex items-center gap-3">
+          <RematchImagesButton onDone={fetchData} />
+          <Button
+            variant="primary"
+            size="md"
+            leftIcon={<ImagePlus size={16} />}
+            onClick={() => setIsUploadOpen(true)}
+          >
+            Resim Yükle
+          </Button>
+        </div>
       </div>
 
       {images.length === 0 ? (

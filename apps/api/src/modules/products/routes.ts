@@ -39,6 +39,13 @@ export async function productsRoutes(app: FastifyInstance) {
     return reply.send(result);
   });
 
+  // GET /products/skus — hafif SKU listesi (dosya adı → SKU eşleştirme için)
+  app.get('/products/skus', async (request, reply) => {
+    const userId = request.user.id; // IDOR Protection: Sadece kendi ürünlerini listeleyebilir.
+    const result = await productsService.listSkus(userId);
+    return reply.send(result);
+  });
+
   // GET /products/with-images — stüdyo havuzu: ürün + birincil resim
   app.get('/products/with-images', async (request, reply) => {
     const userId = request.user.id; // IDOR Protection: Sadece kendi ürünlerini listeleyebilir.
@@ -62,7 +69,7 @@ export async function productsRoutes(app: FastifyInstance) {
     return reply.send(result);
   });
 
-  // DELETE /products/bulk — toplu sil (cascade: product_images). :id'den önce tanımlı.
+  // DELETE /products/bulk — toplu sil (resimlere dokunmaz). :id'den önce tanımlı.
   app.delete('/products/bulk', async (request, reply) => {
     const { ids } = bulkDeleteSchema.parse(request.body);
     const userId = request.user.id; // IDOR Protection: Sadece kendi ürünlerini silebilir.
