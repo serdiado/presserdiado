@@ -44,7 +44,7 @@ interface PickerItem {
   fileName: string | null;
 }
 
-export function MediaPickerModal({ isOpen, onClose, onConfirm, excludeSku, remainingSlots = Infinity }: MediaPickerModalProps) {
+export function MediaPickerModal({ isOpen, onClose, onConfirm, remainingSlots = Infinity }: MediaPickerModalProps) {
   const [source, setSource] = useState<Source>('media');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
@@ -99,20 +99,21 @@ export function MediaPickerModal({ isOpen, onClose, onConfirm, excludeSku, remai
     }));
   }, [filteredMedia, typeFilter]);
 
-  // Ürün resmi havuzu — fileName araması + bu SKU'ya atanmışlar hariç, imageKey'e göre tekilleştirilmiş.
+  // Ürün resmi havuzu — yalnız ATANMAMIŞ (boşta) resimler seçilebilir; çünkü dosya adı tekildir
+  // ve atanmış bir resim zaten bir ürüne aittir (kopyalanamaz). fileName araması + imageKey tekil.
   const productItems = useMemo<PickerItem[]>(() => {
     const q = query.trim().toLowerCase();
     const seen = new Set<string>();
     const items: PickerItem[] = [];
     for (const img of productImages) {
-      if (excludeSku && img.sku === excludeSku) continue;
+      if (img.sku) continue; // yalnız boşta (sku=null) resimler
       if (q && !(img.fileName ?? '').toLowerCase().includes(q)) continue;
       if (seen.has(img.imageKey)) continue;
       seen.add(img.imageKey);
       items.push({ selectionKey: `pi:${img.id}`, imageKey: img.imageKey, fileName: img.fileName ?? null });
     }
     return items;
-  }, [productImages, excludeSku, query]);
+  }, [productImages, query]);
 
   const items = source === 'media' ? mediaItems : productItems;
 
@@ -162,7 +163,7 @@ export function MediaPickerModal({ isOpen, onClose, onConfirm, excludeSku, remai
     ? 'Aramayla eşleşen görsel yok.'
     : source === 'media'
       ? 'Medya kütüphanenizde henüz görsel yok. Önce Medya sayfasından görsel yükleyin.'
-      : 'Başka ürünlere atanmış görsel yok.';
+      : 'Atanabilecek (boşta) ürün resmi yok.';
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-99999 animate-fade-in">
@@ -250,27 +251,38 @@ export function MediaPickerModal({ isOpen, onClose, onConfirm, excludeSku, remai
                         type="button"
                         onClick={() => toggle(item)}
                         disabled={tileDisabled}
-                        className={`group relative aspect-square rounded-radius-lg overflow-hidden border transition-colors ${
+                        className={`group relative rounded-radius-lg overflow-hidden border text-left transition-colors ${
                           isSelected
                             ? 'border-border-strong bg-surface-subtle'
                             : 'border-border-default bg-surface-panel hover:border-border-strong'
                         } ${tileDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                       >
-                        <img
-                          src={toAbsoluteUrl(item.imageKey)}
-                          alt={item.fileName ?? 'Görsel'}
-                          loading="lazy"
-                          className="w-full h-full object-contain bg-surface-subtle"
-                        />
-                        <span
-                          className={`absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center border transition-colors ${
-                            isSelected
-                              ? 'bg-primary text-white border-primary'
-                              : 'bg-surface-panel/90 border-border-default text-transparent group-hover:border-border-strong'
-                          }`}
-                        >
-                          <Check size={12} strokeWidth={3} />
-                        </span>
+                        <div className="relative aspect-square bg-surface-subtle">
+                          <img
+                            src={toAbsoluteUrl(item.imageKey)}
+                            alt={item.fileName ?? 'Görsel'}
+                            loading="lazy"
+                            className="w-full h-full object-contain"
+                          />
+                          <span
+                            className={`absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center border transition-colors ${
+                              isSelected
+                                ? 'bg-primary text-white border-primary'
+                                : 'bg-surface-panel/90 border-border-default text-transparent group-hover:border-border-strong'
+                            }`}
+                          >
+                            <Check size={12} strokeWidth={3} />
+                          </span>
+                        </div>
+                        {/* Dosya adı — seçerken hangi görsel olduğu anlaşılsın. */}
+                        <div className="px-2 py-1.5 border-t border-border-default">
+                          <span
+                            className="block text-body-xs text-text-primary truncate"
+                            title={item.fileName ?? undefined}
+                          >
+                            {item.fileName ?? 'İsimsiz'}
+                          </span>
+                        </div>
                       </button>
                     );
                   })}

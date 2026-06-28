@@ -58,9 +58,30 @@ export const productImagesService = {
         where: and(eq(productImages.userId, userId), eq(productImages.fileName, fileName)),
       });
       if (existing) {
+        const patch: { imageKey: string; isTransparent: boolean; sku?: string; sortOrder?: number } = {
+          imageKey: input.imageKey,
+          isTransparent: input.isTransparent ?? false,
+        };
+        // Atanmamış (sku=null) bir resme SKU geliyorsa ATA: o SKU'nun sonuna sırala + limit kontrolü.
+        // Mevcut sku doluysa dokunma (başka ürünün atamasını çalma); yalnız görsel üzerine yazılır.
+        if (!existing.sku && input.sku) {
+          const [row] = await db
+            .select({ n: count() })
+            .from(productImages)
+            .where(and(eq(productImages.userId, userId), eq(productImages.sku, input.sku)));
+          if ((row?.n ?? 0) >= MAX_IMAGES_PER_SKU) {
+            throw new ConflictError(`Bu SKU için maksimum ${MAX_IMAGES_PER_SKU} resim yüklenebilir`);
+          }
+          const [maxRow] = await db
+            .select({ maxSortOrder: sql<number | null>`max(${productImages.sortOrder})` })
+            .from(productImages)
+            .where(and(eq(productImages.userId, userId), eq(productImages.sku, input.sku)));
+          patch.sku = input.sku;
+          patch.sortOrder = (maxRow?.maxSortOrder ?? 0) + 1;
+        }
         await db
           .update(productImages)
-          .set({ imageKey: input.imageKey, isTransparent: input.isTransparent ?? false })
+          .set(patch)
           .where(and(eq(productImages.id, existing.id), eq(productImages.userId, userId)));
         // Eski disk dosyasını temizle (yeni imageKey'den farklıysa).
         if (existing.imageKey !== input.imageKey) {
