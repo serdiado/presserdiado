@@ -180,7 +180,8 @@ export function TopBar() {
 
   const handleConfirmSaveAndNavigate = async () => {
     try {
-      await saveProject();
+      // Panele çıkmadan önce thumbnail'i bekle ki panel eski görüntü yerine yenisini çeksin.
+      await saveProject({ awaitThumbnail: true });
       if (pendingNavigatePath) {
         navigate(pendingNavigatePath);
       }

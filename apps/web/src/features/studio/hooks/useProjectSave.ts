@@ -6,9 +6,19 @@ import { captureAndUploadThumbnail } from '@/lib/thumbnailCapture';
 import { useCatalogStore } from '@/stores/studio';
 import { serializeStudioState } from '../lib/projectSerializer';
 
+interface SaveOptions {
+  // true → thumbnail yakalama+yükleme tamamlanmadan dönme (panele çıkışta eski thumbnail görünmesin).
+  awaitThumbnail?: boolean;
+}
+
 interface UseProjectSaveResult {
-  saveProject: () => Promise<string>;
+  saveProject: (opts?: SaveOptions) => Promise<string>;
   isSaving: boolean;
+}
+
+// Thumbnail üretimini en fazla `ms` kadar bekle; yakalama takılırsa çıkışı bloklamamak için yarış.
+function awaitWithTimeout(p: Promise<unknown>, ms: number): Promise<unknown> {
+  return Promise.race([p, new Promise((resolve) => setTimeout(resolve, ms))]);
 }
 
 export function useProjectSave(): UseProjectSaveResult {
@@ -19,7 +29,7 @@ export function useProjectSave(): UseProjectSaveResult {
   const setIsDirty = useCatalogStore((s) => s.setIsDirty);
   const [isSaving, setIsSaving] = useState(false);
 
-  const saveProject = async (): Promise<string> => {
+  const saveProject = async (opts?: SaveOptions): Promise<string> => {
     const toastId = toast.loading('Tasarım buluta kaydediliyor...');
     setIsSaving(true);
 
@@ -41,11 +51,13 @@ export function useProjectSave(): UseProjectSaveResult {
         navigate(`/studio/${newId}`, { replace: true });
         toast.success('Tasarım buluta başarıyla kaydedildi!', { id: toastId });
 
-        // Thumbnail yakalama + yükleme kaydetme akışını bloklamaz; arka planda koşar.
-        // navigate replace sonrası canvas DOM'u yeniden render edilmediği için yakalama güvenle tamamlanır.
+        // Thumbnail yakalama + yükleme. navigate replace sonrası canvas DOM'u yeniden render
+        // edilmediği için yakalama güvenle tamamlanır. awaitThumbnail ise panele çıkmadan önce bitir.
         const canvasEl = document.getElementById('studio-canvas-root');
         if (canvasEl) {
-          void captureAndUploadThumbnail(canvasEl, newId);
+          const thumb = captureAndUploadThumbnail(canvasEl, newId);
+          if (opts?.awaitThumbnail) await awaitWithTimeout(thumb, 5000);
+          else void thumb;
         }
 
         return newId;
@@ -59,10 +71,13 @@ export function useProjectSave(): UseProjectSaveResult {
       setIsDirty(false);
       toast.success('Değişiklikler buluta kaydedildi!', { id: toastId });
 
-      // Thumbnail yakalama + yükleme kaydetme akışını bloklamaz; arka planda koşar.
+      // Thumbnail yakalama + yükleme. awaitThumbnail ise (panele çıkışta-kaydet) navigasyondan
+      // önce bitir ki panel taze thumbnailKey'i çeksin; aksi halde arka planda koşar.
       const canvasEl = document.getElementById('studio-canvas-root');
       if (canvasEl) {
-        void captureAndUploadThumbnail(canvasEl, projectId);
+        const thumb = captureAndUploadThumbnail(canvasEl, projectId);
+        if (opts?.awaitThumbnail) await awaitWithTimeout(thumb, 5000);
+        else void thumb;
       }
 
       return projectId;
