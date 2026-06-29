@@ -218,6 +218,20 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   ÜST-KARAKTER (SUPERSCRIPT) — zengin-metin hücrelerinde
+   Üst-karakter motorda <sup> olarak üretilir. Standart üst-karakter: boyut ve
+   dikey konum hücre kabındaki iki CSS değişkeninden gelir (BannerSection set eder):
+     --sup-scale   : boyut (%, "Üst Karakter %" slider'ı = decimalScale)
+     --sup-offset  : dikey konum (px; "Üst Karakter Konumu" slider'ı = decimalOffset)
+   Konum manuel; + yukarı. line-height:0 satır kutusunu şişirmez.
+   ═══════════════════════════════════════════════════════════════════════════ */
+[data-rt-editable] sup {
+  font-size: var(--sup-scale, 60%);
+  vertical-align: var(--sup-offset, 0.35em);
+  line-height: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    STÜDYO FORM KONTROLLERİ
    Sağ paneldeki tüm range slider'lar aynı fiziksel yapıyı kullanır.
    Genişlik yerleşime göre component içinde belirlenir (flex-1 / w-full),

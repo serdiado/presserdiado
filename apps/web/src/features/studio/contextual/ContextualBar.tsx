@@ -1934,11 +1934,22 @@ function BannerCellMode() {
   const firstCell = targetCells[0] ?? null;
   const isMerged = firstCell != null && (firstCell.colSpan > 1 || firstCell.rowSpan > 1);
 
+  // Mutasyonlar GÜNCEL state'ten okur (render snapshot DEĞİL): Zustand senkron olduğundan tek
+  // tıkta ardışık apply'lar (örn. üst-karakter toggle'ı = run + decimalScale + decimalOffset)
+  // birbirini bayat snapshot'la geri almaz, doğru kompoze olur.
+  const resolveCur = () => {
+    const st = useCatalogStore.getState();
+    return resolveModuleSlot(slotId ?? '', st.getActivePages(), st.globalSettings);
+  };
+
   const updateCells = (patch: Partial<any>) => {
-    const cells = moduleData.cells.map((c: any) =>
+    const cur = resolveCur();
+    const md: any = cur?.moduleData;
+    if (!md?.cells) return;
+    const cells = md.cells.map((c: any) =>
       selectedCellIds.includes(c.id) ? { ...c, ...patch } : c,
     );
-    updateSlotModuleData(pageNumber, slotId!, { cells });
+    updateSlotModuleData(cur!.pageNumber, slotId!, { cells });
   };
 
   // Metin ayarı uygula — ortak dispatchTextSetting + MODÜL adapter'ı (run→updateSlotModuleData /
@@ -1955,12 +1966,25 @@ function BannerCellMode() {
             .getElementById(cellDomId(s.slotId, s.cellId))
             ?.querySelector('[contenteditable]') as HTMLElement | null,
         commitRun: (s, html) => {
-          const cells = moduleData.cells.map((c: any) =>
+          const cur = resolveCur();
+          const md: any = cur?.moduleData;
+          if (!md?.cells) return;
+          const cells = md.cells.map((c: any) =>
             c.id === s.cellId ? { ...c, text: html } : c,
           );
-          updateSlotModuleData(pageNumber, slotId!, { cells });
+          updateSlotModuleData(cur!.pageNumber, slotId!, { cells });
         },
-        applyCell: (patch) => updateCells({ font: { ...firstCell.font, ...patch } }),
+        // Her seçili hücrenin KENDİ güncel font'una birleştir → ardışık cell-apply'lar kompoze olur
+        // (firstCell.font snapshot'ı decimalScale'i geri almıyordu — düzeltildi).
+        applyCell: (patch) => {
+          const cur = resolveCur();
+          const md: any = cur?.moduleData;
+          if (!md?.cells) return;
+          const cells = md.cells.map((c: any) =>
+            selectedCellIds.includes(c.id) ? { ...c, font: { ...c.font, ...patch } } : c,
+          );
+          updateSlotModuleData(cur!.pageNumber, slotId!, { cells });
+        },
         clearRun: (property) => clearRunForSurface('module', slotId!, selectedCellIds, property),
         fallbackCellId: selectedCellIds[0] ?? '',
       },

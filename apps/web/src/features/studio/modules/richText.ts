@@ -85,6 +85,7 @@ export interface RunStyle {
   underline?: boolean;
   lineThrough?: boolean;
   textTransform?: 'uppercase' | 'lowercase' | 'capitalize';
+  superscript?: boolean; // üst-karakter; boyutu cell-level decimalScale'den (--sup-scale) gelir
 }
 
 export type RunProperty =
@@ -95,7 +96,8 @@ export type RunProperty =
   | 'italic'
   | 'underline'
   | 'lineThrough'
-  | 'textTransform';
+  | 'textTransform'
+  | 'superscript';
 
 export type RunValue = string | number | boolean | { color: string; opacity: number };
 
@@ -136,6 +138,7 @@ function canonicalStyle(s: RunStyle): RunStyle {
   if (s.italic) out.italic = true;
   if (s.underline) out.underline = true;
   if (s.lineThrough) out.lineThrough = true;
+  if (s.superscript) out.superscript = true;
   if (s.textTransform) out.textTransform = s.textTransform; // 'none' applyPatch/parse'te zaten elenir
   return out;
 }
@@ -151,6 +154,7 @@ function styleKey(s: RunStyle): string {
     c.italic ? 1 : 0,
     c.underline ? 1 : 0,
     c.lineThrough ? 1 : 0,
+    c.superscript ? 1 : 0,
     c.textTransform ?? '',
   ]);
 }
@@ -187,6 +191,7 @@ function applyPatch(style: RunStyle, property: RunProperty, value: RunValue): Ru
     case 'italic':
     case 'underline':
     case 'lineThrough':
+    case 'superscript':
       if (value) next[property] = true;
       else delete next[property];
       break;
@@ -211,6 +216,8 @@ function readProp(style: RunStyle, property: RunProperty): RunValue | undefined 
       return !!c.underline;
     case 'lineThrough':
       return !!c.lineThrough;
+    case 'superscript':
+      return !!c.superscript;
     case 'textTransform':
       return c.textTransform;
   }
@@ -232,6 +239,7 @@ function styleFromElement(el: HTMLElement): RunStyle {
   if (tag === 'I' || tag === 'EM') d.italic = true;
   if (tag === 'U') d.underline = true;
   if (tag === 'S' || tag === 'STRIKE') d.lineThrough = true;
+  if (tag === 'SUP') d.superscript = true;
 
   const st = el.style;
   if (st) {
@@ -241,8 +249,10 @@ function styleFromElement(el: HTMLElement): RunStyle {
       d.opacity = col.opacity;
     }
     if (st.fontFamily) d.fontFamily = st.fontFamily;
+    // Üst-karakter <sup> etiketiyle işaretlenir (yukarıda); px fontSize üst-karakterde okunmaz
+    // (boyut --sup-scale'den gelir).
     const fs = st.fontSize;
-    if (fs && /^\d+(?:\.\d+)?px$/.test(fs.trim())) d.fontSize = parseFloat(fs);
+    if (!d.superscript && fs && /^\d+(?:\.\d+)?px$/.test(fs.trim())) d.fontSize = parseFloat(fs);
     if (st.fontWeight) d.fontWeight = canonicalWeight(st.fontWeight);
     if (st.fontStyle === 'italic' || st.fontStyle === 'oblique') d.italic = true;
     const dec = ((st as { textDecorationLine?: string }).textDecorationLine || st.textDecoration || '')
@@ -328,7 +338,10 @@ function styleToCss(el: HTMLElement, style: RunStyle): boolean {
     el.style.fontFamily = c.fontFamily;
     any = true;
   }
-  if (c.fontSize != null) {
+  // Üst-karakter <sup> olarak üretilir; boyut + dikey ofset (cap-top hizası) global CSS'ten gelir
+  // ([data-rt-editable] sup, --sup-scale). Burada üst-karaktere inline boyut/hiza YAZILMAZ; px
+  // fontSize de üst-karakterde anlamsız (boyut --sup-scale) → atlanır.
+  if (!c.superscript && c.fontSize != null) {
     el.style.fontSize = `${c.fontSize}px`;
     any = true;
   }
@@ -363,10 +376,14 @@ function serializeSegments(cellEl: HTMLElement, segs: Segment[]): void {
       continue;
     }
     if (seg.text.length === 0) continue;
-    const span = doc.createElement('span');
-    if (styleToCss(span, seg.style)) {
-      span.appendChild(doc.createTextNode(seg.text));
-      cellEl.appendChild(span);
+    // Üst-karakter → <sup> (boyut/ofset global CSS'ten, --sup-scale ile). Diğer run stilleri
+    // (renk/kalınlık/italik…) <sup>/<span> üzerine yazılır. Üst-karakter stilsiz olsa da <sup> kalır.
+    const isSup = !!seg.style.superscript;
+    const el = doc.createElement(isSup ? 'sup' : 'span');
+    const styled = styleToCss(el, seg.style);
+    if (isSup || styled) {
+      el.appendChild(doc.createTextNode(seg.text));
+      cellEl.appendChild(el);
     } else {
       cellEl.appendChild(doc.createTextNode(seg.text)); // stilsiz → çıplak text (span yok)
     }
@@ -612,7 +629,7 @@ function ensureHook(): void {
 export function sanitizeRichText(html: string): string {
   ensureHook();
   return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ['span', 'b', 'i', 'u', 's', 'br'],
+    ALLOWED_TAGS: ['span', 'b', 'i', 'u', 's', 'sup', 'br'],
     ALLOWED_ATTR: ['style'],
   });
 }

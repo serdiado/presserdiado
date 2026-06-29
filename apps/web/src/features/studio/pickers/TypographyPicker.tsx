@@ -7,6 +7,7 @@ import {
   AlignVerticalJustifyStart,
   AlignVerticalJustifyCenter,
   AlignVerticalJustifyEnd,
+  ArrowDownUp,
 } from 'lucide-react';
 import { ColorOpacityPicker } from './ColorOpacityPicker';
 import { useHistoryStore } from '@/stores/studio';
@@ -100,20 +101,27 @@ export function TypographyPicker({ title, value, onChange, inline = false, onCle
       <div className="space-y-2 pt-1 border-t border-slate-100">
         {(
           [
-            ['fontSize', 'Punto', 8, 72, 1],
-            ['lineHeight', 'Satır', 0.5, 3, 0.1],
-            ['letterSpacing', 'Harf Aralığı', -5, 10, 0.5],
-            ['decimalScale', 'Küsurat %', 30, 200, 1],
+            // [id, label, min, max, step, fallback] — fallback opsiyonel alanlar (decimalOffset) için.
+            ['fontSize', 'Punto', 8, 72, 1, 12],
+            ['lineHeight', 'Satır', 0.5, 3, 0.1, 1.2],
+            ['letterSpacing', 'Harf Aralığı', -5, 10, 0.5, 0],
+            ['decimalScale', 'Üst Karakter %', 30, 200, 1, 50],
+            ['decimalOffset', 'Üst Karakter', -50, 150, 1, 10],
           ] as const
-        ).map(([id, label, min, max, step]) => (
+        ).map(([id, label, min, max, step, fallback]) => {
+          const val = (rd(id) as number | undefined) ?? fallback;
+          return (
           <div key={id} className="flex items-center gap-2">
-            <span className="text-[11px] font-medium text-slate-500 w-20">{label}</span>
+            <span className="text-[11px] font-medium text-slate-500 w-24 shrink-0 inline-flex items-center gap-1">
+              {label}
+              {id === 'decimalOffset' && <ArrowDownUp size={12} className="text-slate-400" />}
+            </span>
             <input
               type="range"
               min={min}
               max={max}
               step={step}
-              value={rd(id) as number}
+              value={val}
               onChange={(e) => ap(id, Number(e.target.value))}
               className="flex-1 studio-slider"
             />
@@ -122,12 +130,13 @@ export function TypographyPicker({ title, value, onChange, inline = false, onCle
               min={min}
               max={max}
               step={step}
-              value={rd(id) as number}
+              value={val}
               onChange={(e) => ap(id, Number(e.target.value))}
               className="w-12 text-[11px] font-bold text-slate-600 text-center border border-slate-200 rounded p-0.5"
             />
           </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-100">

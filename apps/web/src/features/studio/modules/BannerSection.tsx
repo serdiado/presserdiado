@@ -492,6 +492,13 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
                 color: f.opacity < 100 ? hexToRgba(f.color, f.opacity) : f.color,
                 textAlign: f.textAlign,
                 whiteSpace: 'pre-wrap',
+                // Üst-karakter (<sup>) boyut + dikey konum global CSS'te bu değişkenlerden gelir
+                // (index.css). Boyut: "Üst Karakter %" (decimalScale). Konum: "Üst Karakter Konumu"
+                // (decimalOffset, taban font boyunun %'si; + yukarı) → boyuttan bağımsız px ofset.
+                ...({
+                  '--sup-scale': `${f.decimalScale}%`,
+                  '--sup-offset': `${((f.decimalOffset ?? 10) / 100) * f.fontSize}px`,
+                } as React.CSSProperties),
               }}
             />
           </div>

@@ -29,6 +29,7 @@ export type CellProperty =
   | 'lineHeight'
   | 'letterSpacing'
   | 'decimalScale'
+  | 'decimalOffset'
   | 'textAlign'
   | 'verticalAlign';
 

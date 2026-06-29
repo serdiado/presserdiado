@@ -45,6 +45,9 @@ export interface TypographyData {
   color: string;
   opacity: number; // 0-100
   decimalScale: number; // 0-200, % of base size for decimal portion of prices
+  /** Üst-karakter (superscript) dikey konumu: taban font boyunun %'si; + = yukarı. Opsiyonel/
+   *  additive — eski veri (undefined) = varsayılan (~35). Üst-karakter boyutu decimalScale'den. */
+  decimalOffset?: number;
 }
 
 export interface BorderRadiusData {
@@ -98,6 +101,7 @@ export const defaultTypography: TypographyData = {
   color: '#000000',
   opacity: 100,
   decimalScale: 100,
+  decimalOffset: 10,
 };
 
 export const defaultRadius: BorderRadiusData = {

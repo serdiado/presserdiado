@@ -167,10 +167,26 @@ export const textSettingsRegistry: TextSettingDef[] = [
       return runReadable(ctx) ? runRead(ctx, 'textTransform') : ctx.font?.textTransform;
     },
   },
+  {
+    id: 'superscript',
+    label: 'Üst karakter',
+    control: 'toggle',
+    property: 'superscript',
+    runCapable: true,
+    // RUN-ONLY: cell-level karşılığı yok (boyut cell decimalScale'den --sup-scale ile gelir).
+    // Seçim varsa run uygula; collapsed/cell → no-op patch.
+    apply(ctx, value) {
+      return runApplicable(ctx) ? runApply(ctx, 'superscript', value) : {};
+    },
+    read(ctx) {
+      return runReadable(ctx) ? runRead(ctx, 'superscript') : undefined;
+    },
+  },
   // ── Cell-only (Sağ Panel tam görünümü; run karşılığı yok) ──
   cellEntry('lineHeight', 'Satır', 'slider', 'lineHeight'),
   cellEntry('letterSpacing', 'Harf Aralığı', 'slider', 'letterSpacing'),
-  cellEntry('decimalScale', 'Küsurat', 'slider', 'decimalScale'),
+  cellEntry('decimalScale', 'Üst Karakter', 'slider', 'decimalScale'),
+  cellEntry('decimalOffset', 'Üst Karakter Konumu', 'slider', 'decimalOffset'),
   cellEntry('textAlign', 'Yatay hizalama', 'align', 'textAlign'),
   cellEntry('verticalAlign', 'Dikey hizalama', 'align', 'verticalAlign'),
 ];

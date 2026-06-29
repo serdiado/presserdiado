@@ -48,6 +48,55 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
+describe('superscript run — apply/read + serialize/parse + sanitize round-trip', () => {
+  it('seçime üst-karakter uygular: <sup> üretir, inline boyut/hiza içermez; metin korunur', () => {
+    const cell = makeCell('7,99');
+    const t = cell.firstChild as Text;
+    applyRunStyle(cell, charRange(t, 2, 4), { property: 'superscript', value: true }); // "99"
+    expect(cell.textContent).toBe('7,99');
+    const sup = cell.querySelector('sup');
+    expect(sup?.textContent).toBe('99');
+    // Boyut + cap-top ofseti global CSS'te (--sup-scale) → inline stil olmamalı.
+    expect(sup?.getAttribute('style')).toBeFalsy();
+  });
+
+  it('üst-karakter + başka stil: <sup> üzerine renk yazılır', () => {
+    const cell = makeCell('7,99');
+    const t = cell.firstChild as Text;
+    applyRunStyle(cell, charRange(t, 2, 4), { property: 'superscript', value: true });
+    const sup = cell.querySelector('sup') as HTMLElement;
+    applyRunStyle(cell, charRange(sup.firstChild!, 0, 2), { property: 'color', value: { color: RED, opacity: 100 } });
+    const sup2 = cell.querySelector('sup') as HTMLElement;
+    expect(sup2.tagName).toBe('SUP');
+    expect(parseRunColor(sup2)?.color).toBe(RED);
+  });
+
+  it('read: üst-karakter seçimini true, düz metni false döndürür', () => {
+    const cell = makeCell('7,99');
+    const t = cell.firstChild as Text;
+    applyRunStyle(cell, charRange(t, 2, 4), { property: 'superscript', value: true });
+    const sup = cell.querySelector('sup') as HTMLElement;
+    expect(readRunStyle(cell, charRange(sup.firstChild!, 0, 2), 'superscript')).toBe(true);
+    expect(readRunStyle(cell, charRange(cell.firstChild!, 0, 1), 'superscript')).toBe(false);
+  });
+
+  it('sanitize: <sup> etiketi korunur', () => {
+    const clean = sanitizeRichText('7,<sup>99</sup>');
+    expect(clean).toContain('<sup>');
+    expect(clean).toContain('99');
+  });
+
+  it('toggle off: üst-karakteri kaldırır (<sup> kalkar, düz metne döner)', () => {
+    const cell = makeCell('7,99');
+    const t = cell.firstChild as Text;
+    applyRunStyle(cell, charRange(t, 2, 4), { property: 'superscript', value: true });
+    const sup = cell.querySelector('sup') as HTMLElement;
+    applyRunStyle(cell, charRange(sup.firstChild!, 0, 2), { property: 'superscript', value: false });
+    expect(cell.querySelector('sup')).toBeNull();
+    expect(cell.textContent).toBe('7,99');
+  });
+});
+
 describe('applyRunColor — span sarma + normalize (flat invariant)', () => {
   it('kısmi-node: tek text node ortasını sarar, metin korunur', () => {
     const cell = makeCell('Merhaba Dünya');

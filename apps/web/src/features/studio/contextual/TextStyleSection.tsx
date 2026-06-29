@@ -5,7 +5,7 @@
 // (PORTAL YOK — fold #1). Apply + commit + selection-restore ÇAĞIRANIN işi (onApply); read-back burada.
 
 import { useEffect, useRef, useState } from 'react';
-import { Bold, Italic, Underline, Strikethrough, ChevronDown } from 'lucide-react';
+import { Bold, Italic, Underline, Strikethrough, Superscript, ChevronDown } from 'lucide-react';
 import type { TypographyData } from '@matbaapro/shared';
 import { ColorOpacityPicker } from '../pickers';
 import { textSettingById } from '../textSettings/registry';
@@ -199,6 +199,7 @@ export function TextStyleSection({ surface, slotId, cellId, font, onApply, getAv
   const italicRead = r.italic.read(ctx);
   const underlineRead = r.underline.read(ctx);
   const lineThroughRead = r.lineThrough.read(ctx);
+  const superRead = r.superscript.read(ctx);
   const colorRead = r.color.read(ctx);
   const caseRead = r.textTransform.read(ctx);
 
@@ -252,6 +253,22 @@ export function TextStyleSection({ surface, slotId, cellId, font, onApply, getAv
         onClick={() => onApply(r.lineThrough, lineThroughRead !== true)}
       >
         <Strikethrough size={16} />
+      </ToggleBtn>
+      <ToggleBtn
+        active={superRead === true}
+        title="Üst karakter (boyut/konum: sağ panel)"
+        onClick={() => {
+          const turningOn = superRead !== true;
+          onApply(r.superscript, turningOn);
+          if (turningOn) {
+            // Tıklar tıklamaz iyi görünen varsayılanlar: boyut %50, konum 10. Kullanıcı sağ
+            // panelden ("Üst Karakter %" / "Üst Karakter ↕") ince ayar yapar.
+            onApply(r.decimalScale, 50);
+            onApply(r.decimalOffset, 10);
+          }
+        }}
+      >
+        <Superscript size={16} />
       </ToggleBtn>
 
       <ColorOpacityPicker

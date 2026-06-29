@@ -143,10 +143,10 @@ describe('registry — read yansıması', () => {
     expect(new Set(ids).size).toBe(ids.length);
     const runIds = textSettingsRegistry.filter((d) => d.runCapable).map((d) => d.id).sort();
     expect(runIds).toEqual(
-      ['color', 'fontFamily', 'fontSize', 'fontWeight', 'italic', 'lineThrough', 'textTransform', 'underline'],
+      ['color', 'fontFamily', 'fontSize', 'fontWeight', 'italic', 'lineThrough', 'superscript', 'textTransform', 'underline'],
     );
     const cellIds = textSettingsRegistry.filter((d) => !d.runCapable).map((d) => d.id).sort();
-    expect(cellIds).toEqual(['decimalScale', 'letterSpacing', 'lineHeight', 'textAlign', 'verticalAlign']);
+    expect(cellIds).toEqual(['decimalOffset', 'decimalScale', 'letterSpacing', 'lineHeight', 'textAlign', 'verticalAlign']);
   });
 
   it('cell-only giriş (Faz 4): apply→typography patch, read→cell font değeri', () => {
