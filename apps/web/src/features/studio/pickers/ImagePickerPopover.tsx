@@ -1,7 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Image as ImageIcon, Upload } from 'lucide-react';
+import { Upload, Library } from 'lucide-react';
 import api from '@/lib/api';
+import { uploadImage, toAbsoluteUrl } from '@/lib/upload';
+import { MediaPickerModal } from '@/features/dashboard/components/MediaPickerModal';
+import type { MediaAssetType } from '@/features/dashboard/types';
 
 export type ImageSizeType = 'fit' | 'fill' | 'stretch' | 'tile';
 
@@ -50,6 +53,8 @@ interface ImagePickerPopoverProps {
   openSignal?: boolean;
   /** openSignal tüketildiğinde çağrılır → çağıran sinyali temizler (tek-atış). */
   onConsumeOpen?: () => void;
+  /** "Bilgisayardan Yükle" ile kütüphaneye eklenen görselin medya türü (varsayılan 'background'). */
+  uploadType?: MediaAssetType;
 }
 
 const POPUP_WIDTH = 320;
@@ -91,8 +96,11 @@ export function ImagePickerPopover({
   onSettingsChange,
   openSignal = false,
   onConsumeOpen,
+  uploadType = 'background',
 }: ImagePickerPopoverProps) {
   const [isOpen, setIsOpen] = useState(false);
+  // Kütüphaneden seçim modalı (MediaPickerModal). Yüzen panelden bağımsız, kökte render edilir.
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   // Dışarıdan-aç köprüsü: openSignal true'ya geçince aç + sinyali tüket (tek-atış). ColorOpacityPicker
   // ile aynı desen — isOpen bağımsız kalır.
@@ -135,6 +143,9 @@ export function ImagePickerPopover({
 
   useEffect(() => {
     const onClick = (e: MouseEvent) => {
+      // Kütüphane modalı açıkken paneli dış-tıkla kapatma (modal panelin DIŞINDA, body'ye portal'lı
+      // → yoksa panel kapanıp MediaPickerModal'ı unmount ederdi).
+      if (pickerOpen) return;
       if (
         isOpen &&
         buttonRef.current &&
@@ -147,7 +158,7 @@ export function ImagePickerPopover({
     };
     document.addEventListener('mousedown', onClick);
     return () => document.removeEventListener('mousedown', onClick);
-  }, [isOpen]);
+  }, [isOpen, pickerOpen]);
 
   const emitSettingsChange = useCallback(
     (
@@ -168,25 +179,43 @@ export function ImagePickerPopover({
     [hasImage, onSettingsChange],
   );
 
+  // Seçilen bir görseli (mutlak URL) mevcut taslak ayarlarıyla uygular.
+  const applyImageUrl = useCallback(
+    (imageUrl: string) => {
+      onImageSelected({
+        imageUrl,
+        imageSize: draftImageSize,
+        imagePosition: draftImagePosition,
+        imageOpacity: draftImageOpacity,
+      });
+    },
+    [onImageSelected, draftImageSize, draftImagePosition, draftImageOpacity],
+  );
+
+  // Kütüphaneden seçim onayı — tek görsel (remainingSlots=1). imageKey relative → mutlak.
+  const handleLibraryPicked = (items: { imageKey: string; fileName: string | null }[]) => {
+    setPickerOpen(false);
+    const picked = items[0];
+    if (picked) applyImageUrl(toAbsoluteUrl(picked.imageKey));
+  };
+
+  // "Bilgisayardan Yükle" = HIZLI kütüphane-yükleme: dosyayı yükle → Medya kütüphanesine kaydet →
+  // anında uygula. Ad-hoc (kütüphaneye uğramayan) yükleme artık yok.
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
     setUploadError(false);
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const { data } = await api.post<{ url: string; size?: number; mimeType?: string }>(
-        '/upload',
-        formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } },
-      );
-      onImageSelected({
-        imageUrl: data.url,
-        imageSize: draftImageSize,
-        imagePosition: draftImagePosition,
-        imageOpacity: draftImageOpacity,
+      const { url, absoluteUrl, mimeType, size } = await uploadImage(file);
+      await api.post('/media-assets', {
+        imageKey: url,
+        fileName: file.name,
+        mimeType,
+        size,
+        type: uploadType,
       });
+      applyImageUrl(absoluteUrl);
     } catch {
       setUploadError(true);
     } finally {
@@ -255,70 +284,61 @@ export function ImagePickerPopover({
                   onChange={handleFileSelect}
                 />
 
-                {!hasImage ? (
-                  <button
-                    type="button"
-                    onClick={() => !uploading && fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center cursor-pointer hover:border-slate-400 hover:bg-slate-50 transition-colors"
-                  >
-                    {uploading ? (
-                      <div className="flex flex-col items-center gap-2">
-                        <svg
-                          className="w-5 h-5 text-slate-500 animate-spin"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                        >
-                          <circle
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="3"
-                            strokeDasharray="60"
-                            strokeDashoffset="20"
-                          />
-                        </svg>
-                        <span className="text-xs text-slate-500 font-bold uppercase">Yükleniyor...</span>
-                      </div>
-                    ) : (
-                      <>
-                        <Upload size={20} className="mx-auto mb-2 text-slate-500" />
-                        <p className="text-xs text-slate-800 font-bold">Görsel yüklemek için tıklayın</p>
-                        <p className="text-[10px] text-slate-400 leading-snug mt-1">
-                          PNG, JPG, WEBP, SVG — maks. 20MB
-                        </p>
-                      </>
+                {hasImage && (
+                  <div className="relative">
+                    <img
+                      src={imageUrl}
+                      alt="Seçili görsel"
+                      className="w-full h-28 object-cover rounded-lg border border-slate-200"
+                    />
+                    {onImageCleared && (
+                      <button
+                        type="button"
+                        onClick={onImageCleared}
+                        className="absolute top-1 right-1 w-6 h-6 rounded bg-white/90 border border-slate-200 text-slate-500 hover:text-red-500 hover:border-slate-400 flex items-center justify-center text-xs font-bold shadow-sm"
+                        title="Görseli kaldır"
+                      >
+                        ×
+                      </button>
                     )}
-                  </button>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="relative">
-                      <img
-                        src={imageUrl}
-                        alt="Arka plan görseli"
-                        className="w-full h-28 object-cover rounded-lg border border-slate-200"
-                      />
-                      {onImageCleared && (
-                        <button
-                          type="button"
-                          onClick={onImageCleared}
-                          className="absolute top-1 right-1 w-6 h-6 rounded bg-white/90 border border-slate-200 text-slate-500 hover:text-red-500 hover:border-slate-400 flex items-center justify-center text-xs font-bold shadow-sm"
-                          title="Görseli kaldır"
-                        >
-                          ×
-                        </button>
-                      )}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full text-[11px] bg-slate-100 hover:bg-slate-200 px-2 py-1.5 rounded font-bold border border-slate-200 text-slate-800 transition-colors inline-flex items-center justify-center gap-1.5"
-                    >
-                      <ImageIcon size={14} />
-                      Değiştir
-                    </button>
                   </div>
                 )}
+
+                {/* Kütüphane-öncelikli: birincil eylem kütüphaneden seçim. */}
+                <button
+                  type="button"
+                  onClick={() => setPickerOpen(true)}
+                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold bg-slate-900 text-white hover:bg-slate-800 transition-colors"
+                >
+                  <Library size={14} />
+                  {hasImage ? 'Kütüphaneden Değiştir' : 'Kütüphaneden Seç'}
+                </button>
+
+                {/* Bilgisayardan yükleme → görsel YALNIZCA kütüphaneye eklenir, sonra uygulanır. */}
+                <button
+                  type="button"
+                  onClick={() => !uploading && fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200 hover:bg-slate-200 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {uploading ? (
+                    <>
+                      <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeDasharray="60" strokeDashoffset="20" />
+                      </svg>
+                      Yükleniyor...
+                    </>
+                  ) : (
+                    <>
+                      <Upload size={14} />
+                      Bilgisayardan Yükle
+                    </>
+                  )}
+                </button>
+
+                <p className="text-[10px] text-slate-400 leading-snug text-center">
+                  Yüklenen görsel Medya kütüphanenize eklenir. PNG, JPG, WEBP, SVG — maks. 20MB
+                </p>
 
                 {uploadError && (
                   <p className="text-xs text-red-500 font-bold">Yükleme başarısız, tekrar deneyin.</p>
@@ -383,6 +403,15 @@ export function ImagePickerPopover({
           </div>,
           document.body,
         )}
+
+      {/* Kütüphane seçici — yüzen panelden bağımsız (panel kapansa da yaşar); yalnız Medya, tekli. */}
+      <MediaPickerModal
+        isOpen={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onConfirm={handleLibraryPicked}
+        sources={['media']}
+        remainingSlots={1}
+      />
     </>
   );
 }

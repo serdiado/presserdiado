@@ -16,6 +16,8 @@ export interface PickedImage {
   fileName: string | null;
 }
 
+type Source = 'media' | 'product';
+
 interface MediaPickerModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -24,9 +26,10 @@ interface MediaPickerModalProps {
   excludeSku?: string;
   // Seçilebilecek azami görsel (kalan kota). Verilmezse sınırsız (başka bağlamlarda reusable).
   remainingSlots?: number;
+  // Gösterilecek kaynak sekmeleri. Verilmezse her ikisi (mevcut davranış). Tek kaynak verilirse
+  // sekme satırı gizlenir (ör. Stüdyo dolgu seçici yalnız 'media' geçer).
+  sources?: Source[];
 }
-
-type Source = 'media' | 'product';
 type TypeFilter = 'all' | MediaAssetType;
 
 const TYPE_TABS: { key: TypeFilter; label: string }[] = [
@@ -45,8 +48,16 @@ interface PickerItem {
   fileName: string | null;
 }
 
-export function MediaPickerModal({ isOpen, onClose, onConfirm, remainingSlots = Infinity }: MediaPickerModalProps) {
-  const [source, setSource] = useState<Source>('media');
+const DEFAULT_SOURCES: Source[] = ['media', 'product'];
+
+export function MediaPickerModal({
+  isOpen,
+  onClose,
+  onConfirm,
+  remainingSlots = Infinity,
+  sources = DEFAULT_SOURCES,
+}: MediaPickerModalProps) {
+  const [source, setSource] = useState<Source>(sources[0] ?? 'media');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [mediaAssets, setMediaAssets] = useState<MediaAsset[]>([]);
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
@@ -77,11 +88,12 @@ export function MediaPickerModal({ isOpen, onClose, onConfirm, remainingSlots = 
   useEffect(() => {
     if (isOpen) {
       setSelected(new Map());
-      setSource('media');
+      setSource(sources[0] ?? 'media');
       setTypeFilter('all');
       setQuery('');
       fetchData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
   // Medya havuzu — fileName aramasıyla. Tip filtresi grid'de ayrıca uygulanır.
@@ -187,11 +199,15 @@ export function MediaPickerModal({ isOpen, onClose, onConfirm, remainingSlots = 
           </button>
         </div>
 
-        {/* Kaynak sekmeleri + arama */}
+        {/* Kaynak sekmeleri + arama. Tek kaynaklı modda sekme satırı gizlenir (yalnız arama kalır). */}
         <div className="flex items-center justify-between gap-3 px-6 pt-4 shrink-0">
           <div className="flex items-center gap-2">
-            {sourceTab('media', 'Medya', filteredMedia.length)}
-            {sourceTab('product', 'Ürün Resimleri', productItems.length)}
+            {sources.length > 1 && (
+              <>
+                {sources.includes('media') && sourceTab('media', 'Medya', filteredMedia.length)}
+                {sources.includes('product') && sourceTab('product', 'Ürün Resimleri', productItems.length)}
+              </>
+            )}
           </div>
           <div className="relative w-56">
             <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted" />
