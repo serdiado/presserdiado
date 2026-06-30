@@ -12,6 +12,7 @@ import type {
   StudioPresetArchetype,
 } from '@matbaapro/shared';
 import { useCatalogStore } from '@/stores/studio';
+import afpackTema from './data/afpack-tema.json';
 
 function clone<T>(value: T): T {
   const sc = (globalThis as { structuredClone?: <V>(v: V) => V }).structuredClone;
@@ -20,23 +21,14 @@ function clone<T>(value: T): T {
 
 const PRESETS: StudioPreset[] = [
   {
-    id: 'preset-klasik-market',
-    name: 'Klasik Market',
-    description: '4×4 ızgara, kırmızı fiyat kutusu — standart market broşürü.',
-    thumbnail: '/presets/preset-klasik-market.jpg',
-    settings: {
-      defaultGrid: { rows: 4, cols: 4 },
-      colors: {
-        cellBg: { type: 'solid', color: '#ffffff', opacity: 100 },
-        cellBorder: { c: '#e2e8f0', o: 100 },
-        priceBg: { type: 'solid', color: '#e60000', opacity: 100 },
-        priceBorder: { c: '#ffffff', o: 100 },
-      },
-      radiuses: {
-        cell: { tl: 0, tr: 0, bl: 0, br: 0, linked: true },
-        price: { tl: 0, tr: 0, bl: 0, br: 0, linked: true },
-      },
-    },
+    // Gerçek sistem teması (rol-bazlı arketip): stüdyoda tasarlanıp "Preset Kopyala" ile dışa
+    // aktarıldı (docs/Tema/Af-Pack_Tema1.json → src/.../presets/data/afpack-tema.json). JSON import
+    // literal tipleri genişlettiğinden union'lara uymaz → as unknown as ile cast; kimlik ezilir.
+    ...(afpackTema as unknown as StudioPreset),
+    id: 'preset-afpack-tema',
+    name: 'AfPack Tema',
+    description: 'AfPack tek-kırım broşür teması — kapak/iç/arka arketipleri (gölge, modüller, footer dahil).',
+    thumbnail: '/presets/preset-afpack-tema.jpg',
   },
   {
     id: 'preset-modern-vitrin',

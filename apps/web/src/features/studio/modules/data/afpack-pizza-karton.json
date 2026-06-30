@@ -1,0 +1,1756 @@
+{
+  "id": "module-1782840107029",
+  "name": "Yeni Modül",
+  "slotRole": "free",
+  "type": "banner",
+  "moduleData": {
+    "cols": 4,
+    "rows": 9,
+    "type": "banner",
+    "cells": [
+      {
+        "id": "banner-inst-0",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 32,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "New York Kraft Braun 100 Stk.",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 100
+        },
+        "colSpan": 4,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-1",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 14,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": true,
+        "bgColor": {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": "banner-inst-0"
+      },
+      {
+        "id": "banner-inst-2",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 14,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": true,
+        "bgColor": {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": "banner-inst-0"
+      },
+      {
+        "id": "banner-inst-3",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 14,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": true,
+        "bgColor": {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": "banner-inst-0"
+      },
+      {
+        "id": "banner-inst-16",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 19,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "20x20",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#E4EEF7",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-17",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 19,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "22x22",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 1,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#565757",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": false
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#E4EEF7",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-18",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 19,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "24x24",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 1,
+          "r": 1,
+          "t": 0,
+          "color": {
+            "c": "#565757",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": false
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#E4EEF7",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-19",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 19,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "26x26",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#E4EEF7",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-4",
+        "font": {
+          "color": "#ffffff",
+          "opacity": 100,
+          "fontSize": 36,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 50,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none",
+          "decimalOffset": 10
+        },
+        "text": "7,<sup>99</sup>",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#EA0029",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-5",
+        "font": {
+          "color": "#ffffff",
+          "opacity": 100,
+          "fontSize": 36,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 50,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none",
+          "decimalOffset": 10
+        },
+        "text": "9,<sup>49</sup>",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 1,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": false
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#EA0029",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-6",
+        "font": {
+          "color": "#ffffff",
+          "opacity": 100,
+          "fontSize": 36,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 50,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none",
+          "decimalOffset": 10
+        },
+        "text": "10,<sup>49</sup>",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 1,
+          "r": 1,
+          "t": 0,
+          "color": {
+            "c": "#ffffff",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": false
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#EA0029",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-7",
+        "font": {
+          "color": "#ffffff",
+          "opacity": 100,
+          "fontSize": 36,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 50,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none",
+          "decimalOffset": 10
+        },
+        "text": "11,<sup>49</sup>",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#EA0029",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-8",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 14,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-9",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 14,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-10",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 14,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-11",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 14,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-12",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 18,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "28x28",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#E4EEF7",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-13",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 18,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "29x29",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 1,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#565757",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": false
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#E4EEF7",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-14",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 18,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "30x30",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 1,
+          "r": 1,
+          "t": 0,
+          "color": {
+            "c": "#565757",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": false
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#E4EEF7",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-15",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 18,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "32x32",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": false
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#E4EEF7",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-20",
+        "font": {
+          "color": "#ffffff",
+          "opacity": 100,
+          "fontSize": 36,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 50,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none",
+          "decimalOffset": 10
+        },
+        "text": "12,<sup>49</sup>",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#EA0029",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-21",
+        "font": {
+          "color": "#ffffff",
+          "opacity": 100,
+          "fontSize": 36,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 50,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none",
+          "decimalOffset": 10
+        },
+        "text": "12,<sup>99</sup>",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 1,
+          "r": 1,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": false
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#EA0029",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-22",
+        "font": {
+          "color": "#ffffff",
+          "opacity": 100,
+          "fontSize": 36,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 50,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none",
+          "decimalOffset": 10
+        },
+        "text": "13,<sup>49</sup>",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 1,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": false
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#EA0029",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-23",
+        "font": {
+          "color": "#ffffff",
+          "opacity": 100,
+          "fontSize": 36,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 50,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none",
+          "decimalOffset": 10
+        },
+        "text": "14,<sup>49</sup>",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#EA0029",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-32",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 14,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-33",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 14,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-34",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 14,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-35",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 14,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": null
+      },
+      {
+        "id": "banner-inst-28",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 14,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "",
+        "image": "http://localhost:3001/uploads/679e7a02-5fdc-4c79-91a4-bddb24b6feb1/0ab3c453a5_Pizzakartons-braun-Tek.png",
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": false,
+        "bgColor": {
+          "type": "solid",
+          "color": "#E4EEF7",
+          "opacity": 100
+        },
+        "colSpan": 4,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 2,
+        "mergedInto": null,
+        "imageSize": "fill",
+        "imagePosition": "center",
+        "imageOpacity": 100
+      },
+      {
+        "id": "banner-inst-29",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 14,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": true,
+        "bgColor": {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": "banner-inst-28"
+      },
+      {
+        "id": "banner-inst-30",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 14,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": true,
+        "bgColor": {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": "banner-inst-28"
+      },
+      {
+        "id": "banner-inst-31",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 14,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": true,
+        "bgColor": {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": "banner-inst-28"
+      },
+      {
+        "id": "banner-inst-24",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 14,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": true,
+        "bgColor": {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": "banner-inst-28"
+      },
+      {
+        "id": "banner-inst-25",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 14,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": true,
+        "bgColor": {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": "banner-inst-28"
+      },
+      {
+        "id": "banner-inst-26",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 14,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": true,
+        "bgColor": {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": "banner-inst-28"
+      },
+      {
+        "id": "banner-inst-27",
+        "font": {
+          "color": "#1e293b",
+          "opacity": 100,
+          "fontSize": 14,
+          "textAlign": "center",
+          "fontFamily": "Inter",
+          "fontWeight": "700",
+          "lineHeight": 1.2,
+          "decimalScale": 100,
+          "letterSpacing": 0,
+          "textTransform": "none",
+          "verticalAlign": "middle",
+          "textDecoration": "none"
+        },
+        "text": "",
+        "image": null,
+        "border": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "color": {
+            "c": "#e2e8f0",
+            "o": 100
+          },
+          "style": "solid",
+          "linked": true
+        },
+        "hidden": true,
+        "bgColor": {
+          "type": "solid",
+          "color": "#ffffff",
+          "opacity": 100
+        },
+        "colSpan": 1,
+        "padding": {
+          "b": 0,
+          "l": 0,
+          "r": 0,
+          "t": 0,
+          "linked": true
+        },
+        "rowSpan": 1,
+        "mergedInto": "banner-inst-28"
+      }
+    ],
+    "radius": {
+      "bl": 0,
+      "br": 0,
+      "tl": 0,
+      "tr": 0,
+      "linked": true
+    },
+    "shadow": {
+      "x": 0,
+      "y": 0,
+      "blur": 0,
+      "color": "#000000",
+      "active": false,
+      "spread": 0,
+      "opacity": 0
+    },
+    "bgColor": {
+      "type": "solid",
+      "color": "#ffffff",
+      "opacity": 100
+    },
+    "rowFractions": [
+      0.5,
+      0.4,
+      0.6,
+      0.13946521094259845,
+      0.4,
+      0.6,
+      0.14691349171970913,
+      1.2569537675543048,
+      1.5961327407259862
+    ],
+    "containerBorder": {
+      "color": {
+        "c": "#e2e8f0",
+        "o": 100
+      },
+      "width": 0
+    }
+  },
+  "source": "system"
+}
