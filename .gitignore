@@ -51,5 +51,8 @@ docs/yonetici-paneli/
 # Claude Code local settings (machine-specific)
 .claude/settings.local.json
  
-# Web-to-print tasarim referansi (lokalde + Claude Design'da; repoda gerek yok) 
-docs/web-to-print/ 
+# Web-to-print tasarim referansi (lokalde + Claude Design'da; repoda gerek yok)
+docs/web-to-print/
+
+# Tema test export'lari (lokalde; localhost URL'leri icerir, repoda gerek yok)
+docs/Tema/
