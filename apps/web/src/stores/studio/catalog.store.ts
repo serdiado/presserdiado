@@ -1137,10 +1137,13 @@ export const useCatalogStore = create<Store>()(
           for (const p of pages) {
             for (const s of p.slots) {
               if (s.id === id) {
-                s.isCustom = enabled;
-                if (enabled && !s.customSettings) {
+                // Global→Özel geçişinde slotun MEVCUT görünümünü (= global) customSettings'e tohumla
+                // ki görsel hiç değişmesin. Bayat/eski customSettings'i de ez (yoksa eski değerler
+                // global'i ezip "varsayılana dönme" yaşatıyordu). Zaten özel olanı yeniden tohumlama.
+                if (enabled && !s.isCustom) {
                   s.customSettings = clone(globalSettings) as DeepPartial<CatalogSettings>;
                 }
+                s.isCustom = enabled;
               }
             }
           }
