@@ -8,6 +8,7 @@
 
 import type { CatalogSettings } from '@matbaapro/shared';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
+import { isFooterSlotId, footerPageNumber, synthFooterSlot } from '@/stores/studio/footerSlot';
 import { stripTransientSettings } from '../presets/studioPresets';
 import type { AnyModuleData, StudioModule } from './types';
 
@@ -19,13 +20,18 @@ import type { AnyModuleData, StudioModule } from './types';
  * Ürün/havuz/içerik (product) DAHİL EDİLMEZ — yalnız modül tanımı.
  */
 export function exportModuleFromState(): StudioModule | null {
-  const { formas, activeFormaId } = useCatalogStore.getState();
+  const { formas, globalSettings } = useCatalogStore.getState();
   const { selectedSlotIds } = useUIStore.getState();
   if (selectedSlotIds.length === 0) return null;
 
   const slotId = selectedSlotIds[0];
-  const forma = formas.find((f) => f.id === activeFormaId);
-  const slot = forma?.pages.flatMap((p) => p.slots).find((s) => s.id === slotId);
+  // SlotMode/preset export ile AYNI kapsam: TÜM formaların sayfaları (yalnız aktif değil) +
+  // footer-host slotu (page.slots'ta yok → synthFooterSlot ile globalSettings.footerModule'den çöz).
+  // Slot id'leri (page-N-slot-i) pageNumber ile global benzersiz → formalar arası çakışma yok.
+  const allPages = formas.flatMap((f) => f.pages);
+  const slot = isFooterSlotId(slotId)
+    ? synthFooterSlot(footerPageNumber(slotId), allPages, globalSettings)
+    : allPages.flatMap((p) => p.slots).find((s) => s.id === slotId);
   if (!slot) return null;
 
   if (slot.role === 'free' && slot.moduleData) {
