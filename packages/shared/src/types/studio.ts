@@ -142,7 +142,26 @@ export interface StudioPresetPageBackground {
   background: NonNullable<CatalogPage['background']>;
 }
 
-/** Tek tıkla uygulanan hazır şablon: stil (defaultGrid + footer dahil) + boş banner alanları. */
+/**
+ * Rol-bazlı arketip: ürünü çıkarılmış KOMPLE sayfa snapshot'ı (Ön Kapak / İç / Arka Kapak).
+ * Tema oluşturma mimarisi: docs/template-module-architecture.md "Rol-bazlı arketip".
+ * `slots` ürün taşımaz (apply'da yeniden dağıtılır); ama tüm stil/birleşme/modül korunur —
+ * `customSettings` DeepPartial<CatalogSettings> olduğundan gölge/badge/renk/font dahil her şey girer.
+ * `module`/`footerOverride.module` = `unknown` (web-only BannerModuleData; mevcut moduleData paterni).
+ */
+export interface StudioPresetArchetype {
+  grid: { rows: number; cols: number };
+  slots: StudioSlot[]; // product: null; isCustom/customSettings/role/moduleType/moduleData/merge korunur
+  background?: CatalogPage['background'];
+  headerData?: PageHeaderData;
+  footerMode: PageFooterMode;
+  footerOverride?: { module: unknown; heightMm: number };
+  footerText?: string;
+  footerLogo?: string | null;
+}
+
+/** Tek tıkla uygulanan hazır şablon. Eski format: stil + boş banner alanları. Yeni format (arketip):
+ *  cover/inner/backCover komple sayfa snapshot'ı (rol-bazlı, format-bağımsız). İkisi geriye-uyumlu. */
 export interface StudioPreset {
   id: string;
   name: string;
@@ -151,6 +170,10 @@ export interface StudioPreset {
   settings: DeepPartial<CatalogSettings>;
   bannerAreas?: StudioPresetBannerArea[];
   pageBackgrounds?: StudioPresetPageBackground[];
+  // Rol-bazlı arketipler (yeni format). Varlıkları → arketip apply yolu; yoksa legacy yol.
+  cover?: StudioPresetArchetype;
+  inner?: StudioPresetArchetype;
+  backCover?: StudioPresetArchetype;
 }
 
 // === Product / temp pool ===

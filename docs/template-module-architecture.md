@@ -4,6 +4,12 @@
 > `order-module-architecture.md` ile aynı rolü oynar: kararlar, veri modeli,
 > kurallar burada tutulur; her oturumda bu belge okunup bağlam alınır.
 > Bu belge yalnız mimari içerir; uygulama durumu / faz takibi burada tutulmaz.
+>
+> **GÜNCEL — tema oluşturma/kayıt katmanı:** Temanın **rol-bazlı arketip** (Ön Kapak /
+> İç Arketip / Arka Kapak) ile **komple sayfa yakalama** mimarisi aşağıda
+> "[Tema oluşturma & uygulama — Rol-bazlı arketip](#tema-oluşturma--uygulama--rol-bazlı-arketip-güncel-ana-karar)"
+> bölümünde. Bu bölüm, aşağıdaki "Preset içeriği (`moduleData`) taşımaz" ve "`footerOverride`
+> preset'e girmez" kararlarını **rafine eder** (arketip-yakalamada artık inline taşınır).
 
 ---
 
@@ -13,6 +19,80 @@ Kullanıcı bir tema seçip uyguladığında, broşür **bitmiş** olmalı — b
 banner/footer alanlarıyla değil, dolu bir tasarımla. "Tema seç → 30 saniyede
 broşür hazır" vaadinin kanıtı bu. Tema uygulanınca üst banner ve alt footer'ın
 dolu gelmesi (marka, adres, slogan) bu belgenin kapattığı boşluktur.
+
+---
+
+## Tema oluşturma & uygulama — Rol-bazlı arketip (GÜNCEL ANA KARAR)
+
+> Temanın **kaydedilmesi** (capture) ve **herhangi bir hedef broşüre uygulanması** mimarisi.
+> Aşağıdaki "Temel mimari kararı: B" (iskelet + modül-ID) **modül KÜTÜPHANESİ** (yeniden kullanım)
+> içindir; bu bölüm ise **tema YAKALAMA**yı tanımlar — yerleştirilmiş modülün datasını **inline**
+> saklar. İkisi çelişmez: kütüphane = taşınabilir reuse; tema = anlık sayfa-snapshot'ı.
+
+### Problem
+Tema farklı **kâğıt/kırım** formatları arasında taşınabilmeli. Örn. **A3 çift kırım** (2 forma, 6
+sayfa) bir broşürden hazırlanan tema, **A4 kırımsız** (2 sayfa: ön+arka) çalışmaya da uygulanabilmeli.
+İki boşluk: (1) **sayfa-sayısı eşlemesi** (tema N, hedef M≠N); (2) **yakalama eksikliği** — mevcut
+`exportPresetFromState` yalnız `settings` + serbest alan geometrisi (`bannerAreas`) + `pageBackgrounds`
+alıyor; özel slot ayarları, **modül içeriği** (`moduleData`), birleşik slotlar ve **per-sayfa footer**
+alınmıyor.
+
+### Karar: Tema = "N sayfa" değil, **3 rol-bazlı arketip** (master-page mantığı)
+
+| Arketip | Kaynak (kayıt) | Hedefte (uygulama) |
+|---|---|---|
+| **Ön Kapak** | İlk sayfa | İlk sayfa (`page[0]`) |
+| **İç Arketip** | Ön kapaktan sonraki **ilk** iç sayfa | Aradaki **tüm** sayfalar (verbatim) |
+| **Arka Kapak** | Son sayfa | Son sayfa (`page[last]`) |
+
+Bu reframe, format/kırım/sayfa-sayısı karmaşasını ve "sayfa-bazlı farklı grid → slotIndex kayar"
+riskini birlikte çözer: tema en fazla **3 grid** taşır (arketip başına bir), her biri kendi içinde
+tutarlı; iç sayfalar tek arketipten türediği için aralarında grid farkı oluşmaz.
+
+### Ne kaydedilir (capture)
+Üç işaretli sayfa **komple** yakalanır (kapaklar ve iç arketip **aynı mekanizma** — tek kod yolu).
+Her arketip için sayfanın tamamı:
+- **Grid** (arketibin kendi `rows×cols`'u — kapaklar 4×4 olmak zorunda değil).
+- **Slotlar:** `isCustom`/`customSettings`, **birleştirme geometrisi** (`colSpan`/`rowSpan` + kapanan
+  hücrelerin `hidden`/`mergedInto`'su), `imageSettings`.
+- **Serbest hücre modülleri:** `moduleType` + `moduleData` **inline** (deep-clone ile).
+- **Zemin:** `CatalogPage.background`.
+- **Footer:** sayfanın **etkin** footer'ı — `page.footerOverride` varsa o, yoksa global
+  `globalSettings.footerModule` (zaten `settings` içinde).
+
+Notlar:
+- **İç hücre stili = global stil** (sade tutma kararı); ama mekanizma "komple yakala" olduğundan iç
+  sayfada özel slot varsa o da gelir — full-capture, "global stil"in üst kümesidir.
+- **Adresleme = `pageNumber + slotIndex`** (konumsal; ürün `globalNumber`'ı DEĞİL — o yalnız ürün
+  slotlarına verilir: [grid-engine/layout.ts](../packages/grid-engine/src/layout.ts)). `bannerAreas` ile birebir semantik (export ↔ apply aynı).
+- `moduleData`/`footerOverride` tipi `unknown`; JSON-serileştirilebilir, apply'da **`structuredClone`**.
+
+### Nasıl açılır (apply)
+`applyPreset` **hedef broşürün mevcut sayfaları** üzerinde çalışır → **sayfa sayısını hedef belirler**.
+Rol eşlemesi: `page[0]`←Ön, `page[last]`←Arka, `page[1..last-1]`←İç arketip (her birine **verbatim**).
+Kenar kuralları: **1 sayfa**→yalnız Ön; **2 sayfa**→Ön+Arka; **≥3**→Ön + İç×(N−2) + Arka. Ürünler
+yeniden dizilir, sığmayan **bekleme havuzuna** (tek-kaynak overflow), `productPool` asla silinmez.
+
+### Kabul edilen (bilinçli) eksiklikler
+- **İç arketip her iç sayfada VERBATIM tekrarlanır** (modül/birleşik slot içeriğiyle). Sözleşme: "ilk
+  iç sayfayı, her iç sayfada tekrarlanacağını bilerek tasarla." İleride stüdyo **"sayfa aynalama"**
+  ayarıyla sol/sağ çeşitlilik gelebilir; şimdilik yok.
+- **Tema mutlaka iç sayfası olan üründen yapılır** (iç-arketipsiz tema bu fazda desteklenmez).
+- **Kapaklar tam sadakat, iç sayfa tek-tip** (kasıtlı asimetri, baskı mantığıyla uyumlu).
+- **Görsel URL'leri:** bu fazda kullanıcı `/uploads/...`; başka kullanıcıya taşınmaz. Admin fazında
+  görseller **merkezi/global medya**dan beslenecek (kesin karar).
+
+### Veri modeli (`StudioPreset` genişlemesi)
+Mevcut: `settings`, `bannerAreas`, `pageBackgrounds`. Eklenecek: **rol-bazlı arketipler** (ön/iç/arka),
+her biri bir **sayfa-snapshot'ı** (grid + `slots[]`{slotIndex, customSettings | module | merge} +
+`background` + `footerOverride`). Shared `StudioPreset` tipine **opsiyonel** alanlar (+ rebuild); eski
+preset'ler (yalnız `settings`/`bannerAreas`/`pageBackgrounds`) geriye-uyumlu çalışır.
+
+### İleri faz (admin)
+**Formata kilitli, per-ürün** temalar — kullanıcı "A3 tek kırım" seçince yalnız o formatın temaları
+listelenir; tema o formatın sayfalarına **birebir** tasarlandığından arketip eşlemesi gerekmez (1:1,
+gerçek per-sayfa tasarım). Görseller merkezi medyadan. "Verbatim iç sayfa" ve "iç-arketipsiz tema"
+sınırları orada yapısal olarak ortadan kalkar.
 
 ---
 
@@ -207,11 +287,12 @@ Mevcut mimarinin bilinçli bırakılan sınırları:
   resim gelince renk replace oluyor ve `imageOpacity` yalnız tek skaler olarak
   uygulanıyor. Gradient-opacity ve alttaki renge karışım için yukarıdaki
   **Katmanlı Zemin / Gradient-Opacity** epic'i gerekir.
-- **Preset slot-stili taşımıyor:** `StudioPreset` `settings + bannerAreas +
-  pageBackgrounds` taşır. Sayfa zemini (`pageBackgrounds`, pageNumber bazlı,
-  export ↔ apply aynı semantik) preset ile taşınır. Slot-bazlı özel stiller
-  (`isCustom`/`customSettings`) preset'e dahil DEĞİL — slota özel tasarımın tema
-  ile taşınması açık gelecek-iş.
+- **Preset slot-stili taşımıyor (MEVCUT KOD):** Bugünkü `exportPresetFromState`
+  yalnız `settings + bannerAreas + pageBackgrounds` taşır; slot-bazlı özel stiller
+  (`isCustom`/`customSettings`), modül içeriği (`moduleData`) ve per-sayfa footer dahil
+  DEĞİL. → **KARAR VERİLDİ, henüz uygulanmadı:** "Tema oluşturma & uygulama — Rol-bazlı
+  arketip" bölümü bunu kapatır (3 arketip için komple sayfa yakalama). Bu satır, o bölüm
+  uygulanınca güncellenecek.
 - **Yarım bırakılmış modül-kütüphane iskeleleri (kullanılmıyor):** localStorage
   `userModules.ts`, `user_modules` DB tablosu, `Slot.tsx` `newUserModuleData` drop
   alıcısı ve boş "Modüllerim" UI — "ileride lazım" diye atılmış, hiçbiri bağlı

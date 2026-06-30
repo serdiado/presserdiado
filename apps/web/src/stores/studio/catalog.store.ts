@@ -13,6 +13,7 @@ import type {
   StudioForma,
   StudioSlot,
   StudioPreset,
+  StudioPresetArchetype,
   StudioPresetBannerArea,
   StudioPresetPageBackground,
   TempPoolProduct,
@@ -108,6 +109,46 @@ function applyPageBackgrounds(
     if (!page) continue;
     page.background = clone(entry.background);
   }
+}
+
+/**
+ * Bir hedef sayfaya rol-bazlı arketibi (ürünsüz KOMPLE sayfa snapshot'ı) uygular: grid + özel
+ * slotlar + modüller + birleşme + zemin + header + footer. Slot id'leri hedef sayfaya göre TAZE
+ * üretilir (iç arketip N sayfaya uygulanınca id çakışmasın); `mergedInto` arketip-index → taze-id
+ * remap'lenir. Ürün taşınmaz (apply'da yeniden dağıtılır). Tüm alt-nesneler clone ile izole.
+ */
+function applyArchetype(page: CatalogPage, arch: StudioPresetArchetype): void {
+  page.gridSettings = { rows: arch.grid.rows, cols: arch.grid.cols };
+  const fresh = createPageSlots(page.pageNumber, arch.grid.rows * arch.grid.cols);
+  const archIdToIndex = new Map<string, number>();
+  arch.slots.forEach((s, i) => archIdToIndex.set(s.id, i));
+  page.slots = fresh.map((f, i) => {
+    const a = arch.slots[i];
+    if (!a) return f;
+    const mergedInto =
+      a.mergedInto != null ? (fresh[archIdToIndex.get(a.mergedInto) ?? -1]?.id ?? null) : a.mergedInto;
+    return {
+      ...f,
+      role: a.role,
+      isCustom: a.isCustom,
+      customSettings: a.customSettings
+        ? (clone(a.customSettings) as DeepPartial<CatalogSettings>)
+        : undefined,
+      moduleType: a.moduleType ?? null,
+      moduleData: a.moduleData != null ? clone(a.moduleData) : null,
+      colSpan: a.colSpan,
+      rowSpan: a.rowSpan,
+      hidden: a.hidden,
+      mergedInto,
+      product: null,
+    };
+  });
+  page.background = arch.background ? clone(arch.background) : undefined;
+  page.headerData = arch.headerData ? clone(arch.headerData) : undefined;
+  page.footerMode = arch.footerMode;
+  page.footerOverride = arch.footerOverride ? clone(arch.footerOverride) : undefined;
+  page.footerText = arch.footerText ?? page.footerText;
+  page.footerLogo = arch.footerLogo ?? null;
 }
 
 /**
@@ -495,16 +536,40 @@ export const useCatalogStore = create<Store>()(
         ) as unknown as CatalogSettings;
         const grid = newSettings.defaultGrid ?? { rows: 4, cols: 4 };
 
-        // 3) Slotları yeni gride göre TAZE kur + banner alanları — productPool'a DOKUNMA
+        // 3) Slotları kur — productPool'a DOKUNMA.
         const next = clone(formas);
-        for (const f of next) {
-          for (const p of f.pages) {
-            p.gridSettings = undefined; // genel ızgaraya dön
-            p.slots = createPageSlots(p.pageNumber, grid.rows * grid.cols);
+        if (preset.cover || preset.inner || preset.backCover) {
+          // Yeni format: rol-bazlı arketip. Sayfalar pageNumber'a göre sıralı; ilk←cover,
+          // son←backCover, ortadakiler←inner. Eksik arketip (örn. inner yok) → global-stil boş grid.
+          const allPages = next
+            .flatMap((f) => f.pages)
+            .slice()
+            .sort((a, b) => a.pageNumber - b.pageNumber);
+          allPages.forEach((p, idx) => {
+            const arch =
+              idx === 0
+                ? preset.cover
+                : idx === allPages.length - 1
+                  ? preset.backCover
+                  : preset.inner;
+            if (arch) {
+              applyArchetype(p, arch);
+            } else {
+              p.gridSettings = undefined;
+              p.slots = createPageSlots(p.pageNumber, grid.rows * grid.cols);
+            }
+          });
+        } else {
+          // Legacy format: tek defaultGrid + boş banner alanları + sayfa zeminleri.
+          for (const f of next) {
+            for (const p of f.pages) {
+              p.gridSettings = undefined; // genel ızgaraya dön
+              p.slots = createPageSlots(p.pageNumber, grid.rows * grid.cols);
+            }
           }
+          applyBannerAreas(next, preset.bannerAreas, grid.cols);
+          applyPageBackgrounds(next, preset.pageBackgrounds);
         }
-        applyBannerAreas(next, preset.bannerAreas, grid.cols);
-        applyPageBackgrounds(next, preset.pageBackgrounds);
 
         // 4) Listeyi yeni ürün slotlarına SIRAYLA dağıt; artan → overflow
         const targets = productSlotsInOrder(next);
