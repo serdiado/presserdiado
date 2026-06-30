@@ -1,10 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { StudioForma, StudioSlot } from '@matbaapro/shared';
-import { useCatalogStore } from './catalog.store';
+import { Template1 } from '@matbaapro/shared';
+import { recalculateLayout } from '@matbaapro/grid-engine';
+import { useCatalogStore, productSlotsInOrder } from './catalog.store';
 import { useHistoryStore } from './history.store';
 import { useUIStore } from './ui.store';
-import { clone, deepEqual, initialGlobalSettings } from './defaults';
+import { clone, deepEqual, initialGlobalSettings, buildFormasForTemplate } from './defaults';
 import { defaultFooterModule } from './footerSlot';
+import { rowToProduct } from '../../features/studio/panels/parseProductRow';
 
 // 2.3 — clearBannerCells: seçili hücrelerde İÇERİĞİ (text+image) temizler,
 // YAPI (colSpan/rowSpan/hidden/mergedInto) + STİL (font/padding/bgColor/border) korunur.
@@ -548,5 +551,89 @@ describe('captureProductToPool — dedup + origin-tag (clearSlotToPool yoluyla)'
     expect(pool[0].sku).toBe('P1');
     expect(pool[0].originalPage).toBe(1); // yeni origin-tag
     expect(pool[0].originalSlotId).toBe('slot-1');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REGRESYON: POS = ekrandaki slot numarası (globalNumber). Kök-neden, _fillSlotsFromPool'un
+// yerleştirmeyi ham dizi sırasıyla (imposition) kurmasıydı; oysa globalNumber pageNumber'a
+// göre atanır. Bu testler ikisinin birebir kalmasını KİLİTLER (refaktörde sessizce bozulmasın).
+// ─────────────────────────────────────────────────────────────────────────────
+describe('ürün yerleşimi — POS = globalNumber (slot no)', () => {
+  beforeEach(() => {
+    useHistoryStore.getState().clearHistory();
+  });
+
+  // Template1 sayfa dizisi imposition sırasında: pageNumber [5,6,1,2,3,4] (templates.ts).
+  // buildFormasForTemplate bunu Forma1=[5,6,1], Forma2=[2,3,4] korur → dizi sırası ≠ pageNumber.
+  const GRID = { rows: 4, cols: 4 };
+  function setupTemplate1() {
+    const formas = recalculateLayout(buildFormasForTemplate(Template1), GRID);
+    useCatalogStore.setState({
+      activeFormaId: 1,
+      activeTab: 'outer',
+      formas,
+      globalSettings: { ...initialGlobalSettings, defaultGrid: GRID },
+      productPool: [],
+      tempProductPool: [],
+    });
+  }
+  const slotByGlobal = (n: number): StudioSlot | undefined => {
+    for (const f of useCatalogStore.getState().formas)
+      for (const p of f.pages) for (const s of p.slots) if (s.globalNumber === n) return s;
+    return undefined;
+  };
+
+  it('sözleşme: productSlotsInOrder sırası globalNumber ile birebir (1..N)', () => {
+    const formas = recalculateLayout(buildFormasForTemplate(Template1), GRID);
+    const nums = productSlotsInOrder(formas).map((s) => s.globalNumber);
+    expect(nums).toEqual(Array.from({ length: nums.length }, (_, i) => i + 1));
+  });
+
+  it('POS, ekrandaki slot no (globalNumber) hücresine yerleşir — imposition sırasına DEĞİL', () => {
+    setupTemplate1();
+    useCatalogStore.getState().setProductPool([
+      { id: 'P1', sku: 'P1', name: 'Ürün 1', price: '1', raw: { POS: 1 } },
+      { id: 'P17', sku: 'P17', name: 'Ürün 17', price: '17', raw: { POS: 17 } },
+      { id: 'P96', sku: 'P96', name: 'Ürün 96', price: '96', raw: { POS: 96 } },
+    ]);
+    useCatalogStore.getState().autoFillSlots();
+
+    expect(slotByGlobal(1)?.product?.sku).toBe('P1');
+    expect(slotByGlobal(17)?.product?.sku).toBe('P17');
+    expect(slotByGlobal(96)?.product?.sku).toBe('P96');
+    // POS 1 → sayfa 1'in ilk slotu (globalNumber 1), en soldaki imposition sayfası (page 5) DEĞİL.
+    expect(slotByGlobal(1)?.id).toBe('page-1-slot-1');
+    const page5First = useCatalogStore
+      .getState()
+      .formas.flatMap((f) => f.pages)
+      .find((p) => p.pageNumber === 5)!.slots[0];
+    expect(page5First.product).toBeNull(); // eski hatada POS 1 buraya düşüyordu
+  });
+
+  it('POS > slot sayısı → tempProductPool (overflow), sessizce kaybolmaz', () => {
+    setupTemplate1();
+    useCatalogStore.getState().setProductPool([
+      { id: 'X', sku: 'X', name: 'X', price: '1', raw: { POS: 999 } },
+    ]);
+    useCatalogStore.getState().autoFillSlots();
+    expect(useCatalogStore.getState().tempProductPool.some((p) => p.sku === 'X')).toBe(true);
+  });
+});
+
+describe('parseProductRow — kilitli konum düzeni (POS·SKU·Ad·Fiyat·Görsel)', () => {
+  it('sütunları SIRAYLA okur, başlık adına bakmaz', () => {
+    const p = rowToProduct(['3', '213N', 'Tavuk Göğsü', '3,99', 'http://x/y.png'], 0);
+    expect(p.sku).toBe('213N');
+    expect(p.name).toBe('Tavuk Göğsü');
+    expect(p.price).toBe('3,99');
+    expect(p.image).toBe('http://x/y.png');
+    expect((p.raw as { POS: string }).POS).toBe('3');
+  });
+
+  it('sayısal POS hücresi de çalışır (number → string)', () => {
+    const p = rowToProduct([5, 'SKU5', 'Ürün', '10', ''], 0);
+    expect((p.raw as { POS: string }).POS).toBe('5');
+    expect(p.image).toBe('');
   });
 });

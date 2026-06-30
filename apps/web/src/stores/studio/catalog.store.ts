@@ -156,7 +156,7 @@ function applyArchetype(page: CatalogPage, arch: StudioPresetArchetype): void {
  * her sayfada slot dizisi sırası, yalnız !hidden && role==='product'.
  * Bu sıra recalculateLayout'un globalNumber atamasıyla birebir aynıdır (= ekrandaki 1,2,3).
  */
-function productSlotsInOrder(formas: StudioForma[]): StudioSlot[] {
+export function productSlotsInOrder(formas: StudioForma[]): StudioSlot[] {
   const out: StudioSlot[] = [];
   const pages = formas.flatMap((f) => f.pages).sort((a, b) => a.pageNumber - b.pageNumber);
   for (const page of pages) {
@@ -868,16 +868,24 @@ export const useCatalogStore = create<Store>()(
       _fillSlotsFromPool: (skuImageMap) => {
         const { formas, productPool, globalSettings, tempProductPool } = get();
 
-        const next = clone(formas);
-        const valid: StudioSlot[] = [];
+        // POS = ekrandaki slot numarası (globalNumber). YERLEŞTİRME SIRASINI YENİDEN KURMUYORUZ:
+        // doğrudan globalNumber'a keylenir. Eski hata, sırayı ham dizi düzeniyle (formas→pages→slots)
+        // yeniden kuruyordu; oysa globalNumber pageNumber'a göre sıralı atanır (recalculateLayout) →
+        // imposition sıralı şablonlarda (ör. pages [5,6,1,...]) POS 1 en soldaki sayfaya düşüyordu.
+        // Tek otorite: recalculateLayout'un globalNumber'ı. Önce tazele, sonra numaraya göre eşle.
+        const next = recalculateLayout(clone(formas), globalSettings.defaultGrid);
+        const byNumber = new Map<number, StudioSlot>();
         for (const f of next) {
           for (const p of f.pages) {
             for (const s of p.slots) {
-              if (!s.hidden && s.role === 'product') valid.push(s);
+              if (s.globalNumber != null) {
+                s.product = null;
+                byNumber.set(s.globalNumber, s);
+              }
             }
           }
         }
-        for (const s of valid) s.product = null;
+        const slotCount = byNumber.size;
 
         const placedSkus = new Set<string>();
         const overflow: ProductInfo[] = []; // POS slot sayısını aşan → bekleme havuzu
@@ -901,10 +909,10 @@ export const useCatalogStore = create<Store>()(
           const dbImage = product.sku ? skuImageMap?.[product.sku] : undefined;
           const withImage = { ...product, image: excelImage ?? dbImage };
 
-          if (posValue > 0 && posValue <= valid.length) {
-            valid[posValue - 1].product = withImage;
+          if (posValue > 0 && posValue <= slotCount) {
+            byNumber.get(posValue)!.product = withImage; // POS = globalNumber (ekrandaki slot no)
             if (product.sku) placedSkus.add(product.sku);
-          } else if (posValue > valid.length) {
+          } else if (posValue > slotCount) {
             // Tek-kaynak overflow kuralı: sığmayan ürün sessizce kaybolmaz.
             overflow.push(withImage);
           }

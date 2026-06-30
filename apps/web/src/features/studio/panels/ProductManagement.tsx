@@ -11,6 +11,7 @@ import api from '@/lib/api';
 import { toAbsoluteUrl } from '@/lib/upload';
 import { createProductDragImage } from '../utils/dragImage';
 import { ProductInfoSettings } from './ProductInfoSettings';
+import { rowToProduct, type ExcelCell } from './parseProductRow';
 import { Button } from '@/components/ui';
 
 // /products/with-images yanıt satırı — primaryImage relative imageKey (mutlak çevirim burada).
@@ -24,21 +25,6 @@ interface PoolProduct {
   primaryImage: string | null;
 }
 
-type ExcelRow = Record<string, string | number | undefined>;
-
-function rowToProduct(row: ExcelRow, i: number): ProductInfo {
-  const sku =
-    String(row.ARTNR ?? row.KOD ?? row.SKU ?? '').trim() || `u-${i}`;
-  return {
-    id: sku,
-    sku,
-    name: String(row.BEZEICHNUNG ?? row.URUN_ADI ?? row.AD ?? row.NAME ?? 'İsimsiz').trim(),
-    price: String(row.VK_NETTO ?? row.FIYAT ?? row.PRICE ?? '0').trim(),
-    category: String(row.KATEGORI ?? row.ARTGRP ?? row.CATEGORY ?? 'Yüklenen').trim(),
-    image: String(row.RESIM ?? row.IMAGE ?? '').trim(),
-    raw: row,
-  };
-}
 
 export function ProductManagement() {
   const productPool = useCatalogStore((s) => s.productPool);
@@ -122,10 +108,18 @@ export function ProductManagement() {
     reader.onload = (evt) => {
       const data = new Uint8Array(evt.target?.result as ArrayBuffer);
       const wb = XLSX.read(data, { type: 'array' });
-      const rows = XLSX.utils.sheet_to_json<ExcelRow>(wb.Sheets[wb.SheetNames[0]], {
-        defval: '',
+      // KONUM-bazlı oku: başlık metnine DEĞİL sütun SIRASINA bak. header:1 → dizi-satırlar.
+      // raw:false → hücreleri METİN olarak al; TR ondalık virgül ("4,59") SheetJS tarafından
+      // 459'a (binlik ayıracı sanılıp) bozulmasın.
+      const aoa = XLSX.utils.sheet_to_json<ExcelCell[]>(wb.Sheets[wb.SheetNames[0]], {
+        header: 1,
+        blankrows: false,
+        raw: false,
       });
-      const products = rows.map((r, i) => rowToProduct(r, i));
+      // İlk satır başlıksa (ilk hücre rakamla başlamıyorsa) atla; veri satırında POS sayıdır.
+      const firstCell = String(aoa[0]?.[0] ?? '').trim();
+      const body = aoa.length > 0 && !/^\d/.test(firstCell) ? aoa.slice(1) : aoa;
+      const products = body.map((cols, i) => rowToProduct(cols, i));
       setProductPool(products);
     };
     reader.readAsArrayBuffer(file);
@@ -137,21 +131,23 @@ export function ProductManagement() {
   };
 
   const downloadDemoExcel = () => {
-    const rows = [
-      { POS: 1, ARTNR: 'SKU-1001', BEZEICHNUNG: 'Domates 1 Kg', VK_NETTO: '12,90', KATEGORI: 'Sebze', RESIM: '' },
-      { POS: 2, ARTNR: 'SKU-1002', BEZEICHNUNG: 'Salatalık 1 Kg', VK_NETTO: '8,50', KATEGORI: 'Sebze', RESIM: '' },
-      { POS: 3, ARTNR: 'SKU-1003', BEZEICHNUNG: 'Süt 1 L', VK_NETTO: '15,75', KATEGORI: 'Süt Ürünleri', RESIM: '' },
-      { POS: 4, ARTNR: 'SKU-1004', BEZEICHNUNG: 'Yoğurt 1 Kg', VK_NETTO: '22,40', KATEGORI: 'Süt Ürünleri', RESIM: '' },
-      { POS: 5, ARTNR: 'SKU-1005', BEZEICHNUNG: 'Ekmek', VK_NETTO: '5,00', KATEGORI: 'Fırın', RESIM: '' },
-      { POS: 6, ARTNR: 'SKU-1006', BEZEICHNUNG: 'Yumurta 30lu', VK_NETTO: '49,90', KATEGORI: 'Kahvaltı', RESIM: '' },
-      { POS: 7, ARTNR: 'SKU-1007', BEZEICHNUNG: 'Peynir 250 g', VK_NETTO: '89,00', KATEGORI: 'Süt Ürünleri', RESIM: '' },
-      { POS: 8, ARTNR: 'SKU-1008', BEZEICHNUNG: 'Zeytin 500 g', VK_NETTO: '64,50', KATEGORI: 'Kahvaltı', RESIM: '' },
-      { POS: 9, ARTNR: 'SKU-1009', BEZEICHNUNG: 'Çay 500 g', VK_NETTO: '110,00', KATEGORI: 'İçecek', RESIM: '' },
-      { POS: 10, ARTNR: 'SKU-1010', BEZEICHNUNG: 'Kahve 250 g', VK_NETTO: '145,90', KATEGORI: 'İçecek', RESIM: '' },
-      { POS: 11, ARTNR: 'SKU-1011', BEZEICHNUNG: 'Şeker 1 Kg', VK_NETTO: '32,00', KATEGORI: 'Bakliyat', RESIM: '' },
-      { POS: 12, ARTNR: 'SKU-1012', BEZEICHNUNG: 'Un 5 Kg', VK_NETTO: '78,50', KATEGORI: 'Bakliyat', RESIM: '' },
+    // Kilitli sütun düzeni: POS · SKU · Ürün Adı · Fiyat · Görsel URL (sistem SIRAYA bakar).
+    const aoa: (string | number)[][] = [
+      ['POS', 'SKU', 'Ürün Adı', 'Fiyat', 'Görsel URL'],
+      [1, 'SKU-1001', 'Domates 1 Kg', '12,90', ''],
+      [2, 'SKU-1002', 'Salatalık 1 Kg', '8,50', ''],
+      [3, 'SKU-1003', 'Süt 1 L', '15,75', ''],
+      [4, 'SKU-1004', 'Yoğurt 1 Kg', '22,40', ''],
+      [5, 'SKU-1005', 'Ekmek', '5,00', ''],
+      [6, 'SKU-1006', 'Yumurta 30lu', '49,90', ''],
+      [7, 'SKU-1007', 'Peynir 250 g', '89,00', ''],
+      [8, 'SKU-1008', 'Zeytin 500 g', '64,50', ''],
+      [9, 'SKU-1009', 'Çay 500 g', '110,00', ''],
+      [10, 'SKU-1010', 'Kahve 250 g', '145,90', ''],
+      [11, 'SKU-1011', 'Şeker 1 Kg', '32,00', ''],
+      [12, 'SKU-1012', 'Un 5 Kg', '78,50', ''],
     ];
-    const ws = XLSX.utils.json_to_sheet(rows);
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Urunler');
     XLSX.writeFile(wb, 'matbaapro-ornek.xlsx');
@@ -180,7 +176,7 @@ export function ProductManagement() {
       <div className="bg-surface-panel rounded-radius-lg border border-border-default p-4 shadow-drop-sm">
         <div className="mb-3">
           <h4 className="text-label-sm text-text-secondary">Excel ile otomatik yerleştir</h4>
-          <p className="text-body-xs text-text-muted mt-0.5">POS / SIRA kolonu olan Excel, ürünleri numaralı hücrelere otomatik yerleştirir.</p>
+          <p className="text-body-xs text-text-muted mt-0.5">Sütun sırası sabit: 1=POS, 2=SKU, 3=Ürün Adı, 4=Fiyat, 5=Görsel. Başlık adı önemli değil; POS, numaralı hücreye yerleşir.</p>
         </div>
 
         <div className="mt-3">
@@ -378,14 +374,14 @@ export function ProductManagement() {
           </div>
           <hr className="border-border-default" />
           <div>
-            <h5 className="text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">Excel Sütunları</h5>
+            <h5 className="text-[11px] font-bold text-text-secondary uppercase tracking-wider mb-2">Excel Sütun Düzeni (sabit sıra)</h5>
             <div className="text-body-xs text-text-secondary space-y-1 p-2 bg-surface-subtle/30 rounded border border-border-default">
-              <div><strong>POS</strong> / SIRA / INDEX → otomatik yerleştirme sırası</div>
-              <div><strong>ARTNR</strong> / KOD / SKU → ürün kodu</div>
-              <div><strong>BEZEICHNUNG</strong> / URUN_ADI / AD → ürün adı</div>
-              <div><strong>VK_NETTO</strong> / FIYAT / PRICE → satış fiyatı</div>
-              <div><strong>KATEGORI</strong> / ARTGRP → kategori (gruplama)</div>
-              <div><strong>RESIM</strong> / IMAGE → görsel URL'si</div>
+              <div className="text-text-muted mb-1">Sistem başlığa değil, sütun SIRASINA bakar:</div>
+              <div><strong>1. sütun</strong> → POS (yerleştirme numarası = slot no)</div>
+              <div><strong>2. sütun</strong> → SKU (ürün kodu)</div>
+              <div><strong>3. sütun</strong> → Ürün Adı</div>
+              <div><strong>4. sütun</strong> → Fiyat</div>
+              <div><strong>5. sütun</strong> → Görsel URL (opsiyonel)</div>
             </div>
           </div>
         </div>
