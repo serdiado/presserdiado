@@ -1952,6 +1952,18 @@ function BannerCellMode() {
     updateSlotModuleData(cur!.pageNumber, slotId!, { cells });
   };
 
+  // Seçili hücrelerin HER BİRİNİN KENDİ font'una birleştirir (firstCell.font ile EZMEZ) → çok-hücre
+  // seçiminde her hücrenin kendi metin ayarları (renk/boyut/kalınlık) korunur. Güncel state'ten okur.
+  const updateCellsFont = (fontPatch: Partial<TypographyData>) => {
+    const cur = resolveCur();
+    const md: any = cur?.moduleData;
+    if (!md?.cells) return;
+    const cells = md.cells.map((c: any) =>
+      selectedCellIds.includes(c.id) ? { ...c, font: { ...c.font, ...fontPatch } } : c,
+    );
+    updateSlotModuleData(cur!.pageNumber, slotId!, { cells });
+  };
+
   // Metin ayarı uygula — ortak dispatchTextSetting + MODÜL adapter'ı (run→updateSlotModuleData /
   // cell→updateCells). Mantık tek kaynakta; burada yalnız yüzey farkları.
   const applyTextSetting = (def: TextSettingDef, value: RunValue) =>
@@ -1975,16 +1987,8 @@ function BannerCellMode() {
           updateSlotModuleData(cur!.pageNumber, slotId!, { cells });
         },
         // Her seçili hücrenin KENDİ güncel font'una birleştir → ardışık cell-apply'lar kompoze olur
-        // (firstCell.font snapshot'ı decimalScale'i geri almıyordu — düzeltildi).
-        applyCell: (patch) => {
-          const cur = resolveCur();
-          const md: any = cur?.moduleData;
-          if (!md?.cells) return;
-          const cells = md.cells.map((c: any) =>
-            selectedCellIds.includes(c.id) ? { ...c, font: { ...c.font, ...patch } } : c,
-          );
-          updateSlotModuleData(cur!.pageNumber, slotId!, { cells });
-        },
+        // ve çok-hücre seçiminde diğer hücrelerin ayarları ezilmez.
+        applyCell: (patch) => updateCellsFont(patch),
         clearRun: (property) => clearRunForSurface('module', slotId!, selectedCellIds, property),
         fallbackCellId: selectedCellIds[0] ?? '',
       },
@@ -2141,16 +2145,16 @@ function BannerCellMode() {
 
           <Divider />
 
-          {/* Yatay Hizalama */}
+          {/* Yatay Hizalama — her hücrenin kendi font'una birleştir (çok-hücrede ezme yok). */}
           <BannerTextAlignDropdown
             textAlign={firstCell.font.textAlign || 'center'}
-            onChange={(v) => updateCells({ font: { ...firstCell.font, textAlign: v } })}
+            onChange={(v) => updateCellsFont({ textAlign: v })}
           />
 
           {/* Dikey Hizalama */}
           <BannerTextVerticalAlignDropdown
             verticalAlign={firstCell.font.verticalAlign || 'middle'}
-            onChange={(v) => updateCells({ font: { ...firstCell.font, verticalAlign: v } })}
+            onChange={(v) => updateCellsFont({ verticalAlign: v })}
           />
         </>
       )}
