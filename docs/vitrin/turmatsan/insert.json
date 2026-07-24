@@ -1,0 +1,21 @@
+{
+  "category": "insert",
+  "categoryLabel": "İnsert",
+  "sourceUrl": "https://www.turmatsan.com/tr/Page/insert/",
+  "memberSourceUrl": "https://www.turmatsan.com/hesap/ (Ürünler > İnsert)",
+  "fetchedAt": "2026-07-24",
+  "status": "partial",
+  "suggestedSaleMode": "quote",
+  "pricingAxes": [],
+  "notes": "Üye panelinde de KONTROL EDİLDİ: İnsert galerisinde yalnız görsel + kod var, ebat/adet/fiyat hiçbir yerde (ne kamuya açık sayfada ne üye panelinde ne de genel 'Fiyat Listesi' dökümünde) YOK. 'Sepete At' butonuna tıklandığında da fiyat/ebat seçim modalı açılmadı — bu ürün muhtemelen kişiye özel teklif/kampanya paketi (gıda/restoran menü inserti gibi görünüyor, muhtemelen adet+tasarım bazlı özel fiyatlama). Sonuç: suggestedSaleMode 'upload' yerine 'quote' olarak GÜNCELLENDİ. Kesinleştirmek için müşteri temsilcisiyle görüşmek gerekiyor (444 11 30).",
+  "variants": [
+    { "code": "IN01", "size": null, "material": null, "processes": [], "sides": null, "quantity": null, "costRefTRY": null },
+    { "code": "IN02", "size": null, "material": null, "processes": [], "sides": null, "quantity": null, "costRefTRY": null },
+    { "code": "IN03", "size": null, "material": null, "processes": [], "sides": null, "quantity": null, "costRefTRY": null },
+    { "code": "IN04", "size": null, "material": null, "processes": [], "sides": null, "quantity": null, "costRefTRY": null },
+    { "code": "IN05", "size": null, "material": null, "processes": [], "sides": null, "quantity": null, "costRefTRY": null },
+    { "code": "IN06", "size": null, "material": null, "processes": [], "sides": null, "quantity": null, "costRefTRY": null },
+    { "code": "IN07", "size": null, "material": null, "processes": [], "sides": null, "quantity": null, "costRefTRY": null },
+    { "code": "IN08", "size": null, "material": null, "processes": [], "sides": null, "quantity": null, "costRefTRY": null }
+  ]
+}

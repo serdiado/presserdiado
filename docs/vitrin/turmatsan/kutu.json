@@ -1,0 +1,28 @@
+{
+  "category": "kutu",
+  "categoryLabel": "Kutu",
+  "sourceUrl": "https://www.turmatsan.com/tr/Page/kutu/",
+  "memberSourceUrl": "https://www.turmatsan.com/hesap/index.php?goster=fiyat-listesi (bölüm adı: 'Ürün Kutuları')",
+  "fetchedAt": "2026-07-24",
+  "status": "complete",
+  "suggestedSaleMode": "upload",
+  "pricingAxes": ["en/boy ölçüsü (14 kademe)"],
+  "notes": "Kamuya açık sayfada tablo yoktu, üye 'Fiyat Listesi'nde TAM tablo bulundu — 'quote' yerine 'upload' moduna alınabilir (müşteri kutusunun en-boyunu ölçüp en yakın KT kodunu seçer). 350 gr Amerikan Bristol, mat selefonlu, brüt 1000 adet (%1-9 fire olabilir). Fiyata bıçak+kesim+yan yapıştırma dahil. Dip yapıştırma varsa +1000 TL, kabartma lak istenirse +1750 TL. Yüksek adet/özel istekler müşteri temsilcisinden teklif alınır (çok büyük siparişlerde 'quote' moduna düşer).",
+  "extras": { "dipYapistirma": 1000, "kabartmaLak": 1750 },
+  "variants": [
+    { "code": "KT1", "size": "17.2x21.4 cm", "material": "350 gr Amerikan Bristol Mat Selefon", "quantity": 1000, "wholesaleTRY": 3700 },
+    { "code": "KT2", "size": "16x25.8 cm", "material": "350 gr Amerikan Bristol Mat Selefon", "quantity": 1000, "wholesaleTRY": 4300 },
+    { "code": "KT3", "size": "21.4x25.8 cm", "material": "350 gr Amerikan Bristol Mat Selefon", "quantity": 1000, "wholesaleTRY": 5200 },
+    { "code": "KT4", "size": "25.8x26.7 cm", "material": "350 gr Amerikan Bristol Mat Selefon", "quantity": 1000, "wholesaleTRY": 5600 },
+    { "code": "KT5", "size": "21.4x34.4 cm", "material": "350 gr Amerikan Bristol Mat Selefon", "quantity": 1000, "wholesaleTRY": 6300 },
+    { "code": "KT6", "size": "26.7x34.4 cm", "material": "350 gr Amerikan Bristol Mat Selefon", "quantity": 1000, "wholesaleTRY": 7300 },
+    { "code": "KT7", "size": "26.7x43 cm", "material": "350 gr Amerikan Bristol Mat Selefon", "quantity": 1000, "wholesaleTRY": 8700 },
+    { "code": "KT8", "size": "21.4x60 cm", "material": "350 gr Amerikan Bristol Mat Selefon", "quantity": 1000, "wholesaleTRY": 9600 },
+    { "code": "KT9", "size": "32x43 cm", "material": "350 gr Amerikan Bristol Mat Selefon", "quantity": 1000, "wholesaleTRY": 10000 },
+    { "code": "KT10", "size": "26.7x60 cm", "material": "350 gr Amerikan Bristol Mat Selefon", "quantity": 1000, "wholesaleTRY": 11500 },
+    { "code": "KT11", "size": "32x51.6 cm", "material": "350 gr Amerikan Bristol Mat Selefon", "quantity": 1000, "wholesaleTRY": 11500 },
+    { "code": "KT12", "size": "37x51.6 cm", "material": "350 gr Amerikan Bristol Mat Selefon", "quantity": 1000, "wholesaleTRY": 12700 },
+    { "code": "KT13", "size": "42.8x51.6 cm", "material": "350 gr Amerikan Bristol Mat Selefon", "quantity": 1000, "wholesaleTRY": 13800 },
+    { "code": "KT14", "size": "42.8x60 cm", "material": "350 gr Amerikan Bristol Mat Selefon", "quantity": 1000, "wholesaleTRY": 16000 }
+  ]
+}

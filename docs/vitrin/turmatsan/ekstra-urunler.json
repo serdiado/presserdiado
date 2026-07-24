@@ -1,0 +1,25 @@
+{
+  "category": "ekstra-urunler",
+  "categoryLabel": "Ekstra Ürünler",
+  "sourceUrl": "https://www.turmatsan.com/tr/Page/ekstra_urunler/",
+  "memberSourceUrl": "https://www.turmatsan.com/hesap/index.php?goster=fiyat-listesi (sekme: 'Ekstra Ürünler')",
+  "fetchedAt": "2026-07-24",
+  "status": "complete",
+  "suggestedSaleMode": "none",
+  "pricingAxes": ["ebat (A4/A3)", "adet kademesi", "kağıt kalınlığı"],
+  "notes": "12 kalemin tamamı ÜYE fiyatıyla doğrulandı. Bunlar bağımsız ürün DEĞİL, ek hizmet (broşür kırımı/katlama + dosya yapıştırma) — vitrinde ayrı kategori GÖSTERİLMEMELİ; broşür fiyat hesabında ek maliyet kalemi olarak kullanılmalı. 4BK170U'nun üye fiyatı sayfada boş/gösterilmedi (muhtemelen özel/nadir kullanılan kalem, sipariş anında temsilciden teyit).",
+  "variants": [
+    { "code": "A4-1000KIRIM", "name": "Broşür Kırım", "size": "A4", "material": "170 gr'a kadar", "processes": ["Kırım"], "quantity": 1000, "wholesaleTRY": 250, "retailRefTRY": 300 },
+    { "code": "A4-2000KIRIM", "name": "Broşür Kırım", "size": "A4", "material": "170 gr'a kadar", "processes": ["Kırım"], "quantity": 2000, "wholesaleTRY": 320, "retailRefTRY": 400 },
+    { "code": "A4-5000KIRIM", "name": "Broşür Kırım", "size": "A4", "material": "170 gr'a kadar", "processes": ["Kırım"], "quantity": 5000, "wholesaleTRY": 500, "retailRefTRY": 625 },
+    { "code": "A4-10000KIRIM", "name": "Broşür Kırım", "size": "A4", "material": "170 gr'a kadar", "processes": ["Kırım"], "quantity": 10000, "wholesaleTRY": 900, "retailRefTRY": 1125 },
+    { "code": "KALINKIRIM-A4-1000", "name": "Broşür Kırım Kalın", "size": "A4", "material": "kalın kağıt", "processes": ["Kırım"], "quantity": 1000, "wholesaleTRY": 600, "retailRefTRY": 750 },
+    { "code": "KALINKIRIM-A4-2000", "name": "Broşür Kırım Kalın", "size": "A4", "material": "kalın kağıt", "processes": ["Kırım"], "quantity": 2000, "wholesaleTRY": 1000, "retailRefTRY": 1250 },
+    { "code": "4BK170U", "name": "Broşür Kırım", "size": "A4", "material": "170 gr", "processes": ["Kırım"], "quantity": 4000, "wholesaleTRY": null, "retailRefTRY": 825, "note": "üye fiyat listesinde tutar boş görünüyor, siparişte teyit edilmeli" },
+    { "code": "DOSYAP", "name": "Dosya Yapıştırma", "size": null, "material": null, "processes": ["Yapıştırma"], "quantity": 1000, "wholesaleTRY": 300, "retailRefTRY": 300 },
+    { "code": "A3-1000KIRIM", "name": "Broşür Kırım", "size": "A3", "material": "170 gr'a kadar", "processes": ["Kırım"], "quantity": 1000, "wholesaleTRY": 650, "retailRefTRY": 825 },
+    { "code": "A3-2000KIRIM", "name": "Broşür Kırım", "size": "A3", "material": "170 gr'a kadar", "processes": ["Kırım"], "quantity": 2000, "wholesaleTRY": 920, "retailRefTRY": 1150 },
+    { "code": "A3-5000KIRIM", "name": "Broşür Kırım", "size": "A3", "material": "170 gr'a kadar", "processes": ["Kırım"], "quantity": 5000, "wholesaleTRY": 1530, "retailRefTRY": 1925 },
+    { "code": "A3-10000KIRIM", "name": "Broşür Kırım", "size": "A3", "material": "170 gr'a kadar", "processes": ["Kırım"], "quantity": 10000, "wholesaleTRY": 2650, "retailRefTRY": 3325 }
+  ]
+}

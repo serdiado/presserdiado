@@ -1,0 +1,19 @@
+{
+  "category": "magnet",
+  "categoryLabel": "Magnet",
+  "sourceUrl": "https://www.turmatsan.com/tr/Page/magnet/",
+  "memberSourceUrl": "https://www.turmatsan.com/hesap/index.php?goster=fiyat-listesi",
+  "fetchedAt": "2026-07-24",
+  "status": "complete",
+  "suggestedSaleMode": "upload",
+  "pricingAxes": ["kesim türü", "adet (1000 / 10000+)"],
+  "notes": "Ebat teyit edildi: 46x68 mm, 60 mikron, renkli. Üçüncü bir kod da var: MAG3 = özel ebat, cm² başına birim fiyat (kare kesim büyük/özel boy magnet için). 10.000+ alımda birim fiyat düşüyor (10+MAG1/2/3 kodları).",
+  "variants": [
+    { "code": "MAG1", "size": "46x68 mm", "material": "Magnet 60 mikron", "processes": ["Parlak Selefon", "Özel Kesim"], "quantity": 1000, "wholesaleTRY": 700, "retailRefTRY": 1000 },
+    { "code": "MAG2", "size": "46x68 mm", "material": "Magnet 60 mikron", "processes": ["Parlak Selefon", "Oval Kesim"], "quantity": 1000, "wholesaleTRY": 630, "retailRefTRY": 900 },
+    { "code": "MAG3", "size": "özel ebat (cm² birim fiyat)", "material": "Magnet 60 mikron", "processes": [], "quantity": 1000, "wholesaleTRY": 24.0, "unit": "TL/cm²", "retailRefTRY": null },
+    { "code": "10+MAG1", "size": "46x68 mm", "material": "Magnet 60 mikron", "processes": ["Parlak Selefon", "Özel Kesim"], "quantity": 10000, "wholesaleTRY": 670, "note": "10.000 adet ve üzeri birim fiyatı" },
+    { "code": "10+MAG2", "size": "46x68 mm", "material": "Magnet 60 mikron", "processes": ["Parlak Selefon", "Oval Kesim"], "quantity": 10000, "wholesaleTRY": 620, "note": "10.000 adet ve üzeri birim fiyatı" },
+    { "code": "10+MAG3", "size": "özel ebat (cm² birim fiyat)", "material": "Magnet 60 mikron", "processes": [], "quantity": 10000, "wholesaleTRY": 21.0, "unit": "TL/cm²" }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "category": "makbuz",
+  "categoryLabel": "Makbuz",
+  "sourceUrl": "https://www.turmatsan.com/tr/Page/makbuz/",
+  "memberSourceUrl": "https://www.turmatsan.com/hesap/index.php?goster=fiyat-listesi",
+  "fetchedAt": "2026-07-24",
+  "status": "complete",
+  "suggestedSaleMode": "upload",
+  "pricingAxes": ["ebat", "renk (tek renk siyah / renkli)", "cilt adedi"],
+  "notes": "8 varyantın tamamı, ebat ve kağıt yapısıyla doğrulandı: '1 Asıl 1 Suret' = 2 nüsha (asıl+suret) kendinden kopyalı (karbonsuz) 54gr kağıt. '50'lik' = her koçanda 50 yaprak. M3/M4 (ve MR3/MR4) fiyat farkının nedeni netleşti: aynı 10-cilt grubunda FARKLI ebat (M3=14x20cm, M4=20x29cm).",
+  "variants": [
+    { "code": "M1", "name": "Tek Renk Siyah", "size": "10x14 cm", "material": "54 gr Kendinden Kopyalı (1 Asıl 1 Suret)", "quantity": 20, "quantityUnit": "cilt (50 yaprak/cilt)", "wholesaleTRY": 1200, "retailRefTRY": 1400 },
+    { "code": "M2", "name": "Tek Renk Siyah", "size": "10x20 cm", "material": "54 gr Kendinden Kopyalı (1 Asıl 1 Suret)", "quantity": 30, "quantityUnit": "cilt (50 yaprak/cilt)", "wholesaleTRY": 1900, "retailRefTRY": 2200 },
+    { "code": "M3", "name": "Tek Renk Siyah", "size": "14x20 cm", "material": "54 gr Kendinden Kopyalı (1 Asıl 1 Suret)", "quantity": 10, "quantityUnit": "cilt (50 yaprak/cilt)", "wholesaleTRY": 900, "retailRefTRY": 1000 },
+    { "code": "M4", "name": "Tek Renk Siyah", "size": "20x29 cm", "material": "54 gr Kendinden Kopyalı (1 Asıl 1 Suret)", "quantity": 10, "quantityUnit": "cilt (50 yaprak/cilt)", "wholesaleTRY": 1500, "retailRefTRY": 1700 },
+    { "code": "MR1", "name": "Renkli", "size": "10x14 cm", "material": "54 gr Kendinden Kopyalı (1 Asıl 1 Suret)", "quantity": 20, "quantityUnit": "cilt (50 yaprak/cilt)", "wholesaleTRY": 1300, "retailRefTRY": 1700 },
+    { "code": "MR2", "name": "Renkli", "size": "10x20 cm", "material": "54 gr Kendinden Kopyalı (1 Asıl 1 Suret)", "quantity": 30, "quantityUnit": "cilt (50 yaprak/cilt)", "wholesaleTRY": 2200, "retailRefTRY": 2850 },
+    { "code": "MR3", "name": "Renkli", "size": "14x20 cm", "material": "54 gr Kendinden Kopyalı (1 Asıl 1 Suret)", "quantity": 10, "quantityUnit": "cilt (50 yaprak/cilt)", "wholesaleTRY": 1200, "retailRefTRY": 1550 },
+    { "code": "MR4", "name": "Renkli", "size": "20x29 cm", "material": "54 gr Kendinden Kopyalı (1 Asıl 1 Suret)", "quantity": 10, "quantityUnit": "cilt (50 yaprak/cilt)", "wholesaleTRY": 1800, "retailRefTRY": 2350 }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "category": "notluk",
+  "categoryLabel": "Notluk",
+  "sourceUrl": null,
+  "memberSourceUrl": "https://www.turmatsan.com/hesap/index.php?goster=fiyat-listesi (bölüm adı: 'Notluk')",
+  "fetchedAt": "2026-07-24",
+  "status": "complete",
+  "suggestedSaleMode": "upload",
+  "pricingAxes": [],
+  "notes": "YENİ KATEGORİ, tek varyant — kamuya açık ana menüde YOK, yalnız üye 'Fiyat Listesi'nde bulundu. Küçük cep notluğu (masaüstü/promosyon ürünü).",
+  "variants": [
+    { "code": "NOTLUK", "size": "7.8x14 cm", "material": "İç: 110 gr 1.Hamur Renkli / Dış: 350 gr Amerikan Bristol Mat Selefon", "quantityUnit": "70'lik (70 yaprak)", "quantity": 1000, "wholesaleTRY": 16200 }
+  ]
+}

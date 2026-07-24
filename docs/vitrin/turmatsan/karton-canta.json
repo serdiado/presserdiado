@@ -1,0 +1,19 @@
+{
+  "category": "karton-canta",
+  "categoryLabel": "Karton Çanta",
+  "sourceUrl": "https://www.turmatsan.com/tr/Page/karton_canta/",
+  "memberSourceUrl": "https://www.turmatsan.com/hesap/index.php?goster=fiyat-listesi (bölüm adı: 'Çantalar')",
+  "fetchedAt": "2026-07-24",
+  "status": "complete",
+  "suggestedSaleMode": "upload",
+  "pricingAxes": ["ebat (4 boy)", "malzeme (Bristol/Kraft)", "işlem (normal lak/kabartma lak/özel desen)"],
+  "notes": "Kamuya açık sayfada tablo yoktu, üye 'Fiyat Listesi'nde TAM tablo bulundu — bu ürün de yapılandırılmış katalog satışına uygun, 'quote' yerine 'upload' moduna alınabilir. 210 gr Amerikan Bristol, parlak veya mat selefon (KRAFT modelleri 200gr tek renk, selefonsuz). Fiyat yapısı iki kademeli: 500 adet / 1000 adet taban fiyatı + 'ilave her 1000 adet' birim fiyatı. İşlem ek ücretleri (normal lak / kabartma lak / özel desen) sabit ek ücret olarak ayrı sütunda. Çanta dosyalarında ip kodu ve selefon türü (mat/parlak) müşteri tarafından belirtiliyor.",
+  "variants": [
+    { "code": "CNT1", "size": "25x37x8 cm", "material": "210 gr Amerikan Bristol", "wholesale500": 9850, "wholesale1000": 14400, "wholesalePerExtra1000TRY": 11875, "extras": { "normalLak": 1250, "kabartmaLak": 1875, "ozelDesen": 2500 } },
+    { "code": "CNT1-KRAFT", "size": "25x37x8 cm", "material": "200 gr Kraft (Tek Renk)", "wholesale500": 6900, "wholesale1000": 10200, "wholesalePerExtra1000TRY": 8500, "extras": { "normalLak": 0, "kabartmaLak": 0, "ozelDesen": 2500 } },
+    { "code": "CNT2", "size": "38x23x9 cm", "material": "210 gr Amerikan Bristol", "wholesale500": 10800, "wholesale1000": 15600, "wholesalePerExtra1000TRY": 14375, "extras": { "normalLak": 1250, "kabartmaLak": 1875, "ozelDesen": 2500 } },
+    { "code": "CNT3", "size": "17x24x7 cm", "material": "210 gr Amerikan Bristol", "wholesale500": 9000, "wholesale1000": 11400, "wholesalePerExtra1000TRY": 8125, "extras": { "normalLak": 1000, "kabartmaLak": 1500, "ozelDesen": 2500 } },
+    { "code": "CNT3-KRAFT", "size": "17x24x7 cm", "material": "200 gr Kraft (Tek Renk)", "wholesale500": 6600, "wholesale1000": 8400, "wholesalePerExtra1000TRY": 6875, "extras": { "normalLak": 0, "kabartmaLak": 0, "ozelDesen": 2500 } },
+    { "code": "CNT4", "size": "51x33x13 cm", "material": "210 gr Amerikan Bristol", "wholesale500": 13800, "wholesale1000": 22800, "wholesalePerExtra1000TRY": 19375, "extras": { "normalLak": 1600, "kabartmaLak": 2250, "ozelDesen": 5000 } }
+  ]
+}

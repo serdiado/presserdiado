@@ -1,0 +1,23 @@
+{
+  "category": "sunum-dosyasi",
+  "categoryLabel": "Sunum Dosyası",
+  "sourceUrl": "https://www.turmatsan.com/tr/Page/sunum_dosyasi/",
+  "memberSourceUrl": "https://www.turmatsan.com/hesap/index.php?goster=fiyat-listesi (bölüm adı: 'Dosyalar')",
+  "fetchedAt": "2026-07-24",
+  "status": "complete",
+  "suggestedSaleMode": "upload",
+  "pricingAxes": ["baskı yönü", "selefon türü", "lak", "adet (500/1000)"],
+  "notes": "Ebat doğrulandı: kapalı hali 22.5x31 cm, renkli. Fiyatlara kulakçık yapıştırma dahil. FAND kodu üye fiyat listesinde YOK — muhtemelen üretimden kaldırıldı, kaldırıldı. Yeni kod ailesi keşfedildi: AVD500/AVD1000 (Avukat Dosyası — 300gr Bristol, tek yön, arkası siyah, selefonsuz; dosya teli DAHİL DEĞİL; selefon istenirse 500 adet +850TL / 1000 adet +1000TL ekstra). Not: laklı dosyalarda lak yoğunluğuna göre ekstra ücret talep edilebilir.",
+  "variants": [
+    { "code": "MND500", "name": "Mat Selefon (500 adet)", "size": "22.5x31 cm (kapalı)", "material": "350 gr Kuşe", "processes": ["Tek Yön Çok Renkli", "Mat Selefon", "İçi Tek Renk"], "quantity": 500, "wholesaleTRY": 5900 },
+    { "code": "KLD500", "name": "Kabartma Laklı (500 adet)", "size": "22.5x31 cm (kapalı)", "material": "350 gr Kuşe", "processes": ["Tek Yön Çok Renkli", "Mat Selefon", "Kabartma Lak", "İçi Tek Renk"], "quantity": 500, "wholesaleTRY": 6400 },
+    { "code": "PD", "name": "Parlak Selefon", "size": "22.5x31 cm (kapalı)", "material": "350 gr Kuşe", "processes": ["Tek Yön Çok Renkli", "Parlak Selefon"], "quantity": 1000, "wholesaleTRY": 8750, "retailRefTRY": 10900 },
+    { "code": "MND", "name": "Mat Selefon", "size": "22.5x31 cm (kapalı)", "material": "350 gr Kuşe", "processes": ["Tek Yön Çok Renkli", "Mat Selefon", "İçi Tek Renk"], "quantity": 1000, "wholesaleTRY": 9000, "retailRefTRY": 11000 },
+    { "code": "KLD", "name": "Kabartma Laklı", "size": "22.5x31 cm (kapalı)", "material": "350 gr Kuşe", "processes": ["Tek Yön Çok Renkli", "Mat Selefon", "Kabartma Lak", "İçi Tek Renk"], "quantity": 1000, "wholesaleTRY": 9750, "retailRefTRY": 11300 },
+    { "code": "CYPD", "name": "Çift Yön Parlak", "size": "22.5x31 cm (kapalı)", "material": "350 gr Kuşe", "processes": ["Çift Yön", "Parlak Selefon"], "quantity": 1000, "wholesaleTRY": 11250, "retailRefTRY": 14400 },
+    { "code": "CYMD", "name": "Çift Yön Mat", "size": "22.5x31 cm (kapalı)", "material": "350 gr Kuşe", "processes": ["Çift Yön", "Mat Selefon"], "quantity": 1000, "wholesaleTRY": 11500, "retailRefTRY": 14500 },
+    { "code": "CYML4D", "name": "Çift Yön Mat Laklı", "size": "22.5x31 cm (kapalı)", "material": "400 gr Kuşe", "processes": ["Çift Yön Renkli", "Mat Selefon", "Lak"], "quantity": 1000, "wholesaleTRY": 15000, "retailRefTRY": 19000 },
+    { "code": "AVD500", "name": "Avukat Dosyası (500 adet)", "size": "22.5x31 cm (kapalı)", "material": "300 gr Bristol", "processes": ["Tek Yön", "Arka Siyah", "Selefonsuz"], "quantity": 500, "wholesaleTRY": 5000, "note": "Dosya teli dahil değil. Selefon istenirse +850 TL." },
+    { "code": "AVD1000", "name": "Avukat Dosyası", "size": "22.5x31 cm (kapalı)", "material": "300 gr Bristol", "processes": ["Tek Yön", "Arka Siyah", "Selefonsuz"], "quantity": 1000, "wholesaleTRY": 6150, "note": "Dosya teli dahil değil. Selefon istenirse +1000 TL." }
+  ]
+}

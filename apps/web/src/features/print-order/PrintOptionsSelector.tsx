@@ -20,6 +20,12 @@ interface PrintOptionsSelectorProps {
   quote?: PriceQuote | null;
   quoteLoading?: boolean;
   quoteError?: string | null;
+  // Paket-fiyatlı ürünler: adet serbest sayı yerine bu listeden seçilir (turmatsan kataloğu).
+  quantityChoices?: number[];
+  // Adet birimi etiketi (ör. "cilt") — paket ürünlerinde koçan/kutu bazlı satış için.
+  quantityUnit?: string;
+  // Kategori başlığı override'ları (configSchema.ui.optionLabels) — CATEGORY_LABELS üstüne biner.
+  categoryLabels?: Record<string, string>;
 }
 
 export function PrintOptionsSelector({
@@ -32,23 +38,44 @@ export function PrintOptionsSelector({
   quote,
   quoteLoading,
   quoteError,
+  quantityChoices,
+  quantityUnit,
+  categoryLabels,
 }: PrintOptionsSelectorProps) {
   const set = (optionKey: keyof PrintOptionsValue, next: string) =>
     onChange({ ...value, [optionKey]: next });
+  const labels = { ...CATEGORY_LABELS, ...(categoryLabels ?? {}) };
+  const unit = quantityUnit ?? 'adet';
 
   return (
     <div className="space-y-3">
-      {/* Adet */}
+      {/* Adet — paket ürünlerinde geçerli paketlerden seçim, aksi halde serbest sayı. */}
       <label className="block">
-        <span className="text-xs font-semibold text-text-secondary">Adet</span>
-        <input
-          type="number"
-          min={1}
-          max={100000}
-          value={quantity}
-          onChange={(e) => onQuantityChange(Math.max(1, parseInt(e.target.value) || 1))}
-          className="w-full mt-1 text-sm border border-border-strong rounded px-2 py-1.5 outline-none focus:border-border-strong bg-surface-panel"
-        />
+        <span className="text-xs font-semibold text-text-secondary">
+          Adet{quantityUnit && quantityUnit !== 'adet' ? ` (${quantityUnit})` : ''}
+        </span>
+        {quantityChoices && quantityChoices.length > 0 ? (
+          <select
+            value={quantity}
+            onChange={(e) => onQuantityChange(parseInt(e.target.value))}
+            className="w-full mt-1 text-sm border border-border-strong rounded px-2 py-1.5 bg-surface-panel outline-none focus:border-border-strong"
+          >
+            {quantityChoices.map((q) => (
+              <option key={q} value={q}>
+                {q.toLocaleString('tr-TR')} {unit}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type="number"
+            min={1}
+            max={100000}
+            value={quantity}
+            onChange={(e) => onQuantityChange(Math.max(1, parseInt(e.target.value) || 1))}
+            className="w-full mt-1 text-sm border border-border-strong rounded px-2 py-1.5 outline-none focus:border-border-strong bg-surface-panel"
+          />
+        )}
       </label>
 
       {/* Kategori seçimleri */}
@@ -64,7 +91,7 @@ export function PrintOptionsSelector({
         return (
           <label key={category} className="block">
             <span className="text-xs font-semibold text-text-secondary flex items-center gap-1">
-              {CATEGORY_LABELS[category] ?? category}
+              {labels[category] ?? category}
               {locked && <Lock size={11} className="text-text-muted" />}
             </span>
 

@@ -1,0 +1,33 @@
+{
+  "category": "el-ilani-afis",
+  "categoryLabel": "El İlanı / Afiş",
+  "sourceUrl": "https://www.turmatsan.com/tr/Page/el_ilani___afis/",
+  "memberSourceUrl": "https://www.turmatsan.com/hesap/index.php?goster=fiyat-listesi",
+  "fetchedAt": "2026-07-24",
+  "status": "complete",
+  "suggestedSaleMode": "upload",
+  "pricingAxes": ["ebat", "adet kademesi"],
+  "notes": "20 varyantın tamamı, ÜYE (toptan) fiyatıyla doğrulandı. El ilanı 105gr Kuşe tek yön; kodlardaki A7/A5/A4/A3 de broşürdeki gibi gerçek ISO ölçü DEĞİL (gerçek cm'ler aşağıda). Afiş bitmiş ebadı 34x49 / 49x69 cm (perakende sayfasındaki 35x50/50x70 nominal ebat, bitmiş ölçü farklı — üye verisi esas alınır). ELI1/ELI2 kodları üye görünümünde de yok, liste ELI3'ten başlıyor (muhtemelen üretimden kalktı).",
+  "variants": [
+    { "code": "ELI3", "size": "9.2x20 cm", "material": "105 gr Kuşe", "sides": "tek", "quantity": 6000, "wholesaleTRY": 1700, "retailRefTRY": 2200 },
+    { "code": "ELI4", "size": "9.2x20 cm", "material": "105 gr Kuşe", "sides": "tek", "quantity": 12000, "wholesaleTRY": 3100, "retailRefTRY": 4100 },
+    { "code": "ELI5", "size": "13.8x20 cm", "material": "105 gr Kuşe", "sides": "tek", "quantity": 2000, "wholesaleTRY": 900, "retailRefTRY": 1250 },
+    { "code": "ELI6", "size": "13.8x20 cm", "material": "105 gr Kuşe", "sides": "tek", "quantity": 4000, "wholesaleTRY": 1650, "retailRefTRY": 2100 },
+    { "code": "ELI7", "size": "13.8x20 cm", "material": "105 gr Kuşe", "sides": "tek", "quantity": 6000, "wholesaleTRY": 2450, "retailRefTRY": 3200 },
+    { "code": "ELI8", "size": "13.8x20 cm", "material": "105 gr Kuşe", "sides": "tek", "quantity": 8000, "wholesaleTRY": 3100, "retailRefTRY": 4000 },
+    { "code": "ELI9", "size": "19x27.2 cm", "material": "105 gr Kuşe", "sides": "tek", "quantity": 2000, "wholesaleTRY": 1450, "retailRefTRY": 1900 },
+    { "code": "ELI10", "size": "19x27.2 cm", "material": "105 gr Kuşe", "sides": "tek", "quantity": 4000, "wholesaleTRY": 2800, "retailRefTRY": 3700 },
+    { "code": "ELI11", "size": "19x27.2 cm", "material": "105 gr Kuşe", "sides": "tek", "quantity": 6000, "wholesaleTRY": 4100, "retailRefTRY": 5200 },
+    { "code": "ELI12", "size": "19x27.2 cm", "material": "105 gr Kuşe", "sides": "tek", "quantity": 8000, "wholesaleTRY": 5300, "retailRefTRY": 6700 },
+    { "code": "ELI13", "size": "27.5x40 cm", "material": "105 gr Kuşe", "sides": "tek", "quantity": 2000, "wholesaleTRY": 2800, "retailRefTRY": 3700 },
+    { "code": "ELI14", "size": "27.5x40 cm", "material": "105 gr Kuşe", "sides": "tek", "quantity": 4000, "wholesaleTRY": 5300, "retailRefTRY": 6700 },
+    { "code": "ELI15", "size": "27.5x40 cm", "material": "105 gr Kuşe", "sides": "tek", "quantity": 6000, "wholesaleTRY": 7800, "retailRefTRY": 9900 },
+    { "code": "ELI16", "size": "27.5x40 cm", "material": "105 gr Kuşe", "sides": "tek", "quantity": 8000, "wholesaleTRY": 10000, "retailRefTRY": 12800 },
+    { "code": "AF1", "size": "34x49 cm", "material": "105 gr Kuşe", "sides": "tek", "quantity": 250, "wholesaleTRY": 1750, "retailRefTRY": 2300 },
+    { "code": "AF2", "size": "34x49 cm", "material": "105 gr Kuşe", "sides": "tek", "quantity": 500, "wholesaleTRY": 2250, "retailRefTRY": 3000 },
+    { "code": "AF3", "size": "34x49 cm", "material": "105 gr Kuşe", "sides": "tek", "quantity": 1000, "wholesaleTRY": 2950, "retailRefTRY": 3850 },
+    { "code": "AF4", "size": "49x69 cm", "material": "105 gr Kuşe", "sides": "tek", "quantity": 250, "wholesaleTRY": 2700, "retailRefTRY": 3500 },
+    { "code": "AF5", "size": "49x69 cm", "material": "105 gr Kuşe", "sides": "tek", "quantity": 500, "wholesaleTRY": 3000, "retailRefTRY": 3900 },
+    { "code": "AF6", "size": "49x69 cm", "material": "105 gr Kuşe", "sides": "tek", "quantity": 1000, "wholesaleTRY": 4150, "retailRefTRY": 5400 }
+  ]
+}

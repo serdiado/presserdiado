@@ -1,0 +1,12 @@
+{
+  "category": "takvim",
+  "categoryLabel": "Takvim",
+  "sourceUrl": "https://www.turmatsan.com/tr/Page/takvim/",
+  "memberSourceUrl": "https://www.turmatsan.com/hesap/ (Ürünler sekme listesi kontrol edildi)",
+  "fetchedAt": "2026-07-24",
+  "status": "complete",
+  "suggestedSaleMode": "quote",
+  "pricingAxes": [],
+  "notes": "SONUÇ KESİNLEŞTİ: üye panelindeki 'Ürünler' sekme listesinde (15 sekme: Kartvizit...Ekstra Ürünler) Takvim HİÇ YOK — yani üyelere bile yapılandırılmış katalog olarak sunulmuyor. Kamuya açık sayfadaki 'boş liste' bulgusuyla tutarlı. quote modu + sezonluk (yıl sonu) olarak kesinleşti.",
+  "variants": []
+}

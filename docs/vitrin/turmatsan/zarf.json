@@ -1,0 +1,16 @@
+{
+  "category": "zarf",
+  "categoryLabel": "Zarf",
+  "sourceUrl": "https://www.turmatsan.com/tr/Page/zarf/",
+  "memberSourceUrl": "https://www.turmatsan.com/hesap/index.php?goster=fiyat-listesi",
+  "fetchedAt": "2026-07-24",
+  "status": "complete",
+  "suggestedSaleMode": "upload",
+  "pricingAxes": ["zarf tipi (diplomat/torba)", "renk (tek renk/renkli)"],
+  "notes": "3 varyantın tamamı ÜYE fiyatıyla doğrulandı. Fiyat yapısı 'taban fiyat + ilave 1000/500 adet için birim fiyat' şeklinde (setup/kalıp maliyeti ilk partiye yüklü, sonraki partiler ucuz) — pricingRules'a bu iki-kademeli yapı olarak girilmeli, düz adet-başı fiyat DEĞİL. Z1'de ayrıca ilave renk (+400 TL) ve tiraj/numaralandırma (1000 adet için +100 TL) seçenekleri var.",
+  "variants": [
+    { "code": "Z1", "name": "Diplomat Tek Renk", "size": "10.5x24 cm", "material": "110 gr", "quantity": 1000, "wholesaleTRY": 1750, "wholesalePerExtra1000TRY": 1075, "retailRefTRY": 2100, "extras": { "ilaveRenk": 400, "tirajNumaralandirma1000Adet": 100 } },
+    { "code": "Z2", "name": "Diplomat Renkli", "size": "10.5x24 cm", "material": "110 gr", "quantity": 1000, "wholesaleTRY": 2375, "wholesalePerExtra1000TRY": 1250, "retailRefTRY": 2850 },
+    { "code": "Z3", "name": "Torba Zarf Renkli", "size": "24x32 cm", "material": "110 gr", "quantity": 500, "wholesaleTRY": 3500, "wholesalePerExtra500TRY": 1875, "retailRefTRY": 4500 }
+  ]
+}

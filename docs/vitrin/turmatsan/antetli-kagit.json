@@ -1,0 +1,19 @@
+{
+  "category": "antetli-kagit",
+  "categoryLabel": "Antetli Kağıt",
+  "sourceUrl": "https://www.turmatsan.com/tr/Page/antetli_kagit/",
+  "memberSourceUrl": "https://www.turmatsan.com/hesap/index.php?goster=fiyat-listesi",
+  "fetchedAt": "2026-07-24",
+  "status": "complete",
+  "suggestedSaleMode": "upload",
+  "pricingAxes": ["ebat (A5/A4)", "adet kademesi"],
+  "notes": "6 varyantın tamamı, ÜYE fiyatıyla ve gerçek ebatla doğrulandı (bu kategoride A5/A4 gerçek ISO ölçüsüne yakın, broşürdeki gibi sapma yok).",
+  "variants": [
+    { "code": "ANT1", "size": "15x21 cm", "material": "90 gr 1.Hamur", "sides": "tek", "quantity": 4000, "wholesaleTRY": 1800, "retailRefTRY": 2100 },
+    { "code": "ANT2", "size": "15x21 cm", "material": "90 gr 1.Hamur", "sides": "tek", "quantity": 8000, "wholesaleTRY": 3500, "retailRefTRY": 4000 },
+    { "code": "ANT3", "size": "15x21 cm", "material": "90 gr 1.Hamur", "sides": "tek", "quantity": 12000, "wholesaleTRY": 5000, "retailRefTRY": 6000 },
+    { "code": "ANT4", "size": "21x29.7 cm", "material": "90 gr 1.Hamur", "sides": "tek", "quantity": 2000, "wholesaleTRY": 1700, "retailRefTRY": 2000 },
+    { "code": "ANT5", "size": "21x29.7 cm", "material": "90 gr 1.Hamur", "sides": "tek", "quantity": 4000, "wholesaleTRY": 3300, "retailRefTRY": 3900 },
+    { "code": "ANT6", "size": "21x29.7 cm", "material": "90 gr 1.Hamur", "sides": "tek", "quantity": 6000, "wholesaleTRY": 4850, "retailRefTRY": 5800 }
+  ]
+}

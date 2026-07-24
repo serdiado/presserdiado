@@ -1,0 +1,46 @@
+{
+  "category": "bloknot",
+  "categoryLabel": "Bloknot",
+  "sourceUrl": "https://www.turmatsan.com/tr/Page/bloknot/",
+  "memberSourceUrl": "https://www.turmatsan.com/hesap/index.php?goster=fiyat-listesi",
+  "fetchedAt": "2026-07-24",
+  "status": "complete",
+  "suggestedSaleMode": "upload",
+  "pricingAxes": ["ebat (9.4x13.3 / 14x20)", "cilt türü (spiralli/kapaklı/kapaksız/küp)", "kapak baskı türü (NK/CYP/CYM/CYML4/SEK — kartvizitteki işlem kodlarıyla aynı anlam)"],
+  "notes": "Tüm boşluklar dolduruldu. Yaprak/cilt sayısı: 'Spiralli' ve 'Kapaklı' bloknotlar 50'lik CİLT bazında satılıyor (1 cilt = 50 yaprak), fiyat 500-cilt ve 1000-cilt kademeli. Küp bloknot ise iç yaprak SAYISI bazında (100/250/500/1000 adet) — iç yapraklar müşteri tarafından yerleştiriliyor (Türmatsan yalnız kutuyu basıyor). Kapak kodu NK/CYP/CYM/CYML4/SEK = kartvizit/broşürdeki aynı baskı-işlem kodları (NK=Tek Yön Parlak, CYP=Çift Yön Parlak, CYM=Çift Yön Mat, CYML4=Çift Yön Mat Laklı, SEK=Özel Kesim). Küp bloknotta kutu Mat Selefon olursa +240 TL, Mat Selefon+Kabartma Lak olursa +1500 TL (NKKB/MNKB/KLKB ayrı SKU değil, bu ek ücretlerdir). Kapaklı bloknotta özel kesim kapak farkı +550 TL. Spiralli bloknotta spiral ücreti AYRI: 14x20 ebat 500 adet +800TL / 1000 adet +1600TL (bu tutarlar aşağıdaki fiyata DAHİL, ayrıca eklenmez — referans amaçlı not).",
+  "kupBloknot": {
+    "iç_yaprak": "80 gr 1.Hamur, Tek Yön, Tek Renk, 78x78 mm — müşteri tarafından yerleştirilir",
+    "kutuEkstra": { "matSelefon": 240, "matSelefonKabartmaLak": 1500 },
+    "variants": [
+      { "code": "NKKB-250-100", "boyut": "250'lik kutu", "quantity": 100, "wholesaleTRY": 7200 },
+      { "code": "NKKB-250-250", "boyut": "250'lik kutu", "quantity": 250, "wholesaleTRY": 8750 },
+      { "code": "NKKB-250-500", "boyut": "250'lik kutu", "quantity": 500, "wholesaleTRY": 11250 },
+      { "code": "NKKB-250-1000", "boyut": "250'lik kutu", "quantity": 1000, "wholesaleTRY": 17500 },
+      { "code": "NKKB-500-100", "boyut": "500'lük kutu", "quantity": 100, "wholesaleTRY": 9375 },
+      { "code": "NKKB-500-250", "boyut": "500'lük kutu", "quantity": 250, "wholesaleTRY": 13125 },
+      { "code": "NKKB-500-500", "boyut": "500'lük kutu", "quantity": 500, "wholesaleTRY": 18125 }
+    ]
+  },
+  "variants": [
+    { "code": "B1", "cilt": "Spiralli", "kapak": "NK", "size": "9.4x13.3 cm", "material": "80 gr 1.Hamur", "cilt500": 10200, "cilt1000": 17400 },
+    { "code": "B2", "cilt": "Spiralli", "kapak": "CYP", "size": "9.4x13.3 cm", "material": "80 gr 1.Hamur", "cilt500": 10800, "cilt1000": 18000 },
+    { "code": "B3", "cilt": "Spiralli", "kapak": "CYM", "size": "9.4x13.3 cm", "material": "80 gr 1.Hamur", "cilt500": 10800, "cilt1000": 18000 },
+    { "code": "B4", "cilt": "Spiralli", "kapak": "CYML4", "size": "9.4x13.3 cm", "material": "80 gr 1.Hamur", "cilt500": 11520, "cilt1000": 18720 },
+    { "code": "B5", "cilt": "Spiralli", "kapak": "SEK", "size": "9.4x13.3 cm", "material": "80 gr 1.Hamur", "cilt500": 13440, "cilt1000": 20640 },
+    { "code": "B6", "cilt": "Spiralli", "kapak": "NK", "size": "14x20 cm", "material": "80 gr 1.Hamur", "cilt500": 15000, "cilt1000": 24000, "spiralEkstra": { "adet500": 800, "adet1000": 1600 } },
+    { "code": "B7", "cilt": "Spiralli", "kapak": "CYP", "size": "14x20 cm", "material": "80 gr 1.Hamur", "cilt500": 16200, "cilt1000": 25200 },
+    { "code": "B8", "cilt": "Spiralli", "kapak": "CYM", "size": "14x20 cm", "material": "80 gr 1.Hamur", "cilt500": 16200, "cilt1000": 25200 },
+    { "code": "B9", "cilt": "Spiralli", "kapak": "CYML4", "size": "14x20 cm", "material": "80 gr 1.Hamur", "cilt500": 17400, "cilt1000": 27000 },
+    { "code": "B10", "cilt": "Spiralli", "kapak": "SEK", "size": "14x20 cm", "material": "80 gr 1.Hamur", "cilt500": 22800, "cilt1000": 31800 },
+    { "code": "B16", "cilt": "Kapaklı (Amerikan Cilt)", "kapak": "NK", "size": "9.4x13.3 cm", "material": "80 gr 1.Hamur", "cilt500": 12600, "cilt1000": 16800 },
+    { "code": "B17", "cilt": "Kapaklı (Amerikan Cilt)", "kapak": "CYP", "size": "9.4x13.3 cm", "material": "80 gr 1.Hamur", "cilt500": 13800, "cilt1000": 17400 },
+    { "code": "B18", "cilt": "Kapaklı (Amerikan Cilt)", "kapak": "CYM", "size": "9.4x13.3 cm", "material": "80 gr 1.Hamur", "cilt500": 13800, "cilt1000": 17400 },
+    { "code": "B19", "cilt": "Kapaklı (Amerikan Cilt)", "kapak": "CYML4", "size": "9.4x13.3 cm", "material": "80 gr 1.Hamur", "cilt500": 14400, "cilt1000": 17640, "not": "özel kesim kapak farkı +550 TL" },
+    { "code": "B20", "cilt": "Kapaklı (Amerikan Cilt)", "kapak": "NK", "size": "14x20 cm", "material": "80 gr 1.Hamur", "cilt500": 17400, "cilt1000": 24000 },
+    { "code": "B21", "cilt": "Kapaklı (Amerikan Cilt)", "kapak": "CYP", "size": "14x20 cm", "material": "80 gr 1.Hamur", "cilt500": 18600, "cilt1000": 24000 },
+    { "code": "B22", "cilt": "Kapaklı (Amerikan Cilt)", "kapak": "CYM", "size": "14x20 cm", "material": "80 gr 1.Hamur", "cilt500": 18600, "cilt1000": 24000 },
+    { "code": "B23", "cilt": "Kapaklı (Amerikan Cilt)", "kapak": "CYML4", "size": "14x20 cm", "material": "80 gr 1.Hamur", "cilt500": 19800, "cilt1000": 25800 },
+    { "code": "B28", "cilt": "Kapaksız (Tutkallı)", "kapak": null, "size": "9.4x13.3 cm", "material": "80 gr 1.Hamur", "cilt500": 5400, "cilt1000": 7800, "not": "alt karton baskısızdır" },
+    { "code": "B29", "cilt": "Kapaksız (Tutkallı)", "kapak": null, "size": "14x20 cm", "material": "80 gr 1.Hamur", "cilt500": 8400, "cilt1000": 13800, "not": "alt karton baskısızdır" }
+  ]
+}

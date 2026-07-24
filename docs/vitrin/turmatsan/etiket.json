@@ -1,0 +1,19 @@
+{
+  "category": "etiket",
+  "categoryLabel": "Etiket",
+  "sourceUrl": "https://www.turmatsan.com/tr/Page/etiket/",
+  "memberSourceUrl": "https://www.turmatsan.com/hesap/index.php?goster=fiyat-listesi",
+  "fetchedAt": "2026-07-24",
+  "status": "complete",
+  "suggestedSaleMode": "upload",
+  "pricingAxes": ["ebat", "kesim (özel/standart)", "selefon", "yaldız"],
+  "notes": "6 varyantın tamamı, ebatlarıyla birlikte doğrulandı. ETM/ETL'nin yüksek fiyatının nedeni açıklığa kavuştu: bunlar küçük çıkartma DEĞİL, büyük boy etiket (15.5x25.5cm ve 25.5x33cm) — E/ES/EO/EOY ise küçük 52-53mm çıkartmalar.",
+  "variants": [
+    { "code": "E", "size": "53x83 mm", "material": "90 gr Kuşe Çıkartma", "processes": ["Parlak Selefon"], "sides": "tek", "quantity": 1000, "wholesaleTRY": 300, "retailRefTRY": 470 },
+    { "code": "ES", "size": "53x83 mm", "material": "90 gr Kuşe Çıkartma", "processes": [], "sides": "tek", "quantity": 1000, "wholesaleTRY": 280, "retailRefTRY": 450 },
+    { "code": "EO", "size": "52x82 mm", "material": "90 gr Kuşe Çıkartma", "processes": ["Parlak Selefon", "Özel Kesim"], "sides": "tek", "quantity": 1000, "wholesaleTRY": 500, "retailRefTRY": 800 },
+    { "code": "EOY", "size": "52x82 mm", "material": "90 gr Kuşe Çıkartma", "processes": ["Parlak Selefon", "Altın Yaldız"], "sides": "tek", "quantity": 1000, "wholesaleTRY": 740, "retailRefTRY": 1100 },
+    { "code": "ETM", "size": "15.5x25.5 cm", "material": "90 gr Kuşe Çıkartma", "processes": ["Parlak Selefon"], "sides": "tek", "quantity": 1000, "wholesaleTRY": 2600, "retailRefTRY": 3500 },
+    { "code": "ETL", "size": "25.5x33 cm", "material": "90 gr Kuşe Çıkartma", "processes": ["Parlak Selefon"], "sides": "tek", "quantity": 1000, "wholesaleTRY": 5100, "retailRefTRY": 6700 }
+  ]
+}

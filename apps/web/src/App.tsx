@@ -145,6 +145,10 @@ export default function App() {
       {/* Public broşür vitrini — giriş kapısı. Guard YOK; giriş yapmış kullanıcı da görür
           (otomatik /dashboard'a atılmaz). Dashboard /dashboard'da, korumalı kalır. */}
       <Route path="/" element={<StorefrontPage />} />
+      {/* PARK (strateji: yalnız çok ürünlü broşür satılır) — genel katalog ürün-detay
+          sayfası kapatıldı. Kod + API duruyor: ProductDetailPage, VariantPicker,
+          catalog/packages endpoint'leri. Geri açmak = import + şu route:
+          <Route path="/urun/:slug" element={<ProductDetailPage />} /> */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

@@ -1,0 +1,16 @@
+{
+  "category": "amerikan-servis",
+  "categoryLabel": "Amerikan Servis",
+  "sourceUrl": null,
+  "memberSourceUrl": "https://www.turmatsan.com/hesap/index.php?goster=fiyat-listesi (bölüm adı: 'Amerikan Servis')",
+  "fetchedAt": "2026-07-24",
+  "status": "complete",
+  "suggestedSaleMode": "upload",
+  "pricingAxes": ["ebat", "kağıt gramajı"],
+  "notes": "YENİ KATEGORİ — kamuya açık ana menüde YOK, yalnız üye 'Fiyat Listesi'nde bulundu. Muhtemelen tepsi altlığı/servis kağıdı türü ürün (restoran/kafe tek yön baskı). Vitrin ana kategori listesinde henüz yer almıyor; eklenip eklenmeyeceğine karar ver (küçük hacimli, niş ürün olabilir). Fiyat yapısı iki kademeli: taban (2000 adet) + 'ilave her 2000 adet' birim fiyatı.",
+  "variants": [
+    { "code": "SRV1", "size": "31x44 cm", "material": "90 gr 1.Hamur", "sides": "tek yön renkli", "quantity": 2000, "wholesaleTRY": 3250, "wholesalePerExtra2000TRY": 3000 },
+    { "code": "SRV2", "size": "27.5x40 cm", "material": "100 gr Kuşe", "sides": "tek yön renkli", "quantity": 2000, "wholesaleTRY": 2750, "wholesalePerExtra2000TRY": 2450 },
+    { "code": "SRV3", "size": "34x49 cm", "material": "120 gr 1.Hamur", "sides": "tek yön renkli", "quantity": 2000, "wholesaleTRY": 4250, "wholesalePerExtra2000TRY": 3125 }
+  ]
+}

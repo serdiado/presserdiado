@@ -1,4 +1,4 @@
-import { mysqlTable, varchar, json, decimal, boolean, timestamp, index } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, json, decimal, boolean, timestamp, index, int } from 'drizzle-orm/mysql-core';
 import { uuidPk, uuidFk } from './_helpers.js';
 import { productTypes } from './product-types.js';
 
@@ -12,6 +12,9 @@ export const pricingRules = mysqlTable('pricing_rules', {
   colorModeKey: varchar('color_mode_key', { length: 100 }),
   coatingKey: varchar('coating_key', { length: 100 }),
   bindingKey: varchar('binding_key', { length: 100 }),
+  // NULL = birim-fiyat kuralı (basePrice = adet başı, quantityTiers indirimi uygulanır).
+  // Dolu = PAKET kuralı: yalnız tam bu adette eşleşir, basePrice = paketin TOPLAM fiyatı.
+  quantity: int('quantity'),
   basePrice: decimal('base_price', { precision: 10, scale: 2 }).notNull(),
   setupFee: decimal('setup_fee', { precision: 10, scale: 2 }).default('0').notNull(),
   // [{min:100, discountPct:8}, ...] adet indirimleri.

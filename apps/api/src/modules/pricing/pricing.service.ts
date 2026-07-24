@@ -86,11 +86,17 @@ export const pricingService = {
 
     // En spesifik eşleşen kuralı seç: NULL olmayan her kriter isteğe uymalı;
     // skor = NULL olmayan kriter sayısı. Eşitlikte deterministik (ilk eklenen / en eski).
+    // PAKET kuralı (quantity dolu): yalnız tam o adette eşleşir ve kriter sayılır —
+    // aynı komboda paket kuralı, birim-fiyat (wildcard) kuralından daha spesifiktir.
     let best: typeof rules[number] | null = null;
     let bestScore = -1;
     for (const rule of rules) {
       let score = 0;
       let matches = true;
+      if (rule.quantity != null) {
+        if (rule.quantity !== input.quantity) continue;
+        score += 1;
+      }
       for (const [ruleCol, optKey] of RULE_MATCH_COLUMNS) {
         const ruleVal = rule[ruleCol];
         if (ruleVal == null) continue; // wildcard
@@ -116,9 +122,15 @@ export const pricingService = {
 
     const basePriceCents = toCents(best.basePrice);
     const setupFeeCents = toCents(best.setupFee);
-    const lineSubtotalCents = basePriceCents * input.quantity;
+    // Paket kuralında basePrice paketin TOPLAM fiyatıdır; birim-fiyat kuralında adet başıdır.
+    const isPackageRule = best.quantity != null;
+    const lineSubtotalCents = isPackageRule ? basePriceCents : basePriceCents * input.quantity;
+    const unitPriceCents = isPackageRule
+      ? Math.round(basePriceCents / input.quantity)
+      : basePriceCents;
 
-    const tiers = (best.quantityTiers as QuantityTier[] | null) ?? [];
+    // Adet indirimi paket kuralına uygulanmaz (paket fiyatı zaten adete özel).
+    const tiers = isPackageRule ? [] : ((best.quantityTiers as QuantityTier[] | null) ?? []);
     const discountPct = resolveDiscountPct(tiers, input.quantity);
     const discountCents = Math.round((lineSubtotalCents * discountPct) / 100);
 
@@ -134,7 +146,7 @@ export const pricingService = {
       quantity: input.quantity,
       matchedRuleId: best.id,
       currency: 'TRY',
-      unitPrice: fromCents(basePriceCents),
+      unitPrice: fromCents(unitPriceCents),
       lineTotal: fromCents(lineSubtotalCents),
       setupFee: fromCents(setupFeeCents),
       subtotal: fromCents(subtotalCents),

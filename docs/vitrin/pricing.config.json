@@ -1,0 +1,7 @@
+{
+  "_comment": "Vitrin satış fiyatı üretim kuralları — seed-turmatsan.ts bunu okur. Fiyat KODA GÖMÜLMEZ; marjı burada değiştirip 'npm run db:seed:turmatsan' ile yeniden uygula. retailFirst=true iken turmatsan perakende fiyatı (retailRefTRY) varsa satış fiyatı odur (piyasa fiyatıyla rekabet, marj = perakende-toptan farkı); yoksa toptan × marginDefault, yukarı roundUpToTRY'ye yuvarlanır. Kalıcı çözüm admin 'Fiyatlandırma' ekranı (ana TODO 🎯) — o gelene kadar tek ayar noktası burasıdır.",
+  "retailFirst": true,
+  "marginDefault": 1.4,
+  "roundUpToTRY": 10,
+  "taxRatePct": 20
+}

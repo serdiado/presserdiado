@@ -1,113 +1,69 @@
-// Public broşür vitrini — web-to-print sipariş akışının giriş kapısı (login öncesi).
-// Pazarlama bölümleri (Hero, ProductGrid, HowItWorks, Trust, Footer) GEÇİCİ KABUK —
-// docs/web-to-print/Site.jsx tasarımından port; tasarımdaki hardcode Tailwind paleti
-// (slate/blue/emerald/stone) olduğu gibi korunur. Fonksiyonel ÇEKİRDEK konfigüratör
-// <BrochureConfigurator/> içinde, token-bazlı ve gerçek katalog/fiyat altyapısıyla.
+// Vitrin — TEK işe odaklı landing: çok ürünlü kampanya broşürü (Excel → slot → baskı).
+// Strateji kararı: başka hiçbir baskı ürünü sunulmaz; katalog/ürün-detay kodu PARK
+// edilmiştir (App.tsx'te route kapalı, API duruyor). Tasarım dili "Broşür + hassasiyet":
+// kağıt zemin, aktüel kırmızısı, etiket sarısı fiyat çipleri, cyan kılavuzlar, kesim
+// işaretleri. Tüm stiller landing.css'teki .pdl kapsamında; uygulama token'larına dokunmaz.
 
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/auth.store';
 import { BrochureConfigurator } from './BrochureConfigurator';
+import { HeroScene } from './HeroScene';
+import './landing.css';
 
-const ICONS = {
-  check: (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  ),
-  arrow: (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="5" y1="12" x2="19" y2="12" />
-      <polyline points="12 5 19 12 12 19" />
-    </svg>
-  ),
-  truck: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="1" y="3" width="15" height="13" />
-      <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
-      <circle cx="5.5" cy="18.5" r="2.5" />
-      <circle cx="18.5" cy="18.5" r="2.5" />
-    </svg>
-  ),
-  shield: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      <polyline points="9 12 11 14 15 10" />
-    </svg>
-  ),
-  layoutTemplate: (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="18" height="7" rx="1" />
-      <rect x="3" y="14" width="9" height="7" rx="1" />
-      <rect x="16" y="14" width="5" height="7" rx="1" />
-    </svg>
-  ),
-} as const;
-
-type ProductId =
-  | 'brosur' | 'katalog' | 'etiket' | 'kartvizit' | 'afis' | 'kitapcik' | 'ambalaj' | 'flyer';
-
-interface Product {
-  id: ProductId;
-  name: string;
-  desc: string;
-  mm: string;
-  active?: boolean;
-}
-
-const PRODUCTS: Product[] = [
-  { id: 'brosur', name: 'Broşür', desc: 'A4 · A5 · 2-8 sayfa', mm: '210 × 297 mm', active: true },
-  { id: 'katalog', name: 'Katalog', desc: 'A4 · 8-32 sayfa', mm: '210 × 297 mm' },
-  { id: 'etiket', name: 'Etiket', desc: 'Özel ölçü · roll', mm: '60 × 80 mm' },
-  { id: 'kartvizit', name: 'Kartvizit', desc: 'Çift yüz · selefon', mm: '85 × 55 mm' },
-  { id: 'afis', name: 'Afiş / Poster', desc: 'A3 · A2 · A1', mm: '420 × 594 mm' },
-  { id: 'kitapcik', name: 'Kitapçık', desc: 'Spiralli · iplikli', mm: '148 × 210 mm' },
-  { id: 'ambalaj', name: 'Ambalaj', desc: 'Kutu · poşet · taşıma', mm: 'özel ölçü' },
-  { id: 'flyer', name: 'El İlanı', desc: 'A5 · A6 · tek yüz', mm: '148 × 210 mm' },
-];
-
-function Brand() {
+function Brand({ light = false }: { light?: boolean }) {
   return (
     <span className="flex items-center gap-2">
-      <span className="w-6 h-6 rounded-md bg-slate-900 text-white grid place-items-center text-[13px] font-extrabold">
+      <span
+        className={`w-6 h-6 rounded-[4px] grid place-items-center text-[13px] font-extrabold ${
+          light ? 'bg-[var(--pdl-paper)] text-[var(--pdl-ink)]' : 'bg-[var(--pdl-ink)] text-[var(--pdl-paper)]'
+        }`}
+      >
         P
       </span>
-      <span className="text-lg font-extrabold tracking-tight text-slate-900">Presserdiado</span>
+      <span
+        className={`text-lg font-extrabold tracking-tight ${
+          light ? 'text-white' : 'text-[var(--pdl-ink)]'
+        }`}
+      >
+        Presserdiado
+      </span>
     </span>
   );
 }
 
-function SiteHeader() {
+export function SiteHeader() {
   const navigate = useNavigate();
   const isAuthed = useAuthStore((s) => !!s.accessToken);
   const logout = useAuthStore((s) => s.logout);
 
-  // Mevcut logout davranışıyla tutarlı (DashboardLayout/AdminShell): çıkış → /login.
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
   return (
-    <header className="bg-white/95 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-30">
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center">
-        <a href="#top"><Brand /></a>
-        <nav className="ml-10 hidden md:flex items-center gap-7 text-sm font-medium text-slate-600">
-          <a href="#products" className="hover:text-slate-900 transition-colors">Ürünler</a>
-          <a href="#configurator" className="hover:text-slate-900 transition-colors">Fiyat Hesapla</a>
-          <a href="#how" className="hover:text-slate-900 transition-colors">Nasıl Çalışır</a>
+    <header className="pdl bg-[var(--pdl-paper)]/95 backdrop-blur-sm border-b border-[var(--pdl-ink-12)] sticky top-0 z-30">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-3">
+        <a href="/#top" aria-label="Presserdiado ana sayfa" className="shrink-0">
+          <Brand />
+        </a>
+        <nav className="ml-10 hidden md:flex items-center gap-7 text-sm font-medium text-[var(--pdl-ink-60)]">
+          <a href="/#nasil" className="hover:text-[var(--pdl-ink)] transition-colors">Nasıl çalışır</a>
+          <a href="/#fiyat" className="hover:text-[var(--pdl-ink)] transition-colors">Fiyat</a>
+          <a href="/#sss" className="hover:text-[var(--pdl-ink)] transition-colors">SSS</a>
         </nav>
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex items-center gap-2.5 sm:gap-4">
           {isAuthed ? (
             <>
               <button
                 onClick={() => navigate('/dashboard')}
-                className="text-sm font-medium text-slate-600 hover:text-slate-900"
+                className="text-xs sm:text-sm whitespace-nowrap font-medium text-[var(--pdl-ink-60)] hover:text-[var(--pdl-ink)]"
               >
                 Panelim
               </button>
               <button
                 onClick={handleLogout}
-                className="text-sm font-medium text-slate-500 hover:text-slate-900"
+                className="hidden sm:block text-sm font-medium text-[var(--pdl-ink-40)] hover:text-[var(--pdl-ink)]"
               >
                 Çıkış
               </button>
@@ -115,11 +71,17 @@ function SiteHeader() {
           ) : (
             <button
               onClick={() => navigate('/login')}
-              className="text-sm font-medium text-slate-600 hover:text-slate-900"
+              className="text-xs sm:text-sm whitespace-nowrap font-medium text-[var(--pdl-ink-60)] hover:text-[var(--pdl-ink)]"
             >
-              Giriş Yap
+              Giriş yap
             </button>
           )}
+          <button
+            onClick={() => navigate(isAuthed ? '/new' : '/login?next=/new')}
+            className="h-8 px-3 text-xs sm:h-9 sm:px-4 sm:text-sm whitespace-nowrap rounded-[4px] bg-[var(--pdl-red)] hover:bg-[var(--pdl-red-dark)] text-white font-semibold transition-colors"
+          >
+            Broşürünü başlat
+          </button>
         </div>
       </div>
     </header>
@@ -127,270 +89,346 @@ function SiteHeader() {
 }
 
 function Hero() {
-  return (
-    <section className="relative">
-      <div className="max-w-7xl mx-auto px-6 pt-16 pb-12 grid lg:grid-cols-2 gap-12 items-center">
-        <div>
-          <div className="inline-flex items-center gap-2 bg-white border border-slate-200 rounded-full px-3 py-1 text-[11px] font-semibold text-slate-700 mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-            2.140 işletme bugün baskı aldı
-          </div>
-          <h1 className="text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.05]">
-            Tarayıcıda tasarla,<br />
-            <span className="text-slate-500">48 saatte kapına gelsin.</span>
-          </h1>
-          <p className="text-base text-slate-600 mt-5 leading-relaxed max-w-lg">
-            Süpermarket kataloğundan ambalaja, kartvizitten etikete kadar tüm matbaa
-            işleriniz tek panelde. Anlık fiyat, baskı kontrolü ve{' '}
-            <strong className="text-slate-800">300 DPI</strong> baskı garantisi.
-          </p>
-          <div className="flex items-center gap-3 mt-7">
-            <a
-              href="#configurator"
-              className="h-11 px-5 inline-flex items-center gap-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors"
-            >
-              Fiyat Hesapla {ICONS.arrow}
-            </a>
-            <a
-              href="#products"
-              className="h-11 px-5 inline-flex items-center gap-2 rounded-md bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 text-sm font-semibold transition-colors"
-            >
-              Ürünleri Gör
-            </a>
-          </div>
-          <div className="flex items-center gap-6 mt-8 text-xs text-slate-500">
-            <div className="flex items-center gap-1.5">
-              <span className="text-emerald-600">{ICONS.check}</span> Excel'den ürünleri otomatik yerleştir
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-emerald-600">{ICONS.check}</span> Baskı kontrolü ücretsiz
-            </div>
-          </div>
-        </div>
+  const navigate = useNavigate();
+  const isAuthed = useAuthStore((s) => !!s.accessToken);
 
-        {/* Hero görsel: mini studio preview */}
-        <div className="relative">
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden" style={{ boxShadow: '0 20px 40px -12px rgb(0 0 0 / 0.15)' }}>
-            <div className="h-9 bg-slate-50 border-b border-slate-200 flex items-center px-3 gap-2">
-              <div className="flex gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
-                <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
-              </div>
-              <div className="ml-3 text-[10px] font-mono text-slate-500">presserdiado/studio/yeni-katalog</div>
-            </div>
-            <div className="bg-stone-200 p-5">
-              <div
-                className="bg-white shadow-md aspect-16/11 relative"
-                style={{ outline: '1px solid #ef4444', outlineOffset: 6 }}
-              >
-                <div className="grid grid-cols-8 gap-1 p-1.5 h-full">
-                  {Array.from({ length: 32 }).map((_, i) => (
-                    <div key={i} className="bg-slate-50 border border-slate-200 rounded-sm flex flex-col p-1">
-                      <div className="bg-slate-100 rounded flex-1 mb-0.5" />
-                      <div className="text-[5px] font-semibold text-slate-700 truncate">Ürün {i + 1}</div>
-                      <div className="text-[6px] font-bold text-slate-900" style={{ fontFamily: 'Oswald' }}>12,90 ₺</div>
-                    </div>
-                  ))}
-                </div>
-                <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[8px] font-bold px-2 py-0.5 rounded">
-                  TAŞMA PAYI 3 mm
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="absolute -left-6 top-8 bg-white border border-slate-200 rounded-lg shadow-sm p-3 max-w-45 hidden lg:block">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded bg-emerald-100 text-emerald-700 grid place-items-center">{ICONS.check}</div>
-              <div>
-                <div className="text-[11px] font-bold text-slate-800">Baskı Kontrolü</div>
-                <div className="text-[10px] text-slate-500">Sıfır hata garantisi</div>
-              </div>
-            </div>
-          </div>
+  return (
+    <section className="max-w-6xl mx-auto px-6 pt-14 pb-16 md:pt-20 md:pb-20">
+      <div className="max-w-3xl">
+        <div
+          className="pdl-fade-up pdl-mono text-[11px] tracking-[0.22em] uppercase text-[var(--pdl-red)]"
+          style={{ '--d': '0s' } as React.CSSProperties}
+        >
+          Marketler ve çok ürünlü kampanyalar için
+        </div>
+        <h1
+          className="pdl-fade-up pdl-display uppercase font-semibold text-[var(--pdl-ink)] mt-4 text-[clamp(2.4rem,7vw,4.6rem)] leading-[1.08] tracking-tight"
+          style={{ '--d': '0.08s' } as React.CSSProperties}
+        >
+          Excel&rsquo;ini yükle.
+          <br />
+          <span className="text-[var(--pdl-red)]">Broşürün dizilsin.</span>
+        </h1>
+        <p
+          className="pdl-fade-up text-base md:text-lg text-[var(--pdl-ink-60)] mt-5 leading-relaxed max-w-xl"
+          style={{ '--d': '0.16s' } as React.CSSProperties}
+        >
+          Ürün listeni yükle; ürünler fiyatlarıyla birlikte sayfadaki hücrelere otomatik
+          yerleşsin. Stüdyoda düzenle, onayla — baskısı kapına gelsin.{' '}
+          <strong className="text-[var(--pdl-ink)] font-semibold">Sadece bu.</strong>
+        </p>
+        <div
+          className="pdl-fade-up flex flex-wrap items-center gap-3 mt-7"
+          style={{ '--d': '0.24s' } as React.CSSProperties}
+        >
+          <button
+            onClick={() => navigate(isAuthed ? '/new' : '/login?next=/new')}
+            className="h-11 px-5 rounded-[4px] bg-[var(--pdl-red)] hover:bg-[var(--pdl-red-dark)] text-white text-sm font-semibold transition-colors"
+          >
+            Broşürünü başlat
+          </button>
+          <a
+            href="#nasil"
+            className="h-11 px-4 inline-flex items-center text-sm font-semibold text-[var(--pdl-ink-60)] hover:text-[var(--pdl-ink)] transition-colors"
+          >
+            Nasıl çalışır ↓
+          </a>
+        </div>
+      </div>
+
+      <div className="mt-12 md:mt-14">
+        <HeroScene />
+      </div>
+    </section>
+  );
+}
+
+// Niş beyanı — mürekkep bant. Konum farkımızın kendisi mesajdır.
+function NicheBand() {
+  return (
+    <section className="bg-[var(--pdl-ink)] text-[var(--pdl-paper)]">
+      <div className="max-w-6xl mx-auto px-6 py-14 md:py-16 grid md:grid-cols-[auto_1fr] gap-6 md:gap-12 items-start">
+        <div className="pdl-display uppercase font-semibold text-2xl md:text-3xl leading-tight whitespace-nowrap">
+          Sadece bunu
+          <br />
+          yapıyoruz.
+        </div>
+        <div className="max-w-2xl">
+          <p className="text-sm md:text-base leading-relaxed text-white/70">
+            Kartvizit basmıyoruz. Düğün davetiyesi almıyoruz. Tek işimiz{' '}
+            <strong className="text-white font-semibold">çok ürünlü kampanya broşürleri</strong> —
+            Excel&rsquo;deki ürün listenden baskıya hazır broşüre giden yolun tamamı.
+            Haftalık aktüel, aylık kampanya, toptancı kataloğu&hellip; Yüz ürünü tek tek
+            kopyala-yapıştır yapmak yerine listeni yüklersin, gerisini yerleşim motoru dizer.
+          </p>
+          <p className="pdl-mono text-[11px] tracking-[0.16em] uppercase text-white/40 mt-4">
+            Tek iş · tek akış · o yüzden iyi
+          </p>
         </div>
       </div>
     </section>
   );
 }
 
-function ProductIcon({ id }: { id: ProductId }) {
-  const stroke = 'currentColor';
-  return (
-    <svg width="36" height="36" viewBox="0 0 36 36" fill="none" stroke={stroke} strokeWidth="1.5" className="text-slate-700">
-      {id === 'brosur' && (<><rect x="6" y="4" width="11" height="28" rx="0.5" /><rect x="19" y="4" width="11" height="28" rx="0.5" /></>)}
-      {id === 'katalog' && (<><rect x="5" y="5" width="24" height="26" rx="0.5" /><line x1="17" y1="5" x2="17" y2="31" /><line x1="9" y1="11" x2="14" y2="11" /><line x1="9" y1="15" x2="14" y2="15" /><line x1="20" y1="11" x2="25" y2="11" /><line x1="20" y1="15" x2="25" y2="15" /></>)}
-      {id === 'etiket' && (<><rect x="6" y="10" width="24" height="16" rx="2" /><circle cx="11" cy="18" r="1.5" /><line x1="16" y1="16" x2="26" y2="16" /><line x1="16" y1="20" x2="22" y2="20" /></>)}
-      {id === 'kartvizit' && (<><rect x="4" y="11" width="28" height="16" rx="1" /><line x1="9" y1="17" x2="20" y2="17" /><line x1="9" y1="21" x2="16" y2="21" /></>)}
-      {id === 'afis' && (<><rect x="8" y="3" width="20" height="30" rx="0.5" /><circle cx="18" cy="13" r="3" /><line x1="11" y1="22" x2="25" y2="22" /><line x1="11" y1="26" x2="20" y2="26" /></>)}
-      {id === 'kitapcik' && (<><rect x="5" y="5" width="26" height="26" rx="0.5" /><line x1="10" y1="5" x2="10" y2="31" /><circle cx="7.5" cy="10" r="0.7" fill={stroke} /><circle cx="7.5" cy="14" r="0.7" fill={stroke} /><circle cx="7.5" cy="18" r="0.7" fill={stroke} /><circle cx="7.5" cy="22" r="0.7" fill={stroke} /><circle cx="7.5" cy="26" r="0.7" fill={stroke} /></>)}
-      {id === 'ambalaj' && (<><path d="M6 12l12-6 12 6v15l-12 6-12-6z" /><path d="M6 12l12 6 12-6" /><line x1="18" y1="18" x2="18" y2="33" /></>)}
-      {id === 'flyer' && (<><rect x="8" y="6" width="20" height="24" rx="0.5" /><line x1="12" y1="12" x2="24" y2="12" /><line x1="12" y1="16" x2="24" y2="16" /><line x1="12" y1="20" x2="20" y2="20" /></>)}
-    </svg>
-  );
-}
+// 3 adım — gerçek bir sıra olduğu için numara hak edilmiş durumda.
+function Steps() {
+  const steps = [
+    {
+      n: '1',
+      title: 'Listeni yükle',
+      body:
+        'Ürün adı, fiyat ve hücre numarası kolonlu Excel’ini sürükle. Ürünler ve fiyatlar sayfadaki hücrelere otomatik dizilir; ürün görsellerin varsa eşleşir.',
+      visual: (
+        <div className="pdl-mono text-[10px] text-[var(--pdl-ink-60)] bg-white border border-[var(--pdl-ink-12)] rounded-[4px] px-2.5 py-2 inline-flex items-center gap-2">
+          <span className="w-2 h-2 rounded-[2px] bg-[#1d6f42]" />
+          POS · ÜRÜN · FİYAT · GÖRSEL
+        </div>
+      ),
+    },
+    {
+      n: '2',
+      title: 'Düzenle',
+      body:
+        'Hazır market temalarından birini seç; banner’ı, zeminleri ve fiyat kutularını stüdyoda düzenle. Tasarım bilgisi gerekmez — istersen hiçbir şeye dokunma.',
+      visual: (
+        <div className="grid grid-cols-4 gap-1 w-24" aria-hidden="true">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div
+              key={i}
+              className={`h-4 rounded-[2px] ${i === 2 ? 'bg-[var(--pdl-yellow)]' : 'bg-[var(--pdl-ink-12)]'}`}
+            />
+          ))}
+        </div>
+      ),
+    },
+    {
+      n: '3',
+      title: 'Bas & teslim al',
+      body:
+        'Onayladığın broşür baskı kontrolünden geçer, CMYK’ya çevrilir ve kargoyla kapına gelir. Ebat, kağıt ve adet seçimine göre fiyatı anlık görürsün.',
+      visual: (
+        <div className="flex items-center gap-1.5" aria-hidden="true">
+          {['#00AEC2', '#E4262B', '#FFD23F', '#17161B'].map((c) => (
+            <span key={c} className="w-3.5 h-3.5 rounded-full" style={{ background: c }} />
+          ))}
+          <span className="pdl-mono text-[10px] text-[var(--pdl-ink-40)] ml-1">CMYK</span>
+        </div>
+      ),
+    },
+  ];
 
-function ProductGrid() {
-  // Sadece broşür aktif; diğerleri görünür ama pasif ("Yakında").
-  const scrollToConfigurator = () =>
-    document.getElementById('configurator')?.scrollIntoView({ behavior: 'smooth' });
-
   return (
-    <section id="products" className="bg-stone-100 border-y border-stone-200 py-16">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="flex items-end justify-between mb-8">
-          <div>
-            <div className="text-[11px] font-bold tracking-[0.16em] uppercase text-slate-500 mb-2">1. Ürün Seçimi</div>
-            <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Ne basacaksınız?</h2>
+    <section id="nasil" className="max-w-6xl mx-auto px-6 py-16 md:py-20 scroll-mt-20">
+      <div className="pdl-mono text-[11px] tracking-[0.22em] uppercase text-[var(--pdl-ink-40)] mb-2">
+        Nasıl çalışır
+      </div>
+      <h2 className="pdl-display uppercase font-semibold text-3xl md:text-4xl tracking-tight mb-10">
+        Üç adımda rafta
+      </h2>
+      <div className="grid md:grid-cols-3 gap-5">
+        {steps.map((s) => (
+          <div key={s.n} className="bg-white border border-[var(--pdl-ink-12)] rounded-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <span className="pdl-display text-4xl font-semibold text-[var(--pdl-red)] leading-none">
+                {s.n}
+              </span>
+              {s.visual}
+            </div>
+            <h3 className="text-base font-bold mb-1.5">{s.title}</h3>
+            <p className="text-sm text-[var(--pdl-ink-60)] leading-relaxed">{s.body}</p>
           </div>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {PRODUCTS.map((p) =>
-            p.active ? (
-              <button
-                key={p.id}
-                onClick={scrollToConfigurator}
-                className="relative p-5 rounded-xl text-left transition-all bg-white border-2 border-slate-700 hover:border-slate-900"
-              >
-                <span className="absolute top-3 right-3 w-5 h-5 rounded-full bg-slate-700 text-white grid place-items-center">{ICONS.check}</span>
-                <ProductIcon id={p.id} />
-                <div className="text-base font-bold text-slate-900 mt-3">{p.name}</div>
-                <div className="text-[11px] text-slate-500 mt-0.5">{p.desc}</div>
-                <div className="text-[10px] font-mono text-slate-400 mt-2">{p.mm}</div>
-              </button>
-            ) : (
-              <div
-                key={p.id}
-                aria-disabled="true"
-                className="relative p-5 rounded-xl text-left bg-white border border-slate-200 opacity-60 cursor-not-allowed select-none"
-              >
-                <span className="absolute top-3 right-3 text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 uppercase tracking-wide">Yakında</span>
-                <ProductIcon id={p.id} />
-                <div className="text-base font-bold text-slate-500 mt-3">{p.name}</div>
-                <div className="text-[11px] text-slate-400 mt-0.5">{p.desc}</div>
-                <div className="text-[10px] font-mono text-slate-300 mt-2">{p.mm}</div>
-              </div>
-            ),
-          )}
-        </div>
+        ))}
       </div>
     </section>
   );
 }
 
-function ConfiguratorSection() {
+// İş föyü — matbaa iş emri estetiğinde yetenek listesi.
+function SpecSheet() {
+  const rows = [
+    ['EBAT', 'A4 · A3 — kırımsız veya kırımlı (tek, çift, Z ve fazlası)'],
+    ['EXCEL EŞLEŞME', 'Hücre numarası (POS) → sayfadaki yeri, birebir ve otomatik'],
+    ['TEMALAR', 'Hazır market temaları: banner, zemin ve fiyat stilleri kurulu'],
+    ['FİYAT KUTULARI', 'Tüm ürünlerde tek tıkla aynı stil; tek tek elle uğraşmak yok'],
+    ['TAŞMA & KESİM', '3 mm taşma payı ve kesim güvenliği otomatik uygulanır'],
+    ['BASKI', '115–200 gr kuşe seçenekleri, adet kademeli fiyat'],
+  ];
+
   return (
-    <section id="configurator" className="py-16">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center mb-10">
-          <div className="text-[11px] font-bold tracking-[0.16em] uppercase text-slate-500 mb-2">2. Baskı Özellikleri</div>
-          <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Anlık fiyat hesapla</h2>
-          <p className="text-sm text-slate-500 mt-2">
-            Broşür için ebat, kağıt, gramaj, renk ve adet seçin. Tutar canlı güncellenir.
-          </p>
+    <section className="max-w-6xl mx-auto px-6 pb-16 md:pb-20">
+      <div className="bg-white border border-[var(--pdl-ink-12)] rounded-md overflow-hidden max-w-3xl mx-auto">
+        <div className="flex items-center justify-between px-5 py-3 bg-[var(--pdl-ink)] text-[var(--pdl-paper)]">
+          <span className="pdl-mono text-[11px] tracking-[0.2em] uppercase">İş föyü</span>
+          <span className="pdl-mono text-[11px] text-white/50">PRESSERDIADO · YERLEŞİM MOTORU</span>
         </div>
+        <dl>
+          {rows.map(([label, value], i) => (
+            <div
+              key={label}
+              className={`grid grid-cols-[130px_1fr] sm:grid-cols-[180px_1fr] gap-4 px-5 py-3.5 text-sm ${
+                i > 0 ? 'border-t border-dashed border-[var(--pdl-ink-12)]' : ''
+              }`}
+            >
+              <dt className="pdl-mono text-[11px] tracking-[0.1em] text-[var(--pdl-ink-40)] pt-0.5">
+                {label}
+              </dt>
+              <dd className="text-[var(--pdl-ink)] leading-relaxed">{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
+    </section>
+  );
+}
+
+function PricingSection() {
+  return (
+    <section id="fiyat" className="bg-white border-y border-[var(--pdl-ink-12)] scroll-mt-20">
+      <div className="max-w-6xl mx-auto px-6 py-16 md:py-20">
+        <div className="pdl-mono text-[11px] tracking-[0.22em] uppercase text-[var(--pdl-ink-40)] mb-2">
+          Fiyat
+        </div>
+        <h2 className="pdl-display uppercase font-semibold text-3xl md:text-4xl tracking-tight mb-3">
+          Broşür baskı fiyatını hesapla
+        </h2>
+        <p className="text-sm text-[var(--pdl-ink-60)] mb-8 max-w-xl">
+          Ebat, kağıt, gramaj ve adedi seç; tutar anlık güncellenir, KDV dahildir.
+          Tasarım stüdyosu kullanımı baskı siparişine dahildir.
+        </p>
         <BrochureConfigurator />
       </div>
     </section>
   );
 }
 
-function HowItWorks() {
-  const steps = [
-    { n: '01', icon: ICONS.layoutTemplate, title: 'Şablon seç veya tasarla', body: "Hazır şablon kullanın, kendi tasarımınızı yükleyin veya online tasarım stüdyosunda baştan üretin. Excel'den ürünleriniz otomatik yerleşir." },
-    { n: '02', icon: ICONS.shield, title: 'Baskı Kontrolü onaylasın', body: 'Sistem 300 DPI çözünürlük, taşma payı, güvenli alan ve yazı tipi gömme kontrollerini saniyeler içinde tamamlar.' },
-    { n: '03', icon: ICONS.truck, title: '48 saatte kapınızda', body: 'Üretim 2 iş gününde tamamlanır. Türkiye geneli kargo Presserdiado tarafından karşılanır.' },
+function ForWho() {
+  const cards = [
+    { title: 'Market & zincir', body: 'Haftalık aktüel broşürünü Excel’den dakikalar içinde çıkar; her hafta aynı temayla, yeni fiyatlarla.' },
+    { title: 'Bakkal & şarküteri', body: 'Aylık kampanya sayfanı tek başına hazırla — ajansa, tasarımcıya, beklemeye gerek yok.' },
+    { title: 'Toptancı', body: 'Yüzlerce ürünlük fiyat kataloğunu hücrelere döküp bayilerine gönder.' },
+    { title: 'Kampanya yapan herkes', body: 'Kırtasiye, hırdavat, kozmetik… Çok ürün + fiyat listesi olan her iş bu akışa oturur.' },
   ];
-  return (
-    <section id="how" className="bg-white border-y border-slate-200 py-16">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center mb-10">
-          <div className="text-[11px] font-bold tracking-[0.16em] uppercase text-slate-500 mb-2">3. Nasıl Çalışır</div>
-          <h2 className="text-3xl font-bold text-slate-900 tracking-tight">3 adımda baskınız hazır</h2>
-        </div>
-        <div className="grid md:grid-cols-3 gap-6">
-          {steps.map((s) => (
-            <div key={s.n} className="bg-stone-50 border border-slate-200 rounded-xl p-6">
-              <div className="flex items-baseline gap-3 mb-3">
-                <span className="text-3xl font-extrabold text-slate-300 tabular-nums" style={{ fontFamily: 'Oswald, Inter, sans-serif' }}>{s.n}</span>
-                <span className="text-slate-700">{s.icon}</span>
-              </div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">{s.title}</h3>
-              <p className="text-sm text-slate-600 leading-relaxed">{s.body}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
 
-function Trust() {
   return (
-    <section className="py-12">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="text-center text-[11px] font-bold tracking-[0.16em] uppercase text-slate-500 mb-6">
-          Türkiye'nin önde gelen perakende markaları
-        </div>
-        <div className="grid grid-cols-3 md:grid-cols-6 gap-4 items-center">
-          {['MİGROS', 'ŞOK', 'A101', 'BİM', 'CARREFOURSA', 'HAKMAR'].map((n) => (
-            <div key={n} className="text-center text-base font-extrabold tracking-wider text-slate-400 hover:text-slate-700 transition-colors">{n}</div>
-          ))}
-        </div>
-        <div className="mt-12 grid md:grid-cols-3 gap-4">
-          {[
-            { stat: '2.140', label: 'işletme bu hafta sipariş verdi' },
-            { stat: '48 sa', label: 'ortalama üretim süresi' },
-            { stat: '%99,4', label: 'baskı kontrolünden geçme oranı' },
-          ].map((s) => (
-            <div key={s.label} className="bg-white border border-slate-200 rounded-lg p-5 text-center">
-              <div className="text-3xl font-bold text-slate-900 tabular-nums" style={{ fontFamily: 'Oswald, Inter, sans-serif' }}>{s.stat}</div>
-              <div className="text-xs text-slate-500 mt-1">{s.label}</div>
-            </div>
-          ))}
-        </div>
+    <section className="max-w-6xl mx-auto px-6 py-16 md:py-20">
+      <div className="pdl-mono text-[11px] tracking-[0.22em] uppercase text-[var(--pdl-ink-40)] mb-2">
+        Kimin için
       </div>
-    </section>
-  );
-}
-
-function SiteFooter() {
-  const cols = [
-    { h: 'Ürünler', items: ['Broşür', 'Katalog', 'Etiket', 'Kartvizit', 'Afiş', 'Kitapçık', 'Ambalaj', 'El İlanı'] },
-    { h: 'Kurumsal', items: ['Hakkımızda', 'Müşteri Hikayeleri', 'Basın Odası', 'İletişim'] },
-    { h: 'Destek', items: ['Yardım Merkezi', 'Baskı Rehberi', 'Sıkça Sorulanlar', 'Kargo & Teslimat'] },
-  ];
-  return (
-    <footer className="bg-slate-900 text-slate-400 py-12 mt-8">
-      <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-5 gap-8">
-        <div className="md:col-span-2">
-          <div className="flex items-center gap-2 text-white">
-            <span className="w-5 h-5 rounded bg-white text-slate-900 grid place-items-center text-[11px] font-extrabold">P</span>
-            <span className="text-base font-extrabold tracking-tight">Presserdiado</span>
-          </div>
-          <p className="text-xs leading-relaxed mt-3 max-w-sm">
-            Tarayıcıda tasarla, 48 saatte kapına gelsin. Web-to-print platformu ile
-            katalogdan ambalaja tüm matbaa işlerinizi tek panelde yönetin.
-          </p>
-        </div>
-        {cols.map((col) => (
-          <div key={col.h}>
-            <div className="text-[10px] font-bold tracking-[0.16em] uppercase text-slate-500 mb-3">{col.h}</div>
-            <ul className="space-y-2 text-xs">
-              {col.items.map((i) => (
-                <li key={i}><a href="#" className="hover:text-white transition-colors">{i}</a></li>
-              ))}
-            </ul>
+      <h2 className="pdl-display uppercase font-semibold text-3xl md:text-4xl tracking-tight mb-10">
+        Çok ürünü olan herkes için
+      </h2>
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {cards.map((c) => (
+          <div key={c.title} className="border-l-2 border-[var(--pdl-red)] pl-4">
+            <h3 className="text-base font-bold mb-1.5">{c.title}</h3>
+            <p className="text-sm text-[var(--pdl-ink-60)] leading-relaxed">{c.body}</p>
           </div>
         ))}
       </div>
-      <div className="max-w-7xl mx-auto px-6 mt-10 pt-6 border-t border-slate-800 flex items-center justify-between text-[11px]">
-        <div>© 2026 Presserdiado · Tüm hakları saklıdır.</div>
-        <div className="flex gap-5">
-          <a href="#" className="hover:text-white">KVKK</a>
-          <a href="#" className="hover:text-white">Çerez Politikası</a>
-          <a href="#" className="hover:text-white">Mesafeli Satış Sözleşmesi</a>
+    </section>
+  );
+}
+
+function Faq() {
+  const items = [
+    {
+      q: 'Tasarımı ben mi yapıyorum?',
+      a: 'Hayır — hazır temalardan birini seçmen yeterli; ürünler ve fiyatlar otomatik yerleşir. İstersen stüdyoda banner, zemin, fiyat kutusu gibi her parçayı kendin düzenleyebilirsin.',
+    },
+    {
+      q: 'Excel dosyamda ne olmalı?',
+      a: 'Ürün adı ve fiyat yeterli. Hücre numarası (POS) kolonu eklersen her ürün tam istediğin hücreye oturur; ürün görsellerini de yükleyip adla/kodla eşleştirebilirsin.',
+    },
+    {
+      q: 'Baskı ne kadar sürede elimde olur?',
+      a: 'Broşürünü onayladıktan sonra baskı 2 iş günü içinde tamamlanır ve kargoya verilir.',
+    },
+    {
+      q: 'Hangi ebat ve kağıtlar var?',
+      a: 'A4 ve A3; kırımsız veya kırımlı seçenekler. Kağıt olarak 115–200 gr kuşe seçenekleri mevcut — hepsinin fiyatını yukarıdaki hesaplayıcıda görebilirsin.',
+    },
+    {
+      q: 'Baskı almadan sadece tasarım yapabilir miyim?',
+      a: 'Pilot dönemde stüdyo, baskı siparişiyle birlikte çalışıyor. Yalnızca tasarım/PDF ihtiyacın varsa bize yaz, birlikte bakalım.',
+    },
+    {
+      q: 'Ödeme nasıl işliyor?',
+      a: 'Pilot dönemde havale/EFT ile çalışıyoruz; faturan siparişinle birlikte kesilir. Kartla ödeme yakında.',
+    },
+  ];
+
+  return (
+    <section id="sss" className="max-w-3xl mx-auto px-6 pb-16 md:pb-20 scroll-mt-20">
+      <div className="pdl-mono text-[11px] tracking-[0.22em] uppercase text-[var(--pdl-ink-40)] mb-2">
+        SSS
+      </div>
+      <h2 className="pdl-display uppercase font-semibold text-3xl md:text-4xl tracking-tight mb-8">
+        Sık sorulanlar
+      </h2>
+      <div className="pdl-faq divide-y divide-[var(--pdl-ink-12)] border-y border-[var(--pdl-ink-12)]">
+        {items.map((it) => (
+          <details key={it.q} className="py-4">
+            <summary className="text-sm font-semibold pr-8">{it.q}</summary>
+            <p className="text-sm text-[var(--pdl-ink-60)] leading-relaxed mt-2.5 pr-8">{it.a}</p>
+          </details>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// Dürüst pilot daveti — sahte sosyal kanıt yerine gerçek durum.
+function PilotBand() {
+  const navigate = useNavigate();
+  return (
+    <section className="bg-[var(--pdl-red)] text-white">
+      <div className="max-w-6xl mx-auto px-6 py-12 md:py-14 flex flex-col md:flex-row md:items-center gap-6">
+        <div className="flex-1">
+          <div className="pdl-mono text-[11px] tracking-[0.22em] uppercase text-white/70 mb-2">
+            Pilot dönemi
+          </div>
+          <h2 className="pdl-display uppercase font-semibold text-2xl md:text-3xl tracking-tight leading-tight">
+            İlk 5 markete kurulum + eğitim ücretsiz
+          </h2>
+          <p className="text-sm text-white/80 mt-2 max-w-xl leading-relaxed">
+            Yeni açıldık ve ilk müşterilerimizle birebir çalışıyoruz: ürün listeni birlikte
+            yüklüyor, ilk broşürünü birlikte çıkarıyoruz.
+          </p>
         </div>
+        <button
+          onClick={() => navigate('/register')}
+          className="h-11 px-6 rounded-[4px] bg-white text-[var(--pdl-red)] hover:bg-[var(--pdl-paper)] text-sm font-bold transition-colors self-start md:self-center shrink-0"
+        >
+          Pilota katıl
+        </button>
+      </div>
+    </section>
+  );
+}
+
+export function SiteFooter() {
+  return (
+    <footer className="pdl bg-[var(--pdl-ink)] text-white/60">
+      <div className="max-w-6xl mx-auto px-6 py-10 flex flex-col md:flex-row gap-8 md:items-start md:justify-between">
+        <div className="max-w-sm">
+          <span className="text-white">
+            <Brand light />
+          </span>
+          <p className="text-xs leading-relaxed mt-3">
+            Çok ürünlü kampanya broşürleri için tasarım stüdyosu ve baskı.
+            Excel&rsquo;ini yükle, broşürün dizilsin, baskısı kapına gelsin.
+          </p>
+        </div>
+        <nav className="flex gap-8 text-xs">
+          <div className="flex flex-col gap-2">
+            <a href="/#nasil" className="hover:text-white transition-colors">Nasıl çalışır</a>
+            <a href="/#fiyat" className="hover:text-white transition-colors">Fiyat</a>
+            <a href="/#sss" className="hover:text-white transition-colors">SSS</a>
+          </div>
+        </nav>
+      </div>
+      <div className="max-w-6xl mx-auto px-6 pb-8 pt-4 border-t border-white/10 text-[11px]">
+        © 2026 Presserdiado · Tüm hakları saklıdır.
       </div>
     </footer>
   );
@@ -398,13 +436,17 @@ function SiteFooter() {
 
 export default function StorefrontPage() {
   return (
-    <div id="top" className="min-h-screen bg-stone-50">
+    <div id="top" className="pdl min-h-screen">
       <SiteHeader />
       <Hero />
-      <ProductGrid />
-      <ConfiguratorSection />
-      <HowItWorks />
-      <Trust />
+      <NicheBand />
+      <Steps />
+      <SpecSheet />
+      <PricingSection />
+      <ForWho />
+      <hr className="pdl-cutline max-w-6xl mx-auto" />
+      <Faq />
+      <PilotBand />
       <SiteFooter />
     </div>
   );

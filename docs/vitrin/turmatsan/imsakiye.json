@@ -1,0 +1,12 @@
+{
+  "category": "imsakiye",
+  "categoryLabel": "İmsakiye",
+  "sourceUrl": "https://www.turmatsan.com/tr/Page/imsakiye/",
+  "memberSourceUrl": "https://www.turmatsan.com/hesap/ (Ürünler > İmsakiye)",
+  "fetchedAt": "2026-07-24",
+  "status": "complete",
+  "suggestedSaleMode": "quote",
+  "pricingAxes": [],
+  "notes": "Üye panelinde de KONTROL EDİLDİ: İmsakiye sekmesi tamamen BOŞ (hiç ürün/kod yok) — kamuya açık sayfadaki 'özel üretim' bilgisiyle tutarlı. Ana giriş ekranında ayrıca büyük bir 'İMSAKİYE FİYAT LİSTESİ' banner'ı var ama tıklanabilir/veri döndüren bir içerik değildi (sezonluk kampanya duyurusu olabilir). SONUÇ KESİNLEŞTİ: quote modu + sezonluk (Ramazan) — vitrin dışı sezonlarda gizlenebilir.",
+  "variants": []
+}

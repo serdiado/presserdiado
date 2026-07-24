@@ -1,0 +1,16 @@
+{
+  "category": "oto-paspas",
+  "categoryLabel": "Oto Paspas",
+  "sourceUrl": "https://www.turmatsan.com/tr/Page/oto_paspas/",
+  "memberSourceUrl": "https://www.turmatsan.com/hesap/index.php?goster=fiyat-listesi",
+  "fetchedAt": "2026-07-24",
+  "status": "complete",
+  "suggestedSaleMode": "upload",
+  "pricingAxes": ["adet kademesi"],
+  "notes": "3 varyantın tamamı ÜYE fiyatıyla doğrulandı. 34x49 cm, 85 gr Kraft, tek renk.",
+  "variants": [
+    { "code": "P1", "size": "34x49 cm", "material": "85 gr Kraft", "sides": "tek renk", "quantity": 1000, "wholesaleTRY": 1750, "retailRefTRY": 2250 },
+    { "code": "P2", "size": "34x49 cm", "material": "85 gr Kraft", "sides": "tek renk", "quantity": 2000, "wholesaleTRY": 2700, "retailRefTRY": 3500 },
+    { "code": "P3", "size": "34x49 cm", "material": "85 gr Kraft", "sides": "tek renk", "quantity": 5000, "wholesaleTRY": 4800, "retailRefTRY": 6000 }
+  ]
+}

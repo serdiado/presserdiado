@@ -1,0 +1,12 @@
+{
+  "category": "canta-katalog",
+  "categoryLabel": "Çanta Katalog",
+  "sourceUrl": "https://www.turmatsan.com/cantaKatalog/",
+  "memberSourceUrl": null,
+  "fetchedAt": "2026-07-24",
+  "status": "complete",
+  "suggestedSaleMode": "quote",
+  "pricingAxes": [],
+  "notes": "Ürün kategorisi değil, PDF model kataloğu (Yaldız/Kabartma Lak Sim/Lak/Lens/Eko/Diğer). Gerçek çanta fiyat/ebat verisi artık karton-canta.json'da (üye 'Çantalar' bölümünden, CNT1-4 kodları) mevcut — bu dosya yalnız görsel model referansı olarak kalıyor.",
+  "variants": []
+}

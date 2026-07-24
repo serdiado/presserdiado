@@ -22,10 +22,61 @@ export interface CatalogOption {
   sortOrder: number;
 }
 
+// Vitrin satış modu — product_types.sale_mode ile birebir.
+export type SaleMode = 'design' | 'upload' | 'quote';
+
+// configSchema.ui — seed'in yazdığı web UI ipuçları (kategori etiketi, adet birimi, sunum).
+// presentation: 'picker' = sade kart seçici (hazır paketler), 'wizard' = sıralı sihirbaz (matris).
+export interface ProductTypeUiHints {
+  optionLabels?: Record<string, string>;
+  quantityUnit?: string;
+  presentation?: 'picker' | 'wizard';
+}
+
+// GET /catalog/product-types dönüşündeki ürün tipi (options endpoint'i de aynısını döner).
+export interface CatalogProductType {
+  key: string;
+  name: string;
+  category: string | null;
+  description: string | null;
+  saleMode: SaleMode;
+  dimensions: unknown;
+  configSchema: unknown;
+  sortOrder: number;
+}
+
 export interface CatalogOptions {
-  productType: { key: string; name: string };
+  productType: CatalogProductType;
   // Anahtar = kategori (snake_case): size, fold, paper_type, paper_weight, color_mode, coating, binding
   options: Record<string, CatalogOption[]>;
+}
+
+// GET /catalog/product-types/:key/packages — paket kuralı. basePrice/taxRate yalnız kart
+// fiyat etiketi içindir; bağlayıcı fiyat yine /pricing/quote'tan gelir.
+export interface CatalogPackage {
+  quantity: number;
+  sizeKey: string | null;
+  paperTypeKey: string | null;
+  paperWeightKey: string | null;
+  colorModeKey: string | null;
+  coatingKey: string | null;
+  bindingKey: string | null;
+  basePrice: string;
+  taxRate: string;
+}
+
+// Kart seçici için: paket taban fiyatından KDV-dahil etiket fiyatı.
+export function packagePriceInclTax(pkg: CatalogPackage): number {
+  const base = parseFloat(pkg.basePrice);
+  const rate = parseFloat(pkg.taxRate);
+  if (!Number.isFinite(base)) return 0;
+  return base * (1 + (Number.isFinite(rate) ? rate : 0) / 100);
+}
+
+// configSchema içinden ui ipuçlarını güvenli çıkar.
+export function uiHintsOf(productType: CatalogProductType | null | undefined): ProductTypeUiHints {
+  const schema = productType?.configSchema as { ui?: ProductTypeUiHints } | null | undefined;
+  return schema?.ui ?? {};
 }
 
 // POST /pricing/quote dönüşü — backend PriceQuote ile birebir (parasal alanlar string).

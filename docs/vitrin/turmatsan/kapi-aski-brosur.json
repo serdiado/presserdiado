@@ -1,0 +1,16 @@
+{
+  "category": "kapi-aski-brosur",
+  "categoryLabel": "Kapı Askı Broşürleri",
+  "sourceUrl": null,
+  "memberSourceUrl": "https://www.turmatsan.com/hesap/index.php?goster=fiyat-listesi (bölüm adı: 'Kapı Askı Broşürleri')",
+  "fetchedAt": "2026-07-24",
+  "status": "complete",
+  "suggestedSaleMode": "upload",
+  "pricingAxes": ["kağıt/gramaj", "ebat"],
+  "notes": "YENİ KATEGORİ — kamuya açık ana menüde YOK, yalnız üye 'Fiyat Listesi'nde bulundu. Kapı kolu delikli/kesimli tanıtım broşürü (kapı askısı). Vitrin ana kategori listesine eklenip eklenmeyeceğine karar ver.",
+  "variants": [
+    { "code": "ASK1", "size": "10.5x24 cm", "material": "350 gr Kuşe", "processes": ["Mat Selefon", "Kabartma Lak"], "sides": "çift", "quantity": 1000, "wholesaleTRY": 2625 },
+    { "code": "ASK2", "size": "10.5x24 cm", "material": "700 gr Bristol", "processes": ["Mat Selefon", "Kabartma Lak"], "sides": "çift", "quantity": 1000, "wholesaleTRY": 2875 },
+    { "code": "ASK3", "size": "21x26 cm", "material": "200 gr Kuşe", "processes": ["Parlak Selefon"], "sides": "çift", "quantity": 1000, "wholesaleTRY": 4700 }
+  ]
+}
