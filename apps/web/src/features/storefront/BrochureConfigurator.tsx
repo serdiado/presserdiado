@@ -10,10 +10,10 @@ import { PrintOptionsSelector } from '@/features/print-order/PrintOptionsSelecto
 import { useCatalogOptions } from '@/features/print-order/hooks/useCatalogOptions';
 import { usePriceQuote } from '@/features/print-order/hooks/usePriceQuote';
 import {
+  BROCHURE_QUANTITY_CHOICES,
   CATEGORY_ORDER,
   CATEGORY_TO_OPTION_KEY,
   DEFAULT_OPTIONS,
-  DEFAULT_QUANTITY,
 } from '@/features/print-order/constants';
 import type { PrintOptionsValue } from '@/features/print-order/types';
 
@@ -26,7 +26,8 @@ export function BrochureConfigurator() {
 
   const { data: catalog, loading, error } = useCatalogOptions(BROCHURE_KEY);
   const [printOptions, setPrintOptions] = useState<PrintOptionsValue>({ ...DEFAULT_OPTIONS });
-  const [quantity, setQuantity] = useState<number>(DEFAULT_QUANTITY);
+  // 1000 adet: sabit adet listesindeki (500/1000/2000/5000/10000) en yaygın başlangıç noktası.
+  const [quantity, setQuantity] = useState<number>(1000);
 
   // Katalog yüklenince eksik kategorileri (özellikle ebat/kırım — DEFAULT_OPTIONS'ta yok,
   // sihirbazda Adım 1'den gelirdi) ilk katalog seçeneğiyle seed et ki ilk quote geçerli olsun.
@@ -86,6 +87,7 @@ export function BrochureConfigurator() {
             onChange={setPrintOptions}
             quantity={quantity}
             onQuantityChange={setQuantity}
+            quantityChoices={BROCHURE_QUANTITY_CHOICES}
             quote={quote}
             quoteLoading={quoteLoading}
             quoteError={quoteError}

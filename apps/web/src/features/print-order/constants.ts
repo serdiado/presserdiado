@@ -44,14 +44,20 @@ export const DESIGN_LOCKED_NOTE =
   'Ebat ve kırım tasarımdan gelir; değiştirmek için yeni bir tasarım başlatın.';
 
 // Pilot varsayılan seçimler (ebat/kırım hariç — onlar aktif şablondan türetilir).
-// Katalog seed anahtarlarıyla hizalı (apps/api/src/db/seed.ts).
+// Katalog seed anahtarlarıyla hizalı (apps/api/src/db/seed.ts). binding kategorisi hiç
+// seed edilmiyor (broşürde cilt yok) — varsayılanı da yok, PrintOptionsSelector zaten
+// boş kategoriyi render etmiyor.
 export const DEFAULT_OPTIONS: PrintOptionsValue = {
-  paperType: 'kuse-mat',
-  paperWeight: '135',
+  paperType: 'kuse',
+  paperWeight: '128',
   colorMode: '4-4',
   coating: 'yok',
-  binding: 'yok',
 };
 
 // Varsayılan sipariş adedi (web/sihirbaz + stüdyo başlangıcı).
 export const DEFAULT_QUANTITY = 100;
+
+// Broşür adet seçenekleri (vitrin) — sabit liste, turmatsan'ın düzensiz adet kademeleri
+// yerine Presserdiado'nun kendi kararı. Birim-fiyat + adet-indirimi modeliyle çalışır
+// (pricing_rules.quantity=NULL); bkz. apps/api/src/db/seed.ts QUANTITY_TIERS.
+export const BROCHURE_QUANTITY_CHOICES = [500, 1000, 2000, 5000, 10000];

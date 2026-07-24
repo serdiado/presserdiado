@@ -3,7 +3,7 @@
 // verifyClientTotal ile yeniden hesaplanıp doğrulanır (S3).
 import { and, eq } from 'drizzle-orm';
 import { db } from '../../db/index.js';
-import { productTypes, pricingRules } from '../../db/schema/index.js';
+import { productTypes, pricingRules, printOptions } from '../../db/schema/index.js';
 import { NotFoundError, ValidationError } from '../../lib/errors.js';
 
 export interface PrintOptionSelection {
@@ -54,6 +54,64 @@ const RULE_MATCH_COLUMNS = [
   ['bindingKey', 'binding'],
 ] as const;
 
+// print_options.category (snake_case) <-> istek option alanı (camelCase) eşlemesi.
+// Web tarafındaki CATEGORY_TO_OPTION_KEY'in (apps/web/.../print-order/constants.ts) aynası —
+// çapraz-eksen bağımlılık doğrulaması (requires/excludes) için gerekli.
+const CATEGORY_TO_FIELD: Record<string, keyof PrintOptionSelection> = {
+  size: 'size',
+  fold: 'fold',
+  paper_type: 'paperType',
+  paper_weight: 'paperWeight',
+  color_mode: 'colorMode',
+  coating: 'coating',
+  binding: 'binding',
+};
+const FIELD_TO_CATEGORY = Object.fromEntries(
+  Object.entries(CATEGORY_TO_FIELD).map(([cat, field]) => [field, cat]),
+) as Record<keyof PrintOptionSelection, string>;
+
+interface DependencyMeta {
+  requires?: Record<string, string>;
+  excludes?: Record<string, string>;
+}
+
+// Çapraz-eksen bağımlılığı (ör. broşürde "Renk: Tek Yön" yalnız Kırım=Yok iken geçerli).
+// Aynı requires/excludes metadata'sı PrintOptionsSelector'da UI filtresi olarak da kullanılır
+// (apps/web/.../print-order/PrintOptionsSelector.tsx) — UI zaten bu kombinasyonları sunmuyor,
+// ama backend tek gerçek kaynak olduğundan (frontend'e güvenilmez) burada da zorunlu kılınır.
+function assertOptionDependencies(
+  optionRows: Array<{ category: string; key: string; label: string; metadata: unknown }>,
+  options: PrintOptionSelection,
+): void {
+  for (const [field, selectedKey] of Object.entries(options) as [keyof PrintOptionSelection, string | undefined][]) {
+    if (!selectedKey) continue;
+    const category = FIELD_TO_CATEGORY[field];
+    const row = optionRows.find((r) => r.category === category && r.key === selectedKey);
+    const meta = row?.metadata as DependencyMeta | null | undefined;
+    if (!meta) continue;
+    if (meta.requires) {
+      for (const [reqCategory, reqValue] of Object.entries(meta.requires)) {
+        const reqField = CATEGORY_TO_FIELD[reqCategory];
+        if (reqField && options[reqField] !== reqValue) {
+          throw new ValidationError(
+            `Geçersiz kombinasyon: "${row!.label}" yalnız ${reqCategory}=${reqValue} iken seçilebilir`,
+          );
+        }
+      }
+    }
+    if (meta.excludes) {
+      for (const [exCategory, exValue] of Object.entries(meta.excludes)) {
+        const exField = CATEGORY_TO_FIELD[exCategory];
+        if (exField && options[exField] === exValue) {
+          throw new ValidationError(
+            `Geçersiz kombinasyon: "${row!.label}", ${exCategory}=${exValue} iken seçilemez`,
+          );
+        }
+      }
+    }
+  }
+}
+
 const toCents = (value: string): number => Math.round(parseFloat(value) * 100);
 const fromCents = (cents: number): string => (cents / 100).toFixed(2);
 
@@ -78,6 +136,17 @@ export const pricingService = {
     if (!productType) {
       throw new NotFoundError(`Ürün tipi bulunamadı: ${input.productTypeKey}`);
     }
+
+    const optionRows = await db
+      .select({
+        category: printOptions.category,
+        key: printOptions.key,
+        label: printOptions.label,
+        metadata: printOptions.metadata,
+      })
+      .from(printOptions)
+      .where(and(eq(printOptions.productTypeId, productType.id), eq(printOptions.isActive, true)));
+    assertOptionDependencies(optionRows, options);
 
     const rules = await db
       .select()

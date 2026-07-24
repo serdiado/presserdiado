@@ -42,7 +42,8 @@
         { "id": "A3", "title": "A3", "hint": "297 × 420 mm", "widthMm": 297, "heightMm": 420 },
         { "id": "A4", "title": "A4", "hint": "210 × 297 mm", "widthMm": 210, "heightMm": 297 },
         { "id": "A5", "title": "A5", "hint": "148 × 210 mm", "widthMm": 148, "heightMm": 210 },
-        { "id": "A6", "title": "A6", "hint": "105 × 148 mm", "widthMm": 105, "heightMm": 148 }
+        { "id": "A6", "title": "A6", "hint": "105 × 148 mm", "widthMm": 105, "heightMm": 148 },
+        { "id": "A7", "title": "A7", "hint": "74 × 105 mm", "widthMm": 74, "heightMm": 105 }
       ],
       "default": "A3"
     },

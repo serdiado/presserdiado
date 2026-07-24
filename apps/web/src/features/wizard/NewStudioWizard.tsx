@@ -126,6 +126,9 @@ function PaperIcon({ id }: { id: string }) {
     A4: { x: 25.43, y: 16.08, w: 45.14, h: 63.84, t: 'A4', fs: 21 },
     A5: { x: 29.73, y: 22.16, w: 36.54, h: 51.68, t: 'A5', fs: 20 },
     A6: { x: 34.03, y: 28.24, w: 27.94, h: 39.52, t: 'A6', fs: 18 },
+    // A3→A6 ile aynı adım (x+4.3, y+6.08, w-8.6, h-12.16) devam ettirildi — A-serisi her
+    // adımda bir boyutu yarıya indirdiği için değerler zaten tam aritmetik ilerliyordu.
+    A7: { x: 38.33, y: 34.32, w: 19.34, h: 27.36, t: 'A7', fs: 16 },
   };
   const v = map[id] ?? map.A4;
   return (

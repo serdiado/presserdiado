@@ -1,6 +1,7 @@
 // Ortak baskı-özellik seçim bileşeni — saf sunum + seçim. Sipariş/fatura BİLMEZ.
 // Katalogtan beslenir, fiyatı prop olarak alır. S5 (stüdyo) ve S6 (web) aynı bileşeni kullanır.
 
+import { useEffect } from 'react';
 import { Lock } from 'lucide-react';
 import {
   CATEGORY_LABELS,
@@ -8,7 +9,41 @@ import {
   CATEGORY_TO_OPTION_KEY,
   DESIGN_LOCKED_NOTE,
 } from './constants';
-import { formatTRY, type CatalogOptions, type PriceQuote, type PrintOptionsValue } from './types';
+import {
+  formatTRY,
+  type CatalogOptions,
+  type PriceQuote,
+  type PrintOptionsValue,
+} from './types';
+
+// Çapraz-eksen bağımlılığı: seed'in option.metadata'sına yazdığı requires/excludes kuralı
+// (ör. broşürde "Renk: Tek Yön" yalnız Kırım=Yok iken görünür). Kategori adı → o kategorinin
+// PrintOptionsValue karşılığı CATEGORY_TO_OPTION_KEY üzerinden çözülür; genel amaçlı, tek bir
+// ürüne özel değil — ileride başka eksen çiftleri için de aynı metadata şekli kullanılabilir.
+interface DependencyMeta {
+  requires?: Record<string, string>;
+  excludes?: Record<string, string>;
+}
+
+function isOptionAllowed(metadata: unknown, currentValue: PrintOptionsValue): boolean {
+  const meta = metadata as DependencyMeta | null | undefined;
+  if (!meta) return true;
+  const valueOf = (categoryKey: string) => {
+    const optionKey = CATEGORY_TO_OPTION_KEY[categoryKey] ?? (categoryKey as keyof PrintOptionsValue);
+    return currentValue[optionKey];
+  };
+  if (meta.requires) {
+    for (const [cat, requiredVal] of Object.entries(meta.requires)) {
+      if (valueOf(cat) !== requiredVal) return false;
+    }
+  }
+  if (meta.excludes) {
+    for (const [cat, excludedVal] of Object.entries(meta.excludes)) {
+      if (valueOf(cat) === excludedVal) return false;
+    }
+  }
+  return true;
+}
 
 interface PrintOptionsSelectorProps {
   options: CatalogOptions;
@@ -47,6 +82,27 @@ export function PrintOptionsSelector({
   const labels = { ...CATEGORY_LABELS, ...(categoryLabels ?? {}) };
   const unit = quantityUnit ?? 'adet';
 
+  // Çapraz-eksen bağımlılığı: bir kategori başka bir kategorinin seçimine göre daralınca
+  // (ör. Kırım değişince Renk listesi), o kategoride artık geçersiz kalan seçim otomatik
+  // olarak yeni listenin ilk geçerli değerine düşer — kullanıcı "seçilemez bir kombinasyonda"
+  // kilitli kalmaz.
+  useEffect(() => {
+    for (const category of CATEGORY_ORDER) {
+      const list = options.options[category];
+      if (!list || list.length === 0) continue;
+      const optionKey = CATEGORY_TO_OPTION_KEY[category];
+      const current = value[optionKey];
+      const allowed = list.filter((o) => isOptionAllowed(o.metadata, value));
+      if (allowed.length === 0) continue;
+      if (current == null || !allowed.some((o) => o.key === current)) {
+        set(optionKey, allowed[0].key);
+        return; // tek seferde bir düzeltme; sonraki render'da diğer kategoriler tekrar kontrol edilir
+      }
+    }
+    // set/value fonksiyonel olarak options+value'dan türediği için yalnız bunlara bağlıyoruz.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [options, value]);
+
   return (
     <div className="space-y-3">
       {/* Adet — paket ürünlerinde geçerli paketlerden seçim, aksi halde serbest sayı. */}
@@ -80,8 +136,11 @@ export function PrintOptionsSelector({
 
       {/* Kategori seçimleri */}
       {CATEGORY_ORDER.map((category) => {
-        const list = options.options[category];
-        if (!list || list.length === 0) return null;
+        const rawList = options.options[category];
+        if (!rawList || rawList.length === 0) return null;
+        // Çapraz-eksen bağımlılığı: başka bir kategorinin mevcut seçimine göre daraltılmış liste.
+        const list = rawList.filter((o) => isOptionAllowed(o.metadata, value));
+        if (list.length === 0) return null;
 
         const optionKey = CATEGORY_TO_OPTION_KEY[category];
         const locked = lockedCategories.includes(category);

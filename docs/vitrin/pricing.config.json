@@ -1,7 +1,9 @@
 {
-  "_comment": "Vitrin satış fiyatı üretim kuralları — seed-turmatsan.ts bunu okur. Fiyat KODA GÖMÜLMEZ; marjı burada değiştirip 'npm run db:seed:turmatsan' ile yeniden uygula. retailFirst=true iken turmatsan perakende fiyatı (retailRefTRY) varsa satış fiyatı odur (piyasa fiyatıyla rekabet, marj = perakende-toptan farkı); yoksa toptan × marginDefault, yukarı roundUpToTRY'ye yuvarlanır. Kalıcı çözüm admin 'Fiyatlandırma' ekranı (ana TODO 🎯) — o gelene kadar tek ayar noktası burasıdır.",
+  "_comment": "Vitrin satış fiyatı üretim kuralları — seed-turmatsan.ts (upload ürünleri) ve seed.ts (broşür) bunu okur. Fiyat KODA GÖMÜLMEZ; marjı burada değiştirip ilgili seed script'ini yeniden çalıştır. retailFirst=true iken turmatsan perakende fiyatı (retailRefTRY) varsa satış fiyatı odur (piyasa fiyatıyla rekabet, marj = perakende-toptan farkı); yoksa toptan × marginDefault, yukarı roundUpToTRY'ye yuvarlanır. Kalıcı çözüm admin 'Fiyatlandırma' ekranı (ana TODO 🎯) — o gelene kadar tek ayar noktası burasıdır.",
   "retailFirst": true,
   "marginDefault": 1.4,
+  "brochureMarginMultiplier": 1.7,
+  "brochureMarginNote": "Broşür yalnız baskı değil, tasarım stüdyosunu da (ajans yerine geçen değer) içerdiği için diğer ürünlerden (marginDefault=1.4) daha yüksek. Kullanıcı kararı 2026-07-25: %70. seed.ts, A4_BASE_BY_WEIGHT (turmatsan toptan referansı) üzerine bunu uygular.",
   "roundUpToTRY": 10,
   "taxRatePct": 20
 }
