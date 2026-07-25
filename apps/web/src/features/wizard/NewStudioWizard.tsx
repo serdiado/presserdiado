@@ -1,6 +1,7 @@
 // Stüdyo öncesi seçim sihirbazı — tamamen wizard.config.json'a göre render edilir.
 
 import { useMemo, useState } from 'react';
+import { Lock } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import { buildTemplateFromWizard } from './buildTemplate';
@@ -17,8 +18,8 @@ import { PrintOptionsSelector } from '@/features/print-order/PrintOptionsSelecto
 import { useCatalogOptions } from '@/features/print-order/hooks/useCatalogOptions';
 import { usePriceQuote } from '@/features/print-order/hooks/usePriceQuote';
 import {
+  BROCHURE_QUANTITY_CHOICES,
   DEFAULT_OPTIONS,
-  DEFAULT_QUANTITY,
   STUDIO_LOCKED_CATEGORIES,
 } from '@/features/print-order/constants';
 import { formatTRY, type PrintOptionsValue } from '@/features/print-order/types';
@@ -27,6 +28,15 @@ const config = rawConfig as unknown as WizardConfig;
 
 // Sihirbaz kategorisi → katalog productTypeKey. Pilotta yalnızca broşür aktif; diğerleri katalogda yok.
 const CATEGORY_PRODUCT_TYPE: Record<string, string> = { brochure: 'brochure' };
+
+// Aktif olmayan (pilotta katalogda karşılığı olmayan) ürün grupları: kart görünür kalır ama
+// kilitli/seçilemez gösterilir — kaldırmak yerine ileride yeniden açılabilir tutmak için.
+const isCategoryLocked = (id: string) => !(id in CATEGORY_PRODUCT_TYPE);
+const PILOT_LOCKED_NOTE = 'Bu ürün grubu pilot sürecinde henüz aktif değil.';
+
+// Pilotta yalnızca hücre yapılı (cell) çalışma modu aktif; serbest tasarım aynı gerekçeyle kilitli.
+const isModeLocked = (id: string) => id !== 'cell';
+const MODE_LOCKED_NOTE = 'Bu çalışma biçimi pilot sürecinde henüz aktif değil.';
 
 // Vitrin "Online Tasarla" ile route state üzerinden gelen efemer seçim tohumu.
 // Kullanıcı tarafından manipüle edilebilir → tüm okumalar undefined-safe + geçersiz
@@ -178,25 +188,39 @@ function ModeIcon({ id }: { id: string }) {
 
 function OptionCard({
   selected,
+  locked = false,
+  lockedNote = PILOT_LOCKED_NOTE,
   onClick,
   children,
 }: {
   selected: boolean;
+  locked?: boolean;
+  lockedNote?: string;
   onClick: () => void;
   children: React.ReactNode;
 }) {
   return (
     <button
-      onClick={onClick}
+      type="button"
+      onClick={locked ? undefined : onClick}
+      disabled={locked}
+      title={locked ? lockedNote : undefined}
       className={`relative w-full h-full text-left p-4 rounded-xl border-2 transition-all ${
-        selected
-          ? 'border-slate-900 bg-slate-50 shadow-sm'
-          : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+        locked
+          ? 'border-slate-200 bg-slate-50 opacity-60 cursor-not-allowed'
+          : selected
+            ? 'border-slate-900 bg-slate-50 shadow-sm'
+            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
       }`}
     >
-      {selected && (
+      {selected && !locked && (
         <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-slate-900 text-white text-xs flex items-center justify-center">
           ✓
+        </div>
+      )}
+      {locked && (
+        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-slate-300 text-slate-600 flex items-center justify-center">
+          <Lock size={11} />
         </div>
       )}
       {children}
@@ -265,7 +289,7 @@ export default function NewStudioWizard() {
   const isValidPaper = (id?: string) => config.steps.paperSize.options.some((p) => p.id === id);
   const isValidFold = (id?: string) => config.steps.foldType.options.some((f) => f.id === id);
   const isValidCategory = (id?: string) =>
-    config.steps.category.options.some((c) => c.id === id);
+    id != null && config.steps.category.options.some((c) => c.id === id) && !isCategoryLocked(id);
 
   const [sel, setSel] = useState<WizardSelection>(() => {
     // 1) Vitrin tohumu — en yüksek öncelik. Geçersiz size/fold/category config default'a düşer.
@@ -307,7 +331,7 @@ export default function NewStudioWizard() {
   });
   const [activeStep, setActiveStep] = useState<1 | 2 | 3>(1);
   const [otherOpen, setOtherOpen] = useState(false);
-  const [paperOtherOpen, setPaperOtherOpen] = useState(false);
+
   const [foldOtherOpen, setFoldOtherOpen] = useState(false);
 
   // S6: baskı özellikleri + adet — Adım 2'de seçilir, startFreshCatalog ile stüdyoya taşınır.
@@ -318,8 +342,12 @@ export default function NewStudioWizard() {
       : DEFAULT_OPTIONS,
   );
   const [quantity, setQuantity] = useState<number>(() => {
+    // Adet, vitrinle (BrochureConfigurator) aynı sabit listeden (500/1000/2000/5000/10000)
+    // seçilir — geçersiz/listede olmayan bir tohum değeri sessizce 1000'e (en yaygın
+    // başlangıç noktası) düşer, aksi halde <select> hiçbir seçenekle eşleşmeyen bir değeri
+    // gösterirdi.
     const q = wizardSeed?.quantity;
-    return typeof q === 'number' && Number.isFinite(q) && q >= 1 ? Math.floor(q) : DEFAULT_QUANTITY;
+    return typeof q === 'number' && BROCHURE_QUANTITY_CHOICES.includes(q) ? q : 1000;
   });
 
   const set = <K extends keyof WizardSelection>(k: K, v: WizardSelection[K]) =>
@@ -420,18 +448,22 @@ export default function NewStudioWizard() {
             <Step label="Ürün Türü" cols="grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
               {config.steps.category.options
                 .filter((o) => ['brochure', 'catalog', 'label', 'businesscard'].includes(o.id))
-                .map((o) => (
-                  <OptionCard
-                    key={o.id}
-                    selected={sel.category === o.id}
-                    onClick={() => {
-                      set('category', o.id);
-                      setOtherOpen(false);
-                    }}
-                  >
-                    {compactBody(o, 'category')}
-                  </OptionCard>
-                ))}
+                .map((o) => {
+                  const locked = isCategoryLocked(o.id);
+                  return (
+                    <OptionCard
+                      key={o.id}
+                      selected={sel.category === o.id}
+                      locked={locked}
+                      onClick={() => {
+                        set('category', o.id);
+                        setOtherOpen(false);
+                      }}
+                    >
+                      {compactBody(o, 'category')}
+                    </OptionCard>
+                  );
+                })}
 
               <div className="relative">
                 <OptionCard
@@ -455,20 +487,31 @@ export default function NewStudioWizard() {
 
                 {otherOpen && (
                   <div className="absolute z-30 top-[calc(100%+6px)] left-0 w-full bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
-                    {[{ id: 'flyer', title: 'El İlanı' }, { id: 'invitation', title: 'Davetiye' }].map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          set('category', item.id);
-                          setOtherOpen(false);
-                        }}
-                        className="w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-slate-50"
-                      >
-                        {item.title}
-                      </button>
-                    ))}
+                    {[{ id: 'flyer', title: 'El İlanı' }, { id: 'invitation', title: 'Davetiye' }].map((item) => {
+                      const locked = isCategoryLocked(item.id);
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          disabled={locked}
+                          title={locked ? PILOT_LOCKED_NOTE : undefined}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (locked) return;
+                            set('category', item.id);
+                            setOtherOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between gap-2 ${
+                            locked
+                              ? 'text-slate-400 bg-slate-50 cursor-not-allowed'
+                              : 'text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          <span>{item.title}</span>
+                          {locked && <Lock size={11} className="text-slate-400 shrink-0" />}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -479,35 +522,11 @@ export default function NewStudioWizard() {
                 <OptionCard
                   key={o.id}
                   selected={sel.paperSize === o.id}
-                  onClick={() => {
-                    set('paperSize', o.id);
-                    setPaperOtherOpen(false);
-                  }}
+                  onClick={() => set('paperSize', o.id)}
                 >
                   {paperBody(o)}
                 </OptionCard>
               ))}
-
-              <div className="relative">
-                <OptionCard
-                  selected={['other'].includes(sel.paperSize)}
-                  onClick={() => setPaperOtherOpen((v) => !v)}
-                >
-                  <div className="flex flex-col items-center text-center gap-1">
-                    <div className="flex items-center justify-center w-full min-h-11 mb-1">
-                      <div className="text-slate-700 text-2xl font-semibold">＋</div>
-                    </div>
-                    <div className="text-sm font-semibold text-slate-900">Diğer</div>
-                    <div className="text-xs text-slate-500 leading-tight">Boyut seçin</div>
-                  </div>
-                </OptionCard>
-
-                {paperOtherOpen && (
-                  <div className="absolute z-30 top-[calc(100%+6px)] left-0 w-full bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
-                    {/* İleride diğer seçenekler eklenecek */}
-                  </div>
-                )}
-              </div>
             </Step>
 
             <Step label="Katlama Şekli" cols="grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
@@ -599,6 +618,7 @@ export default function NewStudioWizard() {
                   }}
                   quantity={quantity}
                   onQuantityChange={setQuantity}
+                  quantityChoices={BROCHURE_QUANTITY_CHOICES}
                   lockedCategories={STUDIO_LOCKED_CATEGORIES}
                   quote={quote}
                   quoteLoading={quoteLoading}
@@ -616,11 +636,20 @@ export default function NewStudioWizard() {
                 Çalışma Modu
               </h2>
               <div className="grid grid-cols-1 auto-rows-fr gap-3 flex-1">
-                {config.steps.mode.options.map((o) => (
-                  <OptionCard key={o.id} selected={sel.mode === o.id} onClick={() => set('mode', o.id)}>
-                    {modeBody(o)}
-                  </OptionCard>
-                ))}
+                {config.steps.mode.options.map((o) => {
+                  const locked = isModeLocked(o.id);
+                  return (
+                    <OptionCard
+                      key={o.id}
+                      selected={sel.mode === o.id}
+                      locked={locked}
+                      lockedNote={MODE_LOCKED_NOTE}
+                      onClick={() => set('mode', o.id)}
+                    >
+                      {modeBody(o)}
+                    </OptionCard>
+                  );
+                })}
               </div>
             </div>
 
