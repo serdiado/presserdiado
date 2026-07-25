@@ -12,6 +12,19 @@
 //    kardeş borderWidth/priceBorderWidth (sayı) → BorderData; kardeş alanlar silinir.
 // 3) düz bgColor(string)+bgOpacity?+borderColor(string)+borderOpacity?+borderWidth?+borderRadius?
 //    (badge/nameSettings/priceSettings) → appearance: CellAppearance (radius yoksa CellAppearanceNoRadius).
+// 4) image alanı — JSON'lara yazım anındaki dev makinesinin MUTLAK origin'i (http://localhost:3001)
+//    gömülü. Render kodu bu alanı zaten-mutlak varsayıp doğrudan <img src> yapar (toAbsoluteUrl'i
+//    HİÇ çağırmaz — üründe olduğu gibi atama anında mutlaklaştırma kuralı). Prod'da API başka bir
+//    origin'de çalışacağı için relative key'e indirgeyip GÜNCEL origin'e (toAbsoluteUrl) çevrilir.
+
+import { toAbsoluteUrl } from '@/lib/upload';
+
+const BAKED_ABSOLUTE_UPLOAD_URL = /^https?:\/\/[^/]+(\/uploads\/.+)$/;
+
+function reoriginImage(url: string): string {
+  const match = BAKED_ABSOLUTE_UPLOAD_URL.exec(url);
+  return match ? toAbsoluteUrl(match[1]) : url;
+}
 
 function isObject(v: unknown): v is Record<string, unknown> {
   return !!v && typeof v === 'object' && !Array.isArray(v);
@@ -83,6 +96,11 @@ export function normalizeLegacyAppearance(node: unknown): unknown {
     delete obj.borderOpacity;
     delete obj.borderWidth;
     delete obj.borderRadius;
+  }
+
+  // 4) image — bkz. yukarıdaki not.
+  if (typeof obj.image === 'string') {
+    obj.image = reoriginImage(obj.image);
   }
 
   for (const key of Object.keys(obj)) {

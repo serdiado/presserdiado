@@ -1,14 +1,21 @@
 // Baskı Siparişlerim — sipariş tablosu
 // apps/web/src/features/dashboard/pages/Siparislerim.tsx
 
+import { Fragment, useMemo, useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { StatusPill } from '../components/StatusPill';
 import { useDashboardContext } from '../DashboardLayout';
-import type { Order } from '../types';
+import { useCatalogOptions } from '@/features/print-order/hooks/useCatalogOptions';
+import { buildOptionLabelMap, describeOrderItem } from '@/features/print-order/orderTypes';
+import { formatTRY } from '@/features/print-order/types';
 
 const TABLE_HEADERS = ['Sipariş', 'Tür', 'Adet', 'Tutar', 'Tarih', 'Durum', ''] as const;
 
 export function Siparislerim() {
   const { orders, loading } = useDashboardContext();
+  const { data: catalog } = useCatalogOptions('brochure');
+  const labels = useMemo(() => buildOptionLabelMap(catalog), [catalog]);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // Yıllık toplam ve adet dinamik hesaplama
   const currentYear = new Date().getFullYear();
@@ -71,45 +78,88 @@ export function Siparislerim() {
                 </td>
               </tr>
             ) : (
-              orders.map((o, i) => (
-                <tr
-                  key={o.id}
-                  className={[
-                    'hover:bg-slate-50 transition-colors',
-                    i < orders.length - 1 ? 'border-b border-slate-100' : '',
-                  ].join(' ')}
-                >
-                  <td className="px-4 py-3">
-                    <div className="text-sm font-semibold text-slate-800">{o.name}</div>
-                    <div className="text-[11px] text-slate-500 font-mono">{o.code}</div>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-slate-600">{o.type}</td>
-                  <td
-                    className="px-4 py-3 text-sm font-semibold text-slate-800 tabular-nums"
-                    style={{ fontFamily: 'Oswald, Inter, sans-serif' }}
+              orders.map((o, i) => {
+                const expanded = expandedId === o.id;
+                return (
+                <Fragment key={o.id}>
+                  <tr
+                    className={[
+                      'hover:bg-slate-50 transition-colors',
+                      !expanded && i < orders.length - 1 ? 'border-b border-slate-100' : '',
+                    ].join(' ')}
                   >
-                    {o.qty.toLocaleString('tr-TR')}
-                  </td>
-                  <td
-                    className="px-4 py-3 text-sm font-semibold text-slate-800 tabular-nums"
-                    style={{ fontFamily: 'Oswald, Inter, sans-serif' }}
-                  >
-                    {o.totalPrice} ₺
-                  </td>
-                  <td className="px-4 py-3 text-xs text-slate-500">{o.date}</td>
-                  <td className="px-4 py-3">
-                    <StatusPill status={o.status} />
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => alert(`${o.code} detayları yakında eklenecektir.`)}
-                      className="text-xs font-semibold text-slate-600 hover:text-slate-900"
+                    <td className="px-4 py-3">
+                      <div className="text-sm font-semibold text-slate-800">{o.name}</div>
+                      <div className="text-[11px] text-slate-500 font-mono">{o.code}</div>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-slate-600">{o.type}</td>
+                    <td
+                      className="px-4 py-3 text-sm font-semibold text-slate-800 tabular-nums"
+                      style={{ fontFamily: 'Oswald, Inter, sans-serif' }}
                     >
-                      Detay →
-                    </button>
-                  </td>
-                </tr>
-              ))
+                      {o.qty.toLocaleString('tr-TR')}
+                    </td>
+                    <td
+                      className="px-4 py-3 text-sm font-semibold text-slate-800 tabular-nums"
+                      style={{ fontFamily: 'Oswald, Inter, sans-serif' }}
+                    >
+                      {o.totalPrice} ₺
+                    </td>
+                    <td className="px-4 py-3 text-xs text-slate-500">{o.date}</td>
+                    <td className="px-4 py-3">
+                      <StatusPill status={o.status} />
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <button
+                        onClick={() => setExpandedId(expanded ? null : o.id)}
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900"
+                      >
+                        Detay {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                      </button>
+                    </td>
+                  </tr>
+                  {expanded && (
+                    <tr className={i < orders.length - 1 ? 'border-b border-slate-100' : ''}>
+                      <td colSpan={7} className="px-4 py-4 bg-slate-50">
+                        <div className="grid grid-cols-2 gap-6">
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                              Baskı Kalemleri
+                            </p>
+                            <div className="space-y-2">
+                              {o.items.map((it) => (
+                                <div key={it.id} className="text-xs text-slate-700 flex items-center justify-between gap-3">
+                                  <span>
+                                    {it.quantity.toLocaleString('tr-TR')} adet · {describeOrderItem(it, labels) || '—'}
+                                  </span>
+                                  <span className="font-semibold tabular-nums shrink-0">{formatTRY(it.lineTotal)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                              Fatura Bilgisi
+                            </p>
+                            {o.billingSnapshot ? (
+                              <div className="text-xs text-slate-700 space-y-0.5">
+                                <div className="font-semibold">{o.billingSnapshot.title}</div>
+                                {o.billingSnapshot.taxOffice && (
+                                  <div>{o.billingSnapshot.taxOffice} · {o.billingSnapshot.taxNumber}</div>
+                                )}
+                                <div className="text-slate-500">{o.billingSnapshot.invoiceAddress}</div>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-slate-400">Fatura bilgisi kaydedilmemiş.</p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+                );
+              })
             )}
           </tbody>
         </table>

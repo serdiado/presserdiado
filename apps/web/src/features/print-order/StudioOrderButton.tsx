@@ -23,7 +23,6 @@ interface CreatedOrder {
 
 export function StudioOrderButton() {
   const isPreviewMode = useUIStore((s) => s.isPreviewMode);
-  const projectId = useCatalogStore((s) => s.projectId);
   const template = useCatalogStore((s) => s.activeTemplate);
   const { saveProject } = useProjectSave();
   const navigate = useNavigate();
@@ -103,9 +102,10 @@ export function StudioOrderButton() {
     }
     setSubmitting(true);
     try {
-      // studio_design siparişi projectId zorunlu — yeni projeyse önce kaydet.
-      let pid = projectId;
-      if (!pid) pid = await saveProject();
+      // studio_design siparişi projectId zorunlu. KOŞULSUZ kaydet: projectId zaten varsa bile
+      // canvas'taki son (kaydedilmemiş) değişiklikler dondurulacak PDF'e girsin — aksi halde
+      // müşteri "Sipariş Ver"e basmadan önce kaydetmezse üretime yanlış/eski tasarım gider.
+      const pid = await saveProject();
 
       const res = await api.post('/orders', {
         productTypeKey: PRODUCT_TYPE_KEY,
@@ -118,9 +118,19 @@ export function StudioOrderButton() {
       });
       setCreatedOrder({ orderNumber: res.data.orderNumber });
       toast.success(`Sipariş oluşturuldu: ${res.data.orderNumber}`);
+
+      // freeze-pdf sipariş oluşturmayı bloklamaz (non-fatal) — yani üretim PDF'i hazır
+      // olmayabilir. Sessizce yutmak yerine müşteriye açıkça bildir (retry ucu zaten var).
+      const items = (res.data.items ?? []) as Array<{ productionPdfKey?: string | null }>;
+      if (items.length > 0 && !items.some((it) => it.productionPdfKey)) {
+        toast.error(
+          'Sipariş alındı ama üretim PDF\'i hazırlanamadı. Ekibimiz bilgilendirildi, kısa süre içinde tamamlanacak.',
+          { duration: 6000 },
+        );
+      }
     } catch (err) {
       const msg =
-        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+        (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
         'Sipariş oluşturulamadı';
       toast.error(msg);
     } finally {

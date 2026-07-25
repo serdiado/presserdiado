@@ -6,6 +6,7 @@ import { orders } from '../../db/schema/index.js';
 import { config } from '../../config.js';
 import { NotFoundError } from '../../lib/errors.js';
 import { getObject } from '../../lib/storage.js';
+import { orderPdfService } from '../orders/order-pdf.service.js';
 
 // orders.status enum değerleri — PATCH doğrulaması bununla yapılır.
 export const ORDER_STATUSES = [
@@ -65,5 +66,16 @@ export const adminService = {
 
     const stream = await getObject(config.s3.ordersBucket, item.productionPdfKey);
     return { stream, filename: `${order.orderNumber}.pdf` };
+  },
+
+  // Sipariş oluşturmadaki non-fatal freeze denemesi başarısız kalmışsa admin'in sahiplik
+  // kısıtı olmadan yeniden tetikleyebilmesi için (freezeOrderPdf idempotent).
+  async refreezeOrderPdf(orderId: string) {
+    const existing = await db.query.orders.findFirst({
+      where: eq(orders.id, orderId),
+      columns: { id: true },
+    });
+    if (!existing) throw new NotFoundError('Sipariş bulunamadı');
+    return orderPdfService.freezeOrderPdf(orderId);
   },
 };

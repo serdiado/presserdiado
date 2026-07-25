@@ -1,76 +1,69 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Order } from '../types';
+import api from '@/lib/api';
+import { useCatalogOptions } from '@/features/print-order/hooks/useCatalogOptions';
+import { buildOptionLabelMap, describeOrderItem, type OrderApi } from '@/features/print-order/orderTypes';
+import type { Order, OrderStatus } from '../types';
+
+// Backend orders.status enum → Türkçe StatusPill sözlüğü (proje durumlarıyla aynı desen,
+// bkz. DashboardLayout.tsx STATUS_TRANSLATION).
+const STATUS_TR: Record<string, OrderStatus> = {
+  draft: 'yeni',
+  submitted: 'yeni',
+  in_production: 'baskıda',
+  shipped: 'kargoda',
+  completed: 'teslim',
+  cancelled: 'iptal',
+};
+
+function toDisplayOrder(o: OrderApi, labels: Record<string, string>, productTypeName: string): Order {
+  const firstItem = o.items[0];
+  const qty = o.items.reduce((acc, it) => acc + (it.quantity ?? 0), 0);
+  return {
+    id: o.id,
+    code: o.orderNumber,
+    name: productTypeName,
+    type: firstItem ? describeOrderItem(firstItem, labels) : '—',
+    qty,
+    totalPrice: Number(o.grandTotal).toLocaleString('tr-TR'),
+    date: new Date(o.createdAt).toLocaleDateString('tr-TR'),
+    status: STATUS_TR[o.status] ?? 'yeni',
+    items: o.items,
+    billingSnapshot: o.billingSnapshot,
+  };
+}
 
 /**
- * useOrders - Sipariş verilerini yöneten custom React hook.
- * Şimdiklik mock veri döner, durumlar tamamen Türkçe arayüzle (StatusPill) uyumludur.
+ * useOrders — müşterinin kendi siparişlerini (GET /orders) çeker. Baskı özeti etiketleri
+ * (kırım/kağıt/kaplama) broşür kataloğundan (useCatalogOptions) çözülür — pilot tek-niş
+ * olduğundan sabit 'brochure' anahtarı yeterli.
  */
 export function useOrders() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
+  const { data: catalog, loading: catalogLoading } = useCatalogOptions('brochure');
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      // 300ms yapay ağ gecikmesi simüle ediyoruz
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      const mockOrders: Order[] = [
-        {
-          id: 'order-1',
-          code: 'SİP-2026-0341',
-          name: 'Yaz Dönemi Süpermarket Kataloğu',
-          type: 'Katalog · A4 · 16 Sayfa',
-          qty: 500,
-          totalPrice: '14.890',
-          date: '04.06.2026',
-          status: 'baskıda', // Türkçe durum (StatusPill.tsx ile birebir uyumlu)
-        },
-        {
-          id: 'order-2',
-          code: 'SİP-2026-0298',
-          name: 'Serdiado Özel Restoran Menüsü',
-          type: 'Menü · Özel Ölçü · Katlamalı',
-          qty: 250,
-          totalPrice: '6.450',
-          date: '02.06.2026',
-          status: 'kargoda', // Türkçe durum
-        },
-        {
-          id: 'order-3',
-          code: 'SİP-2026-0152',
-          name: 'Presserdiado Tanıtım Broşürü',
-          type: 'Broşür · A5 · 4 Sayfa',
-          qty: 1000,
-          totalPrice: '3.120',
-          date: '28.05.2026',
-          status: 'teslim', // Türkçe durum
-        },
-        {
-          id: 'order-4',
-          code: 'SİP-2026-0110',
-          name: 'Minimalist Şirket Kartviziti',
-          type: 'Kartvizit · 85x55 mm',
-          qty: 200,
-          totalPrice: '450',
-          date: '15.05.2026',
-          status: 'teslim', // Türkçe durum
-        }
-      ];
-
-      setOrders(mockOrders);
+      const res = await api.get<OrderApi[]>('/orders');
+      const labels = buildOptionLabelMap(catalog);
+      const productTypeName = catalog?.productType.name ?? 'Broşür';
+      setOrders(res.data.map((o) => toDisplayOrder(o, labels, productTypeName)));
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Siparişler yüklenirken bir hata oluştu.'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [catalog]);
 
   useEffect(() => {
+    // Katalog etiketleri gelmeden liste çekilirse baskı özeti ham anahtarla kısa süreliğine
+    // yanıp söner ve /orders iki kez çağrılır; katalog isteği çözülene kadar bekle.
+    if (catalogLoading) return;
     fetchOrders();
-  }, [fetchOrders]);
+  }, [fetchOrders, catalogLoading]);
 
   return {
     orders,

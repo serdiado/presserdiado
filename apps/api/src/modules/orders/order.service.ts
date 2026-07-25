@@ -151,10 +151,10 @@ export const orderService = {
   },
 
   async listForUser(userId: string) {
-    return db
-      .select()
-      .from(orders)
-      .where(eq(orders.userId, userId))
-      .orderBy(desc(orders.createdAt));
+    return db.query.orders.findMany({
+      where: eq(orders.userId, userId),
+      with: { items: true },
+      orderBy: [desc(orders.createdAt)],
+    });
   },
 };

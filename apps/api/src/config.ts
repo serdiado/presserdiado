@@ -38,4 +38,10 @@ export const config = {
   web: {
     baseUrl: process.env.WEB_BASE_URL || 'http://localhost:5173',
   },
+
+  auth: {
+    // Pilot: 5 bilinen market hesabı admin tarafından reset-password.ts ile açılır;
+    // genel kayıt kapalı tutulur. REGISTRATION_ENABLED=true ile herkese açık launch'ta yeniden açılır.
+    registrationEnabled: process.env.REGISTRATION_ENABLED !== 'false',
+  },
 } as const;

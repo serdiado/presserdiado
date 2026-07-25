@@ -34,4 +34,12 @@ export async function adminRoutes(app: FastifyInstance) {
       .header('Content-Disposition', `attachment; filename="${filename}"`);
     return reply.send(stream);
   });
+
+  // Sipariş oluşturmadaki non-fatal freeze denemesi başarısız kaldıysa yeniden tetikle
+  // (sahiplik kısıtı yok — müşteri /orders/:id/freeze-pdf'i yalnız kendi siparişi için çağırabilir).
+  app.post('/admin/orders/:id/freeze-pdf', async (request, reply) => {
+    const { id } = idParamSchema.parse(request.params);
+    const result = await adminService.refreezeOrderPdf(id);
+    return reply.send(result);
+  });
 }

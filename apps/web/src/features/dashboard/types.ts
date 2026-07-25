@@ -17,7 +17,6 @@ export type NavItemId =
 export interface NavItem {
   id: NavItemId;
   label: string;
-  badge?: string | number;
 }
 
 export type ProjectStatus = 'taslak' | 'baskıda' | 'kargoda' | 'teslim' | 'onayda';
@@ -43,6 +42,9 @@ export interface Order {
   totalPrice: string;     // "4.890" (display)
   date: string;
   status: OrderStatus;
+  // Genişletilebilir satır detayı için ham backend verisi (dondurulmuş kalemler + fatura anı).
+  items: import('../print-order/orderTypes').OrderItemApi[];
+  billingSnapshot: import('../print-order/orderTypes').BillingSnapshotApi | null;
 }
 
 export interface BrandAsset {
@@ -109,10 +111,4 @@ export interface MediaAsset {
   mimeType?: string | null;
   size?: number | null;
   createdAt?: string;
-}
-
-export interface UsageStat {
-  used: number;
-  limit: number;
-  period: string;         // "Bu Ay"
 }

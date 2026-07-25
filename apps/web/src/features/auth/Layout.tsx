@@ -8,7 +8,7 @@ export default function Layout() {
   const navigate = useNavigate();
 
   function handleLogout() {
-    logout();
+    logout({ clearLocalDrafts: true });
     navigate('/login');
   }
 
@@ -19,7 +19,7 @@ export default function Layout() {
           <div className="flex justify-between h-14 items-center">
             <div className="flex items-center gap-8">
               <Link to="/dashboard" className="text-nav-label text-primary">
-                MatbaaPro
+                Presserdiado
               </Link>
               <div className="hidden sm:flex gap-4">
                 <Link

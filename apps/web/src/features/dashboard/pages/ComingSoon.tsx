@@ -18,7 +18,7 @@ export function ComingSoon() {
       </h1>
       
       <p className="text-sm text-slate-500 max-w-md mt-2">
-        Sizlere daha iyi bir deneyim sunabilmek için bu sayfayı hazırlıyoruz. Çok yakında modern Claude Design arayüzü ile hizmetinizde olacak!
+        Sizlere daha iyi bir deneyim sunabilmek için bu sayfayı hazırlıyoruz. Çok yakında modern bir arayüzle hizmetinizde olacak!
       </p>
 
       <button

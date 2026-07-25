@@ -37,7 +37,7 @@ export function SiteHeader() {
   const logout = useAuthStore((s) => s.logout);
 
   const handleLogout = () => {
-    logout();
+    logout({ clearLocalDrafts: true });
     navigate('/login');
   };
 

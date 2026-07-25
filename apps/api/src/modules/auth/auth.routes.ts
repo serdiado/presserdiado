@@ -1,6 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { authService } from './auth.service.js';
+import { config } from '../../config.js';
+import { ForbiddenError } from '../../lib/errors.js';
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -24,6 +26,9 @@ const STRICT_AUTH_RATE_LIMIT = { rateLimit: { max: 5, timeWindow: '15 minutes' }
 
 export async function authRoutes(app: FastifyInstance) {
   app.post('/auth/register', { config: STRICT_AUTH_RATE_LIMIT }, async (request, reply) => {
+    if (!config.auth.registrationEnabled) {
+      throw new ForbiddenError('Yeni kayıt şu anda kapalı');
+    }
     const body = registerSchema.parse(request.body);
     const result = await authService.register(body, app);
     return reply.status(201).send(result);

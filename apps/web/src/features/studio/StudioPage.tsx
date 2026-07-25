@@ -174,6 +174,18 @@ export default function StudioPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isPreviewMode, setPreviewMode, activeIndex, formas]);
 
+  // Kaydedilmemiş değişiklik varken sekme kapatma/yenileme'yi tarayıcı seviyesinde uyar.
+  // isDirty'yi her değişimde yeniden dinleyici kaydetmek yerine getState() ile taze okunur.
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!useCatalogStore.getState().isDirty) return;
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
   useEffect(() => {
     if (!_hasHydrated) return;
 

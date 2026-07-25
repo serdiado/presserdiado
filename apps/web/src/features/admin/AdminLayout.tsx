@@ -7,13 +7,9 @@ import toast from 'react-hot-toast';
 import api from '@/lib/api';
 import { AdminShell } from './AdminShell';
 import type { AdminOrderStatus } from './adminTokens';
+import type { BillingSnapshotApi, OrderItemApi } from '@/features/print-order/orderTypes';
 
-export interface AdminOrderItem {
-  id: string;
-  quantity: number;
-  productTypeKey: string | null;
-  productionPdfKey: string | null;
-}
+export type AdminOrderItem = OrderItemApi;
 
 export interface AdminOrder {
   id: string;
@@ -22,6 +18,7 @@ export interface AdminOrder {
   grandTotal: string;
   currency: string;
   createdAt: string;
+  billingSnapshot: BillingSnapshotApi | null;
   user: { id: string; email: string; companyName: string | null } | null;
   items: AdminOrderItem[];
 }
@@ -30,8 +27,10 @@ interface AdminDataContextType {
   orders: AdminOrder[];
   loading: boolean;
   savingId: string | null;
+  refreezingId: string | null;
   refetch: () => Promise<void>;
   updateStatus: (orderId: string, status: AdminOrderStatus) => Promise<void>;
+  refreezePdf: (orderId: string) => Promise<void>;
 }
 
 const AdminDataContext = createContext<AdminDataContextType | null>(null);
@@ -46,6 +45,7 @@ export default function AdminLayout() {
   const [orders, setOrders] = useState<AdminOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [refreezingId, setRefreezingId] = useState<string | null>(null);
 
   const refetch = useCallback(async () => {
     setLoading(true);
@@ -87,7 +87,25 @@ export default function AdminLayout() {
     [],
   );
 
-  const value: AdminDataContextType = { orders, loading, savingId, refetch, updateStatus };
+  // Sipariş oluşturmadaki non-fatal freeze denemesi başarısız kalmışsa (productionPdfKey null)
+  // admin panelinden sahiplik kısıtı olmadan yeniden tetikle (freezeOrderPdf idempotent).
+  const refreezePdf = useCallback(async (orderId: string) => {
+    setRefreezingId(orderId);
+    try {
+      await api.post(`/admin/orders/${orderId}/freeze-pdf`);
+      toast.success('Üretim PDF\'i donduruldu');
+      await refetch();
+    } catch (err) {
+      console.error(err);
+      toast.error('PDF dondurulamadı');
+    } finally {
+      setRefreezingId(null);
+    }
+  }, [refetch]);
+
+  const value: AdminDataContextType = {
+    orders, loading, savingId, refreezingId, refetch, updateStatus, refreezePdf,
+  };
 
   return (
     <AdminDataContext.Provider value={value}>

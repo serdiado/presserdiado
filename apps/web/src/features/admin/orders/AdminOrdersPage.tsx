@@ -1,16 +1,19 @@
 // Admin sipariş paneli — TÜM siparişler (gerçek veri). Veri tek kaynaktan: useAdminData.
 // Çalışan mantık korunur: durum PATCH (context) + üretim PDF indirme (yerel).
 // Durum dropdown'u ve StatusPill AYNI ADMIN_STATUS sabitinden okur.
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Search } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp } from 'lucide-react';
 import api from '@/lib/api';
 import { useAdminData, type AdminOrder } from '../AdminLayout';
 import {
   ADMIN_DISPLAY_FONT, ADMIN_STATUS_OPTIONS, StatusPill, type AdminOrderStatus,
 } from '../adminTokens';
+import { useCatalogOptions } from '@/features/print-order/hooks/useCatalogOptions';
+import { buildOptionLabelMap, describeOrderItem } from '@/features/print-order/orderTypes';
+import { formatTRY } from '@/features/print-order/types';
 
-const TABLE_HEADERS = ['Sipariş', 'Müşteri', 'Adet', 'Tutar', 'Tarih', 'Durum', 'PDF'] as const;
+const TABLE_HEADERS = ['', 'Sipariş', 'Müşteri', 'Adet', 'Tutar', 'Tarih', 'Durum', 'PDF'] as const;
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -24,10 +27,13 @@ function formatAmount(value: string): string {
 }
 
 export default function AdminOrdersPage() {
-  const { orders, loading, savingId, refetch, updateStatus } = useAdminData();
+  const { orders, loading, savingId, refreezingId, refetch, updateStatus, refreezePdf } = useAdminData();
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | AdminOrderStatus>('all');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const { data: catalog } = useCatalogOptions('brochure');
+  const labels = useMemo(() => buildOptionLabelMap(catalog), [catalog]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -122,13 +128,13 @@ export default function AdminOrdersPage() {
           <tbody>
             {loading && orders.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center">
+                <td colSpan={8} className="px-4 py-12 text-center">
                   <span className="text-sm font-semibold text-slate-500 animate-pulse">Yükleniyor...</span>
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-12 text-center">
+                <td colSpan={8} className="px-4 py-12 text-center">
                   <p className="text-sm text-slate-500">
                     {orders.length === 0 ? 'Henüz sipariş yok.' : 'Eşleşen sipariş yok.'}
                   </p>
@@ -138,14 +144,24 @@ export default function AdminOrdersPage() {
               filtered.map((o, i) => {
                 const qty = o.items.reduce((acc, it) => acc + (it.quantity ?? 0), 0);
                 const hasPdf = o.items.some((it) => it.productionPdfKey);
+                const expanded = expandedId === o.id;
                 return (
+                <Fragment key={o.id}>
                   <tr
-                    key={o.id}
                     className={[
                       'hover:bg-slate-50 transition-colors',
-                      i < filtered.length - 1 ? 'border-b border-slate-100' : '',
+                      !expanded && i < filtered.length - 1 ? 'border-b border-slate-100' : '',
                     ].join(' ')}
                   >
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => setExpandedId(expanded ? null : o.id)}
+                        className="text-slate-400 hover:text-slate-700"
+                        aria-label={expanded ? 'Detayı kapat' : 'Detayı göster'}
+                      >
+                        {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                      </button>
+                    </td>
                     <td className="px-4 py-3">
                       <div className="text-[11px] text-slate-600 font-mono font-semibold">{o.orderNumber}</div>
                     </td>
@@ -181,16 +197,70 @@ export default function AdminOrdersPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => void handleDownloadPdf(o)}
-                        disabled={!hasPdf || downloadingId === o.id}
-                        className="text-xs font-semibold text-slate-600 hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed"
-                        title={hasPdf ? 'Üretim PDF indir' : 'PDF henüz dondurulmadı'}
-                      >
-                        {downloadingId === o.id ? 'İniyor...' : 'PDF ↓'}
-                      </button>
+                      {hasPdf ? (
+                        <button
+                          onClick={() => void handleDownloadPdf(o)}
+                          disabled={downloadingId === o.id}
+                          className="text-xs font-semibold text-slate-600 hover:text-slate-900 disabled:opacity-40 disabled:cursor-not-allowed"
+                          title="Üretim PDF indir"
+                        >
+                          {downloadingId === o.id ? 'İniyor...' : 'PDF ↓'}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => void refreezePdf(o.id)}
+                          disabled={refreezingId === o.id}
+                          className="text-xs font-semibold text-amber-600 hover:text-amber-800 disabled:opacity-40 disabled:cursor-not-allowed"
+                          title="Sipariş oluşturulurken PDF dondurma başarısız oldu — yeniden dene"
+                        >
+                          {refreezingId === o.id ? 'Donduruluyor...' : 'PDF Yok · Yeniden Dondur'}
+                        </button>
+                      )}
                     </td>
                   </tr>
+                  {expanded && (
+                    <tr className={i < filtered.length - 1 ? 'border-b border-slate-100' : ''}>
+                      <td colSpan={8} className="px-4 py-4 bg-slate-50">
+                        <div className="grid grid-cols-2 gap-6">
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                              Baskı Kalemleri
+                            </p>
+                            <div className="space-y-2">
+                              {o.items.map((it) => (
+                                <div key={it.id} className="text-xs text-slate-700 flex items-center justify-between gap-3">
+                                  <span>
+                                    {it.quantity.toLocaleString('tr-TR')} adet · {describeOrderItem(it, labels) || '—'}
+                                  </span>
+                                  <span className="font-semibold tabular-nums shrink-0">{formatTRY(it.lineTotal)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                              Fatura / Teslimat
+                            </p>
+                            {o.billingSnapshot ? (
+                              <div className="text-xs text-slate-700 space-y-0.5">
+                                <div className="font-semibold">{o.billingSnapshot.title}</div>
+                                {o.billingSnapshot.taxOffice && (
+                                  <div>{o.billingSnapshot.taxOffice} · {o.billingSnapshot.taxNumber}</div>
+                                )}
+                                <div className="text-slate-500">Fatura: {o.billingSnapshot.invoiceAddress}</div>
+                                {o.billingSnapshot.shippingAddress && (
+                                  <div className="text-slate-500">Teslimat: {o.billingSnapshot.shippingAddress}</div>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-xs text-slate-400">Fatura bilgisi kaydedilmemiş.</p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
                 );
               })
             )}

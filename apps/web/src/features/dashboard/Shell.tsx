@@ -6,19 +6,21 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home, FileText, LayoutTemplate, List, Palette,
   Package, Users, CreditCard, Settings,
-  HelpCircle, Bell, Search, Plus, LogOut,
+  HelpCircle, Search, Plus, LogOut,
   LibraryBig, ChevronDown, ChevronUp,
 } from 'lucide-react';
-import type { NavItem, NavItemId, User, UsageStat } from './types';
+import type { NavItem, NavItemId, User } from './types';
 
 // ─── Navigasyon tanımı ────────────────────────────────────────────────────────
+// Rozetler statik değil — gerçek sayaç DashboardSideNav'a badgeCounts prop'uyla geçirilir
+// (bkz. DashboardLayout.tsx stats.activeProjects/activeOrders).
 export const NAV_ITEMS: NavItem[] = [
   { id: 'home',      label: 'Ana Sayfa'            },
-  { id: 'projects',  label: 'Tasarım Projelerim',  badge: 24  },
+  { id: 'projects',  label: 'Tasarım Projelerim'   },
   { id: 'templates', label: 'Kayıtlı Şablonlarım'  },
   { id: 'lists',     label: 'Ürün Listelerim'       },
   { id: 'brand',     label: 'Marka Varlıklarım'     },
-  { id: 'orders',    label: 'Baskı Siparişlerim',   badge: 3  },
+  { id: 'orders',    label: 'Baskı Siparişlerim'    },
   { id: 'files',     label: 'Medya Kütüphanesi'     },
   { id: 'team',      label: 'Ekip ve Paylaşım'      },
   { id: 'billing',   label: 'Fatura ve Ödeme'       },
@@ -59,7 +61,7 @@ const NAV_ICONS: Record<NavItemId, React.ElementType> = {
 interface ShellProps {
   children: ReactNode;
   user: User;
-  usage?: UsageStat;
+  badgeCounts?: Partial<Record<NavItemId, number>>;
   onLogout?: () => void;
   onNewDesign?: () => void;
 }
@@ -68,7 +70,7 @@ interface ShellProps {
 export function DashboardShell({
   children,
   user,
-  usage,
+  badgeCounts,
   onLogout,
   onNewDesign,
 }: ShellProps) {
@@ -77,7 +79,7 @@ export function DashboardShell({
       <DashboardTopBar user={user} onLogout={onLogout} />
       <div className="flex flex-1 overflow-hidden">
         <DashboardSideNav
-          usage={usage}
+          badgeCounts={badgeCounts}
           onNewDesign={onNewDesign}
         />
         <main className="flex-1 overflow-auto bg-stone-100">{children}</main>
@@ -130,16 +132,6 @@ function DashboardTopBar({
           Vitrin
         </Link>
 
-        {/* Bildirimler */}
-        <button
-          className="relative h-9 w-9 grid place-items-center rounded-md
-                     hover:bg-slate-100 text-slate-500 hover:text-slate-800 transition-colors"
-          aria-label="Bildirimler"
-        >
-          <Bell size={18} />
-          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-red-500" />
-        </button>
-
         {/* Kullanıcı */}
         <div className="flex items-center gap-2 pl-3 border-l border-slate-200">
           <div className="w-8 h-8 rounded-full bg-slate-200 grid place-items-center
@@ -173,10 +165,10 @@ function DashboardTopBar({
 
 // ─── SideNav ───────────────────────────────────────────────────────────────────
 function DashboardSideNav({
-  usage,
+  badgeCounts,
   onNewDesign,
 }: {
-  usage?: UsageStat;
+  badgeCounts?: Partial<Record<NavItemId, number>>;
   onNewDesign?: () => void;
 }) {
   const location = useLocation();
@@ -277,7 +269,7 @@ function DashboardSideNav({
                 className={isActive ? 'text-slate-800' : 'text-slate-500'}
               />
               <span className="flex-1 truncate">{item.label}</span>
-              {item.badge !== undefined && (
+              {!!badgeCounts?.[item.id] && (
                 <span
                   className={[
                     'text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded',
@@ -286,42 +278,13 @@ function DashboardSideNav({
                       : 'bg-slate-100 text-slate-500',
                   ].join(' ')}
                 >
-                  {item.badge}
+                  {badgeCounts[item.id]}
                 </span>
               )}
             </Link>
           );
         })}
       </nav>
-
-      {/* Kullanım kotası */}
-      {usage && (
-        <div className="border-t border-slate-200 p-4 bg-slate-50 shrink-0">
-          <div className="text-[10px] font-bold tracking-[0.14em] uppercase text-slate-500 mb-2">
-            {usage.period}
-          </div>
-          <div className="text-xs text-slate-600">
-            <div className="flex justify-between">
-              <span>Kullanılan</span>
-              <b className="text-slate-800">
-                {usage.used} / {usage.limit}
-              </b>
-            </div>
-            <div className="mt-1.5 h-1.5 bg-slate-200 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-slate-700 rounded-full transition-all"
-                style={{ width: `${Math.min(100, (usage.used / usage.limit) * 100)}%` }}
-              />
-            </div>
-            <Link
-              to="/dashboard/coming-soon"
-              className="text-[11px] text-blue-700 hover:underline mt-2 inline-block font-medium"
-            >
-              Planı Yükselt →
-            </Link>
-          </div>
-        </div>
-      )}
     </aside>
   );
 }

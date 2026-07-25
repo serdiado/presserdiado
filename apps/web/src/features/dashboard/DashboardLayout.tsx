@@ -4,7 +4,7 @@ import { DashboardShell } from '@/features/dashboard/Shell';
 import { useAuthStore } from '@/stores/auth.store';
 import { useOrders } from './hooks/useOrders';
 import api from '@/lib/api'; // Default import
-import type { User, UsageStat, Project, Order } from './types';
+import type { User, Project, Order } from './types';
 
 export interface DashboardContextType {
   projects: Project[];
@@ -53,12 +53,6 @@ export function DashboardLayout() {
   const [projectsLoading, setProjectsLoading] = useState(true);
   
   const { orders, loading: ordersLoading, refetch: refetchOrders } = useOrders();
-
-  const usageStats: UsageStat = {
-    used: 24,
-    limit: 100,
-    period: 'Aylık Tasarım Limiti',
-  };
 
   const loadProjects = async () => {
     try {
@@ -118,7 +112,7 @@ export function DashboardLayout() {
   };
 
   const handleLogout = () => {
-    logout(); // Senkron logout çağrısı
+    logout({ clearLocalDrafts: true }); // Senkron logout çağrısı — bilinçli çıkış, paylaşılan makine koruması
     navigate('/login');
   };
 
@@ -132,7 +126,7 @@ export function DashboardLayout() {
     return (
       <div className="min-h-screen bg-stone-100 grid place-items-center">
         <div className="text-sm font-semibold text-slate-500 animate-pulse">
-          Claude Design yükleniyor...
+          Presserdiado yükleniyor...
         </div>
       </div>
     );
@@ -151,7 +145,7 @@ export function DashboardLayout() {
     <DashboardContext.Provider value={contextValue}>
       <DashboardShell
         user={dashboardUser}
-        usage={usageStats}
+        badgeCounts={{ projects: projects.length, orders: orders.length }}
         onLogout={handleLogout}
         onNewDesign={handleNewDesign}
       >
