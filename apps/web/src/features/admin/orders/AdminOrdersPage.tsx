@@ -12,11 +12,12 @@ import {
 import { useCatalogOptions } from '@/features/print-order/hooks/useCatalogOptions';
 import { buildOptionLabelMap, describeOrderItem } from '@/features/print-order/orderTypes';
 import { formatTRY } from '@/features/print-order/types';
+import { parseApiDate } from '@/lib/date';
 
 const TABLE_HEADERS = ['', 'Sipariş', 'Müşteri', 'Adet', 'Tutar', 'Tarih', 'Durum', 'PDF'] as const;
 
 function formatDate(iso: string): string {
-  const d = new Date(iso);
+  const d = parseApiDate(iso);
   if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleDateString('tr-TR');
 }

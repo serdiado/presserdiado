@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '@/lib/api';
 import { useCatalogOptions } from '@/features/print-order/hooks/useCatalogOptions';
 import { buildOptionLabelMap, describeOrderItem, type OrderApi } from '@/features/print-order/orderTypes';
+import { parseApiDate } from '@/lib/date';
 import type { Order, OrderStatus } from '../types';
 
 // Backend orders.status enum → Türkçe StatusPill sözlüğü (proje durumlarıyla aynı desen,
@@ -25,7 +26,7 @@ function toDisplayOrder(o: OrderApi, labels: Record<string, string>, productType
     type: firstItem ? describeOrderItem(firstItem, labels) : '—',
     qty,
     totalPrice: Number(o.grandTotal).toLocaleString('tr-TR'),
-    date: new Date(o.createdAt).toLocaleDateString('tr-TR'),
+    date: parseApiDate(o.createdAt).toLocaleDateString('tr-TR'),
     status: STATUS_TR[o.status] ?? 'yeni',
     items: o.items,
     billingSnapshot: o.billingSnapshot,

@@ -5,6 +5,7 @@ import { useCatalogStore, useUIStore } from '@/stores/studio';
 import { ConfirmModal } from '@/components/ui';
 import api from '@/lib/api';
 import { useProjectSave } from '../hooks/useProjectSave';
+import { parseApiDate } from '@/lib/date';
 
 const FLYOUT_ID = 'projeler';
 
@@ -209,9 +210,9 @@ export function ProjelerFlyoutPanel() {
                         {p.name}
                       </div>
                       <div className="text-body-xs text-text-muted mt-0.5">
-                        {p.updatedAt && typeof p.updatedAt === 'string' && p.updatedAt.includes('T')
-                          ? new Date(p.updatedAt).toLocaleDateString('tr-TR')
-                          : p.updatedAt || ''}
+                        {p.updatedAt && typeof p.updatedAt === 'string'
+                          ? parseApiDate(p.updatedAt).toLocaleDateString('tr-TR')
+                          : ''}
                       </div>
                     </div>
                   </button>

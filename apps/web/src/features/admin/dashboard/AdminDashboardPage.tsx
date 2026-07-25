@@ -7,9 +7,10 @@ import {
   ADMIN_DISPLAY_FONT, ADMIN_ORDER_STATUSES, ADMIN_STATUS, KPI_TONE,
   SectionHead, StatusPill, type KpiTone,
 } from '../adminTokens';
+import { parseApiDate } from '@/lib/date';
 
 function isToday(iso: string): boolean {
-  const d = new Date(iso);
+  const d = parseApiDate(iso);
   if (Number.isNaN(d.getTime())) return false;
   const now = new Date();
   return (
@@ -24,7 +25,7 @@ function formatMoney(n: number): string {
 }
 
 function formatDate(iso: string): string {
-  const d = new Date(iso);
+  const d = parseApiDate(iso);
   if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' });
 }

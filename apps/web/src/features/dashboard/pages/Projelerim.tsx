@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Plus } from 'lucide-react';
 import { ProjectCard } from '../components/ProjectCard';
 import { useDashboardContext } from '../DashboardLayout';
+import { parseApiDate } from '@/lib/date';
 import type { ProjectStatus } from '../types';
 
 const SORT_OPTIONS = [
@@ -34,7 +35,7 @@ export function Projelerim() {
       return a.name.localeCompare(b.name, 'tr');
     }
     // Varsayılan olarak updated (veya oluşturulma tarihi) tarihsel sıralama
-    return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+    return parseApiDate(b.updatedAt).getTime() - parseApiDate(a.updatedAt).getTime();
   });
 
   return (

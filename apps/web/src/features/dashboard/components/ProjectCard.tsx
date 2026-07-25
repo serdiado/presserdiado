@@ -9,6 +9,7 @@ import api from '@/lib/api';
 import toast from 'react-hot-toast';
 import { ConfirmModal } from '@/components/ui/ConfirmModal';
 import { MoreVertical, FolderOpen, Pencil, Copy, Trash2, Loader2 } from 'lucide-react';
+import { parseApiDate } from '@/lib/date';
 import type { Project } from '../types';
 
 interface ProjectCardProps {
@@ -217,9 +218,7 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
             )}
             <div className="text-body-xs text-text-secondary mt-0.5 truncate">{project.type}</div>
             <div className="text-body-xs text-text-muted mt-1">
-              {typeof project.updatedAt === 'string' && project.updatedAt.includes('T')
-                ? new Date(project.updatedAt).toLocaleDateString('tr-TR')
-                : project.updatedAt}
+              {parseApiDate(project.updatedAt).toLocaleDateString('tr-TR')}
             </div>
           </div>
 

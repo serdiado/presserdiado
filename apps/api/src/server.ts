@@ -51,6 +51,12 @@ await app.register(rateLimit, {
   global: true,
   max: 200,
   timeWindow: '1 minute',
+  // /uploads/* düz statik dosya sunumu — DB sorgusu/iş yükü yok, kimlik doğrulaması da
+  // gerektirmiyor; brute-force/DoS anlamında hassas bir "API isteği" değil. Bu ürünün ana
+  // senaryosu (çok ürünlü broşür) tek proje açılışında onlarca-yüzlerce ürün görseli getiriyor;
+  // bunlar aynı sayaca dahil edilince NORMAL kullanım bile sınırı aşıyordu (canlı doğrulandı:
+  // 50-100 ürünlü bir proje açmak tek başına dakikalık limiti tüketiyordu).
+  allowList: (request) => request.url.startsWith('/uploads/'),
 });
 await app.register(multipart, { limits: { fileSize: 25 * 1024 * 1024 } });
 await app.register(staticPlugin, {
