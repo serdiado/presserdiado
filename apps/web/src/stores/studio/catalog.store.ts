@@ -18,7 +18,7 @@ import type {
   StudioPresetPageBackground,
   TempPoolProduct,
 } from '@matbaapro/shared';
-import { availableTemplates, Template1, STUDIO_STORE_NAME, STUDIO_STORE_VERSION, normalizeSku } from '@matbaapro/shared';
+import { availableTemplates, Template1, STUDIO_STORE_NAME, STUDIO_STORE_VERSION, normalizeSku, defaultCellAppearance } from '@matbaapro/shared';
 import { applyUnmerge, recalculateLayout, reconcileGrid } from '@matbaapro/grid-engine';
 import {
   buildFormasForTemplate,
@@ -208,9 +208,8 @@ function captureProductToPool(
 function buildFreeCellSettings(globalSettings: CatalogSettings): CatalogSettings {
   const cs = clone(globalSettings) as CatalogSettings;
   cs.spacings.cell = { t: 0, r: 0, b: 0, l: 0, linked: true };
-  cs.borderWidth = 0;
   cs.colors.cellBg = { type: 'solid', color: '#ffffff', opacity: 0 };
-  cs.colors.cellBorder = { c: cs.colors.cellBorder.c, o: 0 };
+  cs.colors.cellBorder = { ...cs.colors.cellBorder, t: 0, r: 0, b: 0, l: 0, color: { ...cs.colors.cellBorder.color, o: 0 } };
   cs.shadows.cell.active = false;
   cs.radiuses.cell = { tl: 0, tr: 0, bl: 0, br: 0, linked: true };
   return cs;
@@ -1911,10 +1910,10 @@ export const useCatalogStore = create<Store>()(
         if (!mergedGlobal.defaultGrid) mergedGlobal.defaultGrid = { rows: 4, cols: 4 };
         if (!mergedGlobal.footer) mergedGlobal.footer = initialGlobalSettings.footer;
         if (!mergedGlobal.nameSettings) {
-          mergedGlobal.nameSettings = { isFreePosition: false, posX: 50, posY: 50 };
+          mergedGlobal.nameSettings = { isFreePosition: false, posX: 50, posY: 50, appearance: defaultCellAppearance };
         }
         if (!mergedGlobal.priceSettings) {
-          mergedGlobal.priceSettings = { isFreePosition: false, posX: 50, posY: 50 };
+          mergedGlobal.priceSettings = { isFreePosition: false, posX: 50, posY: 50, appearance: defaultCellAppearance };
         }
 
         const normalizedGlobal: CatalogSettings = migrateSettingsColors({

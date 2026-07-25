@@ -132,8 +132,10 @@ export function ProductInfoSettings() {
             <span className="text-label-md text-text-secondary block mb-1">Fiyat</span>
             <input
               type="text"
-              value={String(product.price ?? '')}
+              value={richTextToPlain(String(product.price ?? ''))}
               onChange={(e) =>
+                // Düz-metin düzenleme → fiyat düz metne döner (run biçimi sıfırlanır; ad ile
+                // simetrik kabul). raw kopyası da DÜZ kalır — HTML kirlenmesin.
                 updateProductField(
                   { price: e.target.value },
                   rawPatchForKnownField(rawRecord, ['VK_NETTO', 'FIYAT', 'PRICE'], e.target.value),

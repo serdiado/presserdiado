@@ -396,8 +396,21 @@ describe('isRichTextHtml / richTextToPlain — innerText→HTML göç güvenlik 
     expect(isRichTextHtml('Düz Ad')).toBe(false);
   });
 
+  // Motor üst-karakteri STİLSİZ <sup> olarak yazar (styleToCss sup'a boyut yazmaz) → dedektör
+  // 'sup'u tanımazsa fiyat/ad "düz metin" sanılıp textContent ile okunur ve kullanıcı literal
+  // etiket görür. Fiyatın run-level göçünün ön koşulu.
+  it('stilsiz <sup> HTML sayılır (üst-karakter run’ının tipik biçimi)', () => {
+    expect(isRichTextHtml('12,<sup>99</sup>')).toBe(true);
+    expect(isRichTextHtml('<sup>99</sup>')).toBe(true);
+    expect(isRichTextHtml('Ürün<sup>2</sup>')).toBe(true);
+    // legacy koruması bozulmamalı — <sup ile başlamayan '<s...' hâlâ düz metin
+    expect(isRichTextHtml('Größe <M>')).toBe(false);
+    expect(isRichTextHtml('Salt & Pepper')).toBe(false);
+  });
+
   it('richTextToPlain: HTML strip; legacy < ve & AYNEN korunur', () => {
     expect(richTextToPlain('<span style="font-weight:700">Kalın Ad</span>')).toBe('Kalın Ad');
+    expect(richTextToPlain('12,<sup>99</sup>')).toBe('12,99'); // sup strip → düz fiyat
     expect(richTextToPlain('Salt &amp; Pepper')).toBe('Salt & Pepper'); // entity decode
     expect(richTextToPlain('Größe <M>')).toBe('Größe <M>'); // legacy: bozulmaz
     expect(richTextToPlain('Salt & Pepper')).toBe('Salt & Pepper');

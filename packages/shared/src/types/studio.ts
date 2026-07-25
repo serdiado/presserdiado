@@ -4,7 +4,8 @@
 import type {
   BorderData,
   BorderRadiusData,
-  ColorOpacity,
+  CellAppearance,
+  CellAppearanceNoRadius,
   ColorValue,
   ShadowData,
   SpacingData,
@@ -29,14 +30,10 @@ export interface TextElementSettings {
   isFreePosition: boolean;
   posX: number; // 0-100 yüzde
   posY: number; // 0-100 yüzde
-  bgColor?: string;
-  bgOpacity?: number;
-  borderColor?: string;
-  borderOpacity?: number;
-  borderWidth?: number;
-  borderRadius?: number;
   width?: number;
   height?: number;
+  /** Zemin+çerçeve+köşe — appearanceSettings/registry.ts (apps/web) tek kaynaktan okur/yazar. */
+  appearance: CellAppearance;
 }
 
 // === Badge ===
@@ -57,15 +54,12 @@ export type BadgeShape =
 export interface BadgeConfig {
   active: boolean;
   text: string;
-  bgColor: string;
-  bgOpacity?: number;
   textColor: string;
   textOpacity?: number;
   position: BadgePosition;
   shape: BadgeShape;
-  borderColor: string;
-  borderOpacity?: number;
-  borderWidth: number;
+  /** Zemin+çerçeve — appearanceSettings/registry.ts tek kaynaktan okur/yazar. Radius yok: shape enum'u onun yerine geçiyor. */
+  appearance: CellAppearanceNoRadius;
   font: TypographyData;
   shadow: ShadowData;
   size: number; // 0-200 (percentage)
@@ -79,8 +73,6 @@ export interface BadgeConfig {
 export interface CatalogSettings {
   defaultGrid: { rows: number; cols: number };
   gridGap: number; // mm — tek kanonik hücre boşluğu (genel + özel sayfa ortak)
-  borderWidth: number;
-  priceBorderWidth: number;
   pricePosition: 'left' | 'center' | 'right';
   priceWidth: number; // %
   priceHeight: number; // mm
@@ -93,9 +85,10 @@ export interface CatalogSettings {
   priceSettings: TextElementSettings;
   colors: {
     cellBg: ColorValue;
-    cellBorder: ColorOpacity;
+    /** width dahil (BorderData.t/r/b/l) — eski ayrı borderWidth alanı kaldırıldı. */
+    cellBorder: BorderData;
     priceBg: ColorValue;
-    priceBorder: ColorOpacity;
+    priceBorder: BorderData;
   };
   radiuses: {
     cell: BorderRadiusData;

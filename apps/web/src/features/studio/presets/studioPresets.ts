@@ -12,7 +12,12 @@ import type {
   StudioPresetArchetype,
 } from '@matbaapro/shared';
 import { useCatalogStore } from '@/stores/studio';
-import afpackTema from './data/afpack-tema.json';
+import { normalizeLegacyAppearance } from '../modules/normalizeLegacyAppearance';
+import afpackTemaRaw from './data/afpack-tema.json';
+
+// Görünüm birleştirmesi (BorderData/CellAppearance) öncesi JSON'dan gelen eski şekli normalize
+// et — bkz. normalizeLegacyAppearance.ts. JSON dosyasının kendisi değişmez.
+const afpackTema = normalizeLegacyAppearance(afpackTemaRaw);
 
 function clone<T>(value: T): T {
   const sc = (globalThis as { structuredClone?: <V>(v: V) => V }).structuredClone;
@@ -39,9 +44,9 @@ const PRESETS: StudioPreset[] = [
       defaultGrid: { rows: 3, cols: 4 },
       colors: {
         cellBg: { type: 'solid', color: '#0f172a', opacity: 100 },
-        cellBorder: { c: '#1e293b', o: 100 },
+        cellBorder: { t: 1, r: 1, b: 1, l: 1, linked: true, color: { c: '#1e293b', o: 100 }, style: 'solid' },
         priceBg: { type: 'solid', color: '#f59e0b', opacity: 100 },
-        priceBorder: { c: '#0f172a', o: 100 },
+        priceBorder: { t: 0, r: 0, b: 0, l: 0, linked: true, color: { c: '#0f172a', o: 100 }, style: 'solid' },
       },
       radiuses: {
         cell: { tl: 12, tr: 12, bl: 12, br: 12, linked: true },
@@ -66,9 +71,9 @@ const PRESETS: StudioPreset[] = [
       spacings: { cell: { t: 4, r: 4, b: 4, l: 4 } },
       colors: {
         cellBg: { type: 'solid', color: '#ffffff', opacity: 100 },
-        cellBorder: { c: '#cbd5e1', o: 100 },
+        cellBorder: { t: 1, r: 1, b: 1, l: 1, linked: true, color: { c: '#cbd5e1', o: 100 }, style: 'solid' },
         priceBg: { type: 'solid', color: '#dc2626', opacity: 100 },
-        priceBorder: { c: '#ffffff', o: 100 },
+        priceBorder: { t: 0, r: 0, b: 0, l: 0, linked: true, color: { c: '#ffffff', o: 100 }, style: 'solid' },
       },
       fonts: {
         productName: { fontFamily: 'Inter', fontWeight: '600', fontSize: 8, color: '#1e293b' },

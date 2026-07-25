@@ -2,6 +2,7 @@ import { useEffect, useState, type DragEvent } from 'react';
 import { X, Package, Inbox } from 'lucide-react';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import type { TempPoolProduct } from '@matbaapro/shared';
+import { richTextToPlain } from '../modules/richText';
 
 const FLYOUT_ID = 'temp-pool';
 
@@ -125,12 +126,18 @@ export function FlyoutPanel() {
               </div>
 
               <div className="flex-1 min-w-0">
-                <div className="text-body-sm text-text-primary truncate">{p.name}</div>
+                {/* Havuz DÜZ METİN gösterir: kanvastan geri gönderilen ürün (clearSlotToPool /
+                    captureProductToPool) run-level HTML taşıyabilir → ham etiket görünmesin. */}
+                <div className="text-body-sm text-text-primary truncate">
+                  {richTextToPlain(p.name ?? '')}
+                </div>
                 <div className="text-body-xs text-text-muted truncate">{p.sku}</div>
               </div>
 
               {p.price != null && p.price !== '' && (
-                <div className="text-body-sm text-text-primary shrink-0 pr-1">{p.price}</div>
+                <div className="text-body-sm text-text-primary shrink-0 pr-1">
+                  {richTextToPlain(String(p.price))}
+                </div>
               )}
 
               <button

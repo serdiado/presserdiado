@@ -14,13 +14,19 @@ import type {
   BadgeShape,
   BorderData,
   BorderRadiusData,
+  CatalogSettings,
+  CellAppearance,
   ColorValue,
+  DeepPartial,
   ShadowData,
   SpacingData,
   StudioSlotImageSettings,
   TypographyData,
   TextElementSettings,
 } from '@matbaapro/shared';
+import { defaultRadius } from '@matbaapro/shared';
+import { AppearanceControls } from '../appearanceSettings/AppearanceControls';
+import { FULL_APPEARANCE_IDS } from '../appearanceSettings/registry';
 
 
 function AccordionItem({
@@ -66,61 +72,29 @@ function AccordionItem({
 }
 
 interface AppearanceValues {
-  cellBg: ColorValue;
-  cellBorderColor: string;
-  cellBorderOpacity: number;
-  borderWidth: number;
-  radius: BorderRadiusData;
+  appearance: CellAppearance;
   spacing: SpacingData;
   shadow: ShadowData;
 }
 
 interface AppearanceHandlers {
-  onCellBgChange: (v: ColorValue) => void;
-  onCellBorderChange: (color: string, opacity: number) => void;
-  onBorderWidthChange: (v: number) => void;
-  onRadiusChange: (v: BorderRadiusData) => void;
+  onAppearanceChange: (v: Partial<CellAppearance>) => void;
   onSpacingChange: (v: SpacingData) => void;
   onShadowChange: (v: ShadowData) => void;
 }
 
+// Zemin/çerçeve/köşe: merkezi kaynak (appearanceSettings/registry.ts) — Sağ Panel TAM liste
+// gösterir (FULL_APPEARANCE_IDS, borderStyle dahil). İç boşluk/gölge yalnız hücre düzeyinde
+// var (price/name/badge'de yok) → registry'ye girmiyor, ayrı kalıyor.
 function AppearanceContent({ values, handlers }: { values: AppearanceValues; handlers: AppearanceHandlers }) {
   return (
     <div className="space-y-3">
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-text-secondary">Zemin Rengi</span>
-          <ColorOpacityPicker value={values.cellBg} onChange={handlers.onCellBgChange} />
-        </div>
-        <div className="flex items-center justify-between pt-2 border-t border-border-default">
-          <span className="text-xs font-medium text-text-secondary">Kenarlık Rengi</span>
-          <ColorOpacityPicker
-            solidOnly
-            value={{ type: 'solid', color: values.cellBorderColor, opacity: values.cellBorderOpacity }}
-            onChange={(v) => { if (v.type !== 'solid') return; handlers.onCellBorderChange(v.color, v.opacity); }}
-          />
-        </div>
-        <div className="flex items-center gap-2 pt-2 border-t border-border-default">
-          <span className="text-[11px] font-medium text-text-secondary w-16">Kalınlık</span>
-          <input
-            type="range" min={0} max={10} step={1} value={values.borderWidth}
-            onChange={(e) => handlers.onBorderWidthChange(parseInt(e.target.value))}
-            className="flex-1 studio-slider"
-          />
-          <input
-            type="number" value={values.borderWidth}
-            onChange={(e) => handlers.onBorderWidthChange(parseInt(e.target.value) || 0)}
-            className="w-12 text-xs font-normal text-text-primary text-center border border-border-default rounded p-0.5"
-          />
-        </div>
-      </div>
-      <div className="pt-1 border-t border-border-default">
-        <BorderRadiusPicker
-          title="Köşe ovalliği"
-          value={values.radius}
-          onChange={handlers.onRadiusChange}
-        />
-      </div>
+      <AppearanceControls
+        value={values.appearance}
+        onChange={handlers.onAppearanceChange}
+        ids={FULL_APPEARANCE_IDS}
+        layout="panel"
+      />
       <div className="pt-1 border-t border-border-default">
         <SpacingPicker
           title="İç Boşluk"
@@ -260,53 +234,13 @@ function TextContent({
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-2 border-t border-border-default">
-            <span className="text-xs font-medium text-text-secondary">Zemin Rengi</span>
-            <ColorOpacityPicker
-              value={{
-                type: 'solid',
-                color: nameSettings.bgColor ?? '#ffffff',
-                opacity: nameSettings.bgOpacity ?? 0,
-              }}
-              onChange={(v) => {
-                if (v.type === 'solid') {
-                  onNameSettingsChange({ bgColor: v.color, bgOpacity: v.opacity });
-                }
-              }}
-            />
-          </div>
-
-          <div className="flex items-center justify-between pt-2 border-t border-border-default">
-            <span className="text-xs font-medium text-text-secondary">Çerçeve</span>
-            <ColorOpacityPicker
-              solidOnly
-              type="border"
-              value={{
-                type: 'solid',
-                color: nameSettings.borderColor ?? '#e2e8f0',
-                opacity: nameSettings.borderOpacity ?? 0,
-              }}
-              thickness={nameSettings.borderWidth ?? 0}
-              onChange={(v) => {
-                if (v.type === 'solid') {
-                  onNameSettingsChange({ borderColor: v.color, borderOpacity: v.opacity });
-                }
-              }}
-              onThicknessChange={(v) => onNameSettingsChange({ borderWidth: v })}
-            />
-          </div>
-
+          {/* Zemin + Çerçeve + Köşe (merkezi kaynak: appearanceSettings/registry.ts) */}
           <div className="pt-2 border-t border-border-default">
-            <BorderRadiusPicker
-              title="Köşe ovalliği"
-              value={{
-                tl: nameSettings.borderRadius ?? 0,
-                tr: nameSettings.borderRadius ?? 0,
-                bl: nameSettings.borderRadius ?? 0,
-                br: nameSettings.borderRadius ?? 0,
-                linked: true,
-              }}
-              onChange={(v) => onNameSettingsChange({ borderRadius: v.tl })}
+            <AppearanceControls
+              value={nameSettings.appearance}
+              onChange={(patch) => onNameSettingsChange({ appearance: { ...nameSettings.appearance, ...patch } })}
+              ids={FULL_APPEARANCE_IDS}
+              layout="panel"
             />
           </div>
         </>
@@ -319,11 +253,7 @@ interface PriceValues {
   pricePosition: 'left' | 'center' | 'right';
   priceWidth: number;
   priceHeight: number;
-  priceBg: ColorValue;
-  priceBorderColor: string;
-  priceBorderOpacity: number;
-  priceBorderWidth: number;
-  priceRadius: BorderRadiusData;
+  priceAppearance: CellAppearance;
   priceFont: TypographyData;
   priceSettings?: TextElementSettings;
 }
@@ -332,11 +262,11 @@ interface PriceHandlers {
   onPositionChange: (v: 'left' | 'center' | 'right') => void;
   onWidthChange: (v: number) => void;
   onHeightChange: (v: number) => void;
-  onPriceBgChange: (v: ColorValue) => void;
-  onPriceBorderChange: (color: string, opacity: number) => void;
-  onPriceBorderWidthChange: (v: number) => void;
-  onPriceRadiusChange: (v: BorderRadiusData) => void;
+  onPriceAppearanceChange: (v: Partial<CellAppearance>) => void;
   onPriceFontChange: (v: TypographyData) => void;
+  /** Cell-level font ayarı uygulanırken fiyattaki inline run override'larını temizler — yoksa
+   *  "rengi/puntoyu değiştirdim ama değişmedi" olur (ad yüzeyindeki onClearRun ile simetrik). */
+  onPriceClearRun?: (property: string) => void;
   onPriceSettingsChange?: (v: Partial<TextElementSettings>) => void;
 }
 
@@ -407,29 +337,23 @@ function PriceContent({ values: v, handlers: h }: { values: PriceValues; handler
         </div>
       </div>
 
-      <div className="flex items-center justify-between pt-2 border-t border-border-default">
-        <span className="text-xs font-medium text-text-secondary">Zemin Rengi</span>
-        <ColorOpacityPicker value={v.priceBg} onChange={h.onPriceBgChange} />
-      </div>
-
-      <div className="flex items-center justify-between pt-2 border-t border-border-default">
-        <span className="text-xs font-medium text-text-secondary">Kenarlık</span>
-        <ColorOpacityPicker
-          solidOnly
-          type="border"
-          value={{ type: 'solid', color: v.priceBorderColor, opacity: v.priceBorderOpacity }}
-          thickness={v.priceBorderWidth}
-          onChange={(val) => { if (val.type !== 'solid') return; h.onPriceBorderChange(val.color, val.opacity); }}
-          onThicknessChange={h.onPriceBorderWidthChange}
+      <div className="pt-2 border-t border-border-default">
+        <AppearanceControls
+          value={v.priceAppearance}
+          onChange={h.onPriceAppearanceChange}
+          ids={FULL_APPEARANCE_IDS}
+          layout="panel"
         />
       </div>
 
       <div className="pt-2 border-t border-border-default">
-        <BorderRadiusPicker title="Köşe ovalliği" value={v.priceRadius} onChange={h.onPriceRadiusChange} />
-      </div>
-
-      <div className="pt-2 border-t border-border-default">
-        <TypographyPicker inline title="Fiyat Fontu" value={v.priceFont} onChange={h.onPriceFontChange} />
+        <TypographyPicker
+          inline
+          title="Fiyat Fontu"
+          value={v.priceFont}
+          onChange={h.onPriceFontChange}
+          onClearRun={h.onPriceClearRun}
+        />
       </div>
     </div>
   );
@@ -527,47 +451,18 @@ function BadgeContent({
         {/* <hr> ayraç */}
         <hr className="border-border-default" />
 
-        {/* Zemin — ColorOpacityPicker (solidOnly) */}
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-medium text-text-secondary">Zemin</span>
-          <ColorOpacityPicker
-            solidOnly
-            value={{ type: 'solid', color: badge.bgColor, opacity: badge.bgOpacity ?? 100 }}
-            onChange={(v) => {
-              if (v.type === 'solid') {
-                onUpdate({ bgColor: v.color, bgOpacity: v.opacity });
-              }
+        {/* Zemin + Çerçeve (merkezi kaynak: appearanceSettings/registry.ts — radius yok, shape var) */}
+        <div className="pt-2">
+          <AppearanceControls
+            value={{ ...badge.appearance, radius: defaultRadius }}
+            onChange={(patch) => {
+              const nextAppearance: DeepPartial<BadgeConfig['appearance']> = {};
+              if (patch.bg) nextAppearance.bg = patch.bg;
+              if (patch.border) nextAppearance.border = patch.border;
+              onUpdate({ appearance: nextAppearance } as Partial<BadgeConfig>);
             }}
-          />
-        </div>
-
-
-        {/* Çerçeve Rengi — aynı pattern */}
-        <div className="flex items-center justify-between pt-2 border-t border-border-default">
-          <span className="text-xs font-medium text-text-secondary">Çerçeve Rengi</span>
-          <ColorOpacityPicker
-            solidOnly
-            value={{ type: 'solid', color: badge.borderColor, opacity: badge.borderOpacity ?? 100 }}
-            onChange={(v) => {
-              if (v.type === 'solid') {
-                onUpdate({ borderColor: v.color, borderOpacity: v.opacity });
-              }
-            }}
-          />
-        </div>
-
-        {/* Çerçeve Kalınlığı — slider min 0, max 10, step 1, badge.borderWidth */}
-        <div className="flex items-center gap-2 pt-2 border-t border-border-default">
-          <span className="text-[11px] font-medium text-text-secondary shrink-0 w-20">Çerçeve Kalınlığı</span>
-          <input
-            type="range" min={0} max={10} step={1} value={badge.borderWidth}
-            onChange={(e) => onUpdate({ borderWidth: parseInt(e.target.value) })}
-            className="flex-1 studio-slider"
-          />
-          <input
-            type="number" value={badge.borderWidth}
-            onChange={(e) => onUpdate({ borderWidth: parseInt(e.target.value) || 0 })}
-            className="w-12 text-xs font-normal text-text-primary text-center border border-border-default rounded p-0.5"
+            ids={['bg', 'borderColor', 'borderWidth']}
+            layout="panel"
           />
         </div>
 
@@ -676,8 +571,15 @@ function BannerPanel() {
   const rows = module.rows ?? 4;
   const cols = module.cols ?? 4;
   const bgColor = module.bgColor ?? { type: 'solid' as const, color: '#ffffff', opacity: 100 };
-  const cb = module.containerBorder ?? { color: { c: '#e2e8f0', o: 100 }, width: 0 };
+  const cb = module.containerBorder ?? DEFAULT_BORDER;
   const radius = module.radius ?? { tl: 0, tr: 0, bl: 0, br: 0, linked: true };
+  const containerAppearance: CellAppearance = { bg: bgColor, border: cb, radius };
+  const updateContainerAppearance = (patch: Partial<CellAppearance>) =>
+    updateSlotModuleData(pageNumber, slotId, {
+      ...(patch.bg && { bgColor: patch.bg }),
+      ...(patch.border && { containerBorder: patch.border }),
+      ...(patch.radius && { radius: patch.radius }),
+    });
 
   // Sayısal grid boyutu → merge-aware motor (setBannerGridSize). Clamp store/motorda.
   const resizeGrid = (newRows: number, newCols: number) =>
@@ -850,48 +752,12 @@ function BannerPanel() {
               Zemin ve Çerçeve
             </div>
             <div className="p-3 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-text-secondary">Zemin Rengi</span>
-                <ColorOpacityPicker
-                  value={bgColor}
-                  onChange={(v) => updateSlotModuleData(pageNumber, slotId, { bgColor: v })}
-                />
-              </div>
-              <div className="flex items-center justify-between pt-2 border-t border-border-default">
-                <span className="text-xs font-medium text-text-secondary">Dış Kenarlık Rengi</span>
-                <ColorOpacityPicker
-                  solidOnly
-                  value={{ type: 'solid', color: cb.color.c, opacity: cb.color.o }}
-                  onChange={(v) => {
-                    if (v.type !== 'solid') return;
-                    updateSlotModuleData(pageNumber, slotId, {
-                      containerBorder: { ...cb, color: { c: v.color, o: v.opacity } },
-                    });
-                  }}
-                />
-              </div>
-              <div className="flex items-center gap-2 pt-2 border-t border-border-default">
-                <span className="text-[11px] font-medium text-text-secondary shrink-0 w-20">Dış Kenarlık Kalınlığı</span>
-                <input
-                  type="range" min={0} max={10} step={0.5} value={cb.width}
-                  onChange={(e) => updateSlotModuleData(pageNumber, slotId, {
-                    containerBorder: { ...cb, width: parseFloat(e.target.value) },
-                  })}
-                  className="flex-1 studio-slider"
-                />
-                <input
-                  type="number" value={cb.width}
-                  onChange={(e) => updateSlotModuleData(pageNumber, slotId, {
-                    containerBorder: { ...cb, width: parseFloat(e.target.value) || 0 },
-                  })}
-                  className="w-12 text-xs font-normal text-text-primary text-center border border-border-default rounded p-0.5"
-                />
-              </div>
-              <div className="pt-2 border-t border-border-default">
-                <BorderRadiusPicker title="Köşe Yuvarlaklığı" value={radius}
-                  onChange={(v) => updateSlotModuleData(pageNumber, slotId, { radius: v })}
-                />
-              </div>
+              <AppearanceControls
+                value={containerAppearance}
+                onChange={updateContainerAppearance}
+                ids={FULL_APPEARANCE_IDS}
+                layout="panel"
+              />
             </div>
           </div>
 
@@ -1142,23 +1008,26 @@ export function CellPanel() {
     setOpenSection('general-appearance');
   };
 
-  // Genel görünüm
+  // Genel görünüm — zemin/çerçeve/köşe merkezi kaynaktan (appearanceSettings/registry.ts)
   const globalValues: AppearanceValues = {
-    cellBg: globalSettings.colors.cellBg,
-    cellBorderColor: globalSettings.colors.cellBorder.c,
-    cellBorderOpacity: globalSettings.colors.cellBorder.o,
-    borderWidth: globalSettings.borderWidth,
-    radius: globalSettings.radiuses.cell,
+    appearance: {
+      bg: globalSettings.colors.cellBg,
+      border: globalSettings.colors.cellBorder,
+      radius: globalSettings.radiuses.cell,
+    },
     spacing: globalSettings.spacings.cell,
     shadow: globalSettings.shadows.cell,
   };
 
   const globalHandlers: AppearanceHandlers = {
-    onCellBgChange: (v) => setGlobalSettings({ colors: { ...globalSettings.colors, cellBg: v } }),
-    onCellBorderChange: (c, o) =>
-      setGlobalSettings({ colors: { ...globalSettings.colors, cellBorder: { c, o } } }),
-    onBorderWidthChange: (v) => setGlobalSettings({ borderWidth: v }),
-    onRadiusChange: (v) => setGlobalSettings({ radiuses: { ...globalSettings.radiuses, cell: v } }),
+    onAppearanceChange: (patch) => {
+      const next: DeepPartial<CatalogSettings> = {};
+      if (patch.bg || patch.border) {
+        next.colors = { ...globalSettings.colors, ...(patch.bg && { cellBg: patch.bg }), ...(patch.border && { cellBorder: patch.border }) };
+      }
+      if (patch.radius) next.radiuses = { ...globalSettings.radiuses, cell: patch.radius };
+      setGlobalSettings(next);
+    },
     onSpacingChange: (v) => setGlobalSettings({ spacings: { ...globalSettings.spacings, cell: v } }),
     onShadowChange: (v) => setGlobalSettings({ shadows: { ...globalSettings.shadows, cell: v } }),
   };
@@ -1166,23 +1035,24 @@ export function CellPanel() {
   // Özel hücre görünümü — customSettings'ten oku, yoksa globalSettings'e düş
   const cs = selectedSlot?.customSettings;
   const customValues: AppearanceValues = {
-    cellBg: (cs?.colors?.cellBg ?? globalSettings.colors.cellBg) as ColorValue,
-    cellBorderColor: cs?.colors?.cellBorder?.c ?? globalSettings.colors.cellBorder.c,
-    cellBorderOpacity: cs?.colors?.cellBorder?.o ?? globalSettings.colors.cellBorder.o,
-    borderWidth: cs?.borderWidth ?? globalSettings.borderWidth,
-    radius: (cs?.radiuses?.cell ?? globalSettings.radiuses.cell) as BorderRadiusData,
+    appearance: {
+      bg: (cs?.colors?.cellBg ?? globalSettings.colors.cellBg) as ColorValue,
+      border: (cs?.colors?.cellBorder ?? globalSettings.colors.cellBorder) as CellAppearance['border'],
+      radius: (cs?.radiuses?.cell ?? globalSettings.radiuses.cell) as BorderRadiusData,
+    },
     spacing: (cs?.spacings?.cell ?? globalSettings.spacings.cell) as SpacingData,
     shadow: (cs?.shadows?.cell ?? globalSettings.shadows.cell) as ShadowData,
   };
 
   const customHandlers: AppearanceHandlers = {
-    onCellBgChange: (v) =>
-      updateSlotCustomSettings({ colors: { ...cs?.colors, cellBg: v } }),
-    onCellBorderChange: (c, o) =>
-      updateSlotCustomSettings({ colors: { ...cs?.colors, cellBorder: { c, o } } }),
-    onBorderWidthChange: (v) => updateSlotCustomSettings({ borderWidth: v }),
-    onRadiusChange: (v) =>
-      updateSlotCustomSettings({ radiuses: { ...cs?.radiuses, cell: v } }),
+    onAppearanceChange: (patch) => {
+      const next: DeepPartial<CatalogSettings> = {};
+      if (patch.bg || patch.border) {
+        next.colors = { ...cs?.colors, ...(patch.bg && { cellBg: patch.bg }), ...(patch.border && { cellBorder: patch.border }) };
+      }
+      if (patch.radius) next.radiuses = { ...cs?.radiuses, cell: patch.radius };
+      updateSlotCustomSettings(next);
+    },
     onSpacingChange: (v) =>
       updateSlotCustomSettings({ spacings: { ...cs?.spacings, cell: v } }),
     onShadowChange: (v) =>
@@ -1297,22 +1167,29 @@ export function CellPanel() {
               pricePosition: globalSettings.pricePosition,
               priceWidth: globalSettings.priceWidth,
               priceHeight: globalSettings.priceHeight,
-              priceBg: globalSettings.colors.priceBg,
-              priceBorderColor: globalSettings.colors.priceBorder.c,
-              priceBorderOpacity: globalSettings.colors.priceBorder.o,
-              priceBorderWidth: globalSettings.priceBorderWidth,
-              priceRadius: globalSettings.radiuses.price,
+              priceAppearance: {
+                bg: globalSettings.colors.priceBg,
+                border: globalSettings.colors.priceBorder,
+                radius: globalSettings.radiuses.price,
+              },
               priceFont: globalSettings.fonts.price,
             }}
             handlers={{
               onPositionChange: (val) => setGlobalSettings({ pricePosition: val }),
               onWidthChange: (val) => setGlobalSettings({ priceWidth: val }),
               onHeightChange: (val) => setGlobalSettings({ priceHeight: val }),
-              onPriceBgChange: (val) => setGlobalSettings({ colors: { ...globalSettings.colors, priceBg: val } }),
-              onPriceBorderChange: (c, o) => setGlobalSettings({ colors: { ...globalSettings.colors, priceBorder: { c, o } } }),
-              onPriceBorderWidthChange: (val) => setGlobalSettings({ priceBorderWidth: val }),
-              onPriceRadiusChange: (val) => setGlobalSettings({ radiuses: { ...globalSettings.radiuses, price: val } }),
+              onPriceAppearanceChange: (patch) => {
+                const next: DeepPartial<CatalogSettings> = {};
+                if (patch.bg || patch.border) {
+                  next.colors = { ...globalSettings.colors, ...(patch.bg && { priceBg: patch.bg }), ...(patch.border && { priceBorder: patch.border }) };
+                }
+                if (patch.radius) next.radiuses = { ...globalSettings.radiuses, price: patch.radius };
+                setGlobalSettings(next);
+              },
               onPriceFontChange: (val) => setGlobalSettings({ fonts: { ...globalSettings.fonts, price: val } }),
+              onPriceClearRun: (p) => {
+                if (effectiveSlotId) clearRunForSurface('product', effectiveSlotId, ['price'], p as RunProperty);
+              },
             }}
           />
         </AccordionItem>
@@ -1387,11 +1264,11 @@ export function CellPanel() {
                 pricePosition: (cs?.pricePosition ?? globalSettings.pricePosition) as 'left' | 'center' | 'right',
                 priceWidth: cs?.priceWidth ?? globalSettings.priceWidth,
                 priceHeight: cs?.priceHeight ?? globalSettings.priceHeight,
-                priceBg: (cs?.colors?.priceBg ?? globalSettings.colors.priceBg) as ColorValue,
-                priceBorderColor: cs?.colors?.priceBorder?.c ?? globalSettings.colors.priceBorder.c,
-                priceBorderOpacity: cs?.colors?.priceBorder?.o ?? globalSettings.colors.priceBorder.o,
-                priceBorderWidth: cs?.priceBorderWidth ?? globalSettings.priceBorderWidth,
-                priceRadius: (cs?.radiuses?.price ?? globalSettings.radiuses.price) as BorderRadiusData,
+                priceAppearance: {
+                  bg: (cs?.colors?.priceBg ?? globalSettings.colors.priceBg) as ColorValue,
+                  border: (cs?.colors?.priceBorder ?? globalSettings.colors.priceBorder) as CellAppearance['border'],
+                  radius: (cs?.radiuses?.price ?? globalSettings.radiuses.price) as BorderRadiusData,
+                },
                 priceFont: (cs?.fonts?.price ?? globalSettings.fonts.price) as TypographyData,
                 priceSettings: (cs?.priceSettings ?? globalSettings.priceSettings) as TextElementSettings,
               }}
@@ -1399,11 +1276,18 @@ export function CellPanel() {
                 onPositionChange: (val) => updateSlotCustomSettings({ pricePosition: val }),
                 onWidthChange: (val) => updateSlotCustomSettings({ priceWidth: val }),
                 onHeightChange: (val) => updateSlotCustomSettings({ priceHeight: val }),
-                onPriceBgChange: (val) => updateSlotCustomSettings({ colors: { ...cs?.colors, priceBg: val } }),
-                onPriceBorderChange: (c, o) => updateSlotCustomSettings({ colors: { ...cs?.colors, priceBorder: { c, o } } }),
-                onPriceBorderWidthChange: (val) => updateSlotCustomSettings({ priceBorderWidth: val }),
-                onPriceRadiusChange: (val) => updateSlotCustomSettings({ radiuses: { ...cs?.radiuses, price: val } }),
+                onPriceAppearanceChange: (patch) => {
+                  const next: DeepPartial<CatalogSettings> = {};
+                  if (patch.bg || patch.border) {
+                    next.colors = { ...cs?.colors, ...(patch.bg && { priceBg: patch.bg }), ...(patch.border && { priceBorder: patch.border }) };
+                  }
+                  if (patch.radius) next.radiuses = { ...cs?.radiuses, price: patch.radius };
+                  updateSlotCustomSettings(next);
+                },
                 onPriceFontChange: (val) => updateSlotCustomSettings({ fonts: { ...cs?.fonts, price: val } }),
+                onPriceClearRun: (p) => {
+                  if (effectiveSlotId) clearRunForSurface('product', effectiveSlotId, ['price'], p as RunProperty);
+                },
                 onPriceSettingsChange: (partial) =>
                   updateSlotCustomSettings({
                     priceSettings: {

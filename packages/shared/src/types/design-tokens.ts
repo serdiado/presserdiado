@@ -139,3 +139,21 @@ export const defaultBorder: BorderData = {
   color: { c: '#e2e8f0', o: 100 },
   style: 'solid',
 };
+
+// === Birleşik hücre görünümü (zemin+çerçeve+köşe) — hızlı bar/sağ panel ortak kaynağı ===
+// appearanceSettings/registry.ts (apps/web) bu şekli okur/yazar; textSettings/registry.ts'in
+// (TypographyData için) kardeşi. Badge'de radius kavramı yok (shape enum'u var) → CellAppearanceNoRadius.
+
+export interface CellAppearance {
+  bg: ColorValue;
+  border: BorderData;
+  radius: BorderRadiusData;
+}
+
+export type CellAppearanceNoRadius = Omit<CellAppearance, 'radius'>;
+
+export const defaultCellAppearance: CellAppearance = {
+  bg: { type: 'solid', color: '#ffffff', opacity: 0 },
+  border: { ...defaultBorder },
+  radius: { ...defaultRadius, tl: 0, tr: 0, bl: 0, br: 0 },
+};

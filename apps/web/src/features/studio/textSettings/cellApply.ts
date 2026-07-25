@@ -15,7 +15,12 @@ function findSlot(slotId: string) {
 }
 
 /** Run-bearing yüzeyin saklanan HTML'inden `property`'yi TÜM run'lardan siler + commit eder.
- *  product → `slot.product.name`; module → ilgili `cell.text`(ler). clearRunProperty = pure strip. */
+ *  product → `slot.product.name` VEYA `.price` (cellIds ile ayrışır); module → ilgili `cell.text`(ler).
+ *  clearRunProperty = pure strip.
+ *
+ *  product yüzeyinde İKİ run-bearing alan var (ad + fiyat) ve ikisi de `Surface`='product'. Hedef alanı
+ *  `cellIds` belirler — yeni bir Surface değeri EKLENMEZ (registry/TextSettingCtx zaten cellId taşıyor).
+ *  cellIds boş/eksikse 'name'e düşer → mevcut ad çağrıları (`[]` geçiyor) davranış değiştirmez. */
 export function clearRunForSurface(
   surface: 'product' | 'module',
   slotId: string,
@@ -25,11 +30,13 @@ export function clearRunForSurface(
   const catalog = useCatalogStore.getState();
 
   if (surface === 'product') {
-    // Ürün adı daima page.slots'ta (footer asla product değil) → findSlot yeterli.
+    // Ürün adı/fiyatı daima page.slots'ta (footer asla product değil) → findSlot yeterli.
     const found = findSlot(slotId);
     if (!found?.slot.product) return;
+    // Alan ayrımı ŞART: aksi halde fiyattaki cell-level bir ayar ürün ADI'nın run'larını siler.
+    const field = cellIds.includes('price') ? 'price' : 'name';
     catalog.updateSlotProduct(found.pageNumber, slotId, {
-      name: clearRunProperty(found.slot.product.name ?? '', property),
+      [field]: clearRunProperty(found.slot.product[field] ?? '', property),
     });
     return;
   }

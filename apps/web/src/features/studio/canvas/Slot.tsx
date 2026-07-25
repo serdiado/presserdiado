@@ -14,17 +14,20 @@ import {
   isRangeWithinElement,
   sanitizeRichText,
   isRichTextHtml,
+  richTextToPlain,
 } from '../modules/richText';
+import { priceToDisplayHtml } from '../util/priceDisplay';
 import { usePreserveEditorSelectionOnChrome, consumeDragGesture } from '../util/editorChrome';
 import {
+  borderDataToCss,
   colorOpacityToCss,
   colorValueBackground,
+  colorValueToSolid,
   deepMerge,
   fontStyle,
   paddingStyle,
   radiusStyle,
   shadowStyle,
-  splitPrice,
 } from '../util/style';
 import { isRightClickInActiveTextEdit } from './textEditNativeMenu';
 
@@ -34,16 +37,19 @@ function BadgeRenderer({ badge, scale, slotId }: { badge: BadgeConfig; scale: nu
   const sizeRatio = badge.size / 100;
   const baseSize = 36 * scale * sizeRatio;
   const fontSize = 9 * scale * sizeRatio;
+  const bgSolid = colorValueToSolid(badge.appearance.bg);
+  const borderColor = badge.appearance.border.color;
+  const borderWidth = badge.appearance.border.t;
 
   const baseStyle: React.CSSProperties = {
     position: 'relative',
     zIndex: 40,
     pointerEvents: 'none',
-    backgroundColor: colorOpacityToCss({ c: badge.bgColor, o: badge.bgOpacity ?? 100 }),
+    backgroundColor: colorOpacityToCss(bgSolid),
     color: colorOpacityToCss({ c: badge.font?.color ?? '#000000', o: badge.font?.opacity ?? 100 }),
-    borderColor: colorOpacityToCss({ c: badge.borderColor, o: badge.borderOpacity ?? 100 }),
-    borderWidth: badge.borderWidth * scale,
-    borderStyle: 'solid',
+    borderColor: colorOpacityToCss(borderColor),
+    borderWidth: borderWidth * scale,
+    borderStyle: badge.appearance.border.style,
     fontSize,
     fontWeight: badge.font?.fontWeight ?? 'bold',
     fontFamily: badge.font?.fontFamily ?? 'inherit',
@@ -108,9 +114,9 @@ function BadgeRenderer({ badge, scale, slotId }: { badge: BadgeConfig; scale: nu
           </defs>
           <polygon
             points={points}
-            fill={colorOpacityToCss({ c: badge.bgColor, o: badge.bgOpacity ?? 100 })}
-            stroke={colorOpacityToCss({ c: badge.borderColor, o: badge.borderOpacity ?? 100 })}
-            strokeWidth={badge.borderWidth * scale * 2}
+            fill={colorOpacityToCss(bgSolid)}
+            stroke={colorOpacityToCss(borderColor)}
+            strokeWidth={borderWidth * scale * 2}
             clipPath={`url(#${clipId})`}
           />
           <text
@@ -143,7 +149,7 @@ function BadgeRenderer({ badge, scale, slotId }: { badge: BadgeConfig; scale: nu
   }
 
   if (badge.shape === 'flama') {
-    const borderW = badge.borderWidth * scale;
+    const borderW = borderWidth * scale;
     return (
       <div
         style={{
@@ -172,8 +178,8 @@ function BadgeRenderer({ badge, scale, slotId }: { badge: BadgeConfig; scale: nu
         >
           <polygon
             points="0,0 100,0 100,70 50,100 0,70"
-            fill={colorOpacityToCss({ c: badge.bgColor, o: badge.bgOpacity ?? 100 })}
-            stroke={colorOpacityToCss({ c: badge.borderColor, o: badge.borderOpacity ?? 100 })}
+            fill={colorOpacityToCss(bgSolid)}
+            stroke={colorOpacityToCss(borderColor)}
             strokeWidth={borderW}
             vectorEffect="non-scaling-stroke"
           />
@@ -203,11 +209,11 @@ function BadgeRenderer({ badge, scale, slotId }: { badge: BadgeConfig; scale: nu
           style={{
             position: 'absolute',
             width: ribbonW * 1.5,
-            backgroundColor: colorOpacityToCss({ c: badge.bgColor, o: badge.bgOpacity ?? 100 }),
+            backgroundColor: colorOpacityToCss(bgSolid),
             color: colorOpacityToCss({ c: badge.font?.color ?? '#000000', o: badge.font?.opacity ?? 100 }),
-            borderColor: colorOpacityToCss({ c: badge.borderColor, o: badge.borderOpacity ?? 100 }),
-            borderWidth: badge.borderWidth * scale,
-            borderStyle: 'solid',
+            borderColor: colorOpacityToCss(borderColor),
+            borderWidth: borderWidth * scale,
+            borderStyle: badge.appearance.border.style,
             fontSize,
             fontWeight: badge.font?.fontWeight ?? 'bold',
             fontFamily: badge.font?.fontFamily ?? 'inherit',
@@ -291,19 +297,21 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
   const [isOver, setIsOver] = useState(false);
   const [editingText, setEditingText] = useState<'name' | 'price' | null>(null);
 
-  // Ürün adı run-level metin köprüsü (modül BannerSection deseni): edit açıkken hücre-içi seçimi
-  // singleton'a yaz (ContextualBar TextMode okur) + bar custom kontrollerinde blur engeli (seçim yaşar).
-  usePreserveEditorSelectionOnChrome(editingText === 'name');
+  // Ürün adı VE fiyat run-level metin köprüsü (modül BannerSection deseni): edit açıkken hücre-içi
+  // seçimi singleton'a yaz (ContextualBar TextMode okur) + bar custom kontrollerinde blur engeli
+  // (seçim yaşar). cellId = editingText ('name' | 'price') → adapter'ın matchesSession'ı ile eşleşir.
+  // Köprü kurulmazsa getActiveSession() null döner ve HER ayar SESSİZCE cell-level'a düşer.
+  usePreserveEditorSelectionOnChrome(editingText !== null);
   useEffect(() => {
-    if (editingText !== 'name') return;
-    const ce = document.getElementById(`product-name-${slot.id}`) as HTMLElement | null;
+    if (!editingText) return;
+    const ce = document.getElementById(`product-${editingText}-${slot.id}`) as HTMLElement | null;
     if (!ce) return;
     const onSelChange = () => {
       const sel = window.getSelection();
       if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
       const range = sel.getRangeAt(0);
       if (!isRangeWithinElement(range, ce)) return;
-      setActiveRange(slot.id, 'name', range);
+      setActiveRange(slot.id, editingText, range);
     };
     document.addEventListener('selectionchange', onSelChange);
     return () => {
@@ -562,11 +570,11 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
 
       if (slot.isCustom) {
         updateSlotCustomSettings({
-          nameSettings: { isFreePosition: true, posX: currentX, posY: currentY },
+          nameSettings: { ...nameSettings, isFreePosition: true, posX: currentX, posY: currentY },
         });
       } else {
         updateGlobalSettings({
-          nameSettings: { isFreePosition: true, posX: currentX, posY: currentY },
+          nameSettings: { ...nameSettings, isFreePosition: true, posX: currentX, posY: currentY },
         });
       }
       setNameDragState({ isDragging: false, x: currentX, y: currentY });
@@ -662,11 +670,11 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
 
       if (slot.isCustom) {
         updateSlotCustomSettings({
-          priceSettings: { isFreePosition: true, posX: currentX, posY: currentY },
+          priceSettings: { ...priceSettings, isFreePosition: true, posX: currentX, posY: currentY },
         });
       } else {
         updateGlobalSettings({
-          priceSettings: { isFreePosition: true, posX: currentX, posY: currentY },
+          priceSettings: { ...priceSettings, isFreePosition: true, posX: currentX, posY: currentY },
         });
       }
       setPriceDragState({ isDragging: false, x: currentX, y: currentY });
@@ -891,8 +899,7 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
         ...(isModuleSlot
           ? {}
           : {
-              borderColor: colorOpacityToCss(finalSettings.colors.cellBorder),
-              borderWidth: `${finalSettings.borderWidth}px`,
+              ...borderDataToCss(finalSettings.colors.cellBorder),
               boxShadow: boxShadow,
             }),
         outline: !isPreviewMode && isSelected ? '2px solid var(--color-selected)' : undefined,
@@ -1090,9 +1097,7 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
                   height: `${finalSettings.priceHeight * clampedScale}mm`,
                   ...colorValueBackground(finalSettings.colors.priceBg),
                   borderRadius: radiusStyle(finalSettings.radiuses.price),
-                  borderStyle: 'solid',
-                  borderWidth: `${(finalSettings.priceBorderWidth || 0) * clampedScale}px`,
-                  borderColor: colorOpacityToCss(finalSettings.colors.priceBorder),
+                  ...borderDataToCss(finalSettings.colors.priceBorder, clampedScale),
                   ...fontStyle({
                     ...finalSettings.fonts.price,
                     fontSize: finalSettings.fonts.price.fontSize * clampedScale,
@@ -1113,23 +1118,56 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
                 }}
                 onMouseDown={handlePriceMouseDown}
               >
-            {editingText === 'price' ? (
-              <div
-                contentEditable
-                suppressContentEditableWarning
-                className="w-full h-full flex items-center justify-center text-center outline-none bg-white/90 text-black rounded"
-                onBlur={(e) => {
-                  updateSlotProduct(pageNumber, slot.id, { price: e.currentTarget.innerText });
-                  setEditingText(null);
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === 'Escape') {
-                    e.preventDefault();
-                    e.currentTarget.blur();
-                  }
-                }}
-                ref={(el) => {
-                  if (el && document.activeElement !== el) {
+            {/* Fiyat = ürün adıyla AYNI run-level zengin metin yüzeyi (tek kalıcı editable, içerik
+                ref ile imperatif yazılır → edit-time clobber yok). Otomatik kuruş üst-karakteri
+                priceToDisplayHtml projeksiyonundan gelir; kullanıcı elle biçim uygularsa değer
+                HTML'e döner ve projeksiyon devreden çıkar (birbirini dışlayan iki dal). */}
+            <div
+              id={`product-price-${slot.id}`}
+              data-rt-editable
+              contentEditable={editingText === 'price'}
+              suppressContentEditableWarning
+              className={`w-full outline-none ${
+                editingText === 'price'
+                  ? 'bg-white/90 text-black rounded pointer-events-auto select-text cursor-text'
+                  : 'pointer-events-none'
+              }`}
+              style={{
+                textAlign: finalSettings.fonts.price.textAlign,
+                whiteSpace: 'pre-wrap',
+                // BLOK olmalı (flex DEĞİL): vertical-align flex item'a uygulanmaz — eski
+                // `flex items-start` hilesinin yerini artık gerçek --sup-offset alıyor.
+                // Üst-karakter boyut/konumu index.css'teki [data-rt-editable] sup kuralından gelir.
+                ...({
+                  '--sup-scale': `${finalSettings.fonts.price.decimalScale}%`,
+                  '--sup-offset': `${((finalSettings.fonts.price.decimalOffset ?? 10) / 100) * (finalSettings.fonts.price.fontSize * clampedScale)}px`,
+                } as React.CSSProperties),
+              }}
+              onBlur={(e) => {
+                // Renk picker'ına kaçan focus edit'i BOZMAMALI (ad/modül deseni) — yoksa oturum
+                // çöker ve renk sessizce cell-level'a düşer.
+                const rel = e.relatedTarget as HTMLElement | null;
+                if (rel && rel.closest('[data-color-picker-popup]')) return;
+                const clean = sanitizeRichText(e.currentTarget.innerHTML);
+                // Kullanıcı BİÇİM uygulamadıysa (DOM yalnız otomatik projeksiyonun kendisiyse)
+                // store'u DÜZ METİN tut → tek-yönlü kapı gereksiz yere kapanmasın, Excel/havuz
+                // round-trip'i temiz kalsın. Gerçek biçim varsa HTML olarak saklanır.
+                const plain = richTextToPlain(clean);
+                updateSlotProduct(pageNumber, slot.id, {
+                  price: priceToDisplayHtml(plain) === clean ? plain : clean,
+                });
+                setEditingText(null);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === 'Escape') {
+                  e.preventDefault();
+                  e.currentTarget.blur();
+                }
+              }}
+              ref={(el) => {
+                if (!el) return;
+                if (editingText === 'price') {
+                  if (document.activeElement !== el) {
                     el.focus();
                     const sel = window.getSelection();
                     const range = document.createRange();
@@ -1138,25 +1176,19 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
                     sel?.removeAllRanges();
                     sel?.addRange(range);
                   }
-                }}
-              >
-                {String(slot.product.price ?? '')}
-              </div>
-            ) : (
-              <div className="flex items-start pointer-events-none">
-                <span style={{ lineHeight: '0.8' }}>{splitPrice(slot.product.price).main},</span>
-                <span
-                  style={{
-                    fontSize: `${finalSettings.fonts.price.decimalScale}%`,
-                    verticalAlign: 'top',
-                    lineHeight: '1em',
-                    marginLeft: '2px',
-                  }}
-                >
-                  {splitPrice(slot.product.price).decimal}
-                </span>
-              </div>
-            )}
+                } else {
+                  // Edit-DIŞI imperatif sync (ad deseni). data-rt-synced ham store değerini izler →
+                  // projeksiyon çıktısı değil, kaynak değişimi tetikler.
+                  const raw = String(slot.product?.price ?? '');
+                  if (el.getAttribute('data-rt-synced') !== raw) {
+                    // Render sınırında da sanitize: dışarıdan yüklenen .json projelerde
+                    // (projectSerializer'da sanitize yok) HTML doğrudan innerHTML'e girmesin.
+                    el.innerHTML = sanitizeRichText(priceToDisplayHtml(raw));
+                    el.setAttribute('data-rt-synced', raw);
+                  }
+                }
+              }}
+            />
               </div>
             );
           })()}
@@ -1296,10 +1328,10 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
               marginRight: 'auto',
               whiteSpace: 'normal',
               wordBreak: 'break-word',
-              backgroundColor: colorOpacityToCss({ c: nameSettings.bgColor ?? '#ffffff', o: nameSettings.bgOpacity ?? 0 }),
-              border: nameSettings.borderWidth ? `${nameSettings.borderWidth}px solid ${colorOpacityToCss({ c: nameSettings.borderColor ?? '#e2e8f0', o: nameSettings.borderOpacity ?? 0 })}` : undefined,
-              borderRadius: nameSettings.borderRadius ? `${nameSettings.borderRadius}px` : undefined,
-              padding: nameSettings.borderWidth ? '2px 4px' : undefined,
+              ...colorValueBackground(nameSettings.appearance.bg),
+              border: nameSettings.appearance.border.t ? `${nameSettings.appearance.border.t}px ${nameSettings.appearance.border.style} ${colorOpacityToCss(nameSettings.appearance.border.color)}` : undefined,
+              borderRadius: nameSettings.appearance.radius.tl ? `${nameSettings.appearance.radius.tl}px` : undefined,
+              padding: nameSettings.appearance.border.t ? '2px 4px' : undefined,
               ...fontStyle({
                 ...finalSettings.fonts.productName,
                 fontSize: finalSettings.fonts.productName.fontSize * clampedScale,

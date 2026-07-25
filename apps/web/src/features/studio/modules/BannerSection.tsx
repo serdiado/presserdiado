@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
-import { colorValueBackground, colorOpacityToCss, radiusStyle, shadowStyle, hexToRgba } from '../util/style';
+import { colorValueBackground, borderDataToCss, radiusStyle, shadowStyle, hexToRgba } from '../util/style';
 import { usePreserveEditorSelectionOnChrome, markDragGesture } from '../util/editorChrome';
 import type { BannerCellData, BannerModuleData } from './types';
 import { materializeFractions, FRACTION_MIN } from './fractions';
@@ -315,7 +315,7 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
       ? dragFractions.fractions
       : materializeFractions(instanceData?.rowFractions, rows);
   const bgColor = instanceData?.bgColor ?? { type: 'solid' as const, color: '#ffffff', opacity: 100 };
-  const cb = instanceData?.containerBorder ?? { color: { c: '#e2e8f0', o: 0 }, width: 0 };
+  const cb = instanceData?.containerBorder ?? { t: 0, r: 0, b: 0, l: 0, linked: true, color: { c: '#e2e8f0', o: 0 }, style: 'solid' as const };
   const radius = instanceData?.radius ?? { tl: 0, tr: 0, bl: 0, br: 0, linked: true };
   const shadow = instanceData?.shadow ?? { x: 0, y: 0, blur: 0, spread: 0, color: '#000000', opacity: 0, active: false };
 
@@ -349,7 +349,7 @@ export function BannerSection({ instanceData, slotId, pageNumber }: Props) {
         ...colorValueBackground(bgColor),
         borderRadius: radiusStyle(radius),
         boxShadow: shadowStyle(shadow),
-        border: cb.width > 0 ? `${cb.width}px solid ${colorOpacityToCss(cb.color)}` : undefined,
+        ...borderDataToCss(cb),
       }}
     >
       {visible.map((cell) => {

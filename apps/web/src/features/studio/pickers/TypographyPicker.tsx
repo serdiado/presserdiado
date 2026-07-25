@@ -105,7 +105,10 @@ export function TypographyPicker({ title, value, onChange, inline = false, onCle
             ['fontSize', 'Punto', 8, 72, 1, 12],
             ['lineHeight', 'Satır', 0.5, 3, 0.1, 1.2],
             ['letterSpacing', 'Harf Aralığı', -5, 10, 0.5, 0],
-            ['decimalScale', 'Üst Karakter %', 30, 200, 1, 50],
+            // %100 = ÜST SINIR: üst karakter taban metinle AYNI boyut olur (font-size: 100% ⇒ ebeveynin
+            // birebiri; ör. 11,59'da 11 = 40px ise 59 da 40px). %50 = yarısı. 100 üstü, "üst karakter"i
+            // taban metinden BÜYÜK yapardı — anlamsız. (Mevcut tüm veriler ≤100: 34/40/50/100.)
+            ['decimalScale', 'Üst Karakter %', 30, 100, 1, 50],
             ['decimalOffset', 'Üst Karakter', -50, 150, 1, 10],
           ] as const
         ).map(([id, label, min, max, step, fallback]) => {

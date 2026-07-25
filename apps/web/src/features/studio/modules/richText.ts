@@ -637,11 +637,15 @@ export function sanitizeRichText(html: string): string {
 // ─────────────────────────────────────────────────────────────────────────────
 // 5) Legacy düz-metin ↔ constrained-HTML köprüsü (innerText→HTML göçü güvenlik ağı)
 // ─────────────────────────────────────────────────────────────────────────────
-/** String bizim markup'ımızı (span/b/i/u/s/br) VEYA bir HTML entity (&amp; &lt; &#…) içeriyor mu?
+/** String bizim markup'ımızı (span/sup/b/i/u/s/br) VEYA bir HTML entity (&amp; &lt; &#…) içeriyor mu?
  *  Göç sınırı: true → constrained-HTML (innerHTML ile oku); false → legacy düz metin (textContent ile
- *  oku — `<harf` ve `&` literal korunur). Tek-kaynak tespit (render + display-strip ortak). */
+ *  oku — `<harf` ve `&` literal korunur). Tek-kaynak tespit (render + display-strip ortak).
+ *
+ *  `sup` ALLOWED_TAGS'te (yukarıda) hep vardı ama BURADA eksikti: `s\b` alternatifi `<sup`'ta sınır
+ *  bulamaz ('s'→'u' ikisi de kelime karakteri) → motorun ürettiği STİLSİZ `<sup>` (üst-karakter run'ının
+ *  en tipik biçimi) "düz metin" sanılıp textContent ile okunuyor, kullanıcı literal etiket görüyordu. */
 export function isRichTextHtml(s: string): boolean {
-  return /<(?:span|b|i|u|s|br)\b|&(?:#\d+|[a-z][a-z0-9]*);/i.test(s);
+  return /<(?:span|sup|b|i|u|s|br)\b|&(?:#\d+|[a-z][a-z0-9]*);/i.test(s);
 }
 
 /** HTML/legacy adı görsel-düz metne indirger (input/önizleme/alt için). Legacy düz metni

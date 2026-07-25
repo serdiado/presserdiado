@@ -10,8 +10,14 @@
 
 import type { BorderData, SpacingData, TypographyData } from '@matbaapro/shared';
 import type { StudioModule } from './types';
-import afpackBanner from './data/afpack-banner.json';
-import afpackPizza from './data/afpack-pizza-karton.json';
+import { normalizeLegacyAppearance } from './normalizeLegacyAppearance';
+import afpackBannerRaw from './data/afpack-banner.json';
+import afpackPizzaRaw from './data/afpack-pizza-karton.json';
+
+// Görünüm birleştirmesi (BorderData/CellAppearance) öncesi JSON'dan gelen eski containerBorder
+// şeklini normalize et — bkz. normalizeLegacyAppearance.ts. JSON dosyalarının kendisi değişmez.
+const afpackBanner = normalizeLegacyAppearance(afpackBannerRaw);
+const afpackPizza = normalizeLegacyAppearance(afpackPizzaRaw);
 
 // Placeholder banner hücresi için paylaşılan varsayılanlar (boilerplate'i azaltır).
 const PH_FONT: TypographyData = {
@@ -62,7 +68,7 @@ function phBanner(
       rows: 1,
       cols: 1,
       bgColor: { type: 'solid', color: bg, opacity: 100 },
-      containerBorder: { color: { c: '#e2e8f0', o: 100 }, width: 0 },
+      containerBorder: PH_BORDER,
       radius: { tl: 0, tr: 0, bl: 0, br: 0, linked: true },
       shadow: { x: 0, y: 0, blur: 0, spread: 0, color: '#000000', opacity: 0, active: false },
       cells: [

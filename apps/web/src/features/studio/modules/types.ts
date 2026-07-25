@@ -48,7 +48,7 @@ export interface BannerModuleData {
   colFractions?: number[];
   rowFractions?: number[];
   bgColor: ColorValue;
-  containerBorder: { color: { c: string; o: number }; width: number };
+  containerBorder: BorderData;
   radius: BorderRadiusData;
   shadow: ShadowData;
 }

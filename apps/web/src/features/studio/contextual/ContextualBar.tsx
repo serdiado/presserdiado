@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { AlignCenter, AlignLeft, AlignRight, AlignVerticalJustifyCenter, AlignVerticalJustifyEnd, AlignVerticalJustifyStart, Check, CopyPlus, Image, Move, PackageOpen, Settings, Trash2, ZoomIn, Pencil, Table2, Box, Combine, Slice, Frame, ChevronDown, Ruler as RulerIcon, Shapes, ShoppingBag } from 'lucide-react';
-import type { CatalogSettings, ColorValue, DeepPartial, TypographyData, BorderRadiusData, BadgeConfig, BadgeShape, BadgePosition, TextElementSettings } from '@matbaapro/shared';
+import type { CatalogSettings, CellAppearance, ColorValue, DeepPartial, TypographyData, BorderRadiusData, BadgeConfig, BadgeShape, BadgePosition, TextElementSettings } from '@matbaapro/shared';
+import { defaultBorder, defaultRadius } from '@matbaapro/shared';
 import { useCatalogStore, useUIStore, useHistoryStore } from '@/stores/studio';
 import {
   ColorOpacityPicker,
+  ColorSwatchTrigger,
   BorderRadiusPicker,
   ImagePickerPopover,
 } from '../pickers';
@@ -29,6 +31,8 @@ import { TextStyleSection } from './TextStyleSection';
 import { SlotProductImages } from '../panels/SlotProductImages';
 import { clearRunForSurface } from '../textSettings/cellApply';
 import type { TextSettingCtx, TextSettingDef } from '../textSettings/types';
+import { AppearanceControls } from '../appearanceSettings/AppearanceControls';
+import { QUICK_BAR_APPEARANCE_IDS } from '../appearanceSettings/registry';
 
 const DEFAULT_COLOR: ColorValue = { type: 'solid', color: '#ffffff', opacity: 100 };
 
@@ -92,40 +96,6 @@ function dispatchTextSetting(a: RunApplyAdapter, def: TextSettingDef, value: Run
   } else {
     a.applyCell(res); // CELL → yalnız container (cell-only property veya run-bearing olmayan yüzey)
   }
-}
-
-function ColorSwatchTrigger({
-  color,
-  opacity,
-  label = 'Renk',
-}: {
-  color: string;
-  opacity: number;
-  label?: string;
-}) {
-  return (
-    <>
-      <span
-        className="relative h-5 w-8 shrink-0 overflow-hidden rounded-md border border-border-strong shadow-sm"
-        aria-hidden="true"
-      >
-        <span
-          className="absolute inset-0 opacity-40"
-          style={{
-            backgroundImage:
-              'linear-gradient(45deg, #cbd5e1 25%, transparent 25%), linear-gradient(-45deg, #cbd5e1 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #cbd5e1 75%), linear-gradient(-45deg, transparent 75%, #cbd5e1 75%)',
-            backgroundSize: '8px 8px',
-            backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px',
-          }}
-        />
-        <span
-          className="absolute inset-0"
-          style={{ backgroundColor: color, opacity: opacity / 100 }}
-        />
-      </span>
-      <span>{label}</span>
-    </>
-  );
 }
 
 function Popover({
@@ -439,60 +409,20 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
 
       <Divider />
 
-      {/* 3 — Zemin */}
-      <ColorOpacityPicker
-        trigger={
-          <>
-            <div
-              className="w-3.5 h-3.5 rounded-sm shrink-0"
-              style={{
-                ...colorValueBackground(settings.colors.cellBg),
-                border: '1px solid rgba(0,0,0,0.15)',
-                borderRadius: '4px',
-              }}
-            />
-            <span>Zemin</span>
-          </>
-        }
-        value={settings.colors.cellBg}
-        onChange={(v) => update({ colors: { ...settings.colors, cellBg: v } })}
-      />
-
-      {/* 5 — Çerçeve */}
-      <ColorOpacityPicker
-        solidOnly
-        type="border"
-        trigger={
-          <>
-            <div
-              className="w-3.5 h-3.5 rounded-sm shrink-0"
-              style={{
-                backgroundColor: 'transparent',
-                border: `2px solid ${colorOpacityToCss(settings.colors.cellBorder)}`,
-                borderRadius: '4px',
-              }}
-            />
-            <span>Çerçeve</span>
-          </>
-        }
-        value={{ type: 'solid', color: settings.colors.cellBorder.c, opacity: settings.colors.cellBorder.o }}
-        thickness={settings.borderWidth}
-        onChange={(v) => {
-          if (v.type !== 'solid') return;
-          update({ colors: { ...settings.colors, cellBorder: { c: v.color, o: v.opacity } } });
+      {/* 3/4/5 — Zemin + Çerçeve + Köşe (merkezi kaynak: appearanceSettings/registry.ts) */}
+      <AppearanceControls
+        value={{ bg: settings.colors.cellBg, border: settings.colors.cellBorder, radius: settings.radiuses.cell }}
+        onChange={(patch) => {
+          const next: DeepPartial<CatalogSettings> = {};
+          if (patch.bg || patch.border) {
+            next.colors = { ...settings.colors, ...(patch.bg && { cellBg: patch.bg }), ...(patch.border && { cellBorder: patch.border }) };
+          }
+          if (patch.radius) next.radiuses = { ...settings.radiuses, cell: patch.radius };
+          update(next);
         }}
-        onThicknessChange={(v) => {
-          update({ borderWidth: v });
-        }}
+        ids={QUICK_BAR_APPEARANCE_IDS}
+        layout="bar"
       />
-
-      {/* 4 — Köşe */}
-      <Popover trigger={<><CornerRadiusIcon size={16} />Köşe</>} width="w-72">
-        <BorderRadiusPicker
-          value={settings.radiuses.cell}
-          onChange={(val) => update({ radiuses: { ...settings.radiuses, cell: val } })}
-        />
-      </Popover>
 
       {!isFree && <Divider />}
 
@@ -601,9 +531,11 @@ function SlotMode({ slotIds }: { slotIds: string[] }) {
                 <label className="text-[10px] font-bold text-text-secondary uppercase tracking-wider block">Fiyat</label>
                 <input
                   type="text"
-                  defaultValue={slot.product.price ?? ''}
+                  defaultValue={richTextToPlain(String(slot.product.price ?? ''))}
                   key={`price-${slot.product.price}`}
                   onBlur={(e) => {
+                    // Düz-metin düzenleme → fiyat düz metne döner (formatting reset; kabul —
+                    // ad input'uyla simetrik). Otomatik kuruş projeksiyonu tekrar devreye girer.
                     updateSlotProduct(pageNumber, slot.id, { price: e.target.value });
                   }}
                   className="w-full text-body-xs border border-border-default rounded px-2 py-1 focus:border-border-strong outline-none"
@@ -859,9 +791,7 @@ function BadgeMode() {
     };
   }, [isMoveActive, slotId, setActiveBadgeMoveSlotId]);
 
-  const bgVal: ColorValue = { type: 'solid', color: badge.bgColor || '#ffffff', opacity: badge.bgOpacity ?? 100 };
   const textVal: ColorValue = { type: 'solid', color: badge.textColor || '#000000', opacity: badge.textOpacity ?? 100 };
-  const borderVal: ColorValue = { type: 'solid', color: badge.borderColor || '#cbd5e1', opacity: badge.borderOpacity ?? 100 };
 
   const btnCls = 'h-9 px-3 inline-flex items-center gap-1.5 rounded-md text-xs font-medium whitespace-nowrap hover:bg-border-default transition-colors';
 
@@ -876,79 +806,18 @@ function BadgeMode() {
 
   return (
     <>
-      {/* 2. Zemin */}
-      <ColorOpacityPicker
-        solidOnly
-        trigger={
-          <>
-            <div
-              className="w-3.5 h-3.5 rounded-sm shrink-0"
-              style={{
-                backgroundColor: badge.bgColor || '#ffffff',
-                border: '1px solid rgba(0,0,0,0.15)',
-                borderRadius: '4px',
-                opacity: (badge.bgOpacity ?? 100) / 100,
-              }}
-            />
-            <span>Zemin</span>
-          </>
-        }
-        value={bgVal}
-        onChange={(v) => {
-          if (v.type === 'solid') {
-            updateBadge({ bgColor: v.color, bgOpacity: v.opacity });
-          }
+      {/* 2. Zemin + Çerçeve (merkezi kaynak: appearanceSettings/registry.ts, radius yok — shape var) */}
+      <AppearanceControls
+        value={{ ...badge.appearance, radius: defaultRadius }}
+        onChange={(patch) => {
+          const nextAppearance: DeepPartial<BadgeConfig['appearance']> = {};
+          if (patch.bg) nextAppearance.bg = patch.bg;
+          if (patch.border) nextAppearance.border = patch.border;
+          updateBadge({ appearance: nextAppearance } as Partial<BadgeConfig>);
         }}
+        ids={['bg', 'borderColor', 'borderWidth']}
+        layout="bar"
       />
-
-      {/* Çerçeve Popover'ı */}
-      <Popover
-        trigger={
-          <>
-            <div
-              className="w-3.5 h-3.5 rounded-sm shrink-0"
-              style={{
-                backgroundColor: 'transparent',
-                border: `2px solid ${badge.borderColor || '#cbd5e1'}`,
-                borderRadius: '4px',
-                opacity: (badge.borderOpacity ?? 100) / 100,
-              }}
-            />
-            <span>Çerçeve</span>
-          </>
-        }
-        width="w-72"
-      >
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-medium text-text-secondary">Kenarlık Rengi</span>
-            <ColorOpacityPicker
-              solidOnly
-              value={borderVal}
-              onChange={(v) => {
-                if (v.type === 'solid') {
-                  updateBadge({ borderColor: v.color, borderOpacity: v.opacity });
-                }
-              }}
-            />
-          </div>
-          <div className="flex items-center justify-between gap-3 pt-2 border-t border-border-default">
-            <span className="text-[10px] font-medium text-text-secondary">Kalınlık</span>
-            <div className="flex items-center gap-2">
-              <input
-                type="range"
-                min={0}
-                max={10}
-                step={1}
-                value={badge.borderWidth ?? 0}
-                onChange={(e) => updateBadge({ borderWidth: parseInt(e.target.value) || 0 })}
-                className="w-24 studio-slider"
-              />
-              <span className="text-xs font-medium w-8 text-right">{(badge.borderWidth ?? 0)}px</span>
-            </div>
-          </div>
-        </div>
-      </Popover>
 
       {/* 3. Yazı */}
       <ColorOpacityPicker
@@ -1126,98 +995,23 @@ function TextMode({
     });
   };
 
-  const nameBgValue = {
-    type: 'solid' as const,
-    color: nameSettings.bgColor || '#ffffff',
-    opacity: nameSettings.bgOpacity ?? 100,
-  };
-  const nameBorderValue = {
-    c: nameSettings.borderColor || '#cbd5e1',
-    o: nameSettings.borderOpacity ?? 100,
-  };
-  const nameRadiusValue: BorderRadiusData = {
-    tl: nameSettings.borderRadius ?? 0,
-    tr: nameSettings.borderRadius ?? 0,
-    bl: nameSettings.borderRadius ?? 0,
-    br: nameSettings.borderRadius ?? 0,
-    linked: true,
-  };
+  // Zemin+çerçeve+köşe (merkezi kaynak: appearanceSettings/registry.ts) — isim ve fiyat AYNI
+  // CellAppearance şeklini paylaşır, yalnız hedef alan (nameSettings.appearance vs colors.price*) değişir.
+  const appearance: CellAppearance = isName
+    ? nameSettings.appearance
+    : { bg: settings.colors.priceBg, border: settings.colors.priceBorder, radius: settings.radiuses.price };
 
-  const bgValue: ColorValue = isName ? nameBgValue : settings.colors.priceBg;
-  const borderValue = isName ? nameBorderValue : settings.colors.priceBorder;
-  const borderWidth = isName ? (nameSettings.borderWidth ?? 0) : settings.priceBorderWidth;
-  const radiusValue = isName ? nameRadiusValue : settings.radiuses.price;
-
-  const bgTriggerStyle: React.CSSProperties = isName
-    ? {
-        backgroundColor: nameBgValue.color,
-        border: '1px solid rgba(0,0,0,0.15)',
-        borderRadius: '4px',
-        opacity: nameBgValue.opacity / 100,
-      }
-    : {
-        ...colorValueBackground(settings.colors.priceBg),
-        border: '1px solid rgba(0,0,0,0.15)',
-        borderRadius: '4px',
-      };
-
-  const updateBackground = (value: ColorValue) => {
+  const updateAppearance = (patch: Partial<CellAppearance>) => {
     if (isName) {
-      if (value.type !== 'solid') return;
-      updateNameSettings({
-        bgColor: value.color,
-        bgOpacity: value.opacity,
-      });
+      updateNameSettings({ appearance: { ...nameSettings.appearance, ...patch } });
       return;
     }
-
-    updateSettings({
-      colors: {
-        ...settings.colors,
-        priceBg: value,
-      },
-    });
-  };
-
-  const updateBorderColor = (value: ColorValue) => {
-    if (value.type !== 'solid') return;
-    if (isName) {
-      updateNameSettings({
-        borderColor: value.color,
-        borderOpacity: value.opacity,
-      });
-      return;
+    const next: DeepPartial<CatalogSettings> = {};
+    if (patch.bg || patch.border) {
+      next.colors = { ...settings.colors, ...(patch.bg && { priceBg: patch.bg }), ...(patch.border && { priceBorder: patch.border }) };
     }
-
-    updateSettings({
-      colors: {
-        ...settings.colors,
-        priceBorder: { c: value.color, o: value.opacity },
-      },
-    });
-  };
-
-  const updateBorderWidth = (value: number) => {
-    if (isName) {
-      updateNameSettings({ borderWidth: value });
-      return;
-    }
-
-    updateSettings({ priceBorderWidth: value });
-  };
-
-  const updateRadius = (value: BorderRadiusData) => {
-    if (isName) {
-      updateNameSettings({ borderRadius: value.tl });
-      return;
-    }
-
-    updateSettings({
-      radiuses: {
-        ...settings.radiuses,
-        price: value,
-      },
-    });
+    if (patch.radius) next.radiuses = { ...settings.radiuses, price: patch.radius };
+    updateSettings(next);
   };
 
   const fontKey = element === 'price' ? 'price' : 'productName';
@@ -1228,8 +1022,10 @@ function TextMode({
     updateSettings(patch);
   };
 
-  // Run-level metin (yalnız ürün ADI) — ortak dispatchTextSetting + ÜRÜN adapter'ı:
-  // run→updateSlotProduct(name HTML) (clone-izole + global saveState), cell→updateFont(fonts.productName).
+  // Run-level metin (ürün ADI ve FİYAT) — ortak dispatchTextSetting + ÜRÜN adapter'ı:
+  // run→updateSlotProduct({name|price} HTML) (clone-izole + global saveState), cell→updateFont(fonts[fontKey]).
+  // İki alan da 'product' yüzeyi altında; hedefi cellId ayırır (yeni Surface değeri EKLENMEZ).
+  const cellId: 'name' | 'price' = isName ? 'name' : 'price';
   const pageNumber =
     getActivePages().find((p) => p.slots.some((s) => s.id === slotId))?.pageNumber ?? 0;
   const applyTextSetting = (def: TextSettingDef, value: RunValue) =>
@@ -1238,13 +1034,16 @@ function TextMode({
         surface: 'product',
         slotId,
         font,
-        matchesSession: (s) => s.slotId === slotId && s.cellId === 'name',
+        matchesSession: (s) => s.slotId === slotId && s.cellId === cellId,
         resolveCellEl: () =>
-          document.getElementById(`product-name-${slotId}`) as HTMLElement | null,
-        commitRun: (_s, html) => updateSlotProduct(pageNumber, slotId, { name: html }),
+          document.getElementById(`product-${cellId}-${slotId}`) as HTMLElement | null,
+        commitRun: (_s, html) =>
+          updateSlotProduct(pageNumber, slotId, isName ? { name: html } : { price: html }),
         applyCell: (patch) => updateFont({ ...font, ...patch }),
-        clearRun: (property) => clearRunForSurface('product', slotId, [], property),
-        fallbackCellId: 'name',
+        // cellId ŞART: clearRunForSurface product yüzeyinde alanı bundan seçer — boş geçilirse
+        // fiyattaki temizleme ürün ADI'nın run'larını silerdi.
+        clearRun: (property) => clearRunForSurface('product', slotId, [cellId], property),
+        fallbackCellId: cellId,
       },
       def,
       value,
@@ -1254,72 +1053,25 @@ function TextMode({
 
   return (
     <>
-      {isName ? (
-        /* Ürün adı: registry'den render run-level biçimlendirme (Faz 3). */
-        <TextStyleSection
-          surface="product"
-          slotId={slotId}
-          cellId="name"
-          font={font}
-          onApply={applyTextSetting}
-          getAvoidRect={() => {
-            const s = getActiveSession();
-            return s && s.slotId === slotId && s.cellId === 'name' && !s.range.collapsed
-              ? s.range.getBoundingClientRect()
-              : null;
-          }}
-        />
-      ) : (
-        /* Fiyat: cell-level native kontroller (run-level göç sonraki tur). */
-        <>
-          {/* 1 — Yazı tipi */}
-          <select
-            value={font.fontFamily}
-            onChange={(e) => updateFont({ ...font, fontFamily: e.target.value })}
-            className="text-xs border border-border-default rounded-md px-2 py-1.5 bg-surface-panel"
-          >
-            {['Inter', 'Roboto', 'Arial', 'Oswald', 'Helvetica', 'Georgia'].map((f) => (
-              <option key={f} value={f}>{f}</option>
-            ))}
-          </select>
-
-          {/* 2 — Font boyutu */}
-          <input
-            type="number"
-            min={6}
-            max={120}
-            value={font.fontSize}
-            onChange={(e) => updateFont({ ...font, fontSize: parseInt(e.target.value) || 12 })}
-            className="w-14 text-center text-xs border border-border-default rounded-md px-1 py-1.5"
-          />
-
-          {/* 3 — Font kalınlığı */}
-          <select
-            value={font.fontWeight}
-            onChange={(e) => updateFont({ ...font, fontWeight: e.target.value })}
-            className="text-xs border border-border-default rounded-md px-2 py-1.5 bg-surface-panel"
-          >
-            <option value="400">Normal</option>
-            <option value="500">Orta</option>
-            <option value="700">Kalın</option>
-            <option value="900">Siyah</option>
-          </select>
-
-          {/* 4 */}
-          <Divider />
-
-          {/* 7 — Renk */}
-          <ColorOpacityPicker
-            solidOnly
-            trigger={<ColorSwatchTrigger color={font.color} opacity={font.opacity} />}
-            value={{ type: 'solid', color: font.color, opacity: font.opacity }}
-            onChange={(v) => {
-              if (v.type !== 'solid') return;
-              updateFont({ ...font, color: v.color, opacity: v.opacity });
-            }}
-          />
-        </>
-      )}
+      {/* Ürün adı VE fiyat: AYNI registry'den render run-level biçimlendirme. Fiyat eskiden
+          native <select>/<input> setiydi (cell-level); artık iki yüzey birebir aynı kontrolleri
+          kullanıyor. supDefaults: üst-karakter toggle'ı açılırken decimalScale/decimalOffset
+          varsayılanı YAZAR — fiyatta bu, kalibre edilmiş otomatik kuruş boyutunu (ve slot custom
+          değilse GLOBAL ayarı) bozacağı için bastırılır. */}
+      <TextStyleSection
+        surface="product"
+        slotId={slotId}
+        cellId={cellId}
+        font={font}
+        onApply={applyTextSetting}
+        supDefaults={isName}
+        getAvoidRect={() => {
+          const s = getActiveSession();
+          return s && s.slotId === slotId && s.cellId === cellId && !s.range.collapsed
+            ? s.range.getBoundingClientRect()
+            : null;
+        }}
+      />
 
 
       {/* 10 */}
@@ -1337,55 +1089,20 @@ function TextMode({
       {/* 6 */}
       <Divider />
 
-      {/* Zemin */}
-      <div>
-        <ColorOpacityPicker
-          solidOnly={isName}
-          trigger={
-            <>
-              <div
-                className="w-3.5 h-3.5 rounded-sm shrink-0"
-                style={bgTriggerStyle}
-              />
-              <span>Zemin</span>
-            </>
-          }
-          value={bgValue}
-          onChange={updateBackground}
-        />
-      </div>
-
-      {/* Çerçeve */}
-      <div>
-        <ColorOpacityPicker
-          solidOnly
-          type="border"
-          trigger={
-            <>
-              <div
-                className="w-3.5 h-3.5 rounded-sm shrink-0"
-                style={{
-                  backgroundColor: 'transparent',
-                  border: `2px solid ${colorOpacityToCss(borderValue)}`,
-                  borderRadius: '4px',
-                }}
-              />
-              <span>Çerçeve</span>
-            </>
-          }
-          value={{ type: 'solid', color: borderValue.c, opacity: borderValue.o }}
-          thickness={borderWidth}
-          onChange={updateBorderColor}
-          onThicknessChange={updateBorderWidth}
-        />
-      </div>
+      {/* Zemin + Çerçeve (merkezi kaynak) */}
+      <AppearanceControls
+        value={appearance}
+        onChange={updateAppearance}
+        ids={['bg', 'borderColor', 'borderWidth']}
+        layout="bar"
+      />
 
       {/* Köşe */}
       <div>
         <Popover trigger={<><CornerRadiusIcon size={16} />Köşe</>} width="w-72">
           <BorderRadiusPicker
-            value={radiusValue}
-            onChange={updateRadius}
+            value={appearance.radius}
+            onChange={(v) => updateAppearance({ radius: v })}
           />
         </Popover>
       </div>
@@ -1621,8 +1338,15 @@ function FreeSlotMode({ slot, pageNumber, slotIds }: FreeSlotProps) {
     const rows = moduleData.rows ?? 4;
     const cols = moduleData.cols ?? 4;
     const bgColor = moduleData.bgColor ?? { type: 'solid', color: '#ffffff', opacity: 100 };
-    const cb = moduleData.containerBorder ?? { color: { c: '#e2e8f0', o: 100 }, width: 0 };
+    const cb = moduleData.containerBorder ?? { ...defaultBorder, color: { c: '#e2e8f0', o: 100 } };
     const radius = moduleData.radius ?? { tl: 0, tr: 0, bl: 0, br: 0, linked: true };
+    const containerAppearance: CellAppearance = { bg: bgColor, border: cb, radius };
+    const updateContainerAppearance = (patch: Partial<CellAppearance>) =>
+      updateSlotModuleData(pageNumber, slot.id, {
+        ...(patch.bg && { bgColor: patch.bg }),
+        ...(patch.border && { containerBorder: patch.border }),
+        ...(patch.radius && { radius: patch.radius }),
+      });
 
     // Sayısal grid boyutu → merge-aware motor (setBannerGridSize). Clamp burada.
     const resizeGrid = (newRows: number, newCols: number) =>
@@ -1667,79 +1391,13 @@ function FreeSlotMode({ slot, pageNumber, slotIds }: FreeSlotProps) {
 
         <Divider />
 
-        {/* Zemin Rengi */}
-        <ColorOpacityPicker
-          trigger={
-            <>
-              <div
-                className="w-3.5 h-3.5 rounded-sm shrink-0"
-                style={{
-                  ...colorValueBackground(bgColor),
-                  border: '1px solid rgba(0,0,0,0.15)',
-                  borderRadius: '4px',
-                }}
-              />
-              <span>Zemin</span>
-            </>
-          }
-          value={bgColor}
-          onChange={(v) => updateSlotModuleData(pageNumber, slot.id, { bgColor: v })}
+        {/* Zemin + Çerçeve + Köşe (merkezi kaynak: appearanceSettings/registry.ts) */}
+        <AppearanceControls
+          value={containerAppearance}
+          onChange={updateContainerAppearance}
+          ids={QUICK_BAR_APPEARANCE_IDS}
+          layout="bar"
         />
-
-        {/* Çerçeve Popover'ı */}
-        <Popover
-          trigger={
-            <>
-              <div
-                className="w-3.5 h-3.5 rounded-sm shrink-0"
-                style={{
-                  backgroundColor: 'transparent',
-                  border: `2px solid ${colorOpacityToCss(cb.color)}`,
-                  borderRadius: '4px',
-                }}
-              />
-              <span>Çerçeve</span>
-            </>
-          }
-          width="w-72"
-        >
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-medium text-text-secondary">Dış Kenarlık</span>
-              <ColorOpacityPicker
-                solidOnly
-                value={{ type: 'solid', color: cb.color.c, opacity: cb.color.o }}
-                onChange={(v) => {
-                  if (v.type !== 'solid') return;
-                  updateSlotModuleData(pageNumber, slot.id, {
-                    containerBorder: { ...cb, color: { c: v.color, o: v.opacity } },
-                  });
-                }}
-              />
-            </div>
-            <div className="flex items-center justify-between gap-3 pt-1 border-t border-border-default">
-              <span className="text-[10px] font-medium text-text-secondary">Kalınlık</span>
-              <div className="flex items-center gap-2">
-                <input
-                  type="range" min={0} max={10} step={0.5} value={cb.width}
-                  onChange={(e) => updateSlotModuleData(pageNumber, slot.id, {
-                    containerBorder: { ...cb, width: parseFloat(e.target.value) },
-                  })}
-                  className="w-24 studio-slider"
-                />
-                <span className="text-xs font-medium w-8 text-right">{cb.width}mm</span>
-              </div>
-            </div>
-          </div>
-        </Popover>
-
-        {/* Köşe Yuvarlaklığı Popover'ı */}
-        <Popover trigger={<><CornerRadiusIcon size={16} />Köşe</>} width="w-72">
-          <BorderRadiusPicker
-            value={radius}
-            onChange={(v) => updateSlotModuleData(pageNumber, slot.id, { radius: v })}
-          />
-        </Popover>
 
         <Divider />
 
@@ -2060,70 +1718,18 @@ function BannerCellMode() {
             onImageCleared={() => updateCells({ image: null })}
           />
 
-          {/* Hücre Zemin Rengi */}
-          <ColorOpacityPicker
-            trigger={
-              <>
-                <div
-                  className="w-3.5 h-3.5 rounded-sm shrink-0"
-                  style={{
-                    ...colorValueBackground(firstCell.bgColor),
-                    border: '1px solid rgba(0,0,0,0.15)',
-                    borderRadius: '4px',
-                  }}
-                />
-                <span>Zemin</span>
-              </>
+          {/* Hücre Zemin + Çerçeve (merkezi kaynak: appearanceSettings/registry.ts — radius yok, banner hücrede tanımlı değil) */}
+          <AppearanceControls
+            value={{ bg: firstCell.bgColor, border: firstCell.border, radius: defaultRadius }}
+            onChange={(patch) =>
+              updateCells({
+                ...(patch.bg && { bgColor: patch.bg }),
+                ...(patch.border && { border: patch.border }),
+              })
             }
-            value={firstCell.bgColor}
-            onChange={(v) => updateCells({ bgColor: v })}
+            ids={['bg', 'borderColor', 'borderWidth']}
+            layout="bar"
           />
-
-          {/* Hücre Çerçeve Ayarı Popover'ı */}
-          <Popover
-            trigger={
-              <>
-                <div
-                  className="w-3.5 h-3.5 rounded-sm shrink-0"
-                  style={{
-                    backgroundColor: 'transparent',
-                    border: `2px solid ${colorOpacityToCss(firstCell.border.color)}`,
-                    borderRadius: '4px',
-                  }}
-                />
-                <span>Çerçeve</span>
-              </>
-            }
-            width="w-72"
-          >
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-medium text-text-secondary">Kenarlık Rengi</span>
-                <ColorOpacityPicker
-                  solidOnly
-                  value={{ type: 'solid', color: firstCell.border.color.c, opacity: firstCell.border.color.o }}
-                  onChange={(v) => {
-                    if (v.type !== 'solid') return;
-                    updateCells({ border: { ...firstCell.border, color: { c: v.color, o: v.opacity } } });
-                  }}
-                />
-              </div>
-              <div className="flex items-center justify-between gap-3 pt-1 border-t border-border-default">
-                <span className="text-[10px] font-medium text-text-secondary">Kalınlık</span>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="range" min={0} max={10} step={1} value={firstCell.border.t}
-                    onChange={(e) => {
-                      const val = parseInt(e.target.value) || 0;
-                      updateCells({ border: { ...firstCell.border, t: val, r: val, b: val, l: val } });
-                    }}
-                    className="w-24 studio-slider"
-                  />
-                  <span className="text-xs font-medium w-8 text-right">{firstCell.border.t}px</span>
-                </div>
-              </div>
-            </div>
-          </Popover>
 
           <Divider />
 

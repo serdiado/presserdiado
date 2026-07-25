@@ -1,6 +1,7 @@
 // Shared style helpers used by Slot, FooterRenderer and panels.
 
 import type {
+  BorderData,
   BorderRadiusData,
   ColorOpacity,
   ColorValue,
@@ -23,6 +24,25 @@ export function hexToRgba(hex: string, opacity: number): string {
 
 export function colorOpacityToCss(c: ColorOpacity): string {
   return c.o < 100 ? hexToRgba(c.c, c.o) : c.c;
+}
+
+/** BorderData → CSS özellikleri. Kenar bazlı (t/r/b/l ayrı olabilir), tek renk/stil. */
+export function borderDataToCss(b: BorderData, scale = 1): {
+  borderTopWidth: string;
+  borderRightWidth: string;
+  borderBottomWidth: string;
+  borderLeftWidth: string;
+  borderStyle: string;
+  borderColor: string;
+} {
+  return {
+    borderTopWidth: `${b.t * scale}px`,
+    borderRightWidth: `${b.r * scale}px`,
+    borderBottomWidth: `${b.b * scale}px`,
+    borderLeftWidth: `${b.l * scale}px`,
+    borderStyle: b.style,
+    borderColor: colorOpacityToCss(b.color),
+  };
 }
 
 // === ColorValue helpers ===========================================
@@ -172,6 +192,7 @@ export function parsePrice(price: unknown): number {
   if (!price) return 0;
   return parseFloat(String(price).replace(',', '.'));
 }
+
 
 export function deepMerge<T>(target: T, source: Partial<T>): T {
   if (!target) return source as T;

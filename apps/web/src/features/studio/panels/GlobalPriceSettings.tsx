@@ -1,9 +1,10 @@
 import { useCatalogStore } from '@/stores/studio';
+import type { CatalogSettings, DeepPartial } from '@matbaapro/shared';
 import {
-  BorderRadiusPicker,
-  ColorOpacityPicker,
   TypographyPicker,
 } from '../pickers';
+import { AppearanceControls } from '../appearanceSettings/AppearanceControls';
+import { FULL_APPEARANCE_IDS } from '../appearanceSettings/registry';
 
 export function GlobalPriceSettings() {
   const globalSettings = useCatalogStore((s) => s.globalSettings);
@@ -79,54 +80,22 @@ export function GlobalPriceSettings() {
       </div>
 
       <div className="bg-white p-3 rounded border border-slate-200 shadow-sm">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold text-slate-600">Zemin Rengi</span>
-          <ColorOpacityPicker
-            value={globalSettings.colors.priceBg}
-            onChange={(v) =>
-              setGlobalSettings({
-                colors: { ...globalSettings.colors, priceBg: v },
-              })
+        <AppearanceControls
+          value={{
+            bg: globalSettings.colors.priceBg,
+            border: globalSettings.colors.priceBorder,
+            radius: globalSettings.radiuses.price,
+          }}
+          onChange={(patch) => {
+            const next: DeepPartial<CatalogSettings> = {};
+            if (patch.bg || patch.border) {
+              next.colors = { ...globalSettings.colors, ...(patch.bg && { priceBg: patch.bg }), ...(patch.border && { priceBorder: patch.border }) };
             }
-          />
-        </div>
-      </div>
-
-      <div className="bg-white p-3 rounded border border-slate-200 shadow-sm">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold text-slate-600">Kenarlık</span>
-          <ColorOpacityPicker
-            solidOnly
-            type="border"
-            value={{
-              type: 'solid',
-              color: globalSettings.colors.priceBorder.c,
-              opacity: globalSettings.colors.priceBorder.o,
-            }}
-            thickness={globalSettings.priceBorderWidth}
-            onChange={(v) => {
-              if (v.type !== 'solid') return;
-              setGlobalSettings({
-                colors: {
-                  ...globalSettings.colors,
-                  priceBorder: { c: v.color, o: v.opacity },
-                },
-              });
-            }}
-            onThicknessChange={(t) => setGlobalSettings({ priceBorderWidth: t })}
-          />
-        </div>
-      </div>
-
-      <div className="bg-white p-2 rounded border border-slate-200 shadow-sm">
-        <BorderRadiusPicker
-          title="Ovallik"
-          value={globalSettings.radiuses.price}
-          onChange={(val) =>
-            setGlobalSettings({
-              radiuses: { ...globalSettings.radiuses, price: val },
-            })
-          }
+            if (patch.radius) next.radiuses = { ...globalSettings.radiuses, price: patch.radius };
+            setGlobalSettings(next);
+          }}
+          ids={FULL_APPEARANCE_IDS}
+          layout="panel"
         />
       </div>
 

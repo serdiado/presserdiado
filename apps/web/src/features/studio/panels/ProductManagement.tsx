@@ -10,6 +10,7 @@ import { useCatalogStore } from '@/stores/studio';
 import api from '@/lib/api';
 import { toAbsoluteUrl } from '@/lib/upload';
 import { createProductDragImage } from '../utils/dragImage';
+import { richTextToPlain } from '../modules/richText';
 import { ProductInfoSettings } from './ProductInfoSettings';
 import { rowToProduct, type ExcelCell } from './parseProductRow';
 import { Button } from '@/components/ui';
@@ -322,7 +323,11 @@ export function ProductManagement() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-body-sm text-text-primary truncate">{p.name}</span>
+                        {/* Liste DÜZ METİN gösterir — kanvastan havuza dönen ürün run-level HTML
+                            taşıyabilir (clearSlotToPool / captureProductToPool). */}
+                        <span className="text-body-sm text-text-primary truncate">
+                          {richTextToPlain(p.name ?? '')}
+                        </span>
                         {isPlaced && (
                           <span className="shrink-0 inline-flex items-center gap-0.5 text-[10px] text-text-secondary bg-surface-subtle border border-border-default rounded px-1.5 py-0.5">
                             <Check size={10} />
@@ -334,7 +339,9 @@ export function ProductManagement() {
                     </div>
 
                     {p.price != null && p.price !== '' && (
-                      <div className="text-body-sm text-text-primary shrink-0 pr-1">{p.price}</div>
+                      <div className="text-body-sm text-text-primary shrink-0 pr-1">
+                        {richTextToPlain(String(p.price))}
+                      </div>
                     )}
                   </div>
                 );

@@ -17,7 +17,7 @@ const bannerInit = () => ({
   rows: 4,
   cols: 4,
   bgColor: { type: 'solid', color: '#ffffff', opacity: 100 },
-  containerBorder: { color: { c: '#e2e8f0', o: 100 }, width: 0 },
+  containerBorder: { t: 0, r: 0, b: 0, l: 0, linked: true, color: { c: '#e2e8f0', o: 100 }, style: 'solid' },
   radius: { tl: 0, tr: 0, bl: 0, br: 0, linked: true },
   shadow: { x: 0, y: 0, blur: 0, spread: 0, color: '#000000', opacity: 0, active: false },
   cells: Array.from({ length: 16 }, (_, i) => defaultBannerCell(`banner-inst-${i}`)),

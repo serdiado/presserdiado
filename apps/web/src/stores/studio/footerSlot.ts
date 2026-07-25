@@ -45,7 +45,7 @@ export function defaultFooterModule(): BannerModuleData {
     cols: 5,
     cells: Array.from({ length: 5 }, (_, i) => defaultBannerCell(`footer-inst-${i}`)),
     bgColor: { type: 'solid', color: '#ffffff', opacity: 0 },
-    containerBorder: { color: { c: '#e2e8f0', o: 0 }, width: 0 },
+    containerBorder: { t: 0, r: 0, b: 0, l: 0, linked: true, color: { c: '#e2e8f0', o: 0 }, style: 'solid' },
     radius: { tl: 0, tr: 0, bl: 0, br: 0, linked: true },
     shadow: { x: 0, y: 0, blur: 0, spread: 0, color: '#000000', opacity: 0, active: false },
   };

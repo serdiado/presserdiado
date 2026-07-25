@@ -7,7 +7,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Bold, Italic, Underline, Strikethrough, Superscript, ChevronDown } from 'lucide-react';
 import type { TypographyData } from '@matbaapro/shared';
-import { ColorOpacityPicker } from '../pickers';
+import { ColorOpacityPicker, ColorSwatchTrigger } from '../pickers';
 import { textSettingById } from '../textSettings/registry';
 import type { TextSettingCtx, TextSettingDef } from '../textSettings/types';
 import { MIXED, isRangeWithinElement, type RunValue } from '../modules/richText';
@@ -34,6 +34,9 @@ interface Props {
   onApply: (def: TextSettingDef, value: RunValue) => void;
   /** Renk picker'a no-cover rect veren callback (run-active seçim rect'i). */
   getAvoidRect?: () => DOMRect | null;
+  /** Üst-karakter AÇILIRKEN decimalScale/decimalOffset varsayılanı yazılsın mı? Fiyatta `false`:
+   *  orada decimalScale otomatik kuruş boyutunu belirliyor ve yazım global'e yayılabiliyor. */
+  supDefaults?: boolean;
 }
 
 /** selectionchange → re-render: kontroller canlı seçimin stilini yansıtsın (caret dahil, fold). */
@@ -175,20 +178,16 @@ function ToggleBtn({
   );
 }
 
-function ColorSwatch({ color, opacity }: { color: string; opacity: number }) {
-  return (
-    <span className={TRIGGER_CLS}>
-      <span
-        className="w-3.5 h-3.5 rounded-sm shrink-0"
-        style={{ backgroundColor: color, opacity: opacity / 100, border: '1px solid rgba(0,0,0,0.15)' }}
-      />
-      <span>Renk</span>
-    </span>
-  );
-}
-
 // ── bölüm ────────────────────────────────────────────────────────────────────
-export function TextStyleSection({ surface, slotId, cellId, font, onApply, getAvoidRect }: Props) {
+export function TextStyleSection({
+  surface,
+  slotId,
+  cellId,
+  font,
+  onApply,
+  getAvoidRect,
+  supDefaults = true,
+}: Props) {
   useSelectionTick(); // canlı seçim değişince yeniden oku
   const ctx = buildReadCtx(surface, slotId, cellId, font);
 
@@ -260,9 +259,12 @@ export function TextStyleSection({ surface, slotId, cellId, font, onApply, getAv
         onClick={() => {
           const turningOn = superRead !== true;
           onApply(r.superscript, turningOn);
-          if (turningOn) {
+          if (turningOn && supDefaults) {
             // Tıklar tıklamaz iyi görünen varsayılanlar: boyut %50, konum 10. Kullanıcı sağ
             // panelden ("Üst Karakter %" / "Üst Karakter ↕") ince ayar yapar.
+            // FİYATTA BASTIRILIR (supDefaults=false): orada decimalScale zaten kalibre (40) ve
+            // otomatik kuruş boyutunu belirliyor; ayrıca bu yazım cell-level olduğu için slot
+            // "özel" değilse setGlobalSettings ile TÜM projeye yayılırdı.
             onApply(r.decimalScale, 50);
             onApply(r.decimalOffset, 10);
           }
@@ -274,7 +276,7 @@ export function TextStyleSection({ surface, slotId, cellId, font, onApply, getAv
       <ColorOpacityPicker
         solidOnly
         avoidRect={getAvoidRect?.() ?? null}
-        trigger={<ColorSwatch color={color.color} opacity={color.opacity} />}
+        trigger={<ColorSwatchTrigger color={color.color} opacity={color.opacity} />}
         value={{ type: 'solid', color: color.color, opacity: color.opacity }}
         onChange={(v) => {
           if (v.type !== 'solid') return;
