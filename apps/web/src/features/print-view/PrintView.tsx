@@ -79,6 +79,11 @@ export default function PrintView() {
 
   const physicalHeight = template.openHeightMm + template.bleedMm * 2;
   const order = activeForma.pages.map((p) => p.pageNumber);
+  // Güvenlik taraması bulgusu: bu değerler /export'un gevşek doğrulanmış (z.record(z.unknown()))
+  // catalogState'inden gelebiliyor — aşağıdaki <style> bloğuna escape'siz basılmadan önce
+  // gerçekten sayı olduklarını garanti ediyoruz (CSS-injection'ı kapatır).
+  const safeWidthMm = Number.isFinite(totalWidthMm) ? totalWidthMm : 210;
+  const safeHeightMm = Number.isFinite(physicalHeight) ? physicalHeight : 297;
 
   return (
     <div
@@ -97,14 +102,14 @@ export default function PrintView() {
             .print-mode [data-hide-on-export] { display: none !important; }
             .print-mode [data-hide-border-on-export="true"] { border-style: none !important; }
             html, body, #root {
-              width: ${totalWidthMm}mm !important;
-              height: ${physicalHeight}mm !important;
+              width: ${safeWidthMm}mm !important;
+              height: ${safeHeightMm}mm !important;
               margin: 0 !important;
               padding: 0 !important;
               background: white !important;
               overflow: hidden !important;
             }
-            @page { margin: 0; size: ${totalWidthMm}mm ${physicalHeight}mm; }
+            @page { margin: 0; size: ${safeWidthMm}mm ${safeHeightMm}mm; }
           `,
         }}
       />

@@ -96,6 +96,9 @@ export default function PresetPreview() {
 
   const physicalHeight = template.openHeightMm + template.bleedMm * 2;
   const order = activeForma.pages.map((p) => p.pageNumber);
+  // PrintView.tsx ile aynı hijyen: <style> bloğuna basmadan önce sayısal olduğunu garanti et.
+  const safeWidthMm = Number.isFinite(totalWidthMm) ? totalWidthMm : 210;
+  const safeHeightMm = Number.isFinite(physicalHeight) ? physicalHeight : 297;
 
   return (
     <div
@@ -114,14 +117,14 @@ export default function PresetPreview() {
             .print-mode [data-hide-on-export] { display: none !important; }
             .print-mode [data-hide-border-on-export="true"] { border-style: none !important; }
             html, body, #root {
-              width: ${totalWidthMm}mm !important;
-              height: ${physicalHeight}mm !important;
+              width: ${safeWidthMm}mm !important;
+              height: ${safeHeightMm}mm !important;
               margin: 0 !important;
               padding: 0 !important;
               background: white !important;
               overflow: hidden !important;
             }
-            @page { margin: 0; size: ${totalWidthMm}mm ${physicalHeight}mm; }
+            @page { margin: 0; size: ${safeWidthMm}mm ${safeHeightMm}mm; }
           `,
         }}
       />

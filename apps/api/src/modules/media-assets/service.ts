@@ -3,6 +3,7 @@ import { and, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '../../db/index.js';
 import { mediaAssets, productImages } from '../../db/schema/index.js';
 import { ConflictError, NotFoundError } from '../../lib/errors.js';
+import { deleteUploadFile } from '../../lib/uploads.js';
 
 const MAX_IMAGES_PER_SKU = 10;
 
@@ -66,6 +67,8 @@ export const mediaAssetsService = {
     await db
       .delete(mediaAssets)
       .where(and(eq(mediaAssets.id, id), eq(mediaAssets.userId, userId)));
+    // Güvenlik taraması bulgusu: silme öncesinde dosya diskten hiç kaldırılmıyordu.
+    await deleteUploadFile(existing.imageKey);
 
     return { success: true };
   },
@@ -73,7 +76,7 @@ export const mediaAssetsService = {
   async bulkRemove(userId: string, ids: string[]) {
     // Yalnız bu kullanıcıya ait id'leri al (IDOR koruması).
     const owned = await db
-      .select({ id: mediaAssets.id })
+      .select({ id: mediaAssets.id, imageKey: mediaAssets.imageKey })
       .from(mediaAssets)
       .where(and(eq(mediaAssets.userId, userId), inArray(mediaAssets.id, ids)));
 
@@ -85,6 +88,7 @@ export const mediaAssetsService = {
     await db
       .delete(mediaAssets)
       .where(and(eq(mediaAssets.userId, userId), inArray(mediaAssets.id, ownedIds)));
+    await Promise.all(owned.map((m) => deleteUploadFile(m.imageKey)));
 
     return { deleted: ownedIds.length };
   },

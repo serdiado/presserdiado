@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import multipart from '@fastify/multipart';
 import staticPlugin from '@fastify/static';
+import rateLimit from '@fastify/rate-limit';
 import { join } from 'node:path';
 import { config } from './config.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
@@ -42,11 +43,30 @@ await app.register(cors, {
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 });
 await app.register(jwt, { secret: config.jwt.secret });
+// Güvenlik taraması bulgusu: /auth/login ve /auth/register'da hiç hız sınırlaması yoktu
+// (brute-force / credential-stuffing / e-posta enumeration riski). Genel varsayılan ölçülü;
+// auth.routes.ts'teki login/register route'ları ayrıca kendi config'inde daha sıkı bir limit
+// tanımlıyor (bkz. o dosya).
+await app.register(rateLimit, {
+  global: true,
+  max: 200,
+  timeWindow: '1 minute',
+});
 await app.register(multipart, { limits: { fileSize: 25 * 1024 * 1024 } });
 await app.register(staticPlugin, {
   root: join(process.cwd(), 'uploads'),
   prefix: '/uploads/',
   decorateReply: false,
+  // Güvenlik taraması bulgusu: yüklenen dosyalar (özellikle .svg — script içerebilir)
+  // hiçbir header olmadan serve ediliyordu. nosniff, tarayıcının içerik-tipini
+  // "koklayıp" script çalıştırmasını engeller; SVG'lere ayrıca inline render yerine
+  // indirme zorlanır (URL doğrudan yeni sekmede açılsa bile script tetiklenmez).
+  setHeaders: (res, path) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    if (path.toLowerCase().endsWith('.svg')) {
+      res.setHeader('Content-Disposition', 'attachment');
+    }
+  },
 });
 
 // Auth decorator
@@ -55,6 +75,12 @@ app.decorate('authenticate', async function (request: any, reply: any) {
     await request.jwtVerify();
   } catch (err) {
     request.log.debug(err, 'JWT verification failed');
+    return reply.status(401).send({ error: 'Unauthorized' });
+  }
+  // Güvenlik taraması bulgusu: refresh token (7 gün ömürlü, type:'refresh' claim'i taşır)
+  // imza doğrulamasından geçtiği için access token yerine her korumalı route'ta
+  // kullanılabiliyordu. Yalnızca 'type' alanı olmayan (gerçek access) token'lar kabul edilir.
+  if ((request.user as { type?: string } | undefined)?.type) {
     return reply.status(401).send({ error: 'Unauthorized' });
   }
 });
@@ -82,6 +108,17 @@ app.setErrorHandler((error, request, reply) => {
       error: 'Validation error',
       details: error.errors,
     });
+  }
+
+  // Fastify eklentilerinin kendi statusCode'u ile fırlattığı hatalar (ör. @fastify/rate-limit'in
+  // 429'u) — güvenlik taraması bulgusu: bunlar öncesinde tanınmayıp genel 500'e düşüyordu.
+  const pluginError = error as { statusCode?: number; message: string };
+  if (
+    typeof pluginError.statusCode === 'number' &&
+    pluginError.statusCode >= 400 &&
+    pluginError.statusCode < 500
+  ) {
+    return reply.status(pluginError.statusCode).send({ error: pluginError.message });
   }
 
   request.log.error(error);

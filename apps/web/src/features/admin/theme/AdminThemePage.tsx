@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Package, Palette, LayoutGrid, Layers } from 'lucide-react';
 import { type UITypographyToken, type UIThemeTokens } from '@matbaapro/shared';
+import api from '@/lib/api';
 import { ThemeInjector, applyTokensToDOM } from '@/components/ThemeInjector';
 import { cloneTheme, defaultThemeForMode, normalizeThemeTokens } from '@/lib/themeTokens';
 import { type ThemeMode, useThemeStore } from '@/stores/theme.store';
@@ -91,22 +92,21 @@ function formatTokenValue(value: number, unit: string, fractionDigits?: number) 
   return `${formatNumber(value, fractionDigits)}${unit}`;
 }
 
+// Güvenlik taraması bulgusu: bu iki fonksiyon ham fetch() kullanıyordu — Authorization
+// header'ı hiç göndermiyordu. Backend artık /theme/:mode için authenticate+authorizeAdmin
+// zorunlu tuttuğundan (bkz. apps/api/.../theme.routes.ts), paylaşılan axios client'a
+// geçiyoruz (o, token'ı otomatik ekliyor — apps/web/src/lib/api.ts).
 async function fetchTheme(mode: ThemeMode): Promise<UIThemeTokens> {
-  const res = await fetch(`/api/v1/theme/${mode}`);
-  if (!res.ok) throw new Error(`Theme fetch failed: ${res.status}`);
-  const data = await res.json() as { mode: ThemeMode; tokens: unknown };
+  const { data } = await api.get<{ mode: ThemeMode; tokens: unknown }>(`/theme/${mode}`);
   return normalizeThemeTokens(data.tokens, mode);
 }
 
 async function saveTheme(mode: ThemeMode, tokens: UIThemeTokens): Promise<UIThemeTokens> {
   const normalizedTokens = normalizeThemeTokens(tokens, mode);
-  const res = await fetch(`/api/v1/theme/${mode}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(normalizedTokens),
-  });
-  if (!res.ok) throw new Error(`Theme save failed: ${res.status}`);
-  const data = await res.json() as { mode: ThemeMode; tokens: unknown };
+  const { data } = await api.put<{ mode: ThemeMode; tokens: unknown }>(
+    `/theme/${mode}`,
+    normalizedTokens,
+  );
   return normalizeThemeTokens(data.tokens, mode);
 }
 

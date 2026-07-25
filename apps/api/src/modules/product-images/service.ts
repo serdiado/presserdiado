@@ -1,24 +1,12 @@
 import { randomUUID } from 'node:crypto';
-import { unlink } from 'node:fs/promises';
-import { join } from 'node:path';
 import { eq, and, asc, count, inArray, sql } from 'drizzle-orm';
 import { db } from '../../db/index.js';
 import { productImages } from '../../db/schema/index.js';
 import { NotFoundError, ConflictError } from '../../lib/errors.js';
+import { deleteUploadFile } from '../../lib/uploads.js';
 
 // Aynı SKU'ya atanabilecek maksimum resim sayısı.
 const MAX_IMAGES_PER_SKU = 10;
-
-// Yerel uploads diskinden bir dosyayı best-effort siler (üzerine yazmada eski görsel için).
-// Yalnız /uploads/ altındaki relative imageKey'ler silinir; http URL'ler ve hatalar yutulur.
-async function deleteUploadFile(imageKey: string | null | undefined) {
-  if (!imageKey || !imageKey.startsWith('/uploads/')) return;
-  try {
-    await unlink(join(process.cwd(), imageKey));
-  } catch {
-    // ENOENT vb. — sessiz geç.
-  }
-}
 
 export interface CreateProductImageInput {
   sku?: string;
@@ -283,6 +271,9 @@ export const productImagesService = {
     await db
       .delete(productImages)
       .where(and(eq(productImages.id, id), eq(productImages.userId, userId)));
+    // Güvenlik taraması bulgusu: silme öncesinde dosya diskten hiç kaldırılmıyordu —
+    // "silinen" resmin public URL'i çalışmaya devam ediyordu.
+    await deleteUploadFile(existing.imageKey);
 
     return { success: true };
   },
@@ -290,7 +281,7 @@ export const productImagesService = {
   async bulkRemove(userId: string, ids: string[]) {
     // Yalnız bu kullanıcıya ait id'leri al (IDOR koruması).
     const owned = await db
-      .select({ id: productImages.id })
+      .select({ id: productImages.id, imageKey: productImages.imageKey })
       .from(productImages)
       .where(and(eq(productImages.userId, userId), inArray(productImages.id, ids)));
 
@@ -302,6 +293,7 @@ export const productImagesService = {
     await db
       .delete(productImages)
       .where(and(eq(productImages.userId, userId), inArray(productImages.id, ownedIds)));
+    await Promise.all(owned.map((i) => deleteUploadFile(i.imageKey)));
 
     return { deleted: ownedIds.length };
   },
