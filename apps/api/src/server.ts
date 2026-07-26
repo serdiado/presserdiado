@@ -10,6 +10,7 @@ import { authRoutes } from './modules/auth/auth.routes.js';
 import { projectRoutes } from './modules/project/project.routes.js';
 import { exportRoutes } from './modules/export/export.routes.js';
 import { uploadRoutes } from './modules/upload/upload.routes.js';
+import { imageServeRoutes } from './modules/upload/image-serve.routes.js';
 import { themeRoutes } from './modules/theme/theme.routes.js';
 import { productsRoutes } from './modules/products/routes.js';
 import { productImagesRoutes } from './modules/product-images/routes.js';
@@ -56,7 +57,8 @@ await app.register(rateLimit, {
   // senaryosu (çok ürünlü broşür) tek proje açılışında onlarca-yüzlerce ürün görseli getiriyor;
   // bunlar aynı sayaca dahil edilince NORMAL kullanım bile sınırı aşıyordu (canlı doğrulandı:
   // 50-100 ürünlü bir proje açmak tek başına dakikalık limiti tüketiyordu).
-  allowList: (request) => request.url.startsWith('/uploads/'),
+  allowList: (request) =>
+    request.url.startsWith('/uploads/') || request.url.startsWith('/img/'),
 });
 await app.register(multipart, { limits: { fileSize: 25 * 1024 * 1024 } });
 await app.register(staticPlugin, {
@@ -69,6 +71,11 @@ await app.register(staticPlugin, {
   // indirme zorlanır (URL doğrudan yeni sekmede açılsa bile script tetiklenmez).
   setHeaders: (res, path) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
+    // Önbellek başlığı YOKTU: aynı proje her açılışta onlarca MB görseli yeniden indiriyordu
+    // (canlıda ölçüldü, bir forma ~30 sn). Dosya adları içerik-adresli (rastgele ön ek +
+    // özgün ad) ve asla üzerine yazılmıyor — yükleme her seferinde yeni ad üretir — bu
+    // yüzden 'immutable' güvenli.
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     if (path.toLowerCase().endsWith('.svg')) {
       res.setHeader('Content-Disposition', 'attachment');
     }
@@ -150,6 +157,10 @@ await app.register(
   },
   { prefix: '/api/v1' },
 );
+
+// Görsel katman çözümleyici — /api/v1 ön eki DIŞINDA, tıpkı /uploads/ gibi (bunlar <img src>
+// ile çekilen statik varlıklar, JSON API uçları değil).
+await app.register(imageServeRoutes);
 
 // Health check
 app.get('/health', async () => ({ status: 'ok' }));

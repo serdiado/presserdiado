@@ -17,6 +17,8 @@ import {
   richTextToPlain,
 } from '../modules/richText';
 import { priceToDisplayHtml } from '../util/priceDisplay';
+import { tierUrl } from '@/lib/imageTier';
+import { useImageTier } from './RenderSurfaceContext';
 import { usePreserveEditorSelectionOnChrome, consumeDragGesture } from '../util/editorChrome';
 import {
   borderDataToCss,
@@ -268,6 +270,8 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
   { slot, pageNumber, slotIndex, globalNumber, onContextMenu, gridPosition, totalRows, totalColumns },
   ref,
 ) {
+  // Bu ağaç hem stüdyo kanvasında hem /print-view'da render ediliyor; katman ona göre seçilir.
+  const imageTier = useImageTier();
   const globalSettings = useCatalogStore((s) => s.globalSettings);
   const swapSlotContents = useCatalogStore((s) => s.swapSlotContents);
   const setSlotProduct = useCatalogStore((s) => s.setSlotProduct);
@@ -1203,7 +1207,9 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
             {slot.product.image ? (
               <>
                 <img
-                  src={slot.product.image}
+                  // Katman RENDER ANINDA türetilir; sonucu hiçbir yere yazılmaz (bkz.
+                  // lib/imageTier.ts). Stüdyoda küçük türev, /print-view'da orijinal gelir.
+                  src={tierUrl(slot.product.image, imageTier)}
                   crossOrigin="anonymous"
                   onMouseDown={handleImgMouseDown}
                   draggable={false}

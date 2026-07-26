@@ -5,6 +5,7 @@ import { writeFile, mkdir } from 'node:fs/promises';
 import { join, extname } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
+import { ekranTureviGetir } from '../../lib/image-variants.js';
 
 const ALLOWED_EXT = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg']);
 const MAX_SIZE_MB = 20;
@@ -49,6 +50,10 @@ export async function uploadRoutes(app: FastifyInstance) {
       const filename = `${id}_${sanitizedSku}${ext}`;
       const filepath = join(dir, filename);
       await writeFile(filepath, buffer);
+
+      // Ekran türevini ARKA PLANDA üret: yanıtı geciktirmez. Üretilemezse /img/screen/* zaten
+      // orijinale düşer, bu yüzden hatası yutulur (bkz. image-variants.ts / image-serve.routes.ts).
+      void ekranTureviGetir(filepath).catch(() => undefined);
 
       const publicUrl = `/uploads/${userId}/${filename}`;
       return { url: publicUrl, size: buffer.length, mimeType: file.mimetype };

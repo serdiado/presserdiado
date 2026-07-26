@@ -5,6 +5,7 @@
 // kaldığını doğruluyoruz — aksi halde no-op (silme yapılmaz).
 import { unlink } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
+import { turevleriSil } from './image-variants.js';
 
 const UPLOADS_ROOT = resolve(process.cwd(), 'uploads');
 
@@ -17,4 +18,7 @@ export async function deleteUploadFile(imageKey: string | null | undefined): Pro
   } catch {
     // ENOENT vb. — sessiz geç.
   }
+  // Ekran türevi orijinalin YANINDA duruyor (foto.png.screen.webp). Burada silinmezse
+  // diskte yetim kalır. Tek nokta: ürün resmi / medya silme çağrılarının hepsi buradan geçer.
+  await turevleriSil(resolved);
 }

@@ -78,6 +78,17 @@ async function gotoPrintView(
   const page = await browser.newPage();
   await page.setViewport({ width: widthPx, height: heightPx, deviceScaleFactor: scale });
 
+  // SON SAVUNMA HATTI — düşük çözünürlüklü görsel adresi baskıya SIZAMAZ.
+  // Web tarafında katman yalnızca render anında türetilir ve hiçbir yere yazılmaz
+  // (bkz. apps/web/src/lib/imageTier.ts); PrintView de kendini 'original' ile sarmalar.
+  // Yine de bir gün bir /img/<tier>/ adresi store'a, oradan canvas_data'ya ve buraya
+  // sızarsa, üretim PDF'i sessizce düşük çözünürlükle basılır ve hata ancak matbaada
+  // fark edilir (dondurma idempotent olduğu için yeniden de render edilmez). Bu yüzden
+  // enjeksiyondan hemen önce her ihtimale karşı orijinale geri yazıyoruz.
+  const temizCatalogState = JSON.parse(
+    JSON.stringify(req.catalogState).replaceAll(/\/img\/[a-z]+\//g, '/uploads/'),
+  ) as ExportRequest['catalogState'];
+
   // Inject catalog/layer state into the next page navigation, mirroring the
   // zustand persist key written by useCatalogStore.
   // Function body runs in the browser context (puppeteer), so window/localStorage
@@ -96,7 +107,7 @@ async function gotoPrintView(
       }
       w.__INJECTED_LAYER_STATE__ = layers ?? { layers: [] };
     },
-    req.catalogState as unknown,
+    temizCatalogState as unknown,
     req.layerState as unknown,
     STUDIO_STORE_NAME,
     STUDIO_STORE_VERSION,

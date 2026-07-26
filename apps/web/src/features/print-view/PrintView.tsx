@@ -8,6 +8,7 @@ import { availableTemplates } from '@matbaapro/shared';
 import { useCatalogStore, useLayerStore } from '@/stores/studio';
 import { Page } from '@/features/studio/canvas/Page';
 import { LayerStack } from '@/features/studio/canvas/LayerStack';
+import { RenderSurfaceProvider } from '@/features/studio/canvas/RenderSurfaceContext';
 
 export default function PrintView() {
   const [params] = useSearchParams();
@@ -86,6 +87,11 @@ export default function PrintView() {
   const safeHeightMm = Number.isFinite(physicalHeight) ? physicalHeight : 297;
 
   return (
+    // BASKI YOLU HER ZAMAN ORİJİNAL GÖRSELİ KULLANIR. Stüdyo kanvası küçük türevle çalışır
+    // (bkz. lib/imageTier.ts) ama Puppeteer'ın bastığı bu ağaç aynı bileşenleri kullandığı
+    // için katmanı burada açıkça 'original'a sabitliyoruz — matbaaya giden PDF'e düşük
+    // çözünürlüklü bir görselin sızması bu sarmalayıcı sayesinde mümkün değil.
+    <RenderSurfaceProvider tier="original">
     <div
       className="print-mode bg-white overflow-hidden m-0 p-0"
       style={{
@@ -140,5 +146,6 @@ export default function PrintView() {
       </div>
       {imagesReady && <div id="print-canvas-ready" style={{ display: 'none' }} />}
     </div>
+    </RenderSurfaceProvider>
   );
 }
