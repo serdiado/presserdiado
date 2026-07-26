@@ -23,4 +23,15 @@ export const ACCESS_TOKEN_EXPIRY = '15m';
 export const REFRESH_TOKEN_EXPIRY = '7d';
 
 export const STUDIO_STORE_VERSION = 6;
+
+/**
+ * Broşür adet kademeleri — İSTEMCİ VE SUNUCU İÇİN TEK KAYNAK.
+ *
+ * Burada duruyor çünkü sunucunun da doğrulaması gerekiyor: istemci artık adedi sabit bir
+ * <select>'ten seçtiriyor ama API'ye elle istek atan biri (ya da eski/bozuk bir istemci)
+ * kademe dışı bir adet gönderebilir. Fiyatlama birim-fiyat + adet-indirimi modeliyle
+ * çalıştığı için kademe dışı bir adet reddedilmezse hesaplanır ve sipariş kabul edilirdi.
+ * Liste iki yerde ayrı ayrı tanımlanırsa zamanla ayrışır; o yüzden tek yer.
+ */
+export const BROCHURE_QUANTITY_CHOICES: number[] = [500, 1000, 2000, 5000, 10000];
 export const STUDIO_STORE_NAME = 'matbaapro-studio-v1';

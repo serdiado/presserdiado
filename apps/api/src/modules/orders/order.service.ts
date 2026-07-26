@@ -6,6 +6,7 @@ import { ConflictError, NotFoundError, ValidationError } from '../../lib/errors.
 import { projectService } from '../project/project.service.js';
 import { billingService } from '../billing/billing.service.js';
 import { pricingService, type PrintOptionSelection } from '../pricing/pricing.service.js';
+import { BROCHURE_QUANTITY_CHOICES } from '@matbaapro/shared';
 
 export interface CreateOrderInput {
   productTypeKey: string;
@@ -31,6 +32,19 @@ export const orderService = {
   async createOrder(userId: string, input: CreateOrderInput) {
     if (!Number.isInteger(input.quantity) || input.quantity < 1) {
       throw new ValidationError('Adet en az 1 olmalı');
+    }
+
+    // Adet SABİT KADEMELERDEN biri olmalı. İstemci zaten <select> ile sınırlıyor ama bu bir
+    // görüntü kısıtı; API'ye doğrudan istek atan biri (ya da eski bir istemci) 1 veya 137 adet
+    // gönderebilir. Fiyatlama birim-fiyat + adet-indirimi modeliyle çalıştığından böyle bir
+    // adet sessizce hesaplanır ve sipariş üretime kabul edilirdi. Kademe listesi shared'da.
+    if (
+      input.productTypeKey === 'brochure' &&
+      !BROCHURE_QUANTITY_CHOICES.includes(input.quantity)
+    ) {
+      throw new ValidationError(
+        `Geçersiz adet: ${input.quantity}. Geçerli adetler: ${BROCHURE_QUANTITY_CHOICES.join(', ')}`,
+      );
     }
 
     const itemType = input.itemType ?? 'studio_design';

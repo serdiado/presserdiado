@@ -60,7 +60,11 @@ export const DEFAULT_OPTIONS: PrintOptionsValue = {
 // hiçbir seçenekle eşleşmez ve fiyat kademesiyle de tutmaz.
 export const DEFAULT_QUANTITY = 500;
 
-// Broşür adet seçenekleri (vitrin) — sabit liste, turmatsan'ın düzensiz adet kademeleri
-// yerine Presserdiado'nun kendi kararı. Birim-fiyat + adet-indirimi modeliyle çalışır
+// Broşür adet seçenekleri — sabit liste, turmatsan'ın düzensiz adet kademeleri yerine
+// Presserdiado'nun kendi kararı. Birim-fiyat + adet-indirimi modeliyle çalışır
 // (pricing_rules.quantity=NULL); bkz. apps/api/src/db/seed.ts QUANTITY_TIERS.
-export const BROCHURE_QUANTITY_CHOICES = [500, 1000, 2000, 5000, 10000];
+//
+// TEK KAYNAK @matbaapro/shared'da: sunucu da aynı listeye karşı doğrulama yapıyor
+// (order.service.ts). Burada yalnızca yeniden dışa aktarılıyor ki mevcut importlar
+// (vitrin, sihirbaz, stüdyo sipariş paneli) değişmeden çalışsın.
+export { BROCHURE_QUANTITY_CHOICES } from '@matbaapro/shared';

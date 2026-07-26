@@ -50,6 +50,16 @@ export async function imageServeRoutes(app: FastifyInstance) {
 
     reply.header('Content-Type', MIME[uzanti] ?? 'application/octet-stream');
     reply.header('X-Content-Type-Options', 'nosniff');
+    // SVG rasterleştirilmediği için (bkz. image-variants.ts) bu rota ORİJİNAL .svg dosyasını
+    // servis eder. /uploads/ statik yolunda bu dosyalara bilinçli olarak indirme zorlanıyor
+    // (server.ts): SVG script içerebilir ve doğrudan adrese gidildiğinde belge olarak render
+    // edilip API origin'inde çalışır. nosniff bunu ENGELLEMEZ — Content-Type zaten doğru.
+    // Bu rota o korumayı atlayan ikinci bir kapı açıyordu; aynı sertleştirme burada da olmalı.
+    // <img>/CSS gibi alt-kaynak yüklemelerinde Content-Disposition yok sayılır, yani
+    // stüdyodaki SVG görselleri etkilenmez — yalnızca doğrudan gezinme indirmeye döner.
+    if (uzanti === '.svg') {
+      reply.header('Content-Disposition', 'attachment');
+    }
     // Dosya adları içerik-adresli (rastgele ön ek + özgün ad) ve üzerine yazılmıyor →
     // güvenle uzun süre önbelleklenebilir. Türev, orijinali değiştiğinde yeni bir ada sahip
     // olacağı için bayatlama riski yok.
