@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { Settings2, Search, PackageSearch, Check, Ban } from 'lucide-react';
 import type { ProductInfo } from '@matbaapro/shared';
+import { normalizeSku } from '@matbaapro/shared';
 import { useCatalogStore } from '@/stores/studio';
 import api from '@/lib/api';
 import { toAbsoluteUrl } from '@/lib/upload';
@@ -75,10 +76,13 @@ export function ProductManagement() {
   }, [formas]);
 
   // sku → mutlak resim URL'i. autoFillSlots'a (Excel "Yerleştir") geçilir.
+  // Anahtar normalizeSku ile NORMALLEŞTİRİLİR: Excel'deki yazım (küçük harf / boşluk)
+  // kütüphanedekiyle birebir olmayabilir. _fillSlotsFromPool da aynı şekilde arar;
+  // ikisi ayrışırsa yerleştirmede görsel gelmez (bkz. catalog.store.ts'teki not).
   const skuImageMap = useMemo(() => {
     const map: Record<string, string> = {};
     for (const p of dbPool) {
-      if (p.sku && p.primaryImage) map[p.sku] = toAbsoluteUrl(p.primaryImage);
+      if (p.sku && p.primaryImage) map[normalizeSku(p.sku)] = toAbsoluteUrl(p.primaryImage);
     }
     return map;
   }, [dbPool]);

@@ -41,10 +41,14 @@ const slotByGlobal = (n: number): StudioSlot | undefined => {
 };
 
 /** POS=1 olan tek ürünlük havuz kurar ve yerleştirir; slot 1'in görsel adresini döndürür. */
-function yerlestirVeOku(image: string | undefined, kutuphane: Record<string, string>) {
+function yerlestirVeOku(
+  image: string | undefined,
+  kutuphane: Record<string, string>,
+  sku = 'P1',
+) {
   setup();
   useCatalogStore.getState().setProductPool([
-    { id: 'P1', sku: 'P1', name: 'Ürün 1', price: '1', image, raw: { POS: 1 } },
+    { id: 'P1', sku, name: 'Ürün 1', price: '1', image, raw: { POS: 1 } },
   ]);
   useCatalogStore.getState().autoFillSlots(kutuphane);
   return slotByGlobal(1)?.product?.image;
@@ -84,5 +88,16 @@ describe('Excel yerleştirmede görsel adresi çözümü', () => {
 
   it('ne Excel görseli ne kütüphane eşleşmesi varsa görsel atanmaz', () => {
     expect(yerlestirVeOku(undefined, {})).toBeUndefined();
+  });
+
+  // Canlıda gözlenen asıl arıza: Excel'de SKU " 213sp ", kütüphanede "213SP" yazılıydı.
+  // Yerleştirme ham anahtarla aradığı için eşleşme tutmuyor, hücreler görselsiz kalıyordu;
+  // proje kaydedilince normalizeSku KULLANAN senkron devreye girip görselleri getiriyordu.
+  it('SKU yazımı farklı olsa da (boşluk/küçük harf) kütüphane görseli eşleşir', () => {
+    const kutuphaneAdresi = '/uploads/kullanici/abc_213SP.png';
+    // Kütüphane anahtarı ProductManagement'ta normalizeSku ile kurulur → "213SP".
+    const sonuc = yerlestirVeOku('217C.png', { '213SP': kutuphaneAdresi }, ' 213sp ');
+
+    expect(sonuc).toBe(kutuphaneAdresi);
   });
 });

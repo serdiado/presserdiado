@@ -923,7 +923,13 @@ export const useCatalogStore = create<Store>()(
               : excelRaw.startsWith('/uploads/')
                 ? toAbsoluteUrl(excelRaw)
                 : undefined;
-          const dbImage = product.sku ? skuImageMap?.[product.sku] : undefined;
+          // normalizeSku ZORUNLU: Excel'deki SKU yazımı (küçük harf / baştaki-sondaki boşluk)
+          // kütüphanedekiyle birebir aynı olmayabilir. Ham anahtarla arandığında eşleşme
+          // tutmuyor, ürün görselsiz yerleşiyor; kullanıcı projeyi kaydedince
+          // syncProductImagesFromLibrary (o normalizeSku KULLANIR) devreye girip görselleri
+          // getiriyordu. Canlıda gözlenen "yerleştirince resim yok, kaydedince geliyor"
+          // davranışının sebebi tam olarak bu tutarsızlıktı — iki yol da normalize eder.
+          const dbImage = product.sku ? skuImageMap?.[normalizeSku(product.sku)] : undefined;
           const withImage = { ...product, image: excelImage ?? dbImage };
 
           if (posValue > 0 && posValue <= slotCount) {
