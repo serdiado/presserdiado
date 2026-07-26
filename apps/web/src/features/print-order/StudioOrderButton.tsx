@@ -123,10 +123,8 @@ export function StudioOrderButton() {
       // yanıttaki productionPdfKey normalde null'dur. Eskiden burada bunu "PDF hazırlanamadı"
       // hatası sanıp her siparişte yanlış alarm veren bir toast vardı; kaldırıldı — gerçek
       // başarısızlık sunucuda loglanır ve admin panelindeki yeniden dondurma ucu ile çözülür.
-      toast('Baskı dosyanız hazırlanıyor; siparişiniz sıraya alındı.', {
-        icon: '🖨️',
-        duration: 5000,
-      });
+      // "Sıraya alındı" bilgisi başarı modalinde kalıcı olarak gösteriliyor (toast değil:
+      // modal açıkken toast'un üstü kapanıyor ve müşteri mesajı hiç görmüyordu).
     } catch (err) {
       const msg =
         (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??
@@ -188,6 +186,12 @@ export function StudioOrderButton() {
                 <p className="text-sm font-semibold text-text-primary">Siparişiniz alındı</p>
                 <p className="text-xs text-text-secondary">
                   Sipariş No: <span className="font-semibold">{createdOrder.orderNumber}</span>
+                </p>
+                {/* Baskı dosyası arka planda sırayla üretiliyor (bkz. freezeOrderPdfInBackground).
+                    Bu bilgi önce toast'tı; modal açıkken toast'un üstü kapandığı için müşteri hiç
+                    görmüyordu — kalıcı olarak müşterinin zaten baktığı yere, buraya alındı. */}
+                <p className="text-xs text-text-muted">
+                  🖨️ Baskı dosyanız hazırlanıyor; siparişiniz sıraya alındı.
                 </p>
                 <div className="flex flex-col gap-2 pt-2">
                   <button
