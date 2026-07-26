@@ -65,17 +65,18 @@ await app.register(staticPlugin, {
   root: join(process.cwd(), 'uploads'),
   prefix: '/uploads/',
   decorateReply: false,
+  // Önbellek eklentinin KENDİ seçenekleriyle verilmeli: setHeaders içinde yazılan
+  // Cache-Control'ü @fastify/static kendi varsayılanıyla (max-age=0) eziyordu — canlıda
+  // doğrulandı. Dosya adları içerik-adresli (rastgele ön ek + özgün ad) ve asla üzerine
+  // yazılmıyor, bu yüzden immutable güvenli.
+  maxAge: 31536000000,
+  immutable: true,
   // Güvenlik taraması bulgusu: yüklenen dosyalar (özellikle .svg — script içerebilir)
   // hiçbir header olmadan serve ediliyordu. nosniff, tarayıcının içerik-tipini
   // "koklayıp" script çalıştırmasını engeller; SVG'lere ayrıca inline render yerine
   // indirme zorlanır (URL doğrudan yeni sekmede açılsa bile script tetiklenmez).
   setHeaders: (res, path) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
-    // Önbellek başlığı YOKTU: aynı proje her açılışta onlarca MB görseli yeniden indiriyordu
-    // (canlıda ölçüldü, bir forma ~30 sn). Dosya adları içerik-adresli (rastgele ön ek +
-    // özgün ad) ve asla üzerine yazılmıyor — yükleme her seferinde yeni ad üretir — bu
-    // yüzden 'immutable' güvenli.
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     if (path.toLowerCase().endsWith('.svg')) {
       res.setHeader('Content-Disposition', 'attachment');
     }
