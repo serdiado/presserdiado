@@ -46,9 +46,6 @@ import {
 import type { BannerModuleData } from '../../features/studio/modules/types';
 import { isFooterSlotId, resolveModuleSlot, mergeFooterModule, footerWriteTarget, mergePageFooterModule, resolveFooterModule, defaultFooterModule } from './footerSlot';
 import { useHistoryStore } from './history.store';
-// './apiOrigin' (upload.ts DEĞİL) — bkz. apiOrigin.ts: upload.ts axios istemcisini import
-// ettiği için store'dan oraya bağlanmak dairesel bağımlılık riski taşır.
-import { toAbsoluteUrl } from '@/lib/apiOrigin';
 import { useUIStore } from './ui.store';
 import { foldNameMap } from '../../features/wizard/buildTemplate';
 import { DEFAULT_OPTIONS, DEFAULT_QUANTITY } from '../../features/print-order/constants';
@@ -904,33 +901,27 @@ export const useCatalogStore = create<Store>()(
               posValue = m ? parseInt(m[0], 10) : 0;
             }
           }
-          // Öncelik: Excel RESIM > DB birincil resim > boş. DB değerleri panelde
-          // zaten toAbsoluteUrl ile mutlak. /images/products fallback'i kaldırıldı.
+          // ÜRÜN GÖRSELİNİN TEK KAYNAĞI SKU'DUR — Excel'in "Görsel" sütunu YOK SAYILIR.
           //
-          // Excel değeri yalnızca GERÇEKTEN çözülebilir bir adresse tercih edilir:
-          //   - http(s)://...  → olduğu gibi (kullanıcının kasten verdiği dış adres)
-          //   - /uploads/...   → API origin'iyle mutlaklaştırılır (web origin'i DEĞİL; dosyalar
-          //                      api.<domain> altında duruyor, göreli bırakılırsa 404 olur)
-          //   - "217C.png" gibi ÇIPLAK dosya adı → kullanılamaz; SKU eşleşmesine düşülür.
-          // Aksi halde tarayıcı çıplak adı web origin'ine göre çözüp 404 alıyordu: Excel'den
-          // yerleştirince tüm görseller kırık çıkıyor, ancak kaydedip yeniden açınca
-          // syncProductImagesFromLibrary SKU'dan doğru adresi koyduğu için düzeliyordu.
-          const excelRaw = product.image?.trim();
-          const excelImage = !excelRaw
-            ? undefined
-            : /^https?:\/\//i.test(excelRaw)
-              ? excelRaw
-              : excelRaw.startsWith('/uploads/')
-                ? toAbsoluteUrl(excelRaw)
-                : undefined;
-          // normalizeSku ZORUNLU: Excel'deki SKU yazımı (küçük harf / baştaki-sondaki boşluk)
-          // kütüphanedekiyle birebir aynı olmayabilir. Ham anahtarla arandığında eşleşme
-          // tutmuyor, ürün görselsiz yerleşiyor; kullanıcı projeyi kaydedince
-          // syncProductImagesFromLibrary (o normalizeSku KULLANIR) devreye girip görselleri
-          // getiriyordu. Canlıda gözlenen "yerleştirince resim yok, kaydedince geliyor"
-          // davranışının sebebi tam olarak bu tutarsızlıktı — iki yol da normalize eder.
-          const dbImage = product.sku ? skuImageMap?.[normalizeSku(product.sku)] : undefined;
-          const withImage = { ...product, image: excelImage ?? dbImage };
+          // Gerekçe: o sütundaki değer Excel'in HAZIRLANDIĞI ORTAMA bağlıdır ve taşınabilir
+          // değildir. Canlıda çıkan arıza tam olarak buydu: dosya yerel makinede hazırlandığı
+          // için içinde `http://localhost:3001/uploads/...` gömülüydü; canlıda bu adres
+          // çözülemediği için TÜM ürünler kırık görselle yerleşiyordu. Çıplak dosya adı
+          // ("217C.png") de web origin'ine göre çözülüp 404 veriyordu.
+          //
+          // Buna karşılık SKU sistemin gerçek referansıdır: ürün resimleri kütüphaneye SKU
+          // adıyla yükleniyor (guessSkuFromFileName: 755BU.jpg -> 755BU) ve proje kaydedilince
+          // çalışan senkron (syncProductImagesFromLibrary) ZATEN yalnızca SKU ile eşleştiriyor.
+          // İki ayrı kaynak olması "yerleştirince başka, kaydedince başka" tutarsızlığını
+          // üretiyordu; artık iki yol da aynı tek kuralı kullanıyor.
+          //
+          // normalizeSku ZORUNLU: Excel'deki yazım (küçük harf / baştaki-sondaki boşluk)
+          // kütüphanedekiyle birebir olmayabilir; harita da aynı şekilde normalize kuruluyor
+          // (ProductManagement.tsx).
+          const withImage = {
+            ...product,
+            image: product.sku ? skuImageMap?.[normalizeSku(product.sku)] : undefined,
+          };
 
           if (posValue > 0 && posValue <= slotCount) {
             byNumber.get(posValue)!.product = withImage; // POS = globalNumber (ekrandaki slot no)

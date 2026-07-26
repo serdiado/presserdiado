@@ -18,3 +18,31 @@ export function toAbsoluteUrl(key: string): string {
   if (/^https?:\/\//.test(key)) return key;
   return apiOrigin + key;
 }
+
+/**
+ * Bizim yükleme yolumuzu (/uploads/...) gösteren bir adresi GÜNCEL API origin'ine bağlar.
+ *
+ * NEDEN: Adresler dışarıdan gelebiliyor ve içlerinde YAZILDIKLARI ANIN origin'i gömülü
+ * oluyor. Gerçek olay: kullanıcı broşür Excel'ini yerel geliştirme ortamında hazırlamış,
+ * "Görsel" sütununda `http://localhost:3001/uploads/...` yazıyordu. Canlıda bu adres
+ * çözülemediği için Excel'den yerleştirilen tüm ürünler kırık görsel olarak çıkıyordu
+ * (proje kaydedilince SKU senkronu doğru adresi koyduğu için "kaydedince düzeliyor"du).
+ * Aynı sorun kod-içi preset JSON'larında da vardı; oradaki çözüm buraya taşındı.
+ *
+ * - `<herhangi-origin>/uploads/...` → origin GÜNCEL API origin'iyle değiştirilir
+ * - `/uploads/...`                  → mutlaklaştırılır
+ * - bize ait olmayan mutlak adres   → dokunulmaz (kasten verilmiş dış CDN adresi)
+ * - çözülemeyen değer (çıplak ad)   → null (çağıran başka bir kaynağa düşmeli)
+ */
+export function reoriginUploadUrl(url: string | undefined | null): string | null {
+  const deger = url?.trim();
+  if (!deger) return null;
+
+  const gomulu = /^https?:\/\/[^/]+(\/uploads\/.+)$/.exec(deger);
+  if (gomulu) return apiOrigin + gomulu[1];
+
+  if (deger.startsWith('/uploads/')) return apiOrigin + deger;
+  if (/^https?:\/\//i.test(deger)) return deger;
+
+  return null;
+}

@@ -20,16 +20,14 @@
 // './apiOrigin' (upload.ts DEĞİL): bu fonksiyon studioModules/studioPresets tarafından modül
 // yükleme anında çağrılıyor; upload.ts axios istemcisini import ettiği için oradan almak
 // dairesel bağımlılık → TDZ hatası üretiyordu (regresyon testinde yakalandı).
-import { toAbsoluteUrl } from '@/lib/apiOrigin';
+import { reoriginUploadUrl } from '@/lib/apiOrigin';
 
 function reoriginImage(url: string): string {
-  // Regex BİLEREK fonksiyon içinde: studioModules.ts / studioPresets.ts bu fonksiyonu MODÜL
-  // YÜKLEME anında çağırıyor. Modül-seviyesi `const` ile tanımlandığında, dairesel import
-  // sırası yüzünden henüz başlatılmamış olabiliyor ve "Cannot access ... before
-  // initialization" (TDZ) hatası veriyordu — testte yakalandı. Fonksiyon içi literal bu
-  // sıralamadan tamamen bağımsızdır.
-  const match = /^https?:\/\/[^/]+(\/uploads\/.+)$/.exec(url);
-  return match ? toAbsoluteUrl(match[1]) : url;
+  // Gömülü origin'i güncel API origin'iyle değiştirme kuralı reoriginUploadUrl'de ortaklandı
+  // (aynı sorun Excel'den yerleştirmede de çıktı: bkz. apiOrigin.ts'teki not). Burada
+  // çözülemeyen değer (ör. çıplak ad) DEĞİŞTİRİLMEDEN geçer — preset JSON'larında dosya
+  // adıyla gelen bir alan varsa davranışı bozmayalım.
+  return reoriginUploadUrl(url) ?? url;
 }
 
 function isObject(v: unknown): v is Record<string, unknown> {

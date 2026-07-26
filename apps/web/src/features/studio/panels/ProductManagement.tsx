@@ -182,7 +182,11 @@ export function ProductManagement() {
       <div className="bg-surface-panel rounded-radius-lg border border-border-default p-4 shadow-drop-sm">
         <div className="mb-3">
           <h4 className="text-label-sm text-text-secondary">Excel ile otomatik yerleştir</h4>
-          <p className="text-body-xs text-text-muted mt-0.5">Sütun sırası sabit: 1=POS, 2=SKU, 3=Ürün Adı, 4=Fiyat, 5=Görsel. Başlık adı önemli değil; POS, numaralı hücreye yerleşir.</p>
+          {/* 5. sütun hâlâ okunuyor (rowToProduct) ama görsel seçiminde KULLANILMIYOR:
+              görsel her zaman SKU ile ürün kütüphanesinden eşleştirilir. Metin bunu açıkça
+              söylüyor, çünkü kullanıcı oraya ortama bağlı bir adres yazdığında (yerelde
+              hazırlanan Excel'de http://localhost:3001/...) tüm görseller kırık çıkıyordu. */}
+          <p className="text-body-xs text-text-muted mt-0.5">Sütun sırası sabit: 1=POS, 2=SKU, 3=Ürün Adı, 4=Fiyat. Başlık adı önemli değil; POS, numaralı hücreye yerleşir. Ürün görselleri SKU ile kütüphanenizden eşleştirilir — Excel'e görsel adresi yazmanız gerekmez.</p>
         </div>
 
         <div className="mt-3">
