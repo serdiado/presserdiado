@@ -109,7 +109,11 @@ export default function StudioPage() {
 
   const handleDownloadJPG = async () => {
     const element = document.getElementById('canvas');
-    if (!element) return;
+    if (!element) {
+      // Sessiz return, "butona bastım hiçbir şey olmadı" şikayetinin ikinci kaynağıydı.
+      toast.error('Çalışma yüzeyi bulunamadı; sayfayı yenileyip tekrar deneyin.');
+      return;
+    }
 
     try {
       setIsDownloading(true);
@@ -149,11 +153,25 @@ export default function StudioPage() {
         }
       });
 
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      // Blob + object URL — data URL DEĞİL.
+      //
+      // Eskiden `toDataURL()` + `a.href = dataUrl` kullanılıyordu ve indirme SESSİZCE
+      // başarısız oluyordu: forma kanvası büyük (ör. A3 çift kırım ≈ 3390x1610), JPEG'in
+      // base64 hâli birkaç MB'ı buluyor ve Chrome bu boyuttaki bir data URL'e gezinmeyi
+      // engelliyor. İstisna fırlatılmadığı için catch de çalışmıyordu — kullanıcıya buton
+      // "hiçbir şey yapmıyor" gibi görünüyordu (canlıda bildirildi). Object URL'de boyut
+      // sınırı yok. URL, indirme başladıktan sonra serbest bırakılır.
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, 'image/jpeg', 0.9),
+      );
+      if (!blob) throw new Error('JPG blob üretilemedi');
+
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.download = `${projectName}-${formaName}.jpg`;
-      link.href = dataUrl;
+      link.href = url;
       link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
     } catch (err) {
       // Sessiz yutmak yanıltıcıydı: buton yükleme durumundan çıkıp normale dönüyor, hiçbir
       // dosya inmiyor ve kullanıcıya "tıkladım, bir şey olmadı" gibi görünüyordu.
