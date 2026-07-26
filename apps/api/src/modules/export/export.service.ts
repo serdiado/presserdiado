@@ -119,7 +119,7 @@ export async function exportCatalog(req: ExportRequest): Promise<ExportResult> {
     if (req.format === 'pdf') {
       const merged = await PDFDocument.create();
       for (const formaId of req.formaIds) {
-        const { page, widthMm, heightMm } = await gotoPrintView(browser, req, formaId, 2);
+        const { page, widthMm, heightMm } = await gotoPrintView(browser, req, formaId, 3.125);
         const pdfBuffer = (await page.pdf({
           printBackground: true,
           width: `${widthMm}mm`,

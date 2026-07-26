@@ -248,9 +248,9 @@ Tek kaynak. (Daha önceki "proje adı tek-kaynak refactor" ile aynı felsefe —
 > Sipariş PDF'i, stüdyodaki mevcut export altyapısını yeniden kullanır (sıfırdan render kurulmaz): Üst bar → "Dışa Aktar" (`DownloadMenu.tsx`) → `POST /export` → backend `exportCatalog` (`export.service.ts`) → Puppeteer `/print-view` (`PrintView.tsx`, UI'siz, mm-tabanlı) render → `page.pdf()` → `pdf-lib` ile forma birleştirme. Dondurma servisi aynı zinciri çağırır.
 
 - **Üretim:** Mevcut `exportCatalog` backend render'ı kullanılır (Puppeteer + `/print-view` + pdf-lib). `html2canvas-pro` bu zincirde değil (sadece thumbnail).
-- **Renk uzayı — RGB (doğrulandı):** Kod incelendi; mevcut zincirde CMYK dönüşümü YOK (ne ICC, ne Ghostscript, ne PDF/X). Chromium `page.pdf()` çıktısı RGB. (Not: Illustrator/Acrobat'ta "CMYK" görünmesi, araçların SWOP simülasyonu/gösterim modundan kaynaklanıyordu — dosya gerçekte RGB.) Pilot RGB ile ilerler.
-- **CMYK ayrı epic:** Gerçek CMYK (ICC profil, rich black, bleed, overprint, PDF/X) ileride `export.service.ts`'e eklenecek bir preflight/dönüşüm adımı (Ghostscript). Dondurma mekanizmasını değiştirmez — sadece üretilen PDF'in renk uzayını. RGB→CMYK geçişi izole bir iyileştirme.
-- **300 DPI notu:** Mevcut PDF yolu `deviceScaleFactor: 2`; PNG/JPEG yolu `3.125` (300/96). PDF için net 300 DPI garantisi CMYK epic'iyle birlikte ele alınacak.
+- **Renk uzayı — CMYK (Faz 3'te tamamlandı):** Sipariş dondurma akışına Ghostscript dönüşüm adımı eklendi (`lib/ghostscript.ts` → `convertPdfToCmyk`, çağıran yer: `order-pdf.service.ts`). Puppeteer'ın RGB `page.pdf()` çıktısı, `putObject`'e yazılmadan önce `gs -sColorConversionStrategy=CMYK -sProcessColorModel=DeviceCMYK` ile CMYK'ya çevriliyor — içerik akışında `rg/RG` (RGB) operatörü kalmıyor, `k/K` (CMYK) operatörüne dönüşüyor (gerçek bir siparişte doğrulandı). Kapsam BİLİNÇLİ OLARAK sınırlı: ICC profili, bleed, overprint, PDF/X uyumu YOK — Turmatsan bu dosyayı kendi taşma payı/kesimiyle zaten baskıya hazırlıyor. Manuel stüdyo "Dışa Aktar" (`export.service.ts`/`POST /export`) bu dönüşümden ETKİLENMİYOR, hâlâ RGB üretiyor (kapsam yalnızca sipariş dondurma).
+- **Hata durumunda:** Ghostscript başarısız olursa (`gs` bulunamazsa, timeout'a girerse, boş çıktı üretirse) sipariş yine 201 döner, `productionPdfKey` null kalır — Puppeteer hatasıyla birebir aynı non-fatal davranış (`order.routes.ts`'deki dış try/catch). Yanlış renk uzayıyla bir PDF asla sessizce matbaaya gitmiyor; admin `refreeze.ts` ile elle yeniden dener.
+- **300 DPI:** PDF yolunun `deviceScaleFactor`'ü PNG/JPEG yoluyla aynı hizaya getirildi (`2` → `3.125`, yani 300 DPI) — Chromium'un rasterize ettiği görsel efektlerin (gölge/gradient) Ghostscript'e gerçek 300 DPI kaynaktan gitmesini garantiler (Ghostscript düşük çözünürlüklü bir görseli sonradan yükseltemez). Bu değişiklik `exportCatalog` paylaşıldığı için manuel "Dışa Aktar"ı da kapsıyor.
 
 ### Dondurma servisi tetikten AYRI (kritik karar)
 PDF dondurma, bir tetik anına sabitlenmez — **çağrılabilir bağımsız servis** olarak kurulur:
@@ -293,5 +293,5 @@ PDF dondurma, bir tetik anına sabitlenmez — **çağrılabilir bağımsız ser
 
 - **KDV ve indirim kaynağı:** `pricing_rules.taxRate` ve `quantityTiers` pilotda sabit; admin yönetimi sonra.
 - **Logout / şifre sıfırlama:** Auth'ta yok. Logout = frontend token temizleme. Şifre sıfırlama sonraya.
-- **CMYK boru hattı:** Ghostscript + ICC + preflight — sipariş modülünden sonra ayrı epic.
+- **CMYK boru hattı:** Renk uzayı dönüşümü tamamlandı (bkz. yukarıdaki "PDF Dondurma" bölümü). ICC profili + preflight (bleed/kesim/overprint/PDF/X) hâlâ kapsam dışı — Turmatsan kendi tarafında hazırlıyor, ihtiyaç doğarsa ayrı bir iş.
 - **Hazır dosya yükleyerek sipariş:** `order_items.itemType='uploaded_file'` şemada hazır; UI sonra.

@@ -36,7 +36,7 @@ RUN corepack use pnpm@10.33.0 && pnpm turbo build --filter=@matbaapro/api
 # --- 3) Runtime: Puppeteer için Debian chromium + gerekli paylaşımlı kütüphaneler ---
 FROM base AS runner
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  chromium fonts-liberation ca-certificates \
+  chromium fonts-liberation ca-certificates ghostscript \
   libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxkbcommon0 \
   libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libasound2 \
   libpango-1.0-0 libpangocairo-1.0-0 libcairo2 \

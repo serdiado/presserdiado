@@ -7,6 +7,7 @@ import { orders, orderItems, projects } from '../../db/schema/index.js';
 import { config } from '../../config.js';
 import { NotFoundError, ValidationError } from '../../lib/errors.js';
 import { ensureBucket, putObject } from '../../lib/storage.js';
+import { convertPdfToCmyk } from '../../lib/ghostscript.js';
 import { exportCatalog, type ExportRequest } from '../export/export.service.js';
 
 // project.canvasData = StudioCanvasData (projectSerializer). Render için gereken alt küme.
@@ -55,11 +56,12 @@ export const orderPdfService = {
       layerState: { layers: canvas.layers ?? [] },
     };
     const result = await exportCatalog(req);
+    const cmykBuffer = await convertPdfToCmyk(result.buffer);
 
     const bucket = config.s3.ordersBucket;
     await ensureBucket(bucket);
     const key = `${order.userId}/${order.id}/production.pdf`;
-    await putObject(bucket, key, result.buffer, 'application/pdf');
+    await putObject(bucket, key, cmykBuffer, 'application/pdf');
 
     await db.update(orderItems).set({ productionPdfKey: key }).where(eq(orderItems.id, item.id));
 
