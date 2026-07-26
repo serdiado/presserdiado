@@ -55,7 +55,10 @@ export const DEFAULT_OPTIONS: PrintOptionsValue = {
 };
 
 // Varsayılan sipariş adedi (web/sihirbaz + stüdyo başlangıcı).
-export const DEFAULT_QUANTITY = 100;
+// BROCHURE_QUANTITY_CHOICES'ın ilk kademesiyle aynı olmak ZORUNDA: adet artık her yerde
+// sabit kademelerden seçiliyor, listede olmayan bir varsayılan (eskiden 100'dü) <select>'te
+// hiçbir seçenekle eşleşmez ve fiyat kademesiyle de tutmaz.
+export const DEFAULT_QUANTITY = 500;
 
 // Broşür adet seçenekleri (vitrin) — sabit liste, turmatsan'ın düzensiz adet kademeleri
 // yerine Presserdiado'nun kendi kararı. Birim-fiyat + adet-indirimi modeliyle çalışır

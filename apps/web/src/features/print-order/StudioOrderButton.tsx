@@ -12,7 +12,11 @@ import { useProjectSave } from '../studio/hooks/useProjectSave';
 import { PrintOptionsSelector } from './PrintOptionsSelector';
 import { useCatalogOptions } from './hooks/useCatalogOptions';
 import { usePriceQuote } from './hooks/usePriceQuote';
-import { DEFAULT_OPTIONS, STUDIO_LOCKED_CATEGORIES } from './constants';
+import {
+  BROCHURE_QUANTITY_CHOICES,
+  DEFAULT_OPTIONS,
+  STUDIO_LOCKED_CATEGORIES,
+} from './constants';
 import { formatTRY, type PrintOptionsValue } from './types';
 
 const PRODUCT_TYPE_KEY = 'brochure';
@@ -71,6 +75,20 @@ export function StudioOrderButton() {
   useEffect(() => {
     void fetchProfiles();
   }, [fetchProfiles]);
+
+  // Adet sabit kademelerden seçilir (vitrin/sihirbazla aynı liste). Eski projelerde serbest
+  // sayı girişinden kalma, kademe DIŞI bir değer olabilir (varsayılan eskiden 100'dü) —
+  // böyle bir değeri <select> hiçbir seçenekle eşleştiremez, tarayıcı ilk seçeneği gösterir
+  // ama store'daki gerçek adet değişmez; müşteri "500" görüp 100 adet sipariş ederdi.
+  // Bu yüzden bir ÜST kademeye çekiyoruz (aşağı yuvarlamak eksik baskı göndermek olurdu).
+  // Yalnızca panel açıkken: projeyi sadece açıp kapatmak siparişi/kaydı değiştirmesin.
+  useEffect(() => {
+    if (!open || BROCHURE_QUANTITY_CHOICES.includes(quantity)) return;
+    const ustKademe =
+      BROCHURE_QUANTITY_CHOICES.find((q) => q >= quantity) ??
+      BROCHURE_QUANTITY_CHOICES[BROCHURE_QUANTITY_CHOICES.length - 1];
+    setStoreQuantity(ustKademe);
+  }, [open, quantity, setStoreQuantity]);
 
   useEffect(() => {
     if (!selectedProfileId && profiles.length > 0) {
@@ -232,6 +250,7 @@ export function StudioOrderButton() {
                   onChange={setValue}
                   quantity={quantity}
                   onQuantityChange={setStoreQuantity}
+                  quantityChoices={BROCHURE_QUANTITY_CHOICES}
                   lockedCategories={lockedCategories}
                   quote={quote}
                   quoteLoading={quoteLoading}
