@@ -22,12 +22,17 @@ export function hexToRgba(hex: string, opacity: number): string {
   return `rgba(${r}, ${g}, ${b}, ${opacity / 100})`;
 }
 
-export function colorOpacityToCss(c: ColorOpacity): string {
+export function colorOpacityToCss(c: ColorOpacity | undefined | null): string {
+  // İKİNCİ SAVUNMA HATTI: normalize edilmemiş/bozuk bir kayıttan buraya undefined gelirse
+  // TÜM stüdyo ErrorBoundary'ye düşüyordu (gerçek olay: eski projelerde cellBorder hâlâ
+  // ColorOpacity şeklindeydi → borderDataToCss b.color'ı bulamıyordu). Asıl düzeltme
+  // deserializeStudioState'teki normalize; burası yalnızca "çök" yerine "görünmez kenarlık".
+  if (!c || typeof c.c !== 'string') return 'transparent';
   return c.o < 100 ? hexToRgba(c.c, c.o) : c.c;
 }
 
 /** BorderData → CSS özellikleri. Kenar bazlı (t/r/b/l ayrı olabilir), tek renk/stil. */
-export function borderDataToCss(b: BorderData, scale = 1): {
+export function borderDataToCss(b: BorderData | undefined | null, scale = 1): {
   borderTopWidth: string;
   borderRightWidth: string;
   borderBottomWidth: string;
@@ -35,13 +40,16 @@ export function borderDataToCss(b: BorderData, scale = 1): {
   borderStyle: string;
   borderColor: string;
 } {
+  // İKİNCİ SAVUNMA HATTI — bkz. colorOpacityToCss. Eksik/eski şekilli veri gelirse kenarlık
+  // çizilmez ama stüdyo AYAKTA KALIR. Asıl düzeltme deserializeStudioState'teki normalize.
+  const kenar = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v * scale : 0);
   return {
-    borderTopWidth: `${b.t * scale}px`,
-    borderRightWidth: `${b.r * scale}px`,
-    borderBottomWidth: `${b.b * scale}px`,
-    borderLeftWidth: `${b.l * scale}px`,
-    borderStyle: b.style,
-    borderColor: colorOpacityToCss(b.color),
+    borderTopWidth: `${kenar(b?.t)}px`,
+    borderRightWidth: `${kenar(b?.r)}px`,
+    borderBottomWidth: `${kenar(b?.b)}px`,
+    borderLeftWidth: `${kenar(b?.l)}px`,
+    borderStyle: b?.style ?? 'solid',
+    borderColor: colorOpacityToCss(b?.color),
   };
 }
 

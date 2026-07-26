@@ -17,12 +17,18 @@
 //    HİÇ çağırmaz — üründe olduğu gibi atama anında mutlaklaştırma kuralı). Prod'da API başka bir
 //    origin'de çalışacağı için relative key'e indirgeyip GÜNCEL origin'e (toAbsoluteUrl) çevrilir.
 
-import { toAbsoluteUrl } from '@/lib/upload';
-
-const BAKED_ABSOLUTE_UPLOAD_URL = /^https?:\/\/[^/]+(\/uploads\/.+)$/;
+// './apiOrigin' (upload.ts DEĞİL): bu fonksiyon studioModules/studioPresets tarafından modül
+// yükleme anında çağrılıyor; upload.ts axios istemcisini import ettiği için oradan almak
+// dairesel bağımlılık → TDZ hatası üretiyordu (regresyon testinde yakalandı).
+import { toAbsoluteUrl } from '@/lib/apiOrigin';
 
 function reoriginImage(url: string): string {
-  const match = BAKED_ABSOLUTE_UPLOAD_URL.exec(url);
+  // Regex BİLEREK fonksiyon içinde: studioModules.ts / studioPresets.ts bu fonksiyonu MODÜL
+  // YÜKLEME anında çağırıyor. Modül-seviyesi `const` ile tanımlandığında, dairesel import
+  // sırası yüzünden henüz başlatılmamış olabiliyor ve "Cannot access ... before
+  // initialization" (TDZ) hatası veriyordu — testte yakalandı. Fonksiyon içi literal bu
+  // sıralamadan tamamen bağımsızdır.
+  const match = /^https?:\/\/[^/]+(\/uploads\/.+)$/.exec(url);
   return match ? toAbsoluteUrl(match[1]) : url;
 }
 

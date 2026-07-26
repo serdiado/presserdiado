@@ -3,6 +3,7 @@ import { X, Package, Inbox } from 'lucide-react';
 import { useCatalogStore, useUIStore } from '@/stores/studio';
 import type { TempPoolProduct } from '@matbaapro/shared';
 import { richTextToPlain } from '../modules/richText';
+import { DeferredImage } from '@/components/ui/DeferredImage';
 
 const FLYOUT_ID = 'temp-pool';
 
@@ -101,8 +102,13 @@ export function FlyoutPanel() {
         </div>
       )}
 
+      {/* Panel KAPALIYKEN içerik hiç render edilmez. Kabuk (bu div) kalır ki transform
+          animasyonu çalışsın. Gerekçe: kapalı panel yalnızca translateX ile ekran dışına
+          taşınıyor; transform layout'u değiştirmediği için tarayıcı içeriği hâlâ "görünür"
+          sayıyor ve TÜM ürün görsellerini decode ediyordu (ölçüm: 277 görsel / ~2,1 GB bitmap,
+          ekranda görünen: 1). loading="lazy" bu durumda işe yaramıyor — tek çözüm render etmemek. */}
       <div className="flex-1 overflow-auto p-3 space-y-2">
-        {tempPool.length === 0 ? (
+        {!isOpen ? null : tempPool.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-text-muted px-4 text-center">
             <Inbox size={32} strokeWidth={1.25} className="mb-2 opacity-50" />
             <p className="text-body-sm">Sayfadan bir ürün hücresini sürükleyip buraya bırakın.</p>
@@ -119,7 +125,14 @@ export function FlyoutPanel() {
             >
               <div className="w-9 h-9 bg-surface-subtle rounded border border-border-default flex items-center justify-center overflow-hidden shrink-0">
                 {p.image ? (
-                  <img src={p.image} alt={p.name ?? ''} className="max-w-full max-h-full object-contain" />
+                  // 36x36'lık kutucuk ama dosyalar 1500x1500 → her biri ~9 MB bitmap. Bekleme
+                  // havuzu uzun olabildiği için görsel yalnızca görünür alana girince yüklenir.
+                  // (Kanvasta DeferredImage KULLANILMAZ — bkz. DeferredImage.tsx başlığı.)
+                  <DeferredImage
+                    src={p.image}
+                    alt={p.name ?? ''}
+                    className="max-w-full max-h-full object-contain"
+                  />
                 ) : (
                   <span className="text-body-xs text-text-muted">Yok</span>
                 )}

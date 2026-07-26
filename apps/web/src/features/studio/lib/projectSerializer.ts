@@ -1,6 +1,7 @@
 import { useCatalogStore, useLayerStore, useHistoryStore } from '@/stores/studio';
 import type { BrochureTemplate, CatalogSettings, ProductInfo, TempPoolProduct, StudioForma, Layer } from '@matbaapro/shared';
 import { DEFAULT_OPTIONS, DEFAULT_QUANTITY } from '@/features/print-order/constants';
+import { normalizeLegacyAppearance } from '../modules/normalizeLegacyAppearance';
 import type { PrintOptionsValue } from '@/features/print-order/types';
 
 export interface StudioCanvasData {
@@ -50,10 +51,20 @@ export function serializeStudioState(): StudioCanvasData {
   };
 }
 
-export function deserializeStudioState(data: StudioCanvasData) {
-  if (!data || !data.catalog?.formas) {
+export function deserializeStudioState(rawData: StudioCanvasData) {
+  if (!rawData || !rawData.catalog?.formas) {
     throw new Error('Geçersiz veya bozuk proje formatı');
   }
+
+  // KAYITLI PROJELERİ ESKİ ŞEKİLDEN KURTAR. Görünüm ayarları BorderData'ya taşındığında
+  // (bkz. normalizeLegacyAppearance.ts) yalnızca KOD-İÇİ preset/modül JSON'ları normalize
+  // edilmişti; veritabanındaki projeler dönüştürülmedi. Sonuç: eski projelerde
+  // globalSettings.colors.cellBorder hâlâ ColorOpacity ({c,o}) kalıyor, borderDataToCss
+  // b.color'ı bulamayıp patlıyor ve TÜM stüdyo ErrorBoundary'ye düşüyordu (ölçüm: 11 projenin
+  // 10'u etkileniyordu). Normalize idempotent — yeni şekildeki projelere dokunmaz.
+  // Burası tek giriş noktası: hem buluttan yükleme (StudioPage) hem dosyadan içe aktarma
+  // (loadProjectFile) bu fonksiyondan geçer.
+  const data = normalizeLegacyAppearance(rawData) as StudioCanvasData;
 
   const gs = data.catalog.globalSettings ?? {};
   useCatalogStore.setState({

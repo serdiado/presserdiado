@@ -14,6 +14,7 @@ import { richTextToPlain } from '../modules/richText';
 import { ProductInfoSettings } from './ProductInfoSettings';
 import { rowToProduct, type ExcelCell } from './parseProductRow';
 import { Button } from '@/components/ui';
+import { DeferredImage } from '@/components/ui/DeferredImage';
 
 // /products/with-images yanıt satırı — primaryImage relative imageKey (mutlak çevirim burada).
 interface PoolProduct {
@@ -303,6 +304,13 @@ export function ProductManagement() {
                     key={p.id}
                     draggable
                     onDragStart={(e) => handlePoolDragStart(e, p)}
+                    // content-visibility: bu liste tüm ürün havuzunu (ölçümde 645 satır) tek
+                    // seferde DOM'a basıyor ama kutu yalnızca max-h-80 (320px). Ekran dışındaki
+                    // satırların render'ı VE görsel decode'u atlanır — ölçümde bu liste tek
+                    // başına ~2 GB bitmap belleği tutuyordu, ekranda görünen satır sayısı: 1.
+                    // contain-intrinsic-size satır yüksekliğini (~52px) kaydırma çubuğu doğru
+                    // olsun diye önceden bildirir. loading="lazy" bu senaryoda yetmedi (ölçüldü).
+                    style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 52px' }}
                     className={`group flex items-center gap-2 bg-surface-panel border border-border-default rounded-radius-md p-2 hover:border-border-strong hover:shadow-drop-sm transition-all cursor-grab active:cursor-grabbing ${
                       isPlaced ? 'opacity-60' : ''
                     }`}
@@ -310,7 +318,10 @@ export function ProductManagement() {
                   >
                     <div className="w-9 h-9 bg-surface-subtle rounded border border-border-default flex items-center justify-center overflow-hidden shrink-0">
                       {img ? (
-                        <img
+                        // Görünür alana girene kadar <img> hiç render edilmez (bkz. DeferredImage).
+                        // Bu liste tüm havuzu basıyor (ölçüm: 645 satır) ama kutu yalnızca 320px;
+                        // düz <img> ile tek başına ~2 GB bitmap belleği tutuyordu.
+                        <DeferredImage
                           src={img}
                           crossOrigin="anonymous"
                           alt={p.name}

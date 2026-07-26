@@ -1207,7 +1207,18 @@ export const Slot = forwardRef<HTMLDivElement, SlotProps>(function Slot(
                   crossOrigin="anonymous"
                   onMouseDown={handleImgMouseDown}
                   draggable={false}
-                  className="max-w-full max-h-full object-contain select-none"
+                  // decoding=async: decode'u ana iş parçacığından çıkarır (kanvasta onlarca
+                  // görsel aynı anda decode edilirken arayüzün donmasını azaltır).
+                  // loading="lazy" BİLİNÇLİ OLARAK YOK: Puppeteer export'unda (/print-view)
+                  // tüm hücreler tek karede render edilir; ertelenmiş görsel PDF'e boş girebilir.
+                  decoding="async"
+                  // w-full/h-full (max-* DEĞİL): çizim kutusu konteynerden gelsin, dosyanın
+                  // intrinsic piksel sayısından DEĞİL. max-w/max-h ile kutu min(intrinsic,
+                  // konteyner) oluyordu; 1500px'lik bir görsel ~397mm'den büyük hücrede
+                  // konteyneri doldurmayı bırakıyor, düşük çözünürlüklü bir türev ise çok daha
+                  // erken bırakırdı — ekran/PDF arasında sessiz boyut farkı. object-contain
+                  // en-boy oranını korur, mevcut düzenlerde çizim aynı yerde/boyutta kalır.
+                  className="w-full h-full object-contain select-none"
                   style={{
                     transform: `translate(${displayX}px, ${displayY}px) scale(${displayScale})`,
                     cursor: isImgEditMode ? 'grab' : 'default',
