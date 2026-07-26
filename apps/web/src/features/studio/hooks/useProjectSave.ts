@@ -37,11 +37,10 @@ export function useProjectSave(): UseProjectSaveResult {
       const canvasData = serializeStudioState();
 
       if (!projectId) {
-        // İlk kayıt
-        // TODO: productTypeId'yi aktif template kategorisinden türet (şu an sabit broşür)
+        // İlk kayıt — tek-niş pilot: broşür dışında bir studio tasarım tipi yok.
         const response = await api.post('/projects', {
           name: projectName,
-          productTypeId: '00000000-0000-0000-0000-000000000001',
+          productTypeKey: 'brochure',
           canvasData,
           status: 'saved',
         });

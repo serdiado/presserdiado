@@ -4,7 +4,7 @@ import { projectService } from './project.service.js';
 
 const createProjectSchema = z.object({
   name: z.string().min(1),
-  productTypeId: z.string().uuid(),
+  productTypeKey: z.string().min(1),
   canvasData: z.record(z.unknown()),
   printConfig: z.record(z.unknown()).optional(),
 });

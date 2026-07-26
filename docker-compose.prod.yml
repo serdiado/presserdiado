@@ -1,0 +1,118 @@
+# Production compose — Oracle VPS'te CyberPanel'in yönettiği diğer sitelerden (özellikle
+# tezgahimdan.com) TAMAMEN izole: ayrı proje adı (-p presserdiado), ayrı ağ, mysql/minio
+# HİÇBİR PORTU HOST'A AÇMIYOR (sunucudaki native MariaDB 3306 / Redis 6379 ile çakışmasın).
+# Yalnızca api + web birer host portu açar; bunlar CyberPanel'in LiteSpeed'i tarafından
+# serdiado.com.tr / api.serdiado.com.tr için reverse-proxy hedefi olarak kullanılır.
+#
+# Redis BİLİNÇLİ OLARAK YOK: config.ts REDIS_URL okuyor ama kod tabanında hiçbir yerde
+# gerçekten bir Redis bağlantısı KURULMUYOR (grep ile doğrulandı) — şu an tamamen ölü
+# altyapı. İleride gerçek bir ihtiyaç (session/cache/kuyruk) çıkarsa buraya eklenir.
+#
+# Çalıştırma: docker compose -f docker-compose.prod.yml -p presserdiado --profile tools build
+#             docker compose -f docker-compose.prod.yml -p presserdiado --profile tools run --rm migrate
+#             docker compose -f docker-compose.prod.yml -p presserdiado up -d
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_0900_ai_ci
+    volumes:
+      - mysqldata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - miniodata:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Migration — AYRI profile'da (tools). tezgahimdan'ın deploy.sh'inde belgelenen gerçek
+  # kesinti gotcha'sı: "çıplak build" migrate'i profilsiz görmediği için diskteki ESKİ
+  # imajı kullanır, git pull ile gelen yeni migration'lar sessizce atlanır. Bu yüzden
+  # deploy.sh HER ZAMAN --profile tools ile build eder (bkz. scripts/deploy.sh).
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    profiles: ["tools"]
+    working_dir: /app/apps/api
+    entrypoint: ["npx", "drizzle-kit", "migrate"]
+    environment:
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3011:3001"
+    environment:
+      PORT: 3001
+      HOST: 0.0.0.0
+      NODE_ENV: production
+      DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
+      # REDIS_URL bilinçli olarak verilmiyor — kod hiçbir yerde gerçekten bağlanmıyor (yukarıdaki
+      # not), config.ts'nin varsayılanı (kullanılmayan) zararsız şekilde devreye girer.
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: ${MINIO_ROOT_USER}
+      S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
+      S3_BUCKET: ${S3_BUCKET:-matbaapro}
+      S3_ORDERS_BUCKET: ${S3_ORDERS_BUCKET:-presserdiado-orders}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      WEB_BASE_URL: ${WEB_BASE_URL}
+      REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-false}
+    volumes:
+      # Ürün/medya görselleri MinIO'da DEĞİL, api'nin yerel diskinde saklanıyor
+      # (upload.routes.ts — "MinIO/S3 ileride takılacak" yorumuyla bilinçli bugünkü hal).
+      # Bu hacim olmadan her container yeniden başlatmasında TÜM görseller silinir.
+      - api_uploads:/app/apps/api/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        # Vite build-zamanında bundle'a gömer — tarayıcıdan erişilecek GERÇEK (public) API
+        # URL'i olmalı, Docker-içi servis adı değil.
+        VITE_API_URL: ${VITE_API_URL}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3010:80"
+    depends_on:
+      - api
+
+volumes:
+  mysqldata:
+  miniodata:
+  api_uploads:

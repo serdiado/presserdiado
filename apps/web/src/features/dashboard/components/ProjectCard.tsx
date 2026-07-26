@@ -113,7 +113,8 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
       const { data: original } = await api.get(`/projects/${project.id}`);
       await api.post('/projects', {
         name: `${original.name} (Kopya)`,
-        productTypeId: original.productTypeId,
+        // Tek-niş pilot: broşür dışında bir studio tasarım tipi yok (bkz. useProjectSave.ts).
+        productTypeKey: 'brochure',
         canvasData: original.canvasData,
         printConfig: original.printConfig,
       });

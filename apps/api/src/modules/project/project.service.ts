@@ -1,13 +1,18 @@
 import { randomUUID } from 'node:crypto';
 import { eq, and, desc } from 'drizzle-orm';
 import { db } from '../../db/index.js';
-import { projects } from '../../db/schema/index.js';
+import { projects, productTypes } from '../../db/schema/index.js';
 import { NotFoundError } from '../../lib/errors.js';
 import { generateSlots } from '@matbaapro/grid-engine';
 
 interface CreateProjectInput {
   name: string;
-  productTypeId: string;
+  // Ham UUID DEĞİL, kararlı slug (ör. "brochure") — gerçek product_types.id her
+  // db:seed'de yeniden üretiliyor (randomUUID), o yüzden istemci tarafında hiç
+  // sabitlenemez. Önceden burada sabit bir placeholder UUID vardı; taze seed'li
+  // her ortamda (canlıya alma dahil) foreign-key ihlaliyle 500 patlıyordu — Faz 2
+  // Docker doğrulamasında yakalandı.
+  productTypeKey: string;
   canvasData: Record<string, unknown>;
   printConfig?: Record<string, unknown>;
 }
@@ -48,12 +53,20 @@ export const projectService = {
       }
     }
 
+    const productType = await db.query.productTypes.findFirst({
+      where: and(eq(productTypes.slug, input.productTypeKey), eq(productTypes.active, true)),
+      columns: { id: true },
+    });
+    if (!productType) {
+      throw new NotFoundError(`Ürün tipi bulunamadı: ${input.productTypeKey}`);
+    }
+
     const id = randomUUID();
     await db.insert(projects).values({
       id,
       userId,
       name: input.name,
-      productTypeId: input.productTypeId,
+      productTypeId: productType.id,
       canvasData: canvasData as Record<string, unknown>,
       printConfig: input.printConfig ?? {},
     });
