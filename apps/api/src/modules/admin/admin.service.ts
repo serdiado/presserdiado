@@ -76,6 +76,9 @@ export const adminService = {
       columns: { id: true },
     });
     if (!existing) throw new NotFoundError('Sipariş bulunamadı');
-    return orderPdfService.freezeOrderPdf(orderId);
+    // KUYRUKLU çağrı: sipariş anındaki arka plan işi hâlâ sürüyor olabilir. Doğrudan
+    // freezeOrderPdf çağrılırsa aynı sipariş için ikinci bir Chromium+Ghostscript paralel
+    // başlar (idempotentlik kontrolü render'ın içinde olduğu için yarışı önlemez).
+    return orderPdfService.freezeOrderPdfQueued(orderId);
   },
 };

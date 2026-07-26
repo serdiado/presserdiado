@@ -32,13 +32,29 @@ import api from './api';
  *
  * YÖNTEM: computed style ORİJİNAL belgeden okunur (klon iframe'inde stiller henüz
  * güvenilir şekilde uygulanmamış olabilir), değişiklik KLONA yazılır. İki ağaç birebir kopya
- * olduğu için metin düğümleri aynı sırada gezilir. Yalnızca uzunluğu DEĞİŞEN düğümlere
- * dokunulur — görünüm aynı kalır (metin zaten büyük harf görünüyordu), sadece dönüşümü
- * tarayıcı yerine biz yapmış oluruz.
+ * olduğu için metin düğümleri aynı sırada gezilir.
+ *
+ * İKİ GEÇİŞ ŞART — tek geçiş sessizce yanlış çıktı üretiyordu: `text-transform` KALITSALDIR
+ * ve dokunduğumuz eleman çoğu zaman tek bir metnin değil, tüm hücre içeriğinin kabıdır
+ * (zengin metin, stilsiz run'ları çıplak metin düğümü + stilli run'ları <span> olarak AYNI
+ * kabın altına koyar). Kaba 'none' yazıp kardeşleri "uzunlukları değişmiyor" diye atlayınca
+ * o kardeşler büyük harfini KAYBEDİYORDU: ekranda "WEISSBIER PREMIUM", önizlemede
+ * "WEISSBIER Premium". Bu yüzden önce hangi elemanların düzleştirileceğini topluyor,
+ * sonra o elemanların ALT AĞACINDAKİ metinlerin TAMAMINI — uzunluğu değişmeyenler dahil —
+ * dönüştürüyoruz. Hiç dokunulmayan dallar tarayıcının kendi dönüşümünü kullanmaya devam eder.
  */
 export function duzlestirTextTransform(orijinalKok: HTMLElement, klonKok: HTMLElement): void {
   const orjYurutec = orijinalKok.ownerDocument.createTreeWalker(orijinalKok, NodeFilter.SHOW_TEXT);
   const klonYurutec = klonKok.ownerDocument.createTreeWalker(klonKok, NodeFilter.SHOW_TEXT);
+
+  interface Aday {
+    klon: Node;
+    ebeveyn: HTMLElement;
+    donusmus: string;
+    uzunlukDegisti: boolean;
+  }
+  const adaylar: Aday[] = [];
+  const kirliKoklar = new Set<HTMLElement>();
 
   let orj: Node | null;
   let klon: Node | null;
@@ -51,11 +67,26 @@ export function duzlestirTextTransform(orijinalKok: HTMLElement, klonKok: HTMLEl
     if (tt !== 'uppercase' && tt !== 'lowercase') continue;
 
     const donusmus = tt === 'uppercase' ? ham.toUpperCase() : ham.toLowerCase();
-    // Uzunluk korunuyorsa html2canvas'ın Range hesabı zaten tutuyor — dokunma.
-    if (donusmus.length === ham.length) continue;
+    const uzunlukDegisti = donusmus.length !== ham.length;
+    adaylar.push({ klon, ebeveyn, donusmus, uzunlukDegisti });
+    if (uzunlukDegisti) kirliKoklar.add(ebeveyn);
+  }
 
-    klon.nodeValue = donusmus;
-    (klon.parentElement as HTMLElement | null)?.style.setProperty('text-transform', 'none');
+  if (kirliKoklar.size === 0) return;
+
+  // Bir metin, kirli elemanlardan herhangi birinin altındaysa dönüştürülmeli: 'none'ı o
+  // elemana yazacağımız için miras zinciri boyunca aşağıdaki HER metin etkilenir.
+  const kirliAltindaMi = (el: HTMLElement): boolean => {
+    for (let p: HTMLElement | null = el; p; p = p.parentElement) {
+      if (kirliKoklar.has(p)) return true;
+    }
+    return false;
+  };
+
+  for (const aday of adaylar) {
+    if (!aday.uzunlukDegisti && !kirliAltindaMi(aday.ebeveyn)) continue;
+    aday.klon.nodeValue = aday.donusmus;
+    (aday.klon.parentElement as HTMLElement | null)?.style.setProperty('text-transform', 'none');
   }
 }
 

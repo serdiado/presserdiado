@@ -87,8 +87,10 @@ export default function AdminLayout() {
     [],
   );
 
-  // Sipariş oluşturmadaki non-fatal freeze denemesi başarısız kalmışsa (productionPdfKey null)
-  // admin panelinden sahiplik kısıtı olmadan yeniden tetikle (freezeOrderPdf idempotent).
+  // Baskı dosyası sipariş sonrası ARKA PLANDA sırayla üretilir, yani productionPdfKey'in bir
+  // süre null olması NORMALDİR (hata değil). Bu uç, üretim beklenenden uzun sürdüyse ya da
+  // gerçekten başarısız olduysa sahiplik kısıtı olmadan yeniden tetiklemek içindir. Sunucu
+  // tarafında kuyruğa alınır (freezeOrderPdfQueued), yani sürmekte olan işle yarışmaz.
   const refreezePdf = useCallback(async (orderId: string) => {
     setRefreezingId(orderId);
     try {

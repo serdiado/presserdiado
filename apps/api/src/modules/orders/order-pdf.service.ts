@@ -22,6 +22,29 @@ export interface FreezeResult {
 }
 
 export const orderPdfService = {
+  /**
+   * PDF üretimini kuyruğa alır ve SONUCU BEKLER.
+   *
+   * Dondurmayı tetikleyen her yol bu kapıdan (ya da beklemeyen kardeşi
+   * freezeOrderPdfInBackground'dan) geçmeli. Doğrudan freezeOrderPdf çağırmak kuyruğu
+   * atlar: sipariş anındaki arka plan işi sürerken admin "Yeniden Dondur"a basarsa aynı
+   * sipariş için AYNI ANDA iki Chromium + iki Ghostscript başlar ve VPS'in belleği bunu
+   * kaldırmaz. İdempotentlik kontrolü render'ın içinde olduğu için de yarışı tek başına
+   * önlemez — iki iş de "henüz dondurulmamış" görüp ikisi de render eder.
+   * Kuyruk seri olduğundan ikinci çağrı birincinin bitmesini bekler ve artık dondurulmuş
+   * olanı görüp anında döner.
+   */
+  freezeOrderPdfQueued(orderId: string): Promise<FreezeResult> {
+    const is = dondurmaKuyrugu.then(
+      () => orderPdfService.freezeOrderPdf(orderId),
+      () => orderPdfService.freezeOrderPdf(orderId),
+    );
+    // Zincir yalnızca SIRALAMA içindir; bu işin hatası sıradakini düşürmesin diye yutulur
+    // (hata çağırana `is` üzerinden aynen iletilir).
+    dondurmaKuyrugu = is.catch(() => undefined);
+    return is;
+  },
+
   async freezeOrderPdf(orderId: string): Promise<FreezeResult> {
     const order = await db.query.orders.findFirst({
       where: eq(orders.id, orderId),
@@ -83,14 +106,7 @@ export const orderPdfService = {
    * kuyruk olması. `.then(fn, fn)` ile önceki iş hata verse de sıradaki çalışır.
    */
   freezeOrderPdfInBackground(orderId: string, onError: (err: unknown) => void): void {
-    const calistir = async () => {
-      try {
-        await orderPdfService.freezeOrderPdf(orderId);
-      } catch (err) {
-        onError(err);
-      }
-    };
-    dondurmaKuyrugu = dondurmaKuyrugu.then(calistir, calistir);
+    void orderPdfService.freezeOrderPdfQueued(orderId).catch(onError);
   },
 };
 

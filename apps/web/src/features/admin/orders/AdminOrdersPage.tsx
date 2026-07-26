@@ -212,9 +212,9 @@ export default function AdminOrdersPage() {
                           onClick={() => void refreezePdf(o.id)}
                           disabled={refreezingId === o.id}
                           className="text-xs font-semibold text-amber-600 hover:text-amber-800 disabled:opacity-40 disabled:cursor-not-allowed"
-                          title="Sipariş oluşturulurken PDF dondurma başarısız oldu — yeniden dene"
+                          title="Baskı dosyası henüz hazır değil. Sipariş sonrası arka planda sırayla üretilir; birkaç dakika sürebilir. Beklenenden uzun sürdüyse buradan yeniden tetikleyebilirsiniz."
                         >
-                          {refreezingId === o.id ? 'Donduruluyor...' : 'PDF Yok · Yeniden Dondur'}
+                          {refreezingId === o.id ? 'Donduruluyor...' : 'PDF Hazırlanıyor · Yeniden Dene'}
                         </button>
                       )}
                     </td>

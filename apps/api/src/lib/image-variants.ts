@@ -64,6 +64,22 @@ export async function ekranTureviGetir(orijinalMutlakYol: string): Promise<strin
     const gecici = `${hedef}.${createHash('sha1').update(hedef).digest('hex').slice(0, 8)}.tmp`;
     try {
       await sharp(orijinalMutlakYol)
+        // EXIF Orientation'ı PİKSELLERE uygula — WYSIWYG için ZORUNLU, kaldırmayın.
+        //
+        // NEDEN: sharp varsayılan olarak ne otomatik döndürür ne de EXIF'i çıktıya kopyalar.
+        // Tarayıcı ise `image-orientation: from-image` başlangıç değeriyle ORİJİNAL JPEG'i
+        // EXIF'e göre döndürerek çizer. Ekran türevi (bu dosya) ile baskı (orijinal, /print-view)
+        // farklı katman çektiği için sonuç şu olurdu: telefonla çekilmiş bir ürün fotoğrafı
+        // stüdyoda YAN YATIK, üretim PDF'inde DİK. Kullanıcı yatık hâle göre kadraj/ölçek
+        // düzeltmesi yapar, o düzeltme dik görselin üstüne biner ve hata ancak matbaada
+        // fark edilir (dondurma idempotent olduğu için kendiliğinden de düzelmez).
+        //
+        // Ölçüldü: 400x300 saklanmış + Orientation=6 bir JPEG için
+        //   orijinal (tarayıcıda) → 300x400 DİK
+        //   türev (.rotate YOKken) → 400x300 YATAY   ← uyumsuz
+        //   türev (.rotate varken) → 300x400 DİK     ← uyumlu
+        // resize'dan ÖNCE gelmeli: yön düzeldikten sonra 'inside' kutusu doğru kenara oturur.
+        .rotate()
         .resize({
           width: SCREEN_TIER.maxEdge,
           height: SCREEN_TIER.maxEdge,

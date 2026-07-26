@@ -39,6 +39,7 @@ export function StudioOrderButton() {
   const setStoreQuantity = useCatalogStore((s) => s.setQuantity);
   // Baskı özellikleri sihirbazdan store'a taşınır; popover bunları seed alır (DEFAULT_OPTIONS fallback).
   const storedOptions = useCatalogStore((s) => s.printOptions);
+  const setStorePrintOptions = useCatalogStore((s) => s.setPrintOptions);
 
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -62,6 +63,20 @@ export function StudioOrderButton() {
   useEffect(() => {
     setValue((prev) => ({ ...prev, ...storedOptions, size: lockedSize, fold: lockedFold }));
   }, [storedOptions, lockedSize, lockedFold]);
+
+  /**
+   * Seçimi hem yerel state'e hem STORE'a yazar.
+   *
+   * Eskiden yalnızca yerel state'e yazılıyordu: sipariş POST'u doğru gidiyordu (value'dan
+   * okuyor) ama aynı akıştaki saveProject store'u serialize ettiği için proje ESKİ özelliklerle
+   * kaydediliyordu. Sonuç: müşteri 200 gr + selefon seçip sipariş veriyor, projeyi tekrar
+   * açtığında seçim 128 gr'a dönmüş oluyor ve ikinci sipariş sessizce yanlış özelliklerle
+   * gidiyor. Store tek kaynak olduğu için seçim anında oraya yazılmalı.
+   */
+  const ozellikleriDegistir = (yeni: PrintOptionsValue) => {
+    setValue(yeni);
+    setStorePrintOptions(yeni);
+  };
 
   const { data: catalog, loading: catalogLoading, error: catalogError } =
     useCatalogOptions(PRODUCT_TYPE_KEY);
@@ -247,7 +262,7 @@ export function StudioOrderButton() {
                 <PrintOptionsSelector
                   options={catalog}
                   value={value}
-                  onChange={setValue}
+                  onChange={ozellikleriDegistir}
                   quantity={quantity}
                   onQuantityChange={setStoreQuantity}
                   quantityChoices={BROCHURE_QUANTITY_CHOICES}

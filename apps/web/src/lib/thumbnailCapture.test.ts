@@ -80,6 +80,54 @@ describe('duzlestirTextTransform — uzunluk değiştiren uppercase çökmesi', 
     expect(klon.querySelector('span')!.style.textTransform).toBe('uppercase');
   });
 
+  // AYNI KAP altındaki kardeşler — ilk sürümdeki hatanın tam senaryosu. Önceki testler her
+  // metni AYRI <span>'e koyduğu için bu kaçmıştı: kaba 'none' yazılıyor, kardeş "uzunluğu
+  // değişmiyor" diye atlanıyor ve büyük harfini kaybediyordu.
+  describe('aynı kap altındaki kardeş metinler', () => {
+    /** <div uppercase>{cocuklar}</div> — çıplak metin ve <span> karışık olabilir. */
+    function kapKur(cocuklar: (string | { etiket: string; metin: string })[]) {
+      const kap = document.createElement('div');
+      kap.style.textTransform = 'uppercase';
+      for (const c of cocuklar) {
+        if (typeof c === 'string') kap.appendChild(document.createTextNode(c));
+        else {
+          const el = document.createElement(c.etiket);
+          el.textContent = c.metin;
+          kap.appendChild(el);
+        }
+      }
+      document.body.appendChild(kap);
+      return { orijinal: kap, klon: kap.cloneNode(true) as HTMLElement };
+    }
+
+    it('kardeş çıplak metin de büyük harfe çevrilir (kayıp yok)', () => {
+      const { orijinal, klon } = kapKur(['Weißbier', ' Premium']);
+
+      duzlestirTextTransform(orijinal, klon);
+
+      // Kritik: ikisi de dönüşmüş olmalı — 'Premium'un uzunluğu değişmese bile.
+      expect(klon.textContent).toBe('WEISSBIER PREMIUM');
+    });
+
+    it('kardeş <span> içindeki metin de büyük harfe çevrilir', () => {
+      const { orijinal, klon } = kapKur(['Weißbier ', { etiket: 'span', metin: 'Premium' }]);
+
+      duzlestirTextTransform(orijinal, klon);
+
+      expect(klon.textContent).toBe('WEISSBIER PREMIUM');
+      expect(klon.querySelector('span')!.textContent).toBe('PREMIUM');
+    });
+
+    it('ß hiç yoksa kaba dokunulmaz — tarayıcının kendi dönüşümü kalır', () => {
+      const { orijinal, klon } = kapKur(['Tomaten ', { etiket: 'span', metin: 'Ketchup' }]);
+
+      duzlestirTextTransform(orijinal, klon);
+
+      expect(klon.textContent).toBe('Tomaten Ketchup');
+      expect(klon.style.textTransform).toBe('uppercase');
+    });
+  });
+
   it('birden çok metin düğümünde yalnızca sorunlu olanı düzeltir', () => {
     const kok = document.createElement('div');
     for (const m of ['Weißbier', 'Normal Metin', 'groß']) {

@@ -19,6 +19,7 @@ import { Template1 } from '@matbaapro/shared';
 import api from '@/lib/api';
 import { deserializeStudioState } from './lib/projectSerializer';
 import { syncProductImagesFromLibrary } from './lib/syncProductImagesFromLibrary';
+import { duzlestirTextTransform } from '@/lib/thumbnailCapture';
 import toast from 'react-hot-toast';
 
 export default function StudioPage() {
@@ -133,6 +134,12 @@ export default function StudioPage() {
             clonedCanvas.style.margin = '0';
             clonedDocument.body.innerHTML = '';
             clonedDocument.body.appendChild(clonedCanvas);
+
+            // ß→SS gibi uzunluk değiştiren uppercase dönüşümleri html2canvas-pro'yu
+            // çökertiyor (IndexSizeError). Bu, thumbnail'de düzeltilen hatanın AYNISI —
+            // kaynak html2canvas-pro'nun kendisi olduğu için her çağrı yeri için geçerli.
+            // Burada eksikti: Almanca broşürde "JPG İndir" sessizce hiçbir dosya üretmiyordu.
+            duzlestirTextTransform(element, clonedCanvas);
           }
           // Editör-only chrome export'a sızmasın — data-hide-on-export TEK marker (thumbnail ile aynı blok).
           clonedDocument.querySelectorAll('[data-hide-on-export]').forEach((el) => el.remove());
@@ -148,7 +155,10 @@ export default function StudioPage() {
       link.href = dataUrl;
       link.click();
     } catch (err) {
+      // Sessiz yutmak yanıltıcıydı: buton yükleme durumundan çıkıp normale dönüyor, hiçbir
+      // dosya inmiyor ve kullanıcıya "tıkladım, bir şey olmadı" gibi görünüyordu.
       console.error('JPG indirme hatası:', err);
+      toast.error('JPG oluşturulamadı. Sorun sürerse tasarımı kaydedip tekrar deneyin.');
     } finally {
       setIsDownloading(false);
     }

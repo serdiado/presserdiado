@@ -54,7 +54,8 @@ export async function orderRoutes(app: FastifyInstance) {
   app.post('/orders/:id/freeze-pdf', async (request, reply) => {
     const { id } = idParamSchema.parse(request.params);
     await orderService.getByIdForUser(request.user.id, id); // sahiplik (IDOR)
-    const result = await orderPdfService.freezeOrderPdf(id);
+    // KUYRUKLU: sipariş anındaki arka plan işiyle paralel render'ı önler (bkz. admin.service).
+    const result = await orderPdfService.freezeOrderPdfQueued(id);
     return reply.send(result);
   });
 
