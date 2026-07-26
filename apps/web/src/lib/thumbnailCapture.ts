@@ -15,6 +15,50 @@ import api from './api';
  * navigate sonrası arka planda (fire-and-forget) çağrılmalıdır — DOM unmount olmadığından
  * (navigate replace sonrası canvas yeniden render edilmez) yakalama güvenle tamamlanır.
  */
+/**
+ * `text-transform`u klonda DÜZLEŞTİRİR (metni dönüştürüp text-transform:none yapar).
+ *
+ * NEDEN: html2canvas-pro metni ölçerken dönüşmüş (uppercase) hâlinin uzunluğunu ORİJİNAL
+ * metin düğümüne `Range.setEnd` ile uyguluyor. Çoğu dilde uppercase uzunluğu değiştirmediği
+ * için bu fark edilmez — ama Almanca `ß` büyük harfte `SS` olur ve metin bir karakter uzar.
+ *
+ * GERÇEK OLAY (canlıda ölçüldü): bir broşürün dipnotundaki tek bir kelime — "ausschließlich"
+ * (14 karakter) → "AUSSCHLIESSLICH" (15 karakter) — şu hatayı fırlatıyordu:
+ *   IndexSizeError: Failed to execute 'setEnd' on 'Range': The offset 15 is larger than
+ *   the node's length (14).
+ * Bu hata yakalamanın TAMAMINI çökertiyordu, yani tek bir Almanca kelime yüzünden projenin
+ * hiç önizlemesi oluşmuyordu (kullanıcı panelinde boş kart). Almanca ürün broşürü bu ürünün
+ * ana senaryosu olduğu için bu nadir değil, tipik bir durum.
+ *
+ * YÖNTEM: computed style ORİJİNAL belgeden okunur (klon iframe'inde stiller henüz
+ * güvenilir şekilde uygulanmamış olabilir), değişiklik KLONA yazılır. İki ağaç birebir kopya
+ * olduğu için metin düğümleri aynı sırada gezilir. Yalnızca uzunluğu DEĞİŞEN düğümlere
+ * dokunulur — görünüm aynı kalır (metin zaten büyük harf görünüyordu), sadece dönüşümü
+ * tarayıcı yerine biz yapmış oluruz.
+ */
+export function duzlestirTextTransform(orijinalKok: HTMLElement, klonKok: HTMLElement): void {
+  const orjYurutec = orijinalKok.ownerDocument.createTreeWalker(orijinalKok, NodeFilter.SHOW_TEXT);
+  const klonYurutec = klonKok.ownerDocument.createTreeWalker(klonKok, NodeFilter.SHOW_TEXT);
+
+  let orj: Node | null;
+  let klon: Node | null;
+  while ((orj = orjYurutec.nextNode()) && (klon = klonYurutec.nextNode())) {
+    const ham = orj.nodeValue;
+    const ebeveyn = orj.parentElement;
+    if (!ham || !ham.trim() || !ebeveyn) continue;
+
+    const tt = getComputedStyle(ebeveyn).textTransform;
+    if (tt !== 'uppercase' && tt !== 'lowercase') continue;
+
+    const donusmus = tt === 'uppercase' ? ham.toUpperCase() : ham.toLowerCase();
+    // Uzunluk korunuyorsa html2canvas'ın Range hesabı zaten tutuyor — dokunma.
+    if (donusmus.length === ham.length) continue;
+
+    klon.nodeValue = donusmus;
+    (klon.parentElement as HTMLElement | null)?.style.setProperty('text-transform', 'none');
+  }
+}
+
 export async function captureThumbnailBlob(
   canvasElement: HTMLElement,
 ): Promise<Blob | null> {
@@ -43,6 +87,10 @@ export async function captureThumbnailBlob(
           clonedCanvas.style.margin = '0';
           clonedDocument.body.innerHTML = '';
           clonedDocument.body.appendChild(clonedCanvas);
+
+          // ß→SS gibi uzunluk değiştiren uppercase dönüşümleri html2canvas-pro'yu çökertiyor
+          // (bkz. duzlestirTextTransform). Klonu gezmeden ÖNCE düzleştir.
+          duzlestirTextTransform(targetElement, clonedCanvas);
         }
 
         // Rehber çizgileri ve düzenleme yardımcıları (kırmızı/yeşil/mavi kesikli kılavuzlar,

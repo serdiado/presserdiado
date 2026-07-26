@@ -119,15 +119,14 @@ export function StudioOrderButton() {
       setCreatedOrder({ orderNumber: res.data.orderNumber });
       toast.success(`Sipariş oluşturuldu: ${res.data.orderNumber}`);
 
-      // freeze-pdf sipariş oluşturmayı bloklamaz (non-fatal) — yani üretim PDF'i hazır
-      // olmayabilir. Sessizce yutmak yerine müşteriye açıkça bildir (retry ucu zaten var).
-      const items = (res.data.items ?? []) as Array<{ productionPdfKey?: string | null }>;
-      if (items.length > 0 && !items.some((it) => it.productionPdfKey)) {
-        toast.error(
-          'Sipariş alındı ama üretim PDF\'i hazırlanamadı. Ekibimiz bilgilendirildi, kısa süre içinde tamamlanacak.',
-          { duration: 6000 },
-        );
-      }
+      // Üretim PDF'i artık ARKA PLANDA hazırlanıyor (sunucuda sıraya alınır), bu yüzden
+      // yanıttaki productionPdfKey normalde null'dur. Eskiden burada bunu "PDF hazırlanamadı"
+      // hatası sanıp her siparişte yanlış alarm veren bir toast vardı; kaldırıldı — gerçek
+      // başarısızlık sunucuda loglanır ve admin panelindeki yeniden dondurma ucu ile çözülür.
+      toast('Baskı dosyanız hazırlanıyor; siparişiniz sıraya alındı.', {
+        icon: '🖨️',
+        duration: 5000,
+      });
     } catch (err) {
       const msg =
         (err as { response?: { data?: { error?: string } } })?.response?.data?.error ??

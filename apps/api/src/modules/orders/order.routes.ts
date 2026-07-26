@@ -37,13 +37,14 @@ export async function orderRoutes(app: FastifyInstance) {
     const body = createOrderSchema.parse(request.body);
     const order = await orderService.createOrder(request.user.id, body);
 
-    // PDF dondurma: transaction DIŞINDA, commit sonrası, non-fatal.
+    // PDF dondurma: transaction DIŞINDA, commit sonrası, non-fatal ve ARKA PLANDA.
     // Render hatası siparişi bozmaz (201 döner, productionPdfKey null kalır, loglanır).
-    try {
-      await orderPdfService.freezeOrderPdf(order.id);
-    } catch (err) {
+    // Müşteri Puppeteer+Ghostscript süresini beklemez; yanıt anında döner ve PDF sırayla
+    // üretilir (bkz. freezeOrderPdfInBackground). Bu yüzden dönen kalemde productionPdfKey
+    // NORMALDE null'dur — istemci bunu hata sanmamalı.
+    orderPdfService.freezeOrderPdfInBackground(order.id, (err) => {
       request.log.error({ err, orderId: order.id }, 'PDF dondurma başarısız');
-    }
+    });
 
     const fresh = await orderService.getByIdForUser(request.user.id, order.id);
     return reply.status(201).send(fresh);

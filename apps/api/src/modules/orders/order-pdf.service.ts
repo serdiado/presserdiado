@@ -67,4 +67,32 @@ export const orderPdfService = {
 
     return { orderId, productionPdfKey: key };
   },
+
+  /**
+   * Dondurmayı ARKA PLANDA, sırayla çalıştırır — çağıran beklemez.
+   *
+   * NEDEN: Puppeteer render + Ghostscript CMYK dönüşümü canlıda uzun sürüyordu ve sipariş
+   * isteği bunu `await` ettiği için müşteri "Sipariş Ver"e bastıktan sonra dakikalarca
+   * bekliyordu. Sipariş kaydı zaten commit edilmiş durumda; PDF'in hazır olması yanıtın
+   * ön koşulu değil. Başarısızlık hâlâ non-fatal (loglanır, productionPdfKey null kalır,
+   * `POST /orders/:id/freeze-pdf` ile idempotent şekilde yeniden denenebilir).
+   *
+   * NEDEN KUYRUK: fire-and-forget'e geçince eşzamanlı siparişler aynı anda birer Chromium
+   * başlatabilirdi (VPS'in belleği bunu kaldırmaz). Zincirleme promise, mevcut senkron
+   * davranışın sunucu yükü açısından eşdeğerini korur — tek fark, bekleyenin müşteri değil
+   * kuyruk olması. `.then(fn, fn)` ile önceki iş hata verse de sıradaki çalışır.
+   */
+  freezeOrderPdfInBackground(orderId: string, onError: (err: unknown) => void): void {
+    const calistir = async () => {
+      try {
+        await orderPdfService.freezeOrderPdf(orderId);
+      } catch (err) {
+        onError(err);
+      }
+    };
+    dondurmaKuyrugu = dondurmaKuyrugu.then(calistir, calistir);
+  },
 };
+
+// Modül ömrü boyunca tek zincir — PDF üretimleri asla paralel koşmaz.
+let dondurmaKuyrugu: Promise<unknown> = Promise.resolve();
