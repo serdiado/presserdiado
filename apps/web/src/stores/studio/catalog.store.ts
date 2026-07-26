@@ -46,6 +46,9 @@ import {
 import type { BannerModuleData } from '../../features/studio/modules/types';
 import { isFooterSlotId, resolveModuleSlot, mergeFooterModule, footerWriteTarget, mergePageFooterModule, resolveFooterModule, defaultFooterModule } from './footerSlot';
 import { useHistoryStore } from './history.store';
+// './apiOrigin' (upload.ts DEĞİL) — bkz. apiOrigin.ts: upload.ts axios istemcisini import
+// ettiği için store'dan oraya bağlanmak dairesel bağımlılık riski taşır.
+import { toAbsoluteUrl } from '@/lib/apiOrigin';
 import { useUIStore } from './ui.store';
 import { foldNameMap } from '../../features/wizard/buildTemplate';
 import { DEFAULT_OPTIONS, DEFAULT_QUANTITY } from '../../features/print-order/constants';
@@ -903,8 +906,23 @@ export const useCatalogStore = create<Store>()(
           }
           // Öncelik: Excel RESIM > DB birincil resim > boş. DB değerleri panelde
           // zaten toAbsoluteUrl ile mutlak. /images/products fallback'i kaldırıldı.
-          const excelImage =
-            product.image && product.image.trim() ? product.image.trim() : undefined;
+          //
+          // Excel değeri yalnızca GERÇEKTEN çözülebilir bir adresse tercih edilir:
+          //   - http(s)://...  → olduğu gibi (kullanıcının kasten verdiği dış adres)
+          //   - /uploads/...   → API origin'iyle mutlaklaştırılır (web origin'i DEĞİL; dosyalar
+          //                      api.<domain> altında duruyor, göreli bırakılırsa 404 olur)
+          //   - "217C.png" gibi ÇIPLAK dosya adı → kullanılamaz; SKU eşleşmesine düşülür.
+          // Aksi halde tarayıcı çıplak adı web origin'ine göre çözüp 404 alıyordu: Excel'den
+          // yerleştirince tüm görseller kırık çıkıyor, ancak kaydedip yeniden açınca
+          // syncProductImagesFromLibrary SKU'dan doğru adresi koyduğu için düzeliyordu.
+          const excelRaw = product.image?.trim();
+          const excelImage = !excelRaw
+            ? undefined
+            : /^https?:\/\//i.test(excelRaw)
+              ? excelRaw
+              : excelRaw.startsWith('/uploads/')
+                ? toAbsoluteUrl(excelRaw)
+                : undefined;
           const dbImage = product.sku ? skuImageMap?.[product.sku] : undefined;
           const withImage = { ...product, image: excelImage ?? dbImage };
 
