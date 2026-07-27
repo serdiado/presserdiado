@@ -16,6 +16,7 @@
     "gen:preset-thumbs": "tsx scripts/gen-preset-thumbs.ts"
   },
   "dependencies": {
+    "@fastify/compress": "^9.1.0",
     "@fastify/cors": "^11.0.0",
     "@fastify/jwt": "^9.0.0",
     "@fastify/multipart": "^9.0.0",

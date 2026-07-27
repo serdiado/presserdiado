@@ -25,9 +25,34 @@ interface CanvasShape {
 }
 
 export const projectService = {
+  /**
+   * Liste görünümü — `canvasData` KASTEN DIŞARIDA BIRAKILIR.
+   *
+   * Eskiden `db.select()` ile tüm sütunlar çekiliyordu, yani her projenin tam tasarım
+   * JSON'u da geliyordu. Canlıda ölçüldü: 14 proje = 1,95 MB (ortalama 142 KB/proje).
+   * Panel ve stüdyodaki "Projeler" listesi bu veriden TEK BİR ALAN bile okumuyor; sadece
+   * ad/tarih/durum/küçük resim gösteriliyor. Buna rağmen kullanıcı panele her dönüşünde
+   * ~2 MB indirilip parse ediliyor, panel de o süre boyunca "Presserdiado yükleniyor"
+   * ekranında bekliyordu (DashboardLayout, projectsLoading bitene kadar hiçbir şey
+   * render etmiyor). Maliyet proje sayısıyla doğru orantılı büyüyordu.
+   *
+   * Tasarım verisine gerçekten ihtiyaç duyan tek akış proje ÇOĞALTMA'dır ve o zaten
+   * `GET /projects/:id` ile tek projeyi ayrıca çekiyor (ProjectCard.handleDuplicate).
+   * Buraya yeni alan eklerken aynı soruyu sor: liste bunu gerçekten gösteriyor mu?
+   */
   async listByUser(userId: string) {
     return db
-      .select()
+      .select({
+        id: projects.id,
+        name: projects.name,
+        productTypeId: projects.productTypeId,
+        status: projects.status,
+        thumbnailKey: projects.thumbnailKey,
+        printConfig: projects.printConfig,
+        autoSavedAt: projects.autoSavedAt,
+        createdAt: projects.createdAt,
+        updatedAt: projects.updatedAt,
+      })
       .from(projects)
       .where(eq(projects.userId, userId))
       .orderBy(desc(projects.updatedAt));

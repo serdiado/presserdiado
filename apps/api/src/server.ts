@@ -1,4 +1,5 @@
 import Fastify from 'fastify';
+import compress from '@fastify/compress';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import multipart from '@fastify/multipart';
@@ -38,6 +39,19 @@ const app = Fastify({
 });
 
 // Plugins
+// Yanıt sıkıştırma — JSON uçları için. API'nin döndürdüğü veri (proje/ürün/katalog listeleri)
+// tekrarlı anahtar adlarıyla dolu olduğu için çok iyi sıkışır. CORS'tan ÖNCE kaydediliyor ki
+// sıkıştırma hook'u yanıt zincirinin dışında kalmasın.
+//
+// `global: true` ama pratikte yalnız metin/JSON sıkışır: eklenti Content-Type'a bakar,
+// image/webp + image/png + application/pdf gibi ZATEN sıkıştırılmış türleri atlar — yani
+// /uploads ve /img trafiği boşuna CPU yakmaz. threshold: küçük yanıtlarda sıkıştırma
+// kazançtan çok ek yük getirir, 1 KB altını olduğu gibi geçiriyoruz.
+await app.register(compress, {
+  global: true,
+  threshold: 1024,
+  encodings: ['br', 'gzip', 'deflate'],
+});
 await app.register(cors, {
   origin: config.cors.origin,
   credentials: true,
