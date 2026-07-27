@@ -7,6 +7,8 @@ export interface OrderItemApi {
   id: string;
   itemType: 'studio_design' | 'uploaded_file';
   productTypeKey: string | null;
+  /** Sipariş anında dondurulan proje adı. Bu alan eklenmeden önceki siparişlerde null. */
+  projectName: string | null;
   quantity: number;
   size: string | null;
   foldType: string | null;

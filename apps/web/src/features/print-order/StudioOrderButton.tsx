@@ -40,6 +40,8 @@ export function StudioOrderButton() {
   // Baskı özellikleri sihirbazdan store'a taşınır; popover bunları seed alır (DEFAULT_OPTIONS fallback).
   const storedOptions = useCatalogStore((s) => s.printOptions);
   const setStorePrintOptions = useCatalogStore((s) => s.setPrintOptions);
+  // Sipariş özetinde gösterilir; sunucu bu adı sipariş anında dondurur (order_items.projectName).
+  const projectName = useCatalogStore((s) => s.projectName);
 
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -254,9 +256,12 @@ export function StudioOrderButton() {
             ) : (
               <div className="space-y-3">
                 <div className="bg-surface-subtle rounded p-2 text-[10px] text-text-secondary leading-snug">
-                  <strong className="text-text-primary">{catalog.productType.name}</strong>
+                  {/* Tasarım adı en üstte: sipariş bu adla kaydediliyor ve matbaa işi bu adla
+                      görüyor. Görünür olması kasıtlı — adlar otomatik üretildiğinde
+                      ("A3_Tek_Kırım_4898") müşteri burada fark edip sipariş öncesi düzeltebilsin. */}
+                  <strong className="text-text-primary text-[11px]">{projectName}</strong>
                   <br />
-                  {template.name}
+                  {catalog.productType.name} · {template.name}
                 </div>
 
                 <PrintOptionsSelector

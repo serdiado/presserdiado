@@ -57,6 +57,13 @@
       "when": 1784915352505,
       "tag": "0007_damp_slipstream",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1785188986065,
+      "tag": "0008_smiling_wallow",
+      "breakpoints": true
     }
   ]
 }

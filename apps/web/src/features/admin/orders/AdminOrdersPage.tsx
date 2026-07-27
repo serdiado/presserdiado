@@ -146,6 +146,11 @@ export default function AdminOrdersPage() {
                 const qty = o.items.reduce((acc, it) => acc + (it.quantity ?? 0), 0);
                 const hasPdf = o.items.some((it) => it.productionPdfKey);
                 const expanded = expandedId === o.id;
+                // Pilotta 1 sipariş = 1 kalem, ama çok kalemli siparişe hazır olsun diye
+                // benzersiz adlar birleştiriliyor. Eski siparişlerde bu alan boş (null).
+                const tasarimAdi = [
+                  ...new Set(o.items.map((it) => it.projectName).filter(Boolean)),
+                ].join(' · ');
                 return (
                 <Fragment key={o.id}>
                   <tr
@@ -165,6 +170,13 @@ export default function AdminOrdersPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="text-[11px] text-slate-600 font-mono font-semibold">{o.orderNumber}</div>
+                      {/* Hangi tasarımın baskısı olduğu — sipariş anında dondurulmuş ad.
+                          Bu olmadan matbaa tarafında sipariş numarasından öteye kimlik yoktu. */}
+                      {tasarimAdi && (
+                        <div className="text-[11px] text-slate-800 font-semibold mt-0.5" title={tasarimAdi}>
+                          {tasarimAdi}
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <div className="text-sm font-semibold text-slate-800">

@@ -1,0 +1,1 @@
+ALTER TABLE `order_items` ADD `project_name` varchar(500);

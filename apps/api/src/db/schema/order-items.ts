@@ -8,6 +8,13 @@ export const orderItems = mysqlTable('order_items', {
   orderId: uuidFk('order_id').references(() => orders.id, { onDelete: 'cascade' }).notNull(),
   // Bağlı tasarım projesi (varsa).
   projectId: uuidFk('project_id').references(() => projects.id),
+  // Sipariş anındaki proje adı — DONDURULUR (fiyat/baskı özellikleri/fatura gibi).
+  //
+  // NEDEN projectId üzerinden canlı okumuyoruz: müşteri projeyi sonradan yeniden
+  // adlandırırsa sipariş kaydı geçmişi yanlış gösterirdi; projeyi silerse sipariş tamamen
+  // kimliksiz kalırdı (matbaa hangi işi bastığını bilemez). Sipariş bir BELGEDİR, o andaki
+  // gerçeği saklamalı. Nullable: bu alan eklenmeden önce oluşmuş siparişlerde boş kalır.
+  projectName: varchar('project_name', { length: 500 }),
   itemType: mysqlEnum('item_type', ['studio_design', 'uploaded_file']).default('studio_design').notNull(),
   // product_types.slug ('brochure', pilotta sabit) — string snapshot, FK değil.
   productTypeKey: varchar('product_type_key', { length: 100 }),

@@ -50,11 +50,16 @@ export const orderService = {
     const itemType = input.itemType ?? 'studio_design';
 
     // Sahiplik: studio_design ise proje zorunlu + sahibe ait olmalı (IDOR).
+    // Aynı çağrıdan proje ADINI da alıyoruz: sipariş anındaki hâliyle dondurulacak
+    // (bkz. order-items.ts projectName). Müşteri projeyi sonradan yeniden adlandırsa
+    // veya silse bile siparişin hangi işe ait olduğu kaydında kalmalı.
+    let projeAdi: string | null = null;
     if (itemType === 'studio_design') {
       if (!input.projectId) {
         throw new ValidationError('studio_design siparişi için projectId zorunlu');
       }
-      await projectService.getById(userId, input.projectId);
+      const proje = await projectService.getById(userId, input.projectId);
+      projeAdi = proje?.name ?? null;
     }
 
     // Sahiplik: fatura profili sahibe ait olmalı (yoksa NotFound) — snapshot kaynağı.
@@ -123,6 +128,7 @@ export const orderService = {
             id: randomUUID(),
             orderId,
             projectId: input.projectId ?? null,
+            projectName: projeAdi,
             itemType,
             productTypeKey: input.productTypeKey,
             quantity: input.quantity,

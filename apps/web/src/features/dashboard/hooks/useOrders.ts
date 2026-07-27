@@ -22,7 +22,12 @@ function toDisplayOrder(o: OrderApi, labels: Record<string, string>, productType
   return {
     id: o.id,
     code: o.orderNumber,
-    name: productTypeName,
+    // Siparişin kimliği TASARIM ADIDIR. Eskiden burada ürün tipi ("Broşür") yazıyordu ve
+    // pilotta tek ürün tipi olduğu için bütün siparişler aynı görünüyordu — müşteri hangi
+    // işini sipariş ettiğini listeden ayırt edemiyordu. Ad sipariş anında dondurulmuş
+    // (order_items.projectName); bu alan eklenmeden önceki siparişlerde boş olduğu için
+    // eski davranışa düşülür.
+    name: firstItem?.projectName || productTypeName,
     type: firstItem ? describeOrderItem(firstItem, labels) : '—',
     qty,
     totalPrice: Number(o.grandTotal).toLocaleString('tr-TR'),
