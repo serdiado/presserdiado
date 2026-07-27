@@ -16,8 +16,12 @@ COMPOSE="docker compose -f docker-compose.prod.yml -p $PROJE_ADI --env-file .env
 
 cd "$(dirname "$0")/.."
 
-echo "=== 1/5: Yedek alınıyor ==="
-./scripts/backup.sh
+echo "=== 1/5: Yedek alınıyor (yalnızca DB) ==="
+# Deploy'un bozabileceği tek şey veritabanıdır (migration çalışır); görseller ve MinIO
+# nesneleri deploy'dan etkilenmez. Tam yedek günlük cron ile alınıyor. Eskiden burada TAM
+# yedek alınıyordu: yoğun bir deploy gününde 8+ kez 1,3 GB yazıldı, 45 GB'lık disk doldu ve
+# üretim bozuldu (Ghostscript/Puppeteer geçici dosya yazamadı). Bkz. backup.sh SAKLAMA_ADEDI.
+./scripts/backup.sh --sadece-db
 
 echo "=== 2/5: Kod güncelleniyor (git pull) ==="
 git pull
