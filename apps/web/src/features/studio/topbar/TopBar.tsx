@@ -4,7 +4,8 @@ import toast from 'react-hot-toast';
 import { useCatalogStore, useHistoryStore, useUIStore } from '@/stores/studio';
 import { ThemeToggle } from '../../../components/ThemeToggle';
 import { Undo2, Redo2, Home, Sparkles, Save, Copy, Trash2, RotateCcw, ChevronDown, Cloud, Eye } from 'lucide-react';
-import { DownloadMenu } from './DownloadMenu';
+// İndirme menüsü gizlendi — gerekçe ve geri açma notu render bloğunda (aşağıda).
+// import { DownloadMenu } from './DownloadMenu';
 import { StudioOrderButton } from '../../print-order/StudioOrderButton';
 import { ConfirmDialog, ConfirmModal } from '@/components/ui';
 import { ZoomWidget } from './ZoomWidget';
@@ -459,7 +460,14 @@ export function TopBar() {
         </button>
 
         <StudioOrderButton />
-        <DownloadMenu />
+        {/* İNDİRME MENÜSÜ GİZLENDİ (PDF/JPG/PNG) — kasıtlı, hata değil.
+            Sunucuda Puppeteer çalıştırıp RGB dosya üretiyordu: baskıya uygun DEĞİL (matbaaya
+            giden dosya her zaman sipariş akışının CMYK çıktısıdır), canlıda 77 MB'a çıkıyor,
+            üretimi dakikalar sürüp çoğu zaman tamamlanmıyordu ve her tıklamada sunucu
+            kaynağı yiyordu. Tasarımı görsel olarak paylaşma ihtiyacını önizleme modundaki
+            hafif "JPG İndir" (istemci tarafı, sunucuya yük yok) zaten karşılıyor.
+            Bileşen ve /export ucu YERİNDE — ihtiyaç olursa bu satırı geri açmak yeterli. */}
+        {/* <DownloadMenu /> */}
         <ThemeToggle compact />
       </div>
     </div>
