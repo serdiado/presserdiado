@@ -111,13 +111,32 @@ export function ProjectCard({ project, onClick }: ProjectCardProps) {
     setIsDuplicating(true);
     try {
       const { data: original } = await api.get(`/projects/${project.id}`);
-      await api.post('/projects', {
+      const { data: created } = await api.post('/projects', {
         name: `${original.name} (Kopya)`,
         // Tek-niş pilot: broşür dışında bir studio tasarım tipi yok (bkz. useProjectSave.ts).
         productTypeKey: 'brochure',
         canvasData: original.canvasData,
         printConfig: original.printConfig,
       });
+
+      // Önizleme görselini de devral. Tasarım birebir aynı olduğu için yeniden üretmenin
+      // anlamı yok — üstelik thumbnail yalnızca proje STÜDYODA açılıp kaydedilince üretiliyor
+      // (tarayıcıda html2canvas ile), yani kopya bu satır olmadan panelde görselsiz duruyordu
+      // ve kullanıcı açıp kaydedene kadar öyle kalıyordu.
+      // Aynı dosyayı paylaşmak güvenli: proje silme yalnızca DB satırını siler, yüklenen
+      // dosyaya dokunmaz. Kopya düzenlenip kaydedildiğinde zaten kendi görselini üretip
+      // bu bağı koparır.
+      if (original.thumbnailKey && created?.id) {
+        try {
+          await api.patch(`/projects/${created.id}/thumbnail`, {
+            thumbnailUrl: original.thumbnailKey,
+          });
+        } catch (thumbErr) {
+          // Görsel devri kozmetik — çoğaltmanın kendisi başarılı, hata kullanıcıya taşınmaz.
+          console.error('Kopyaya önizleme görseli devredilemedi:', thumbErr);
+        }
+      }
+
       toast.success('Proje çoğaltıldı');
       await refetchProjects();
     } catch (err) {
